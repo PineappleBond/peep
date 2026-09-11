@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Peep - 个人工具</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- rtc-agent 全局 AI 助手面板（脚本由 main.tsx 根据环境动态加载） -->
+    <rtc-agent app-label="Peep AI" scenarios-url="/peep/rtc-agent/scenarios/" redirect-uri="/peep/auth/callback.html" server-url="https://rtc-agent.cherish.chat"></rtc-agent>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "scenarios": [
+    {
+      "file": "fortune-analysis.md",
+      "name": "运势分析",
+      "description": "结合八字、紫微斗数、六爻进行综合运势分析"
+    }
+  ]
+}

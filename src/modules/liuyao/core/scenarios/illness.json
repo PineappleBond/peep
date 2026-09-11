@@ -1,0 +1,28 @@
+{
+  "scenarioId": "illness",
+  "title": "問病",
+  "scoreLabel": "康復傾向",
+  "yongOptions": [
+    { "target": "自占", "rel": "父母", "label": "自占病（用神：世爻）" },
+    { "target": "父母", "rel": "父母", "label": "占父母病（用神：父母爻）" },
+    { "target": "子女", "rel": "子孫", "label": "占子女病（用神：子孫爻）" },
+    { "target": "配偶", "rel": "妻財", "label": "占配偶病（用神：妻財爻）" },
+    { "target": "兄弟", "rel": "兄弟", "label": "占兄弟姊妹病（用神：兄弟爻）" },
+    { "target": "醫藥", "rel": "子孫", "label": "占醫藥（用神：子孫爻）" }
+  ],
+  "extraRules": ["R-BS-01", "R-BS-02", "R-BS-03", "R-BS-04", "R-BS-05", "R-BS-06"],
+  "contextFields": [
+    {
+      "key": "illnessDuration",
+      "label": "病程",
+      "options": [
+        { "value": "近病", "label": "近病" },
+        { "value": "久病", "label": "久病" }
+      ],
+      "default": "近病"
+    }
+  ],
+  "flowMapRulePrefixes": ["R-BS", "R-HE-02"],
+  "selfYongFromShi": true,
+  "disclaimer": "本頁內容為傳統術數文化研究參考，不構成任何醫療建議。身體不適請務必就醫，遵從專業醫師診斷與治療。"
+}

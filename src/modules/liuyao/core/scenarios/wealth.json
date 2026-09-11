@@ -1,0 +1,14 @@
+{
+  "scenarioId": "wealth",
+  "title": "問財",
+  "scoreLabel": "求財傾向",
+  "yongOptions": [
+    { "target": "自占", "rel": "妻財", "label": "自占財運（用神：妻財爻）" }
+  ],
+  "extraRules": ["R-WC-02", "R-WC-03"],
+  "contextFields": [],
+  "flowMapRulePrefixes": ["R-WC", "R-KW"],
+  "selfYongFromShi": false,
+  "selfYongRel": "妻財",
+  "disclaimer": "本頁內容為傳統術數文化研究參考，不構成任何投資或理財建議。"
+}
