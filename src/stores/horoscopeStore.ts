@@ -41,8 +41,8 @@ interface HoroscopeState extends HoroscopeValues {
 }
 
 /** 从 localStorage 读取持久化状态 */
-function loadPersistedState(): Partial<HoroscopeValues> {
-  return lsGet<Partial<HoroscopeValues>>(STORAGE_KEY, {});
+function loadPersistedState(): Partial<HoroscopeState> {
+  return lsGet<Partial<HoroscopeState>>(STORAGE_KEY, {});
 }
 
 /** 持久化状态到 localStorage */

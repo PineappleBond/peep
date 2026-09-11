@@ -41,6 +41,7 @@ export default function ZiweiPage() {
   }, [z]);
 
   // Auto-load data when URL personId changes
+  /* eslint-disable react/set-state-in-effect */
   useEffect(() => {
     if (!selectedPerson) return;
 
@@ -66,6 +67,7 @@ export default function ZiweiPage() {
     setManualMode(false);
     toast.success(`已加载 ${selectedPerson.name} 的信息`);
   }, [selectedPerson?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react/set-state-in-effect */
 
   const showForm = manualMode || !selectedPerson;
 

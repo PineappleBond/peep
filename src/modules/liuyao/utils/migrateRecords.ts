@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import type { ChartJSON } from "@/modules/liuyao/core/types";
 
 const LEGACY_STORAGE_KEY = "peep-liuyao-records";
 
@@ -58,6 +59,7 @@ export async function migrateLiuyaoRecordsFromLocalStorage(): Promise<{ count: n
       personId: personId ? Number(personId) : null,
       createdAt: rest.timestamp,
       updatedAt: rest.timestamp,
+      chart: rest.chart as ChartJSON,
     }));
 
     await db.liuyaoRecords.bulkAdd(recordsToInsert);

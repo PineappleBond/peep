@@ -138,7 +138,7 @@ test.describe('人物库', () => {
     await page.getByRole('button', { name: '删除' }).click();
 
     // 应显示已删除提示
-    await expect(page.locator('text=已删除')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=已移至垃圾篓')).toBeVisible({ timeout: 5000 });
     // 人物不应再出现在列表中
     await expect(page.locator('.truncate', { hasText: '待删除人物' })).not.toBeVisible();
   });

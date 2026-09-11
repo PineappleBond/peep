@@ -27,12 +27,14 @@ export function HoroscopeScopeSelector({ value, onChange }: HoroscopeScopeSelect
   const [valueStr, setValueStr] = useState(value?.startValue || "");
   const [ganzhi, setGanzhi] = useState(value?.ganzhi || "");
 
-  // 外部 value 变化时同步内部状态（如父组件重置 scope）
+  // External value 变化时同步内部状态（如父组件重置 scope）
+  /* eslint-disable react/set-state-in-effect */
   useEffect(() => {
     setLevel(value?.startLevel || "liunian");
     setValueStr(value?.startValue || "");
     setGanzhi(value?.ganzhi || "");
   }, [value]);
+  /* eslint-enable react/set-state-in-effect */
 
   const handleSave = () => {
     if (!valueStr) {

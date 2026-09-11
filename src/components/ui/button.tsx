@@ -54,4 +54,5 @@ function Button({
   )
 }
 
+// eslint-disable-next-line react/only-export-components
 export { Button, buttonVariants }

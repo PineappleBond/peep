@@ -44,6 +44,10 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/modules/documents/types";
 
+// Stable empty array constants to avoid new references on every render
+const EMPTY_PERSONS: Person[] = [];
+const EMPTY_DOCS: import("@/lib/db").DocumentRecord[] = [];
+
 interface PersonForm {
   name: string;
   gender: "male" | "female";
@@ -88,11 +92,11 @@ export default function PersonsPage() {
           .sort((a, b) => b.createdAt - a.createdAt);
       },
       [showDeleted],
-    ) ?? [];
+    ) ?? EMPTY_PERSONS;
 
   // 所有文档（用于统计每个人物的文档数）
   const allDocs =
-    useLiveQuery(() => db.documents.toArray(), []) ?? [];
+    useLiveQuery(() => db.documents.toArray(), []) ?? EMPTY_DOCS;
 
   // 每个人物的文档数（排除软删除）
   // allDocs 引用由 useLiveQuery 管理，数据不变时引用稳定
@@ -286,7 +290,7 @@ export default function PersonsPage() {
         // 批量清除关联文档的 personId
         await db.documents
           .where("personId")
-          .equals(person.id)
+          .equals(person.id!)
           .modify({ personId: null, updatedAt: Date.now() });
         // 删除人物
         await db.persons.delete(person.id!);

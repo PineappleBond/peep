@@ -22,6 +22,7 @@ import {
 import { useLiuyaoRecordStore } from '@/stores/liuyaoRecordStore';
 import { navigateTo } from './utils';
 import { SCENARIO_IDS } from '@/modules/liuyao/core/scenarios/newRegistry';
+import type { Granularity } from '@/modules/liuyao/core/timeFloors';
 
 // ── withMeta 辅助函数（从 web-components 复制） ──────
 
@@ -612,7 +613,7 @@ export async function createRtcAgentConfig(): Promise<RtcAgentConfig> {
             zodSchema: liuyaoGetSchema,
             handler: async (params) => {
               const { id, granularity } = parseParams(liuyaoGetSchema, params);
-              const record = await liuyaoAPI.get(id, granularity);
+              const record = await liuyaoAPI.get(id, granularity as Granularity);
               if (record) {
                 useLiuyaoRecordStore.getState().setSelectedRecord(id);
                 navigate('/', { tab: 'liuyao' });

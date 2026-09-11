@@ -73,9 +73,8 @@ export default function DocumentEditPage() {
           setLoading(false);
           navigate("/documents");
         });
-    } else {
-      setLoading(false);
     }
+    // When isNew is true, loading starts as false via useState(!isNew) -- no else branch needed
   }, [id, isNew, getDocument, navigate]);
 
   const handleSave = useCallback(async () => {

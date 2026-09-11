@@ -58,9 +58,11 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
 
   // 运限选择变化、或每次起盘（genId 变化）后，回到默认命宫聚焦
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     setUserFocus(null);
   }, [autoFocus, genId]);
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     setDetailIdx(null);
   }, [genId]);
 

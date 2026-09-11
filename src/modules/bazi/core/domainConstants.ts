@@ -105,7 +105,7 @@ export function getShiShen(dayStem: string, otherStem: string): string {
   const dayElement = STEM_ELEMENT[dayStem];
   const otherElement = STEM_ELEMENT[otherStem];
   if (!dayElement || !otherElement) return "";
-  const isSamePolarity = (STEMS_LIST.indexOf(dayStem) % 2) === (STEMS_LIST.indexOf(otherStem) % 2);
+  const isSamePolarity = (STEMS_LIST.indexOf(dayStem as typeof STEMS_LIST[number]) % 2) === (STEMS_LIST.indexOf(otherStem as typeof STEMS_LIST[number]) % 2);
   if (dayElement === otherElement) return isSamePolarity ? "比肩" : "劫财";
   if (WU_XING_SHENG[dayElement] === otherElement) return isSamePolarity ? "食神" : "伤官";
   if (WU_XING_SHENG[otherElement] === dayElement) return isSamePolarity ? "偏印" : "正印";

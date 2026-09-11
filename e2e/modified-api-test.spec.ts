@@ -47,7 +47,7 @@ test.describe.serial('Modified & New API Tests', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
     await page.waitForFunction(() => !!(window as any).peep);
     console.log('Page loaded, window.peep available');
   });
@@ -64,9 +64,7 @@ test.describe.serial('Modified & New API Tests', () => {
       const r = await safeCall(page, 'liuyao.create', { question: '测试问题' });
       record('liuyao.create', 'auto-toss', r.ok, r.result);
       expect(r.ok).toBe(true);
-      expect(typeof r.result).toBe('string');
-      // UUID format
-      expect(r.result).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      expect(typeof r.result).toBe('number'); // auto-increment id
     });
 
     test('auto-toss: verify generated lines are valid', async () => {
@@ -92,14 +90,14 @@ test.describe.serial('Modified & New API Tests', () => {
       });
       record('liuyao.create', 'explicit-lines', r.ok, r.result);
       expect(r.ok).toBe(true);
-      expect(typeof r.result).toBe('string');
+      expect(typeof r.result).toBe('number');
     });
 
     test('empty input (no question, no lines)', async () => {
       const r = await safeCall(page, 'liuyao.create', {});
       record('liuyao.create', 'empty-input', r.ok, r.result);
       expect(r.ok).toBe(true);
-      expect(typeof r.result).toBe('string');
+      expect(typeof r.result).toBe('number');
     });
   });
 
@@ -107,7 +105,7 @@ test.describe.serial('Modified & New API Tests', () => {
   // 2. liuyao.update (new)
   // ============================================================
   test.describe('liuyao.update (new)', () => {
-    let testId: string;
+    let testId: number;
 
     test.beforeAll(async () => {
       const c = await safeCall(page, 'liuyao.create', { question: '原始问题' });
@@ -118,7 +116,7 @@ test.describe.serial('Modified & New API Tests', () => {
       const r = await safeCallMulti(page, 'liuyao.update', [testId, { question: '更新后的问题' }]);
       record('liuyao.update', 'update-question', r.ok, r.result);
       expect(r.ok).toBe(true);
-      // Verify
+      // Verify via get (returns chart with 占事 field)
       const g = await safeCall(page, 'liuyao.get', testId);
       expect(g.ok).toBe(true);
       expect(g.result.占事).toBe('更新后的问题');
@@ -134,7 +132,7 @@ test.describe.serial('Modified & New API Tests', () => {
     });
 
     test('update non-existent id', async () => {
-      const r = await safeCallMulti(page, 'liuyao.update', ['non-existent-uuid', { question: '不存在' }]);
+      const r = await safeCallMulti(page, 'liuyao.update', [99999, { question: '不存在' }]);
       record('liuyao.update', 'non-existent', r.ok, r.error || 'no error');
       // Dexie update on non-existent returns 0, doesn't throw
     });
@@ -159,14 +157,14 @@ test.describe.serial('Modified & New API Tests', () => {
       record('liuyao.delete', 'valid', r.ok, r.result);
       expect(r.ok).toBe(true);
 
-      // Verify deleted
+      // Verify deleted (get returns undefined for deleted records)
       const g = await safeCall(page, 'liuyao.get', deleteId);
       expect(g.result === null || g.result === undefined).toBe(true);
       record('liuyao.delete', 'verify-deleted', g.result === null || g.result === undefined, g.result);
     });
 
     test('delete non-existent id', async () => {
-      const r = await safeCall(page, 'liuyao.delete', 'non-existent-uuid');
+      const r = await safeCall(page, 'liuyao.delete', 99999);
       record('liuyao.delete', 'non-existent', r.ok, r.result);
       // Dexie delete on non-existent doesn't throw
       expect(r.ok).toBe(true);
@@ -268,8 +266,8 @@ test.describe.serial('Modified & New API Tests', () => {
         expect(p.ok).toBe(true);
         testPersonId = p.result.id;
 
-        // Get the chart
-        const c = await safeCall(page, 'ziwei.chart', testPersonId);
+        // Get the chart (needs scope parameter)
+        const c = await safeCallMulti(page, 'ziwei.chart', [testPersonId, { level: 'dayun', datetime: '2026-01-01H00' }]);
         expect(c.ok).toBe(true);
         chartData = c.result.星盘;
       });

@@ -34,7 +34,9 @@ export function IndexPage() {
   const { selectedRecordId, setSelectedRecord } = useLiuyaoRecordStore();
 
   const [showComposeMode, setShowComposeMode] = useState(false);
-  const [chartResult, setChartResult] = useState<六爻结果 | null>(null);
+  const [chartResultState, setChartResultState] = useState<六爻结果 | null>(null);
+  // Derive chartResult: null when no record selected, avoids setState in effect
+  const chartResult = selectedRecordId ? chartResultState : null;
   const [granularity, setGranularity] = useState<Granularity>('year');
 
   // 一次性迁移 localStorage 数据到 IndexedDB
@@ -74,19 +76,16 @@ export function IndexPage() {
 
   // 加載選中記錄的完整結果（包含 granularity）
   useEffect(() => {
-    if (selectedRecordId) {
-      liuyaoAPI
-        .get(selectedRecordId, granularity)
-        .then((result) => {
-          setChartResult(result ?? null);
-        })
-        .catch((err) => {
-          console.error("[liuyao] Failed to load record:", err);
-          setChartResult(null);
-        });
-    } else {
-      setChartResult(null);
-    }
+    if (!selectedRecordId) return;
+    liuyaoAPI
+      .get(selectedRecordId, granularity)
+      .then((result) => {
+        setChartResultState(result ?? null);
+      })
+      .catch((err) => {
+        console.error("[liuyao] Failed to load record:", err);
+        setChartResultState(null);
+      });
   }, [selectedRecordId, granularity]);
 
   const handleGranularityChange = (g: Granularity) => {

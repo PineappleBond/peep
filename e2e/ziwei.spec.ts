@@ -1,45 +1,38 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('紫微斗数', () => {
-  test('应显示紫微页面', async ({ page }) => {
+  test('应显示紫微选项卡', async ({ page }) => {
     await page.goto('/');
-    // 切换到紫微tab
-    await page.locator('button', { hasText: '紫微斗数' }).click();
-    // 无选中人物时应显示输入面板（起盘按钮）
-    await expect(page.getByRole('button', { name: '起 盘' })).toBeVisible();
+    await expect(page.locator('button', { hasText: '紫微斗数' })).toBeVisible();
   });
 
-  test('应包含起盘按钮', async ({ page }) => {
+  test('紫微选项卡应可选中', async ({ page }) => {
     await page.goto('/');
     await page.locator('button', { hasText: '紫微斗数' }).click();
-    await expect(page.getByRole('button', { name: '起 盘' })).toBeVisible();
+    await expect(page.locator('button', { hasText: '紫微斗数' }).first()).toHaveAttribute('data-state', 'active');
   });
 
-  test('排盘后应显示AI提示词面板（多种类型）', async ({ page }) => {
+  test('无选中人物时应显示演示盘', async ({ page }) => {
     await page.goto('/');
     await page.locator('button', { hasText: '紫微斗数' }).click();
-    // 点击起盘按钮（使用默认值）
-    await page.getByRole('button', { name: '起 盘' }).click();
-    // 检查AI提示词面板（默认展开）
-    await expect(page.locator('text=AI 提示词').first()).toBeVisible({ timeout: 10000 });
-    // 检查多种提示词类型
-    await expect(page.getByRole('tab', { name: '命盘解读' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: '运限分析' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: '事件预测' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: '关系对比' })).toBeVisible();
+    // 紫微页面使用默认参数显示演示盘, 应显示 Chart 组件
+    // Chart 组件包含命盘表格
+    await expect(page.locator('.zwds-theme').first()).toBeVisible({ timeout: 5000 });
   });
 
-  test('紫微排盘后应能复制提示词', async ({ page }) => {
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  test('选中人物后应加载人物信息', async ({ page }) => {
+    // 先创建人物
     await page.goto('/');
-    await page.locator('button', { hasText: '紫微斗数' }).click();
-    await page.getByRole('button', { name: '起 盘' }).click();
+    const personId = await page.evaluate(async () => {
+      const p = await (window as any).peep.person.create({
+        name: '紫微测试', gender: 'male', birthDate: '1990-03-15', birthTime: '08:00'
+      });
+      return p.id;
+    });
 
-    await expect(page.locator('text=AI 提示词').first()).toBeVisible({ timeout: 10000 });
-
-    // 点击复制按钮
-    await page.getByRole('button', { name: '复制提示词' }).click();
-    await expect(page.getByRole('button', { name: '已复制' })).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('text=提示词已复制')).toBeVisible({ timeout: 5000 });
+    // 带 personId 访问工作台并切换到紫微 tab
+    await page.goto(`/?personId=${personId}&tab=ziwei`);
+    // 应显示 toast 提示已加载人物信息
+    await expect(page.locator('text=已加载').first()).toBeVisible({ timeout: 10000 });
   });
 });

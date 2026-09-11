@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run build:rtc-agent && vite",
-    "build": "npm run build:rtc-agent && tsc -b && vite build",
+    "build": "tsc -b && vite build",
     "build:rtc-agent": "tsx scripts/build-rtc-agent.ts",
     "lint": "oxlint",
     "preview": "vite preview",

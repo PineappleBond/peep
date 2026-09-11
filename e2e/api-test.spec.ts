@@ -51,7 +51,7 @@ test.describe.serial('Peep API Comprehensive Test', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
     await page.waitForFunction(() => !!(window as any).peep);
   });
 
@@ -188,15 +188,17 @@ test.describe.serial('Peep API Comprehensive Test', () => {
         const r = await safeCallMulti(page, 'folder.create', ['根文件夹A']);
         record('folder.create', 'root', r.ok, r.result);
         expect(r.ok).toBe(true);
-        expect(typeof r.result).toBe('string'); // UUID
+        expect(typeof r.result).toBe('object'); // returns { id, title, parentId, ... }
+        expect(r.result).toHaveProperty('id');
       });
 
       test('with parent', async () => {
         const parent = await safeCallMulti(page, 'folder.create', ['父文件夹']);
-        const r = await safeCallMulti(page, 'folder.create', ['子文件夹', parent.result]);
+        const r = await safeCallMulti(page, 'folder.create', ['子文件夹', parent.result.id]);
         record('folder.create', 'with-parent', r.ok, r.result);
         expect(r.ok).toBe(true);
-        expect(typeof r.result).toBe('string');
+        expect(typeof r.result).toBe('object');
+        expect(r.result).toHaveProperty('id');
       });
 
       test('empty title', async () => {
@@ -285,9 +287,9 @@ test.describe.serial('Peep API Comprehensive Test', () => {
   // ============================================================
 
   test.describe('Phase 2: Document APIs', () => {
-    let recallId: string;
-    let diaryId: string;
-    let notesId: string;
+    let recallId: number;
+    let diaryId: number;
+    let notesId: number;
     let personId: number;
 
     test.beforeAll(async () => {
@@ -304,7 +306,7 @@ test.describe.serial('Peep API Comprehensive Test', () => {
         const r = await safeCall(page, 'document.recall.create', {});
         record('recall.create', 'no-params', r.ok, r.result);
         expect(r.ok).toBe(true);
-        expect(typeof r.result).toBe('string'); // returns UUID
+        expect(typeof r.result).toBe('number'); // returns auto-increment id
         recallId = r.result;
       });
 
@@ -714,20 +716,20 @@ test.describe.serial('Peep API Comprehensive Test', () => {
     // ── bazi.chart ──
     test.describe('bazi.chart', () => {
       test('valid personId', async () => {
-        const r = await safeCall(page, 'bazi.chart', testPersonId);
+        const r = await safeCallMulti(page, 'bazi.chart', [testPersonId, { level: 'dayun', datetime: '2026-01-01H00' }]);
         record('bazi.chart', 'valid', r.ok, r.result);
         expect(r.ok).toBe(true);
         expect(r.result).toHaveProperty('图表');
       });
 
       test('non-existent personId', async () => {
-        const r = await safeCall(page, 'bazi.chart', 99999);
+        const r = await safeCallMulti(page, 'bazi.chart', [99999, { level: 'dayun', datetime: '2026-01-01H00' }]);
         record('bazi.chart', 'nonexistent', r.ok, r.error);
         expect(r.ok).toBe(false);
       });
 
       test('null personId', async () => {
-        const r = await safeCall(page, 'bazi.chart', null);
+        const r = await safeCallMulti(page, 'bazi.chart', [null, { level: 'dayun', datetime: '2026-01-01H00' }]);
         record('bazi.chart', 'null', r.ok, r.error || r.result);
       });
     });
@@ -735,14 +737,14 @@ test.describe.serial('Peep API Comprehensive Test', () => {
     // ── ziwei.chart ──
     test.describe('ziwei.chart', () => {
       test('valid personId', async () => {
-        const r = await safeCall(page, 'ziwei.chart', testPersonId);
+        const r = await safeCallMulti(page, 'ziwei.chart', [testPersonId, { level: 'dayun', datetime: '2026-01-01H00' }]);
         record('ziwei.chart', 'valid', r.ok, r.result);
         expect(r.ok).toBe(true);
         expect(r.result).toHaveProperty('星盘');
       });
 
       test('non-existent personId', async () => {
-        const r = await safeCall(page, 'ziwei.chart', 99999);
+        const r = await safeCallMulti(page, 'ziwei.chart', [99999, { level: 'dayun', datetime: '2026-01-01H00' }]);
         record('ziwei.chart', 'nonexistent', r.ok, r.error);
         expect(r.ok).toBe(false);
       });
@@ -756,7 +758,7 @@ test.describe.serial('Peep API Comprehensive Test', () => {
         });
         record('liuyao.create', 'required', r.ok, r.result);
         expect(r.ok).toBe(true);
-        expect(typeof r.result).toBe('string');
+        expect(typeof r.result).toBe('number');
       });
 
       test('all params', async () => {
@@ -878,7 +880,7 @@ test.describe.serial('Peep API Comprehensive Test', () => {
 
     test('folder.delete cleanup', async () => {
       const c = await safeCallMulti(page, 'folder.create', ['待删除文件夹']);
-      const r = await safeCall(page, 'folder.delete', c.result);
+      const r = await safeCall(page, 'folder.delete', c.result.id);
       record('folder.delete', 'valid', r.ok, r.result);
       expect(r.ok).toBe(true);
     });

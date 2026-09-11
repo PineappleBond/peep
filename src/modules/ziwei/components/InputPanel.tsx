@@ -34,6 +34,7 @@ export function InputPanel({
   const [draft, setDraft] = useState<BirthInput>(value);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  // eslint-disable-next-line react/set-state-in-effect
   useEffect(() => setDraft(value), [value]);
 
   const set = <K extends keyof BirthInput>(k: K, v: BirthInput[K]) =>

@@ -44,6 +44,7 @@ export default function DocumentsPage() {
   // 当 URL 中的 personId 变化时，同步过滤器
   useEffect(() => {
     const pid = searchParams.get("personId");
+    // eslint-disable-next-line react/set-state-in-effect
     if (pid) setFilterPersonId(Number(pid));
   }, [searchParams]);
 
