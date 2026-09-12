@@ -34,7 +34,6 @@ function computeHoroscopeShenSha(
 /* ──────────────── 数据构建 ─────────────── */
 
 /** 从原始 chartData + store 数据构建 DetailedChart（纯函数，可被 API 层复用） */
-// eslint-disable-next-line react/only-export-components
 export function buildDetailedChart(
   chartData: any,
   dayun: any,

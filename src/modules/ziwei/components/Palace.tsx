@@ -4,6 +4,9 @@ import { SCOPES, abbrPalace, fixIndex } from "../core/utils";
 import type { PalaceData, Zwds } from "../core/useZwds";
 import { StarCell } from "./StarCell";
 
+// Magic numbers
+const MAX_DISPLAY_AGES = 5; // 宫位卡片显示的小限岁数数量
+
 /** 单个宫位卡片 */
 export const PalaceCard = memo(function PalaceCard({
   palace,
@@ -145,7 +148,7 @@ export const PalaceCard = memo(function PalaceCard({
           </div>
           <div className="p-range">{palace.decadal.range.join("-")}</div>
           <div className="p-ages" title={`小限岁数：${palace.ages.join(" ")}`}>
-            {palace.ages.slice(0, 5).join(" ")}
+            {palace.ages.slice(0, MAX_DISPLAY_AGES).join(" ")}
           </div>
         </div>
         <div className="p-f-r">

@@ -62,7 +62,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// eslint-disable-next-line react/only-export-components
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {

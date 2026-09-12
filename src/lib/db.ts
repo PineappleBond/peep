@@ -67,7 +67,7 @@ export interface LiuyaoRecord {
   extras: Record<string, string>;
   question: string;
   background?: string;
-  chart: ChartJSON;
+  chart: ChartJSON | null;
   personId?: number | null;
   personName?: string;
   deletedAt?: number | null;

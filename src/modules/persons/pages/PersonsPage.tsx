@@ -48,6 +48,10 @@ import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/modules/documents/typ
 const EMPTY_PERSONS: Person[] = [];
 const EMPTY_DOCS: import("@/lib/db").DocumentRecord[] = [];
 
+// Magic numbers
+const MAX_RECENT_DOCS = 10; // 显示最近文档的最大数量
+const NOTE_AUTO_SAVE_DELAY = 1500; // 笔记自动保存延时（毫秒）
+
 interface PersonForm {
   name: string;
   gender: "male" | "female";
@@ -116,7 +120,7 @@ export default function PersonsPage() {
     return allDocs
       .filter((d) => d.personId === selectedId)
       .sort((a, b) => b.updatedAt - a.updatedAt)
-      .slice(0, 10);
+      .slice(0, MAX_RECENT_DOCS);
   }, [allDocs, selectedId]);
 
   const selectedPerson = selectedId
@@ -247,7 +251,7 @@ export default function PersonsPage() {
       } catch (e) {
         console.warn("[PersonsPage] Note auto-save failed:", e);
       }
-    }, 1500);
+    }, NOTE_AUTO_SAVE_DELAY);
     return () => {
       if (noteAutoSaveTimer.current) clearTimeout(noteAutoSaveTimer.current);
     };
@@ -283,17 +287,18 @@ export default function PersonsPage() {
 
   // 永久删除人物
   const handlePermanentlyDelete = async (person: Person) => {
-    if (!person.id) return;
+    const personId = person.id;
+    if (!personId) return;
     try {
       // 使用事务保证原子性：要么全部成功，要么全部回滚
       await db.transaction("rw", db.documents, db.persons, async () => {
         // 批量清除关联文档的 personId
         await db.documents
           .where("personId")
-          .equals(person.id!)
+          .equals(personId)
           .modify({ personId: null, updatedAt: Date.now() });
         // 删除人物
-        await db.persons.delete(person.id!);
+        await db.persons.delete(personId);
       });
       toast.success("已永久删除");
     } catch (err) {

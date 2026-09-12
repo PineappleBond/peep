@@ -241,7 +241,6 @@ interface CompareInstructions {
  * - 同事：事业助力、合作模式、竞争点
  * - 其他：通用维度
  */
-// eslint-disable-next-line react/only-export-components
 export function getCompareInstructions(
   rel: RelationshipType,
   module: Module
@@ -442,7 +441,6 @@ interface BuildCompareSectionOpts {
  * 构建"对方信息 + 关系类型 + 分析指引"区块，
  * 返回的字符串需由调用方拼接到 base markdown 之后。
  */
-// eslint-disable-next-line react/only-export-components
 export function buildCompareSection(opts: BuildCompareSectionOpts): string {
   const {
     comparePerson,

@@ -371,7 +371,6 @@ interface BuildEventInstructionsOpts {
 /**
  * 构建事件预测的分析指引文本，拼入提示词中
  */
-// eslint-disable-next-line react/only-export-components
 export function buildEventInstructions(opts: BuildEventInstructionsOpts): string {
   const { eventType, question, module } = opts;
   const inst = getEventInstructions(eventType, module);

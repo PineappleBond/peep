@@ -2,6 +2,9 @@
 import type { Zwds } from "../useZwds";
 import { type ExportOptions } from "./serialize";
 
+// Magic numbers
+const OBJECT_URL_REVOKE_DELAY = 800; // 下载后撤销 object URL 的延时（毫秒）
+
 export function download(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -11,7 +14,7 @@ export function download(filename: string, content: string, mime: string) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 800);
+  setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_REVOKE_DELAY);
 }
 
 /** 日期补零便于文件名排序：2000-8-16 → 2000-08-16 */

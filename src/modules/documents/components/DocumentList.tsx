@@ -21,6 +21,9 @@ import {
   type DocumentType,
 } from "../types";
 
+// Magic numbers
+const MAX_DISPLAY_TAGS = 2; // 文档列表中显示的最大标签数量
+
 interface DocumentListProps {
   documents: DocumentRecord[];
   onDelete: (id: number) => void;
@@ -115,14 +118,14 @@ function DocumentCard({
         >
           {DOCUMENT_TYPE_LABELS[doc.type]}
         </Badge>
-        {doc.tags.slice(0, 2).map((tag) => (
+        {doc.tags.slice(0, MAX_DISPLAY_TAGS).map((tag) => (
           <Badge key={tag} variant="secondary" className="text-xs">
             {tag}
           </Badge>
         ))}
-        {doc.tags.length > 2 && (
+        {doc.tags.length > MAX_DISPLAY_TAGS && (
           <span className="text-xs text-muted-foreground">
-            +{doc.tags.length - 2}
+            +{doc.tags.length - MAX_DISPLAY_TAGS}
           </span>
         )}
       </div>

@@ -284,7 +284,7 @@ export const liuyaoAPI = {
       extras: input.extras ?? {},
       question: input.question ?? "",
       background: input.background,
-      chart: null as unknown as ChartJSON,
+      chart: null,
       personId: input.personId,
       personName: input.personName,
       createdAt: now,

@@ -26,7 +26,8 @@ dist-ssr
 # shadcn CLI path alias artifacts
 @/
 
-# rtc-agent 组件编译产物（构建时自动复制）
+# rtc-agent 编译产物（构建时自动复制）
+public/rtc-agent-local/
 public/rtc-agent-component/
 
 # Playwright 测试产物

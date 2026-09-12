@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { copyToClipboard } from "@/lib/utils";
 import { toast } from "sonner";
 
+// Magic numbers
+const COPIED_RESET_DELAY = 2000; // 复制成功提示重置延时（毫秒）
+
+// Error messages
+const COPY_ERROR_MESSAGE = "复制失败，请手动选择文本复制";
+
 export interface PromptTab {
   key: string;
   label: string;
@@ -56,13 +62,13 @@ export function AiPromptPanel({
       if (ok) {
         setCopied(true);
         toast.success("提示词已复制");
-        setTimeout(() => setCopied(false), 2000);
+        setTimeout(() => setCopied(false), COPIED_RESET_DELAY);
       } else {
-        toast.error("复制失败，请手动选择文本复制");
+        toast.error(COPY_ERROR_MESSAGE);
       }
     } catch (e) {
       console.error("[AiPromptPanel] Copy failed:", e);
-      toast.error("复制失败，请手动选择文本复制");
+      toast.error(COPY_ERROR_MESSAGE);
     }
   };
 
