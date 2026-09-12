@@ -122,6 +122,24 @@ declare global {
   }
 }
 
+// React 19 JSX intrinsic elements — module augmentation
+declare module 'react' {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      'rtc-agent': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & {
+          'app-label'?: string;
+          'scenarios-url'?: string;
+          'redirect-uri'?: string;
+          'server-url'?: string;
+        },
+        HTMLElement
+      >;
+    }
+  }
+}
+
 export type {
   OpenAPISchema,
   ParameterDef,

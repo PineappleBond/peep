@@ -137,7 +137,7 @@ export function TimeFloors({ result, granularity, onGranularityChange }: Props) 
 
         {/* 展開卡片（完整顯示） */}
         <div
-          className="absolute left-0 right-0 rounded-lg border border-border shadow-lg overflow-hidden bg-card"
+          className="absolute left-0 right-0 rounded-lg border border-border shadow-lg overflow-auto bg-card flex"
           style={{
             top: `${abovePeeks.length * PEEK_HEIGHT}px`,
             height: `${expandedMinHeight}px`,

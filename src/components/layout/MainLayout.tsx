@@ -12,6 +12,16 @@ export default function MainLayout() {
           <Outlet />
         </main>
       </div>
+      {/* 右侧 AI 助手面板 */}
+      <aside className="w-96 border-l border-border bg-background flex flex-col">
+        <rtc-agent
+          app-label="Peep AI"
+          scenarios-url="/peep/rtc-agent/scenarios/"
+          redirect-uri="/peep/auth/callback.html"
+          server-url="https://rtc-agent.cherish.chat"
+          className="flex-1 overflow-hidden"
+        />
+      </aside>
     </div>
   );
 }

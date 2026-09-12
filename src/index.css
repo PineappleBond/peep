@@ -560,15 +560,82 @@
 }
 
 /* ════════════════════════════════════════════════════
-   react-zwds · 玄空霓虹主题 (暗色模式专用)
-   深空黑蓝底 × 鎏金主星 × 青蓝辉光 × 五色运限
+   rtc-agent 嵌入模式
+   将悬浮窗改为右侧固定面板
+   ════════════════════════════════════════════════════ */
+rtc-agent {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ════════════════════════════════════════════════════
+   react-zwds · 紫微斗数主题
+   支持亮色/暗色双主题：
+   - 亮色：暖白底 × 墨青文字 × 鎏金主星
+   - 暗色：玄墨星空 × 鎏金主星 × 青蓝辉光
    注：这些变量仅在紫微斗数盘面内使用，不影响 shadcn 主题
    ════════════════════════════════════════════════════ */
 
-/* 紫微模块专用 CSS 变量 */
+/* 紫微模块专用 CSS 变量 - 亮色主题（默认） */
 .zwds-theme {
+  /* 基础色 - 暖白底 */
+  --bg: #faf8f5;
+  --panel: rgba(255, 255, 255, 0.85);
+  --panel-solid: #ffffff;
+  --line: rgba(100, 116, 139, 0.2);
+  --line-strong: rgba(100, 116, 139, 0.45);
+  --text: #1e293b;
+  --dim: #64748b;
+  --faint: #94a3b8;
+  --gold: #b8860b;
+  --gold-deep: #996515;
+  --cyan: #0891b2;
+
+  /* 面板背景 */
+  --panel-bg: rgba(255, 255, 255, 0.7);
+  --panel-bg-solid: #f8fafc;
+  --input-bg: rgba(241, 245, 249, 0.9);
+  --overlay-bg: rgba(255, 255, 255, 0.9);
+
+  /* 运限五色 + 小限（暗化适配亮底） */
+  --c-decadal: #0d9488;
+  --c-yearly: #2563eb;
+  --c-monthly: #ea580c;
+  --c-daily: #7c3aed;
+  --c-hourly: #db2777;
+  --c-age: #a16207;
+
+  /* 四化（暗化适配亮底） */
+  --m-lu: #059669;
+  --m-quan: #0284c7;
+  --m-ke: #d97706;
+  --m-ji: #a855f7;
+
+  /* 金色文字渐变（亮色用深金） */
+  --gold-gradient: linear-gradient(120deg, #b8860b, #d4a017 45%, #b8860b 75%);
+  --gold-gradient-center: linear-gradient(120deg, #b8860b, #d4a017 50%, #b8860b);
+
+  /* 光晕效果（亮色用淡色） */
+  --glow-gold: rgba(184, 134, 11, 0.2);
+  --glow-cyan: rgba(8, 145, 178, 0.15);
+
+  --font-body: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+    "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+  --font-display: "KaiTi", "STKaiti", "DFKai-SB", "BiauKai", var(--font-body);
+}
+
+/* 紫微模块专用 CSS 变量 - 暗色主题 */
+.dark .zwds-theme {
   --bg: #04060d;
   --panel: rgba(13, 20, 40, 0.72);
+  --panel-solid: #0a1020;
   --line: rgba(96, 165, 250, 0.14);
   --line-strong: rgba(125, 211, 252, 0.42);
   --text: #d9e4ff;
@@ -577,6 +644,12 @@
   --gold: #f3c96b;
   --gold-deep: #c9992e;
   --cyan: #55d7ff;
+
+  /* 面板背景 */
+  --panel-bg: rgba(10, 16, 34, 0.6);
+  --panel-bg-solid: rgba(13, 20, 40, 0.85);
+  --input-bg: rgba(5, 9, 20, 0.8);
+  --overlay-bg: rgba(3, 6, 14, 0.72);
 
   /* 运限五色 + 小限 */
   --c-decadal: #2ee6c8;
@@ -592,9 +665,13 @@
   --m-ke: #fbbf24;
   --m-ji: #e35bd8;
 
-  --font-body: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
-    "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
-  --font-display: "KaiTi", "STKaiti", "DFKai-SB", "BiauKai", var(--font-body);
+  /* 金色文字渐变（暗色用亮金） */
+  --gold-gradient: linear-gradient(120deg, #f3c96b, #fff2cf 45%, #f3c96b 75%);
+  --gold-gradient-center: linear-gradient(120deg, #f3c96b, #fff3d1 50%, #f3c96b);
+
+  /* 光晕效果 */
+  --glow-gold: rgba(243, 201, 107, 0.4);
+  --glow-cyan: rgba(85, 215, 255, 0.35);
 }
 
 * {
@@ -714,7 +791,7 @@
   margin: 14px 0;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(10, 16, 34, 0.6);
+  background: var(--panel-bg);
   border: 1px solid var(--line);
   backdrop-filter: blur(8px);
   font-size: 0.8rem;
@@ -736,7 +813,7 @@
 .input-panel input:not([type]),
 .input-panel input[type="date"],
 .input-panel select {
-  background: rgba(5, 9, 20, 0.8);
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
@@ -750,7 +827,7 @@
 .input-panel input:focus,
 .input-panel select:focus {
   border-color: var(--line-strong);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.2);
+  box-shadow: 0 0 10px var(--glow-cyan);
 }
 
 .input-panel input[name="name"],
@@ -796,7 +873,7 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   overflow: hidden;
-  background: rgba(5, 9, 20, 0.6);
+  background: var(--input-bg);
 }
 
 .seg button {
@@ -811,9 +888,9 @@
 }
 
 .seg button.on {
-  background: linear-gradient(135deg, rgba(85, 215, 255, 0.22), rgba(85, 215, 255, 0.05));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cyan) 22%, transparent), color-mix(in srgb, var(--cyan) 5%, transparent));
   color: var(--cyan);
-  text-shadow: 0 0 8px rgba(85, 215, 255, 0.7);
+  text-shadow: 0 0 8px var(--glow-cyan);
 }
 
 .ck {
@@ -833,20 +910,20 @@
   padding: 8px 26px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #1f8ea8, #55d7ff);
-  color: #04222e;
+  background: linear-gradient(135deg, var(--cyan), color-mix(in srgb, var(--cyan) 70%, white));
+  color: var(--bg);
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.35em;
   text-indent: 0.35em;
   cursor: pointer;
-  box-shadow: 0 0 18px rgba(85, 215, 255, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 18px var(--glow-cyan), inset 0 0 8px rgba(255, 255, 255, 0.25);
   transition: 0.2s;
 }
 
 .btn-go:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 28px rgba(85, 215, 255, 0.65), inset 0 0 10px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 28px var(--glow-cyan), inset 0 0 10px rgba(255, 255, 255, 0.35);
 }
 
 /* ── 高级选项折叠区 ── */
@@ -1007,7 +1084,7 @@
   gap: 2px;
   padding: 6px 6px 4px;
   min-width: 0;
-  background: linear-gradient(165deg, rgba(16, 25, 50, 0.85), rgba(9, 14, 30, 0.94));
+  background: linear-gradient(165deg, color-mix(in srgb, var(--panel-bg-solid) 85%, var(--bg)), color-mix(in srgb, var(--panel-bg-solid) 94%, var(--bg)));
   border: 1px solid var(--line);
   border-radius: 8px;
   cursor: pointer;
@@ -1024,7 +1101,7 @@
   height: 20px;
   border-radius: 6px;
   border: 1px solid var(--line-strong);
-  background: rgba(9, 14, 30, 0.9);
+  background: color-mix(in srgb, var(--panel-bg-solid) 90%, var(--bg));
   color: var(--cyan);
   font-size: 11px;
   font-family: inherit;
@@ -1369,9 +1446,9 @@
   display: flex;
   flex-direction: column;
   padding: 16px 18px 12px;
-  border: 1px solid rgba(125, 211, 252, 0.22);
+  border: 1px solid var(--line-strong);
   border-radius: 10px;
-  background: radial-gradient(130% 105% at 50% 0%, rgba(20, 32, 66, 0.78), rgba(7, 11, 25, 0.94));
+  background: radial-gradient(130% 105% at 50% 0%, color-mix(in srgb, var(--panel-bg-solid) 78%, var(--bg)), color-mix(in srgb, var(--panel-bg-solid) 94%, var(--bg)));
   overflow: hidden;
 }
 
@@ -1382,10 +1459,10 @@
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
-    rgba(85, 215, 255, 0.5) 24deg,
+    color-mix(in srgb, var(--cyan) 50%, transparent) 24deg,
     transparent 60deg,
     transparent 170deg,
-    rgba(243, 201, 107, 0.4) 200deg,
+    color-mix(in srgb, var(--gold) 40%, transparent) 200deg,
     transparent 240deg,
     transparent 360deg
   );
@@ -1527,7 +1604,7 @@
   height: 30px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--panel-bg);
   color: var(--dim);
   font-size: 13px;
   font-family: inherit;
@@ -1540,17 +1617,32 @@
   color: var(--text);
 }
 
-.db-natal.on { background: #d9e4ff; color: #0a1020; border-color: transparent; box-shadow: 0 0 12px rgba(217, 228, 255, 0.5); }
-.db-decadal.on { background: var(--c-decadal); color: #04211b; border-color: transparent; box-shadow: 0 0 13px rgba(46, 230, 200, 0.6); }
-.db-yearly.on { background: var(--c-yearly); color: #071429; border-color: transparent; box-shadow: 0 0 13px rgba(91, 160, 255, 0.6); }
-.db-monthly.on { background: var(--c-monthly); color: #2a1503; border-color: transparent; box-shadow: 0 0 13px rgba(255, 161, 78, 0.6); }
-.db-daily.on { background: var(--c-daily); color: #1d0a33; border-color: transparent; box-shadow: 0 0 13px rgba(199, 139, 255, 0.6); }
-.db-hourly.on { background: var(--c-hourly); color: #2b0716; border-color: transparent; box-shadow: 0 0 13px rgba(255, 119, 183, 0.6); }
-.db-today { color: var(--gold); border-color: rgba(243, 201, 107, 0.4); }
-.db-today:hover { box-shadow: 0 0 12px rgba(243, 201, 107, 0.4); color: var(--gold); }
-.db-fly { color: var(--m-lu); border-color: rgba(52, 211, 153, 0.4); }
-.db-fly:hover { box-shadow: 0 0 12px rgba(52, 211, 153, 0.4); color: var(--m-lu); }
-.db-fly.on { background: var(--m-lu); color: #03140b; border-color: transparent; box-shadow: 0 0 13px rgba(52, 211, 153, 0.6); }
+/* 选中态 - 亮色主题 */
+.db-natal.on { background: #dbeafe; color: #1e3a5f; border-color: #93c5fd; box-shadow: 0 0 12px rgba(147, 197, 253, 0.3); }
+.db-decadal.on { background: rgba(13, 148, 136, 0.15); color: #0f5132; border-color: var(--c-decadal); box-shadow: 0 0 13px rgba(13, 148, 136, 0.2); }
+.db-yearly.on { background: rgba(37, 99, 235, 0.1); color: #1e3a5f; border-color: var(--c-yearly); box-shadow: 0 0 13px rgba(37, 99, 235, 0.2); }
+.db-monthly.on { background: rgba(234, 88, 12, 0.1); color: #7c2d12; border-color: var(--c-monthly); box-shadow: 0 0 13px rgba(234, 88, 12, 0.2); }
+.db-daily.on { background: rgba(124, 58, 237, 0.1); color: #3b0764; border-color: var(--c-daily); box-shadow: 0 0 13px rgba(124, 58, 237, 0.2); }
+.db-hourly.on { background: rgba(219, 39, 119, 0.1); color: #500724; border-color: var(--c-hourly); box-shadow: 0 0 13px rgba(219, 39, 119, 0.2); }
+.db-today { color: var(--gold); border-color: rgba(184, 134, 11, 0.4); }
+.db-today:hover { box-shadow: 0 0 12px var(--glow-gold); color: var(--gold); }
+.db-fly { color: var(--m-lu); border-color: rgba(5, 150, 105, 0.4); }
+.db-fly:hover { box-shadow: 0 0 12px rgba(5, 150, 105, 0.3); color: var(--m-lu); }
+.db-fly.on { background: rgba(5, 150, 105, 0.15); color: #064e3b; border-color: var(--m-lu); box-shadow: 0 0 13px rgba(5, 150, 105, 0.2); }
+
+/* 选中态 - 暗色主题 */
+.dark .db { background: rgba(255, 255, 255, 0.03); }
+.dark .db-natal.on { background: #d9e4ff; color: #0a1020; border-color: transparent; box-shadow: 0 0 12px rgba(217, 228, 255, 0.5); }
+.dark .db-decadal.on { background: var(--c-decadal); color: #04211b; border-color: transparent; box-shadow: 0 0 13px rgba(46, 230, 200, 0.6); }
+.dark .db-yearly.on { background: var(--c-yearly); color: #071429; border-color: transparent; box-shadow: 0 0 13px rgba(91, 160, 255, 0.6); }
+.dark .db-monthly.on { background: var(--c-monthly); color: #2a1503; border-color: transparent; box-shadow: 0 0 13px rgba(255, 161, 78, 0.6); }
+.dark .db-daily.on { background: var(--c-daily); color: #1d0a33; border-color: transparent; box-shadow: 0 0 13px rgba(199, 139, 255, 0.6); }
+.dark .db-hourly.on { background: var(--c-hourly); color: #2b0716; border-color: transparent; box-shadow: 0 0 13px rgba(255, 119, 183, 0.6); }
+.dark .db-today { border-color: rgba(243, 201, 107, 0.4); }
+.dark .db-today:hover { box-shadow: 0 0 12px rgba(243, 201, 107, 0.4); }
+.dark .db-fly { border-color: rgba(52, 211, 153, 0.4); }
+.dark .db-fly:hover { box-shadow: 0 0 12px rgba(52, 211, 153, 0.4); }
+.dark .db-fly.on { background: var(--m-lu); color: #03140b; border-color: transparent; box-shadow: 0 0 13px rgba(52, 211, 153, 0.6); }
 
 /* ── 底部运限拨盘 ── */
 .hbar {
@@ -1560,13 +1652,10 @@
   margin-top: 14px;
   padding: 9px 10px;
   border-radius: 14px;
-  background: rgba(7, 11, 24, 0.86);
+  background: var(--panel-bg-solid);
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  box-shadow:
-    0 8px 34px rgba(0, 0, 0, 0.55),
-    0 0 26px rgba(85, 215, 255, 0.09),
-    inset 0 0 18px rgba(10, 18, 40, 0.6);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 34px rgba(0, 0, 0, 0.08);
 }
 
 .hrow {
@@ -1581,20 +1670,33 @@
   width: 48px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--panel-bg);
   color: var(--faint);
   font-size: 12px;
   font-family: inherit;
   letter-spacing: 3px;
   cursor: pointer;
   transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 30px;
 }
 
-.hrow-decadal .hlabel.on { color: var(--c-decadal); border-color: rgba(46, 230, 200, 0.6); box-shadow: 0 0 11px rgba(46, 230, 200, 0.3); text-shadow: 0 0 7px rgba(46, 230, 200, 0.8); }
-.hrow-yearly .hlabel.on { color: var(--c-yearly); border-color: rgba(91, 160, 255, 0.6); box-shadow: 0 0 11px rgba(91, 160, 255, 0.3); text-shadow: 0 0 7px rgba(91, 160, 255, 0.8); }
-.hrow-monthly .hlabel.on { color: var(--c-monthly); border-color: rgba(255, 161, 78, 0.6); box-shadow: 0 0 11px rgba(255, 161, 78, 0.3); text-shadow: 0 0 7px rgba(255, 161, 78, 0.8); }
-.hrow-daily .hlabel.on { color: var(--c-daily); border-color: rgba(199, 139, 255, 0.6); box-shadow: 0 0 11px rgba(199, 139, 255, 0.3); text-shadow: 0 0 7px rgba(199, 139, 255, 0.8); }
-.hrow-hourly .hlabel.on { color: var(--c-hourly); border-color: rgba(255, 119, 183, 0.6); box-shadow: 0 0 11px rgba(255, 119, 183, 0.3); text-shadow: 0 0 7px rgba(255, 119, 183, 0.8); }
+/* hlabel 选中态 - 亮色主题 */
+.hrow-decadal .hlabel.on { color: var(--c-decadal); border-color: var(--c-decadal); box-shadow: 0 0 11px rgba(13, 148, 136, 0.15); }
+.hrow-yearly .hlabel.on { color: var(--c-yearly); border-color: var(--c-yearly); box-shadow: 0 0 11px rgba(37, 99, 235, 0.15); }
+.hrow-monthly .hlabel.on { color: var(--c-monthly); border-color: var(--c-monthly); box-shadow: 0 0 11px rgba(234, 88, 12, 0.15); }
+.hrow-daily .hlabel.on { color: var(--c-daily); border-color: var(--c-daily); box-shadow: 0 0 11px rgba(124, 58, 237, 0.15); }
+.hrow-hourly .hlabel.on { color: var(--c-hourly); border-color: var(--c-hourly); box-shadow: 0 0 11px rgba(219, 39, 119, 0.15); }
+
+/* hlabel 选中态 - 暗色主题 */
+.dark .hrow-decadal .hlabel.on { color: var(--c-decadal); border-color: rgba(46, 230, 200, 0.6); box-shadow: 0 0 11px rgba(46, 230, 200, 0.3); text-shadow: 0 0 7px rgba(46, 230, 200, 0.8); }
+.dark .hrow-yearly .hlabel.on { color: var(--c-yearly); border-color: rgba(91, 160, 255, 0.6); box-shadow: 0 0 11px rgba(91, 160, 255, 0.3); text-shadow: 0 0 7px rgba(91, 160, 255, 0.8); }
+.dark .hrow-monthly .hlabel.on { color: var(--c-monthly); border-color: rgba(255, 161, 78, 0.6); box-shadow: 0 0 11px rgba(255, 161, 78, 0.3); text-shadow: 0 0 7px rgba(255, 161, 78, 0.8); }
+.dark .hrow-daily .hlabel.on { color: var(--c-daily); border-color: rgba(199, 139, 255, 0.6); box-shadow: 0 0 11px rgba(199, 139, 255, 0.3); text-shadow: 0 0 7px rgba(199, 139, 255, 0.8); }
+.dark .hrow-hourly .hlabel.on { color: var(--c-hourly); border-color: rgba(255, 119, 183, 0.6); box-shadow: 0 0 11px rgba(255, 119, 183, 0.3); text-shadow: 0 0 7px rgba(255, 119, 183, 0.8); }
 
 .hcells {
   display: flex;
@@ -1606,9 +1708,10 @@
 }
 
 .hcells-grid {
-  display: grid;
-  grid-template-columns: repeat(15, minmax(0, 1fr));
-  overflow: visible;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 4px;
 }
 
 .hcell {
@@ -1616,8 +1719,8 @@
   min-width: 58px;
   padding: 3px 6px;
   border-radius: 7px;
-  border: 1px solid rgba(96, 165, 250, 0.14);
-  background: rgba(13, 20, 40, 0.55);
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
   color: var(--text);
   font-family: inherit;
   cursor: pointer;
@@ -1630,14 +1733,15 @@
 }
 
 .hcells-grid .hcell {
-  min-width: 0;
-  padding: 2px 2px;
+  min-width: 52px;
+  padding: 2px 4px;
 }
 
 .hcell b {
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+  color: var(--text);
 }
 
 .hcell i {
@@ -1649,29 +1753,42 @@
 
 .hcell:hover {
   border-color: var(--line-strong);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.18);
+  box-shadow: 0 0 10px var(--glow-cyan);
   transform: translateY(-1px);
 }
 
-.hcell.on-decadal { border-color: var(--c-decadal); background: rgba(46, 230, 200, 0.14); box-shadow: 0 0 14px rgba(46, 230, 200, 0.38); }
-.hcell.on-decadal i, .hcell.on-decadal b { color: #d9fff7; }
-.hcell.on-yearly { border-color: var(--c-yearly); background: rgba(91, 160, 255, 0.15); box-shadow: 0 0 14px rgba(91, 160, 255, 0.4); }
-.hcell.on-yearly i, .hcell.on-yearly b { color: #e3edff; }
-.hcell.on-monthly { border-color: var(--c-monthly); background: rgba(255, 161, 78, 0.15); box-shadow: 0 0 14px rgba(255, 161, 78, 0.4); }
-.hcell.on-monthly i, .hcell.on-monthly b { color: #fff0e0; }
-.hcell.on-daily { border-color: var(--c-daily); background: rgba(199, 139, 255, 0.16); box-shadow: 0 0 14px rgba(199, 139, 255, 0.42); }
-.hcell.on-daily i, .hcell.on-daily b { color: #f4eaff; }
-.hcell.on-hourly { border-color: var(--c-hourly); background: rgba(255, 119, 183, 0.15); box-shadow: 0 0 14px rgba(255, 119, 183, 0.4); }
-.hcell.on-hourly i, .hcell.on-hourly b { color: #ffe9f3; }
+/* 选中态 - 亮色主题（默认）：深色文字 + 淡色背景 */
+.hcell.on-decadal { border-color: var(--c-decadal); background: rgba(13, 148, 136, 0.12); box-shadow: 0 0 14px rgba(13, 148, 136, 0.2); }
+.hcell.on-decadal i, .hcell.on-decadal b { color: #0f5132; }
+.hcell.on-yearly { border-color: var(--c-yearly); background: rgba(37, 99, 235, 0.1); box-shadow: 0 0 14px rgba(37, 99, 235, 0.2); }
+.hcell.on-yearly i, .hcell.on-yearly b { color: #1e3a5f; }
+.hcell.on-monthly { border-color: var(--c-monthly); background: rgba(234, 88, 12, 0.1); box-shadow: 0 0 14px rgba(234, 88, 12, 0.2); }
+.hcell.on-monthly i, .hcell.on-monthly b { color: #7c2d12; }
+.hcell.on-daily { border-color: var(--c-daily); background: rgba(124, 58, 237, 0.1); box-shadow: 0 0 14px rgba(124, 58, 237, 0.2); }
+.hcell.on-daily i, .hcell.on-daily b { color: #3b0764; }
+.hcell.on-hourly { border-color: var(--c-hourly); background: rgba(219, 39, 119, 0.1); box-shadow: 0 0 14px rgba(219, 39, 119, 0.2); }
+.hcell.on-hourly i, .hcell.on-hourly b { color: #500724; }
+
+/* 选中态 - 暗色主题：浅色文字 + 发光背景 */
+.dark .hcell.on-decadal { background: rgba(46, 230, 200, 0.14); box-shadow: 0 0 14px rgba(46, 230, 200, 0.38); }
+.dark .hcell.on-decadal i, .dark .hcell.on-decadal b { color: #d9fff7; }
+.dark .hcell.on-yearly { background: rgba(91, 160, 255, 0.15); box-shadow: 0 0 14px rgba(91, 160, 255, 0.4); }
+.dark .hcell.on-yearly i, .dark .hcell.on-yearly b { color: #e3edff; }
+.dark .hcell.on-monthly { background: rgba(255, 161, 78, 0.15); box-shadow: 0 0 14px rgba(255, 161, 78, 0.4); }
+.dark .hcell.on-monthly i, .dark .hcell.on-monthly b { color: #fff0e0; }
+.dark .hcell.on-daily { background: rgba(199, 139, 255, 0.16); box-shadow: 0 0 14px rgba(199, 139, 255, 0.42); }
+.dark .hcell.on-daily i, .dark .hcell.on-daily b { color: #f4eaff; }
+.dark .hcell.on-hourly { background: rgba(255, 119, 183, 0.15); box-shadow: 0 0 14px rgba(255, 119, 183, 0.4); }
+.dark .hcell.on-hourly i, .dark .hcell.on-hourly b { color: #ffe9f3; }
 
 /* ── 人生K线 ── */
 .kline {
   margin-top: 14px;
   padding: 10px 12px 8px;
   border-radius: 14px;
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  background: rgba(7, 11, 24, 0.72);
-  box-shadow: 0 0 24px rgba(85, 215, 255, 0.07), inset 0 0 18px rgba(10, 18, 40, 0.55);
+  border: 1px solid var(--line);
+  background: var(--panel-bg-solid);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .kline-head {
@@ -1687,7 +1804,7 @@
   font-size: 15px;
   letter-spacing: 3px;
   color: var(--gold);
-  text-shadow: 0 0 10px rgba(243, 201, 107, 0.4);
+  text-shadow: 0 0 10px var(--glow-gold);
 }
 
 .kline-legend {
@@ -1713,7 +1830,7 @@
   padding: 3px 9px;
   border-radius: 7px;
   border: 1px solid rgba(96, 165, 250, 0.16);
-  background: rgba(13, 20, 40, 0.5);
+  background: color-mix(in srgb, var(--panel-bg) 50%, var(--bg));
   color: var(--dim);
   font-family: inherit;
   font-size: 11px;
@@ -1773,7 +1890,7 @@
   padding: 8px 10px;
   border-radius: 9px;
   border: 1px solid rgba(85, 215, 255, 0.35);
-  background: rgba(7, 11, 24, 0.96);
+  background: color-mix(in srgb, var(--panel-bg-solid) 96%, var(--bg));
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55), 0 0 14px rgba(85, 215, 255, 0.15);
   pointer-events: none;
 }
@@ -1954,7 +2071,7 @@
   .hcell { min-width: 48px; padding: 2px 4px; border-radius: 5px; }
   .hcell b { font-size: 10.5px; }
   .hcell i { font-size: 8.5px; }
-  .hcells-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px; }
+  .hcells-grid { gap: 2px; }
   /* 流日：未选中只显日名，选中才显干支，压缩高度（同文墨） */
   .hcells-grid .hcell:not(.on) i { display: none; }
 
@@ -1972,7 +2089,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(3, 6, 14, 0.72);
+  background: color-mix(in srgb, var(--overlay-bg) 72%, var(--bg));
   backdrop-filter: blur(4px);
 }
 

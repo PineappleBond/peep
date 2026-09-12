@@ -69,7 +69,7 @@ export function FloorCard({ result, floorIndex }: Props) {
   if (!firstPair) return null;
 
   return (
-    <div className="flex flex-col h-full bg-card text-foreground select-none">
+    <div className="flex flex-col m-auto min-w-[720px] bg-card text-foreground select-none">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border/60 bg-muted/30 shrink-0">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
