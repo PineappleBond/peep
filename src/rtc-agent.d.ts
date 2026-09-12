@@ -78,6 +78,44 @@ declare global {
     onError?: (error: Error, context: string) => void;
   }
 
+  /** 窗口配置 — 控制窗口行为和 UI 可见性 */
+  interface WindowConfig {
+    /** 默认窗口模式 */
+    defaultMode?: 'normal' | 'maximized' | 'minimized';
+    /** 嵌入式模式：禁用所有交互（拖拽、缩放、按钮），等同于 defaultMode: maximized + draggable: false + resizable: false + showMinimize: false + showMaximize: false */
+    embedded?: boolean;
+    /** 是否可拖拽 */
+    draggable?: boolean;
+    /** 是否可缩放 */
+    resizable?: boolean;
+    /** 是否显示最小化按钮 */
+    showMinimize?: boolean;
+    /** 是否显示最大化按钮 */
+    showMaximize?: boolean;
+    /** 是否显示关闭按钮 */
+    showClose?: boolean;
+    /** 初始尺寸 */
+    initialSize?: { width: number; height: number };
+    /** 初始位置 */
+    initialPosition?: { x: number; y: number };
+    /** 最小宽度 */
+    minWidth?: number;
+    /** 最小高度 */
+    minHeight?: number;
+    /** 最大宽度 */
+    maxWidth?: number;
+    /** 最大高度 */
+    maxHeight?: number;
+  }
+
+  /** Activity Bar 配置 — 控制侧边栏按钮显隐 */
+  interface ActivityBarConfig {
+    /** 要隐藏的活动按钮（chat 始终显示，不可隐藏） */
+    disabledActivities?: ('files' | 'settings')[];
+    /** 默认激活的活动 */
+    defaultActivity?: 'chat' | 'files' | 'settings';
+  }
+
   // ===== Element Interface =====
 
   /** <rtc-agent> 自定义元素 */
@@ -88,6 +126,10 @@ declare global {
     theme: string;
     /** UI 头部显示的应用标签 */
     appLabel: string;
+    /** 窗口配置 — 控制窗口行为和 UI 可见性 */
+    windowConfig: WindowConfig | null;
+    /** Activity Bar 配置 — 控制侧边栏按钮显隐 */
+    activityBarConfig: ActivityBarConfig | null;
   }
 
   // ===== Ready Signal =====
