@@ -28,6 +28,7 @@ dist-ssr
 
 # rtc-agent 组件编译产物（构建时自动复制）
 public/rtc-agent-component/
+public/rtc-agent-local/
 
 # Playwright 测试产物
 playwright-report/

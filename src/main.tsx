@@ -44,8 +44,18 @@ async function loadRtcAgentScript(): Promise<void> {
 // 安装 peep API 到 window.peep
 installPeepAPI();
 
+// ── rtc-agent 测试模式跳过 ─────────────────────────────
+// Playwright e2e 测试时通过 VITE_RTC_AGENT_DISABLED=true 禁用，避免浮层拦截指针事件
+const rtcAgentDisabled = import.meta.env.VITE_RTC_AGENT_DISABLED === 'true';
+
 // 初始化 rtc-agent 配置
 async function initRtcAgent() {
+  if (rtcAgentDisabled) {
+    // 测试模式：移除 <rtc-agent> 元素，彻底避免指针拦截
+    document.querySelector('rtc-agent')?.remove();
+    return;
+  }
+
   // 先加载 rtc-agent 组件脚本
   await loadRtcAgentScript();
 

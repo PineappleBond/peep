@@ -3535,8 +3535,3 @@
   background: hsl(var(--muted) / 0.3);
   border: 1px dashed hsl(var(--border));
 }
-
-/* Hide rtc-agent floating overlay to prevent pointer-event interception */
-rtc-agent {
-  display: none !important;
-}
