@@ -51,7 +51,7 @@ test.describe.serial('Peep API Comprehensive Test', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.goto('/');
+    await page.goto('./');
     await page.waitForFunction(() => !!(window as any).peep);
   });
 

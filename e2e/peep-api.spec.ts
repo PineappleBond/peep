@@ -13,7 +13,7 @@ async function evalPeep<T>(page: Page, fn: string): Promise<T> {
 
 test.describe('window.peep API 基础', () => {
   test('window.peep 应存在且包含所有分组', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
     const keys = await evalPeep<string[]>(page, 'Object.keys(window.peep)');
     expect(keys).toEqual(
       expect.arrayContaining(['person', 'document', 'folder', 'tag', 'bazi', 'ziwei', 'liuyao', 'iztro', 'lunar', 'calendar', 'analysis', 'utils'])
@@ -23,7 +23,7 @@ test.describe('window.peep API 基础', () => {
 
 test.describe('peep.person', () => {
   test('create → get → list → update → delete', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     // create
     const person = await evalPeep<any>(page, `
@@ -70,7 +70,7 @@ test.describe('peep.person', () => {
 
 test.describe('peep.document', () => {
   test('notes: create → get → list → edit → replace → delete', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     // create (使用 document.notes.create, 返回 number id)
     const docId = await evalPeep<number>(page, `
@@ -116,7 +116,7 @@ test.describe('peep.document', () => {
 
 test.describe('peep.folder', () => {
   test('create → list → tree → delete', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     // create root folder (返回 { id: number, title, parentId, ... })
     const root = await evalPeep<any>(page, `window.peep.folder.create("根文件夹")`);
@@ -148,7 +148,7 @@ test.describe('peep.folder', () => {
 
 test.describe('peep.tag', () => {
   test('add → list → remove', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     // create a document first (返回 number id)
     const docId = await evalPeep<number>(page, `
@@ -180,7 +180,7 @@ test.describe('peep.tag', () => {
 
 test.describe('peep.bazi', () => {
   test('chart() 应返回完整八字数据', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     // 先创建测试人物
     const person = await evalPeep<any>(page, `
@@ -219,7 +219,7 @@ test.describe('peep.bazi', () => {
 
 test.describe('peep.ziwei', () => {
   test('chart() 应返回完整紫微数据', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     const person = await evalPeep<any>(page, `
       window.peep.person.create({
@@ -247,7 +247,7 @@ test.describe('peep.ziwei', () => {
 
 test.describe('peep.liuyao', () => {
   test('tossHexagram → create → get → list → delete', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     // 随机起卦
     const lines = await evalPeep<number[]>(page, 'window.peep.liuyao.tossHexagram()');
@@ -282,7 +282,7 @@ test.describe('peep.liuyao', () => {
   });
 
   test('buildChart 应返回完整卦象', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     const chart = await evalPeep<any>(page, `
       window.peep.liuyao.buildChart({
@@ -299,7 +299,7 @@ test.describe('peep.liuyao', () => {
   });
 
   test('scenarios 应返回场景列表', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     const scenarios = await evalPeep<any[]>(page, 'window.peep.liuyao.scenarios()');
     expect(scenarios.length).toBeGreaterThan(0);
@@ -310,7 +310,7 @@ test.describe('peep.liuyao', () => {
 
 test.describe('工具代理', () => {
   test('peep.iztro 应暴露核心 namespace', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     const keys = await evalPeep<string[]>(page, 'Object.keys(window.peep.iztro)');
     expect(keys).toContain('astro');
@@ -323,7 +323,7 @@ test.describe('工具代理', () => {
   });
 
   test('peep.lunar 应提供农历工具', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     // solar2lunar
     const lunar = await evalPeep<any>(page, `window.peep.lunar.solar2lunar(new Date("2024-02-10"))`);

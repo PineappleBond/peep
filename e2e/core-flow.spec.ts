@@ -7,7 +7,7 @@ test.describe('核心流程优化', () => {
   });
 
   test('应记住上次选中的工作台选项卡', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
     // 切换到紫微 tab
     await page.locator('button', { hasText: '紫微斗数' }).click();
     await expect(page.locator('button', { hasText: '紫微斗数' }).first()).toHaveAttribute('data-state', 'active');
@@ -20,7 +20,7 @@ test.describe('核心流程优化', () => {
 
   test('选中人物后八字排盘应自动计算', async ({ page }) => {
     // 先创建一个人物
-    await page.goto('/persons');
+    await page.goto('persons');
     await page.getByRole('button', { name: '新建人物' }).first().click();
     await page.getByLabel('姓名').fill('测试笔记');
     await page.getByLabel('出生日期').fill('1990-05-15');
@@ -35,7 +35,7 @@ test.describe('核心流程优化', () => {
 
   test('人物详情应显示排盘快捷按钮', async ({ page }) => {
     // 创建人物
-    await page.goto('/persons');
+    await page.goto('persons');
     await page.getByRole('button', { name: '新建人物' }).first().click();
     await page.getByLabel('姓名').fill('跳转测试');
     await page.getByLabel('出生日期').fill('1990-06-15');
@@ -50,7 +50,7 @@ test.describe('核心流程优化', () => {
 
   test('文档编辑页应能保存文档', async ({ page }) => {
     // 先创建人物
-    await page.goto('/persons');
+    await page.goto('persons');
     await page.getByRole('button', { name: '新建人物' }).first().click();
     await page.getByLabel('姓名').fill('文档关联测试');
     await page.getByLabel('出生日期').fill('1990-07-15');
@@ -58,7 +58,7 @@ test.describe('核心流程优化', () => {
     await expect(page.locator('text=已创建')).toBeVisible({ timeout: 5000 });
 
     // 跳转到笔记页
-    await page.goto('/documents/new');
+    await page.goto('documents/new');
     await page.waitForLoadState('domcontentloaded');
     // 应显示标题输入框
     await expect(page.getByPlaceholder('输入标题...')).toBeVisible({ timeout: 5000 });
@@ -66,7 +66,7 @@ test.describe('核心流程优化', () => {
 
   test('笔记页应支持从 URL personId 参数过滤', async ({ page }) => {
     // 先创建人物
-    await page.goto('/persons');
+    await page.goto('persons');
     await page.getByRole('button', { name: '新建人物' }).first().click();
     await page.getByLabel('姓名').fill('过滤测试');
     await page.getByLabel('出生日期').fill('1990-08-15');
@@ -74,12 +74,12 @@ test.describe('核心流程优化', () => {
     await expect(page.locator('text=已创建')).toBeVisible({ timeout: 5000 });
 
     // 带 personId 访问笔记页
-    await page.goto('/documents');
+    await page.goto('documents');
     await expect(page.locator('h1', { hasText: '笔记' }).first()).toBeVisible();
   });
 
   test('选中的排盘选项卡刷新后应保持', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
     // 默认是八字 tab
     await expect(page.locator('button', { hasText: '八字排盘' }).first()).toHaveAttribute('data-state', 'active');
 
@@ -94,26 +94,26 @@ test.describe('核心流程优化', () => {
   });
 
   test('侧边栏导航应能切换页面', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
 
     // 侧边栏"人物库"链接
-    await page.locator('a[href="/persons"]').click();
+    await page.locator('a', { hasText: '人物库' }).click();
     await expect(page).toHaveURL(/\/persons/);
     await expect(page.locator('h1', { hasText: '人物库' })).toBeVisible();
 
     // 侧边栏"笔记"链接
-    await page.locator('a[href="/documents"]').click();
+    await page.locator('a', { hasText: '笔记' }).click();
     await expect(page).toHaveURL(/\/documents/);
     await expect(page.locator('h1', { hasText: '笔记' }).first()).toBeVisible();
 
     // 侧边栏"工作台"链接
-    await page.locator('a[href="/"]').first().click();
-    await expect(page).toHaveURL(/\/$/);
+    await page.locator('a', { hasText: '工作台' }).first().click();
+    await expect(page).toHaveURL(/\/peep\/?$/);
     await expect(page.locator('button', { hasText: '八字排盘' }).first()).toBeVisible();
   });
 
   test('主题切换按钮应存在且可点击', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
     // 侧边栏底部应有主题切换按钮
     const themeButton = page.locator('aside button').last();
     await expect(themeButton).toBeVisible();
@@ -122,16 +122,16 @@ test.describe('核心流程优化', () => {
   });
 
   test('工作台 URL 参数 tab 应能直接定位选项卡', async ({ page }) => {
-    await page.goto('/?tab=ziwei');
+    await page.goto('?tab=ziwei');
     await expect(page.locator('button', { hasText: '紫微斗数' }).first()).toHaveAttribute('data-state', 'active');
 
-    await page.goto('/?tab=liuyao');
+    await page.goto('?tab=liuyao');
     await expect(page.locator('button', { hasText: '六爻起卦' }).first()).toHaveAttribute('data-state', 'active');
   });
 
   test('人物选择器应显示当前选中人物', async ({ page }) => {
     // 先创建人物
-    await page.goto('/persons');
+    await page.goto('persons');
     await page.getByRole('button', { name: '新建人物' }).first().click();
     await page.getByLabel('姓名').fill('选择器测试');
     await page.getByLabel('出生日期').fill('1990-01-01');
@@ -145,14 +145,14 @@ test.describe('核心流程优化', () => {
 
     if (personId) {
       // 带 personId 访问工作台
-      await page.goto(`/?personId=${personId}`);
+      await page.goto(`./?personId=${personId}`);
     } else {
       // 通过 API 获取人物 ID
       const id = await page.evaluate(async () => {
         const list = await (window as any).peep.person.list({ search: '选择器测试' });
         return list[0]?.id;
       });
-      await page.goto(`/?personId=${id}`);
+      await page.goto(`./?personId=${id}`);
     }
     // Header 应显示选中人物的名字
     await expect(page.locator('text=选择器测试').first()).toBeVisible({ timeout: 5000 });

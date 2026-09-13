@@ -2,19 +2,19 @@ import { test, expect } from '@playwright/test';
 
 test.describe('人物库', () => {
   test('应显示人物库页面', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
     // 左侧面板的标题
     await expect(page.locator('h1', { hasText: '人物库' })).toBeVisible();
   });
 
   test('应显示新建人物按钮（空状态）', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
     // 空状态下会显示"新建人物"按钮
     await expect(page.getByRole('button', { name: '新建人物' }).first()).toBeVisible();
   });
 
   test('应能点击新建进入编辑模式', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
     // 点击空状态或工具栏的新建按钮
     await page.getByRole('button', { name: '新建人物' }).first().click();
     // 右侧应显示编辑表单标题
@@ -26,12 +26,12 @@ test.describe('人物库', () => {
   });
 
   test('应显示搜索框', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
     await expect(page.getByPlaceholder('搜索...')).toBeVisible();
   });
 
   test('应能创建并选中人物', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
 
     // 点击新建
     await page.getByRole('button', { name: '新建人物' }).first().click();
@@ -51,7 +51,7 @@ test.describe('人物库', () => {
   });
 
   test('应显示设为当前按钮', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
 
     // 先创建一个
     await page.getByRole('button', { name: '新建人物' }).first().click();
@@ -65,7 +65,7 @@ test.describe('人物库', () => {
   });
 
   test('应显示排盘快捷按钮', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
 
     // 先创建一个
     await page.getByRole('button', { name: '新建人物' }).first().click();
@@ -81,7 +81,7 @@ test.describe('人物库', () => {
   });
 
   test('应支持农历/公历切换', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
     await page.getByRole('button', { name: '新建人物' }).first().click();
 
     // 应显示历法选项
@@ -90,7 +90,7 @@ test.describe('人物库', () => {
   });
 
   test('应能编辑已有人物', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
 
     // 先创建一个人物
     await page.getByRole('button', { name: '新建人物' }).first().click();
@@ -118,7 +118,7 @@ test.describe('人物库', () => {
   });
 
   test('应能删除人物（带确认对话框）', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
 
     // 先创建一个人物
     await page.getByRole('button', { name: '新建人物' }).first().click();
@@ -144,7 +144,7 @@ test.describe('人物库', () => {
   });
 
   test('应能取消删除操作', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
 
     // 创建人物
     await page.getByRole('button', { name: '新建人物' }).first().click();
@@ -165,7 +165,7 @@ test.describe('人物库', () => {
   });
 
   test('设为当前应跳转到工作台', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
 
     // 创建人物
     await page.getByRole('button', { name: '新建人物' }).first().click();
@@ -178,11 +178,11 @@ test.describe('人物库', () => {
     await page.getByRole('button', { name: '设为当前' }).click();
 
     // 应跳转到工作台并带 personId 参数
-    await expect(page).toHaveURL(/\/\?personId=\d+/);
+    await expect(page).toHaveURL(/\?personId=\d+/);
   });
 
   test('空姓名保存应显示错误提示', async ({ page }) => {
-    await page.goto('/persons');
+    await page.goto('persons');
     await page.getByRole('button', { name: '新建人物' }).first().click();
 
     // 不填姓名，直接保存

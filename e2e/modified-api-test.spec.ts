@@ -47,7 +47,7 @@ test.describe.serial('Modified & New API Tests', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.goto('/');
+    await page.goto('./');
     await page.waitForFunction(() => !!(window as any).peep);
     console.log('Page loaded, window.peep available');
   });
