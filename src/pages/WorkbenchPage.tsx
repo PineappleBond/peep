@@ -1,5 +1,4 @@
-import { lazy, Suspense, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Compass, CircleDot, Dices } from "lucide-react";
 import { GlobalHoroscopeSelector } from "@/components/shared/GlobalHoroscopeSelector";
