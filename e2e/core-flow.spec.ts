@@ -97,17 +97,17 @@ test.describe('核心流程优化', () => {
     await page.goto('./');
 
     // 侧边栏"人物库"链接
-    await page.locator('a', { hasText: '人物库' }).click();
+    await page.locator('a:has(button[title="人物库"])').click();
     await expect(page).toHaveURL(/\/persons/);
     await expect(page.locator('h1', { hasText: '人物库' })).toBeVisible();
 
     // 侧边栏"笔记"链接
-    await page.locator('a', { hasText: '笔记' }).click();
+    await page.locator('a:has(button[title="笔记"])').click();
     await expect(page).toHaveURL(/\/documents/);
     await expect(page.locator('h1', { hasText: '笔记' }).first()).toBeVisible();
 
     // 侧边栏"工作台"链接
-    await page.locator('a', { hasText: '工作台' }).first().click();
+    await page.locator('a:has(button[title="工作台"])').click();
     await expect(page).toHaveURL(/\/peep\/?$/);
     await expect(page.locator('button', { hasText: '八字排盘' }).first()).toBeVisible();
   });

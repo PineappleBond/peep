@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Compass, CircleDot, Dices } from "lucide-react";
 import { GlobalHoroscopeSelector } from "@/components/shared/GlobalHoroscopeSelector";
@@ -29,22 +29,22 @@ function TabFallback() {
 }
 
 export default function WorkbenchPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  // URL 参数优先；若无，使用 localStorage 记忆值
-  const activeTab: TabKey = useMemo(() => {
+  // 使用 localStorage 记忆 tab，URL 仅作辅助记录
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
     if (tabParam && VALID_TABS.includes(tabParam as TabKey)) return tabParam as TabKey;
     return readSavedTab();
-  }, [tabParam]);
+  });
 
   const handleTabChange = (v: string) => {
-    // 同步写入 localStorage
-    lsSet(LS_TAB_KEY, v);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("tab", v);
-      return next;
-    }, { replace: true });
+    const tab = v as TabKey;
+    lsSet(LS_TAB_KEY, tab);
+    setActiveTab(tab);
+    // 使用 history.replaceState 保留尾部斜杠，避免 Vite dev server 因 /peep (无 /) 而报错
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState(null, "", url.toString());
   };
 
   return (
