@@ -10,6 +10,10 @@
 
 [在线体验](https://pineapplebond.github.io/peep/) · [技术架构](#-rtc-agent-集成) · [本地开发](#-本地开发)
 
+<br>
+
+![Peep 工作台截图](images/peep.png)
+
 </div>
 
 ---
