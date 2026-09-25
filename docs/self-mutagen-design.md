@@ -43,6 +43,13 @@
 
 ```typescript
 export type MutagenChar = (typeof MUTAGEN_CHARS)[number]; // "禄" | "权" | "科" | "忌"
+
+// 运限自化标记（StarCell / PalaceCard / PalaceDetail 共用）
+export type ScopeSelfMark = {
+  scope: Scope;
+  char: MutagenChar;
+  direction: "outward" | "inward";
+};
 ```
 
 ### 2.3 核心方法
@@ -197,31 +204,29 @@ Chart.tsx SVG 层
 **Chart.tsx 中的预过滤逻辑**：
 
 ```typescript
-// 将 scopeResults 按 palaceIndex 分组，方便 PalaceCard 查找
+// 将 scopeResults 按 palaceIndex → starName 二级分组
 const perPalaceSelfMarks = useMemo(() => {
-  const map: Record<number, Array<{ scope: Scope; char: MutagenChar; direction: "outward" | "inward" }>> = {};
+  const map: Record<number, Record<string, ScopeSelfMark[]>> = {};
   for (const r of scopeResults) {
     for (const pm of r.palaceSelfMarks) {
+      if (!map[pm.palaceIndex]) map[pm.palaceIndex] = {};
       for (const sm of pm.starMarks) {
-        for (const m of sm.marks) {
-          const key = `${pm.palaceIndex}:${sm.starName}`;
-          if (!map[key]) map[key] = [];
-          map[key].push({ scope: r.scope, char: m.char, direction: m.direction });
-        }
+        const marks = sm.marks.map(m => ({ scope: r.scope, char: m.char, direction: m.direction }));
+        map[pm.palaceIndex][sm.starName] = marks;
       }
     }
   }
   return map;
 }, [scopeResults]);
 
-// 传给 PalaceCard
+// 传给 PalaceCard（直接按 index 查找，无需字符串匹配）
 <PalaceCard
   palace={p}
   z={z}
   focus={focus}
   onFocus={handleFocus}
   onDetail={setDetailIdx}
-  selfScopeMarks={/* 从 perPalaceSelfMarks 中按 p.index 过滤 */}
+  selfScopeMarks={perPalaceSelfMarks[p.index] ?? {}}
 />
 ```
 
@@ -231,7 +236,7 @@ const perPalaceSelfMarks = useMemo(() => {
 // Palace.tsx
 interface PalaceCardProps {
   // ...existing
-  selfScopeMarks?: Record<string, Array<{ scope: Scope; char: MutagenChar; direction: "outward" | "inward" }>>;
+  selfScopeMarks?: Record<string, ScopeSelfMark[]>;
   // key = starName, value = 该星的运限自化标记列表
 }
 ```
@@ -240,11 +245,7 @@ interface PalaceCardProps {
 
 ```typescript
 // StarCell.tsx 新增
-selfScopeMarks?: Array<{
-  scope: Scope;
-  char: MutagenChar;
-  direction: "outward" | "inward";
-}>;
+selfScopeMarks?: ScopeSelfMark[];
 ```
 
 > **注意**：`majorStars` 和 `minorStars` 的 StarCell 均需传入 `selfScopeMarks`（两者都可能包含被自化的星曜）。
@@ -480,6 +481,16 @@ const [selfMode, setSelfMode] = useState(false);
 }
 ```
 
+**`.db-self` 按钮样式**（类比现有 `.db-fly`）：
+
+```css
+.db-self { color: var(--m-ji); }           /* 忌色（紫），呼应自化"泄气"概念 */
+.db-self:hover { background: rgba(227,91,216,0.15); }
+.db-self.on { background: rgba(227,91,216,0.25); box-shadow: 0 0 6px rgba(227,91,216,0.4); }
+```
+
+> 按钮始终可点击（即使 `horoscope` 为 null），SVG 层在无数据时自然不渲染，与飞宫按钮行为一致。
+
 ### 4.5 PalaceDetail 运限自化展示
 
 在 `PalaceDetail.tsx` 中新增"运限自化" section（与现有"宫干四化" section 并列）：
@@ -489,10 +500,10 @@ const [selfMode, setSelfMode] = useState(false);
   <h4>运限自化</h4>
   {visibleScopes.map(s => (
     <p key={s.scope}>
-      <span className={`scope-tag scope-${s.scope}`}>{scopeLabel(s.scope)}</span>
-      离心：{s.outward.length ? s.outward.join("、") : "无"}
+      <span className={`pat-scope pat-scope-${s.scope}`}>{scopeLabel(s.scope)}</span>
+      离心：{s.outward.length ? s.outward.map(m => `${m.star}化${m.char}`).join("、") : "无"}
       {" / "}
-      向心：{s.inward.length ? s.inward.join("、") : "无"}
+      向心：{s.inward.length ? s.inward.map(m => `${m.star}化${m.char}`).join("、") : "无"}
     </p>
   ))}
 </section>
@@ -500,6 +511,7 @@ const [selfMode, setSelfMode] = useState(false);
 
 - 显示所有 `visible[s] === true` 的 scope
 - 离心/向心并列展示
+- scope 标签复用现有 `.pat-scope` / `.pat-scope-{scope}` 样式（格局面板已有）
 - `scopeLabel`：decadal→"大运"、yearly→"流年"、monthly→"流月"、daily→"流日"、hourly→"流时"
 
 ### 4.6 性能策略
