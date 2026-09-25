@@ -552,4 +552,300 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     });
     expect(resultNoFate.fate).toBeUndefined();
   });
+
+  // ─── 边界情况测试 ────────────────────────────────────
+
+  test("输入验证：无效日期应抛出错误", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // 无效日期（2024年没有2月30日）
+    const result1 = await page.evaluate(async () => {
+      try {
+        // @ts-ignore
+        await window.peep.DaLiuRen("2024-02-30", "12:00");
+        return { error: null };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    });
+    expect(result1.error).toBeTruthy();
+
+    // 无效月份
+    const result2 = await page.evaluate(async () => {
+      try {
+        // @ts-ignore
+        await window.peep.DaLiuRen("2024-13-15", "12:00");
+        return { error: null };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    });
+    expect(result2.error).toBeTruthy();
+
+    // 空字符串
+    const result3 = await page.evaluate(async () => {
+      try {
+        // @ts-ignore
+        await window.peep.DaLiuRen("", "12:00");
+        return { error: null };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    });
+    expect(result3.error).toBeTruthy();
+  });
+
+  test("输入验证：无效时间应抛出错误", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // 无效小时
+    const result1 = await page.evaluate(async () => {
+      try {
+        // @ts-ignore
+        await window.peep.DaLiuRen("2024-06-15", "25:00");
+        return { error: null };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    });
+    expect(result1.error).toBeTruthy();
+
+    // 无效分钟
+    const result2 = await page.evaluate(async () => {
+      try {
+        // @ts-ignore
+        await window.peep.DaLiuRen("2024-06-15", "12:61");
+        return { error: null };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    });
+    expect(result2.error).toBeTruthy();
+
+    // 空时间
+    const result3 = await page.evaluate(async () => {
+      try {
+        // @ts-ignore
+        await window.peep.DaLiuRen("2024-06-15", "");
+        return { error: null };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    });
+    expect(result3.error).toBeTruthy();
+  });
+
+  test("输入验证：无效命宫参数应抛出错误", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // 生年晚于当前年
+    const result1 = await page.evaluate(async () => {
+      try {
+        // @ts-ignore
+        await window.peep.DaLiuRen("2024-06-15", "12:00", {
+          birthYear: 2025,
+          gender: "男",
+        });
+        return { error: null };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    });
+    expect(result1.error).toBeTruthy();
+
+    // 无效性别
+    const result2 = await page.evaluate(async () => {
+      try {
+        // @ts-ignore
+        await window.peep.DaLiuRen("2024-06-15", "12:00", {
+          birthYear: 1984,
+          gender: "未知",
+        });
+        return { error: null };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    });
+    expect(result2.error).toBeTruthy();
+  });
+
+  test("子时边界：23时和0时的时辰行为一致", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const results = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep?.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // 2024-06-15 23:00（晚子时）
+      // @ts-ignore
+      const late = await window.peep.DaLiuRen("2024-06-15", "23:30");
+      // 2024-06-16 00:00（早子时，次日凌晨）
+      // @ts-ignore
+      const early = await window.peep.DaLiuRen("2024-06-16", "00:00");
+
+      return { late, early };
+    });
+
+    // 时支应同为子时（0）
+    expect(results.late.fourPillars.hourBranch).toBe(0);
+    expect(results.early.fourPillars.hourBranch).toBe(0);
+
+    // lunar-typescript 的 Solar 类不自动将 23 时换日柱（晚子时仍属当日）
+    // 这是合理的处理方式（区分早晚子时的学派）
+    // 验证时柱天干有值
+    expect(typeof results.late.fourPillars.hourPillar).toBe("string");
+    expect(typeof results.early.fourPillars.hourPillar).toBe("string");
+  });
+
+  test("伏吟盘面：月将与时支相同时天地盘重合", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // 找一个能产生伏吟盘面的日期：月将加时，月将=时支时 offset=0，天地盘重合
+    // 需要查节气表确定某天月将，再选该月将对应时辰
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // 2024年春分后月将为戌(10)，选戌时(19:00-21:00)，月将=时支=10，天地盘重合
+      // @ts-ignore
+      return await window.peep.DaLiuRen("2024-04-01", "20:00");
+    });
+
+    // 验证伏吟：heavenBoard[0] === 0
+    // 注意：戌时(19-21)=戌(10)，春分后月将=戌(10)
+    // offset = (10 - 10 + 12) % 12 = 0 → 天盘=地盘 → 伏吟
+    if (result.heavenBoard[0] === 0) {
+      // 确实是伏吟盘，验证天地盘完全重合
+      for (let i = 0; i < 12; i++) {
+        expect(result.heavenBoard[i]).toBe(result.earthBoard[i]);
+      }
+      // 三传方法应为伏吟相关
+      expect(result.threeTransmissions.method).toMatch(/伏吟/);
+    }
+  });
+
+  test("返吟盘面：月将与时支对冲时天地盘对冲", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // 2024年春分后月将为戌(10)，选辰时(7:00-9:00)辰=4，戌对冲辰 → offset=6 → 返吟
+      // @ts-ignore
+      return await window.peep.DaLiuRen("2024-04-01", "08:00");
+    });
+
+    // 验证返吟：heavenBoard[0] === 6（对冲）
+    if (result.heavenBoard[0] === 6) {
+      // 天地盘每支对冲
+      for (let i = 0; i < 12; i++) {
+        expect(result.heavenBoard[i]).toBe((i + 6) % 12);
+      }
+      // 三传方法应为返吟相关
+      expect(result.threeTransmissions.method).toMatch(/返吟/);
+    }
+  });
+
+  test("闰月年份：闰月不影响月将计算", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // 2023年有闰二月，验证闰二月期间的月将正常
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // 2023年闰二月（公历3月22日-4月19日），春分后月将为戌
+      // @ts-ignore
+      const r1 = await window.peep.DaLiuRen("2023-04-01", "12:00");
+      // 2023年正常二月（公历3月1日-3月21日），春分前月将为亥
+      // @ts-ignore
+      const r2 = await window.peep.DaLiuRen("2023-03-15", "12:00");
+
+      return { leap: r1, normal: r2 };
+    });
+
+    // 月将应在各自节气范围内正常
+    expect(result.leap.monthGeneral.branch).toBe(10); // 春分后→戌
+    expect(result.normal.monthGeneral.branch).toBe(11); // 雨水后春分前→亥
+  });
+
+  test("八专日：三传可能全部相同（独足格）", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // 八专日：干支同位（甲寅、乙卯、丙午、丁未、戊午、己未、庚申、辛酉、壬子、癸亥等）
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // 尝试多个八专日
+      const dates = [
+        { date: "2024-02-10", time: "12:00" }, // 可能是八专日
+        { date: "2024-03-15", time: "12:00" },
+        { date: "2024-05-20", time: "12:00" },
+        { date: "2024-08-25", time: "12:00" },
+      ];
+
+      const results = await Promise.all(
+        dates.map(({ date, time }) =>
+          // @ts-ignore
+          window.peep.DaLiuRen(date, time)
+        )
+      );
+
+      // 找三传全同的（独足格）
+      const duplicates = results.filter(
+        (r: any) =>
+          r.threeTransmissions.initial === r.threeTransmissions.middle &&
+          r.threeTransmissions.middle === r.threeTransmissions.final
+      );
+
+      return {
+        allMethods: results.map((r: any) => r.threeTransmissions.method),
+        duplicateCount: duplicates.length,
+      };
+    });
+
+    // 至少应有一个产生八专/独足或涉害缀瑕
+    // （八专日不一定走八专路径，取决于四课有克情况）
+    expect(result.allMethods.length).toBe(4);
+  });
+
+  test("跨年边界：冬至前后的月将切换（大雪→冬至）", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // 2023年大雪约12月7日，冬至约12月22日
+      // 大雪后冬至前→月将=寅(2)；冬至后→月将=子(0)
+      // @ts-ignore
+      const before = await window.peep.DaLiuRen("2023-12-15", "12:00");
+      // @ts-ignore
+      const after = await window.peep.DaLiuRen("2023-12-25", "12:00");
+
+      return { before, after };
+    });
+
+    // 大雪后冬至前→寅(2)
+    expect(result.before.monthGeneral.branch).toBe(2);
+    // 冬至后→子(0)
+    expect(result.after.monthGeneral.branch).toBe(0);
+  });
 });

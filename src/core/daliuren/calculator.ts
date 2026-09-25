@@ -100,6 +100,10 @@ export function calculateFourPillars(solar: Solar): FourPillars {
  *
  * 遍历全年节气时刻，找到目标时刻之前最近的一个节气，
  * 按该节气在 24 节气中的索引查表得到月将。
+ *
+ * 注意：lunar-typescript 的 jieqiTable 对冬至/小寒/大寒/立春/雨水/惊蛰
+ * 使用拼音键名（DONG_ZHI/XIAO_HAN/DA_HAN/LI_CHUN/YU_SHUI/JING_ZHE），
+ * 表示当年节气；中文名则指前一年的同一节气。需同时检查两种键并取最近者。
  */
 export function calculateMonthGeneral(solar: Solar): MonthGeneral {
   const lunar = solar.getLunar();
@@ -115,26 +119,56 @@ export function calculateMonthGeneral(solar: Solar): MonthGeneral {
     solar.getSecond()
   ).getTime();
 
-  // 找到 targetMs 之前（含）最近的节气
-  let lastJieQiIdx = 23; // 默认大雪（年末）
-  for (let i = 23; i >= 0; i--) {
-    const jqSolar = jieqiTable[JIE_QI_NAMES[i]];
-    if (!jqSolar) continue;
-    const jqMs = new Date(
-      jqSolar.getYear(),
-      jqSolar.getMonth() - 1,
-      jqSolar.getDay(),
-      jqSolar.getHour(),
-      jqSolar.getMinute(),
-      jqSolar.getSecond()
+  // 拼音键名映射（lunar-typescript 对前 6 个节气使用拼音键表示当年值）
+  const PINYIN_KEYS: Record<number, string> = {
+    0: "DONG_ZHI",
+    1: "XIAO_HAN",
+    2: "DA_HAN",
+    3: "LI_CHUN",
+    4: "YU_SHUI",
+    5: "JING_ZHE",
+  };
+
+  /** Solar 对象转毫秒时间戳 */
+  const solarToMs = (s: any): number =>
+    new Date(
+      s.getYear(),
+      s.getMonth() - 1,
+      s.getDay(),
+      s.getHour(),
+      s.getMinute(),
+      s.getSecond()
     ).getTime();
-    if (jqMs <= targetMs) {
-      lastJieQiIdx = i;
-      break;
+
+  // 收集所有在 targetMs 之前的节气，取最近的一个
+  let bestIdx = -1;
+  let bestMs = -Infinity;
+
+  for (let i = 0; i < 24; i++) {
+    // 中文键
+    const cnKey = JIE_QI_NAMES[i];
+    if (jieqiTable[cnKey]) {
+      const ms = solarToMs(jieqiTable[cnKey]);
+      if (ms <= targetMs && ms > bestMs) {
+        bestMs = ms;
+        bestIdx = i;
+      }
+    }
+    // 拼音键（索引 0-5）
+    const pinyinKey = PINYIN_KEYS[i];
+    if (pinyinKey && jieqiTable[pinyinKey]) {
+      const ms = solarToMs(jieqiTable[pinyinKey]);
+      if (ms <= targetMs && ms > bestMs) {
+        bestMs = ms;
+        bestIdx = i;
+      }
     }
   }
 
-  const branch = JIE_QI_TO_MONTH_GENERAL[lastJieQiIdx];
+  // 兜底：如果没找到任何节气（极端情况），默认大雪
+  if (bestIdx === -1) bestIdx = 23;
+
+  const branch = JIE_QI_TO_MONTH_GENERAL[bestIdx];
   return { branch, name: MONTH_GENERAL_NAMES[branch] };
 }
 
@@ -232,12 +266,69 @@ export function calculateDaLiuRen(
   timeStr: string,
   fateInput?: { birthYear: number; gender: "男" | "女" }
 ): DaLiuRenResult {
+  // ── 输入验证 ──
+  if (!dateStr || typeof dateStr !== "string") {
+    throw new Error("日期不能为空");
+  }
+  if (!timeStr || typeof timeStr !== "string") {
+    throw new Error("时间不能为空");
+  }
+
   // 解析时间
-  const [year, month, day] = dateStr.split(/[\/-]/).map(Number);
+  const dateParts = dateStr.split(/[\/-]/).map(Number);
+  const year = dateParts[0];
+  const month = dateParts[1];
+  const day = dateParts[2];
+  if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+    throw new Error(`日期格式无效：${dateStr}，应为 YYYY-MM-DD`);
+  }
+  if (month < 1 || month > 12) {
+    throw new Error(`月份无效：${month}，应为 1-12`);
+  }
+  if (day < 1 || day > 31) {
+    throw new Error(`日期无效：${day}，应为 1-31`);
+  }
+
   const timeParts = timeStr.split(":").map(Number);
   const hour = timeParts[0] ?? 0;
   const minute = timeParts[1] ?? 0;
   const second = timeParts[2] ?? 0;
+  if (isNaN(hour) || isNaN(minute) || isNaN(second)) {
+    throw new Error(`时间格式无效：${timeStr}，应为 HH:mm 或 HH:mm:ss`);
+  }
+  if (hour < 0 || hour > 23) {
+    throw new Error(`小时无效：${hour}，应为 0-23`);
+  }
+  if (minute < 0 || minute > 59) {
+    throw new Error(`分钟无效：${minute}，应为 0-59`);
+  }
+  if (second < 0 || second > 59) {
+    throw new Error(`秒无效：${second}，应为 0-59`);
+  }
+
+  // 验证日期合法性（如 2月30日 不存在）
+  // 利用 Date 回绕检测：构造 Date 后比对各分量
+  const dateCheck = new Date(year, month - 1, day, hour, minute, second);
+  if (
+    dateCheck.getFullYear() !== year ||
+    dateCheck.getMonth() !== month - 1 ||
+    dateCheck.getDate() !== day
+  ) {
+    throw new Error(`日期不存在：${dateStr}`);
+  }
+
+  // 命宫行年参数验证
+  if (fateInput) {
+    if (typeof fateInput.birthYear !== "number" || isNaN(fateInput.birthYear)) {
+      throw new Error("生年应为数字");
+    }
+    if (fateInput.birthYear < 1 || fateInput.birthYear > year) {
+      throw new Error(`生年无效：${fateInput.birthYear}`);
+    }
+    if (fateInput.gender !== "男" && fateInput.gender !== "女") {
+      throw new Error("性别应为'男'或'女'");
+    }
+  }
 
   // 构造 Solar 对象
   const solar = Solar.fromYmdHms(year, month, day, hour, minute, second);

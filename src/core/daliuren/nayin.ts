@@ -70,15 +70,15 @@ export function getNaYin(stem: number, branch: number): string {
 }
 
 /**
- * 批量计算 12 个地支对应天盘纳音（每个地支取天盘所临干支的纳音）。
+ * 批量计算 12 个地支对应天盘纳音（每个地支取日干配该支的纳音）。
  *
  * @param dayStem 日干
- * @param heavenBoard 天盘（heavenBoard[i] = 地盘 i 上所临天盘支）
- * @returns Record<number, string>，key 为地盘支索引，value 为天盘该支的纳音
+ * @param _heavenBoard 天盘（当前简化版不使用，保留签名一致性）
+ * @returns Record<number, string>，key 为地盘支索引，value 为日干配该支的纳音
  */
 export function getBoardNaYin(
   dayStem: number,
-  heavenBoard: number[]
+  _heavenBoard: number[]
 ): Record<number, string> {
   const result: Record<number, string> = {};
   // 地盘每宫的天盘纳音：需要遁干
