@@ -7,6 +7,8 @@ import type { Scope } from "./utils";
 import type { Zwds } from "./useZwds";
 import type { Person } from "./personDb";
 import { buildHbarData, type HbarData } from "./hbar";
+import { calculateDaLiuRen } from "./daliuren/calculator";
+import type { DaLiuRenResult } from "./daliuren/types";
 
 /** 运限级别 */
 export type ScopeName = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
@@ -137,6 +139,16 @@ function setHoroscopeTime(z: Zwds, date: Date): void {
   z.actions.pickHour(hourIdx);
 }
 
+/**
+ * 大六壬排盘调试接口
+ *
+ * @param date 公历日期（YYYY-MM-DD）
+ * @param time 时间（HH:mm 或 HH:mm:ss）
+ */
+export function DaLiuRen(date: string, time: string): DaLiuRenResult {
+  return calculateDaLiuRen(date, time);
+}
+
 /** 初始化 window.peep（仅在开发环境） */
 export function initDebugApi() {
   if (typeof window === "undefined") return;
@@ -144,6 +156,7 @@ export function initDebugApi() {
 
   (window as any).peep = {
     ZiWei,
+    DaLiuRen,
     getChartDataForScope,
   };
 }
