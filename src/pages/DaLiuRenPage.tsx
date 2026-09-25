@@ -13,6 +13,7 @@ import { LiurenDeleteDialog } from "../components/daliuren/LiurenDeleteDialog";
 import type { LiurenRecord, Person } from "../core/personDb";
 import { getDefaultPerson } from "../core/personDb";
 import { getLiurenRecord } from "../core/daliurenDb";
+import { globalEvents } from "../core/events";
 
 export function DaLiuRenPage() {
   const [person, setPerson] = useState<Person | null>(null);
@@ -33,6 +34,20 @@ export function DaLiuRenPage() {
     getDefaultPerson().then((p) => {
       if (p.id != null) setPerson(p);
     });
+  }, []);
+
+  // 监听人物切换事件——切换后刷新列表、清空右侧盘面
+  useEffect(() => {
+    const handlePersonChanged = (newPerson: Person) => {
+      if (newPerson.id == null) return;
+      setPerson(newPerson);
+      setSelectedRecord(null);
+      setListRefreshKey((k) => k + 1);
+    };
+    globalEvents.on("person.changed", handlePersonChanged);
+    return () => {
+      globalEvents.off("person.changed", handlePersonChanged);
+    };
   }, []);
 
   // 当列表选中变化时，如果当前选中记录被删除/改变，需同步
