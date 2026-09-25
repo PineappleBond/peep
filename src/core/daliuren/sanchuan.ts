@@ -140,14 +140,29 @@ export function calculateThreeTransmissions(
 ): ThreeTransmissionsResult {
   const trace: string[] = [];
 
-  // 四课上下关系分类
-  const xiaZeiShangIdx: number[] = []; // 下贼上的课索引
+  // 四课去重：PHP 的 sikeUnique 按"上课+下课五行"去重，
+  // 若两课的上课相同且下课五行相同，则只计一次（取先出现者）。
+  // 这是九宗门取课的前提，影响后续贼克计数。
+  const uniqueLessons: { idx: number; lesson: FourLesson }[] = [];
+  const seen = new Set<string>();
+  fourLessons.forEach((lesson, i) => {
+    const lowerElem =
+      lesson.lowerType === "stem" ? elemS(dayStem) : elemB(lesson.lower);
+    const sig = `${lesson.upper}_${lowerElem}`;
+    if (!seen.has(sig)) {
+      seen.add(sig);
+      uniqueLessons.push({ idx: i, lesson });
+    }
+  });
+
+  // 四课上下关系分类（基于去重后的课）
+  const xiaZeiShangIdx: number[] = []; // 下贼上的课索引（原始四课下标）
   const shangKeXiaIdx: number[] = []; // 上克下的课索引
 
-  fourLessons.forEach((lesson, i) => {
-    if (isXiaZeiShang(lesson, dayStem)) xiaZeiShangIdx.push(i);
-    if (isShangKeXia(lesson, dayStem)) shangKeXiaIdx.push(i);
-  });
+  for (const { idx, lesson } of uniqueLessons) {
+    if (isXiaZeiShang(lesson, dayStem)) xiaZeiShangIdx.push(idx);
+    if (isShangKeXia(lesson, dayStem)) shangKeXiaIdx.push(idx);
+  }
 
   trace.push(
     `四课: ${fourLessons.map((l, idx) => `[${idx + 1}]${DI_ZHI[l.upper]}←${DI_ZHI[l.lower]}`).join(" ")}`
@@ -179,20 +194,87 @@ export function calculateThreeTransmissions(
     );
   }
 
+  // ── 标准九宗门 ── 先计算标准结果（含初传与中末传）
+  const standard = computeStandardJiuZongMen(
+    fourLessons,
+    dayStem,
+    dayBranch,
+    heavenBoard,
+    xiaZeiShangIdx,
+    shangKeXiaIdx,
+    trace
+  );
+
   // ── 2. 返吟（天地盘对冲），丁未/己未除外 ──
+  // 返吟覆盖中末传为冲链，初传保留标准九宗门结果；
+  // 仅"无亲格"特殊处理初传。
   if (isFanyin && !isDingWei && !isJiWei) {
-    return handleFanyin(
+    return applyFanyinOverride(
+      standard,
       fourLessons,
       dayStem,
       dayBranch,
-      heavenBoard,
-      xiaZeiShangIdx,
-      shangKeXiaIdx,
       trace
     );
   }
 
-  // ── 标准九宗门 ──
+  return standard;
+}
+
+/** 返吟覆盖：中末传改为冲链，并检测无亲格 */
+function applyFanyinOverride(
+  standard: ThreeTransmissionsResult,
+  fourLessons: FourLesson[],
+  dayStem: number,
+  dayBranch: number,
+  trace: string[]
+): ThreeTransmissionsResult {
+  const l1Upper = fourLessons[0].upper;
+  const l3Upper = fourLessons[2].upper;
+
+  // 无亲格检测：辛未、辛丑、丁丑、己丑（丁未/己未已排除）
+  const isWuqin =
+    (dayStem === 7 && dayBranch === 7) || // 辛未
+    (dayStem === 7 && dayBranch === 1) || // 辛丑
+    (dayStem === 3 && dayBranch === 1) || // 丁丑
+    (dayStem === 5 && dayBranch === 1); // 己丑
+
+  if (isWuqin) {
+    let initial: number;
+    if (dayBranch === 1) {
+      initial = 11; // 亥
+    } else {
+      initial = 5; // 巳
+    }
+    const middle = l3Upper;
+    const final = l1Upper;
+    trace.push(`返吟无亲：支=${DI_ZHI[dayBranch]}，初传${DI_ZHI[initial]}`);
+    return { initial, middle, final, method: "返吟无亲", trace };
+  }
+
+  // 无依格：初传沿用标准九宗门，中末传改为冲链
+  const middle = LIU_CHONG[standard.initial];
+  const final = LIU_CHONG[middle];
+  trace.push(`返吟无依：冲链 ${DI_ZHI[standard.initial]}→${DI_ZHI[middle]}→${DI_ZHI[final]}`);
+  return {
+    initial: standard.initial,
+    middle,
+    final,
+    method: "返吟无依",
+    trace,
+  };
+}
+
+/** 标准九宗门（不含伏吟/返吟特殊盘） */
+function computeStandardJiuZongMen(
+  fourLessons: FourLesson[],
+  dayStem: number,
+  dayBranch: number,
+  heavenBoard: number[],
+  xiaZeiShangIdx: number[],
+  shangKeXiaIdx: number[],
+  trace: string[]
+): ThreeTransmissionsResult {
 
   // ── 3. 贼克：单一克取克者 ──
   if (
@@ -220,7 +302,7 @@ export function calculateThreeTransmissions(
     const candidates = isZei ? xiaZeiShangIdx : shangKeXiaIdx;
     const dayYY = STEM_YIN_YANG[dayStem];
 
-    // 按阴阳分组
+    // 按阴阳分组（与 PHP riganXiangbi/riganBubi 对应）
     const xiangBi: number[] = []; // 与日干阴阳同
     const buBi: number[] = []; // 与日干阴阳异
     for (const idx of candidates) {
@@ -231,7 +313,7 @@ export function calculateThreeTransmissions(
       }
     }
 
-    // 比用/知一：唯一与日干阴阳同者
+    // 比用/知一：与日干阴阳同者唯一，或多个但上课相同（四课有重复）
     if (
       xiangBi.length === 1 ||
       (xiangBi.length > 1 && fourLessons[xiangBi[0]].upper === fourLessons[xiangBi[1]].upper)
@@ -245,6 +327,10 @@ export function calculateThreeTransmissions(
     }
 
     // 涉害：比用无法唯一确定
+    // PHP 涉害条件：(贼>1 或 (克>1 且 贼==0)) 且 (riganXiangbi>1 且 sike[0]!=sike[1] 或 riganXiangbi==0)
+    // 即：阴阳同者有多个且上课不同，或阴阳同者为空 → 走涉害
+    // 涉害候选组：阴阳同者有多个时用 xiangBi，否则用 buBi
+    const shehaiArr = xiangBi.length > 1 ? xiangBi : buBi;
     return handleShehai(
       fourLessons,
       dayStem,
@@ -254,7 +340,8 @@ export function calculateThreeTransmissions(
       xiangBi,
       buBi,
       isZei,
-      trace
+      trace,
+      shehaiArr
     );
   }
 
@@ -271,26 +358,32 @@ export function calculateThreeTransmissions(
   const l2Upper = fourLessons[1].upper;
   const l3Upper = fourLessons[2].upper;
   const l4Upper = fourLessons[3].upper;
-  const allDistinct = l1Upper !== l3Upper || l2Upper !== l4Upper;
+  // 进入遥克/昴星/别责分支的前提：四课非"两两相等"（第1、3课上课不等 或 第2、4课上课不等）
+  const hasDistinctPair = l1Upper !== l3Upper || l2Upper !== l4Upper;
+  // 昴星条件：交叉对均不等（第1课上课≠第4课上课 且 第2课上课≠第3课上课）
+  const maoxingCondition = l1Upper !== l4Upper && l2Upper !== l3Upper;
+  // 别责条件：交叉对至少一对相等
+  const biezheCondition = l1Upper === l4Upper || l2Upper === l3Upper;
 
-  // ── 6. 遥克（蒿矢/弹射）──
-  if (allDistinct) {
+  // ── 6/7/8/9. 无克时的特殊取法 ──
+  // hasDistinctPair 为真时，走遥克/昴星/别责分支；
+  // 为假时（L1上=L3上 且 L2上=L4上），走八专分支。
+  if (hasDistinctPair) {
+    // 遥克
     const yaokeResult = tryYaoke(fourLessons, dayStem, dayBranch, heavenBoard, trace);
     if (yaokeResult) return yaokeResult;
-  }
 
-  // ── 7. 昴星（虎视/冬蛇掩目）──
-  if (allDistinct) {
-    return handleMaoxing(dayStem, dayBranch, heavenBoard, fourLessons, trace);
-  }
+    // 昴星
+    if (maoxingCondition) {
+      return handleMaoxing(dayStem, dayBranch, heavenBoard, fourLessons, trace);
+    }
 
-  // ── 8. 别责 ──
-  if (l1Upper === l3Upper || l2Upper === l4Upper) {
-    return handleBiezhe(dayStem, dayBranch, heavenBoard, fourLessons, trace);
-  }
-
-  // ── 9. 八专（独足）──
-  if (l1Upper === l3Upper && l2Upper === l4Upper) {
+    // 别责
+    if (biezheCondition) {
+      return handleBiezhe(dayStem, dayBranch, heavenBoard, fourLessons, trace);
+    }
+  } else if (l1Upper === l3Upper && l2Upper === l4Upper) {
+    // 八专（独足）
     return handleBazhuan(dayStem, dayBranch, heavenBoard, fourLessons, trace);
   }
 
@@ -389,61 +482,7 @@ function handleFuyin(
 
 // ─── 返吟处理 ──────────────────────────────────────
 
-function handleFanyin(
-  fourLessons: FourLesson[],
-  dayStem: number,
-  dayBranch: number,
-  _heavenBoard: number[],
-  xiaZeiShangIdx: number[],
-  shangKeXiaIdx: number[],
-  trace: string[]
-): ThreeTransmissionsResult {
-  const l1Upper = fourLessons[0].upper;
-  const l3Upper = fourLessons[2].upper;
-
-  // 无亲格检测：辛未、辛丑、丁丑、己丑（丁未/己未已排除）
-  const isWuqin =
-    (dayStem === 7 && dayBranch === 7) || // 辛未
-    (dayStem === 7 && dayBranch === 1) || // 辛丑
-    (dayStem === 3 && dayBranch === 1) || // 丁丑
-    (dayStem === 5 && dayBranch === 1); // 己丑
-
-  if (isWuqin) {
-    let initial: number;
-    if (dayBranch === 1) {
-      initial = 11; // 亥
-    } else {
-      initial = 5; // 巳
-    }
-    const middle = l3Upper;
-    const final = l1Upper;
-    trace.push(`返吟无亲：支=${DI_ZHI[dayBranch]}，初传${DI_ZHI[initial]}`);
-    return { initial, middle, final, method: "返吟无亲", trace };
-  }
-
-  // 无依格：有克取克，无克取默认
-  let initial: number;
-  const hasKe = xiaZeiShangIdx.length > 0 || shangKeXiaIdx.length > 0;
-
-  if (hasKe) {
-    if (xiaZeiShangIdx.length > 0) {
-      initial = fourLessons[xiaZeiShangIdx[0]].upper;
-    } else {
-      initial = fourLessons[shangKeXiaIdx[0]].upper;
-    }
-    trace.push(`返吟无依：取克为初传${DI_ZHI[initial]}`);
-  } else {
-    initial = 0; // 默认子
-    trace.push("返吟无依：无克，初传默认子");
-  }
-
-  // 中末传用冲链
-  const middle = LIU_CHONG[initial];
-  const final = LIU_CHONG[middle];
-  trace.push(`冲链: ${DI_ZHI[initial]}→${DI_ZHI[middle]}→${DI_ZHI[final]}`);
-
-  return { initial, middle, final, method: "返吟无依", trace };
-}
+// handleFanyin 已废弃：返吟逻辑已重构为标准九宗门 + applyFanyinOverride。
 
 // ─── 涉害处理 ──────────────────────────────────────
 
@@ -452,18 +491,20 @@ function handleShehai(
   dayStem: number,
   _dayBranch: number,
   heavenBoard: number[],
-  candidates: number[],
+  _candidates: number[],
   xiangBi: number[],
-  buBi: number[],
+  _buBi: number[],
   isZei: boolean,
-  trace: string[]
+  trace: string[],
+  shehaiArr: number[]
 ): ThreeTransmissionsResult {
-  // 确定涉害候选组
-  const biyongArr = xiangBi.length > 0 ? xiangBi : buBi;
+  // shehaiArr 由调用方确定：
+  // PHP 逻辑：riganXiangbi > 1 时用 riganXiangbi（阴阳同者），否则用 riganBubi（阴阳异者）
+  // 即：阴阳同者有多个且上课不同 → 用阴阳同组；阴阳同者为空 → 用阴阳异组
 
   // 计算各候选涉害深度
   const depths = new Map<number, number>();
-  for (const idx of biyongArr) {
+  for (const idx of shehaiArr) {
     const depth = calcShehaiDepth(fourLessons[idx].upper, heavenBoard, isZei);
     depths.set(idx, depth);
     trace.push(
@@ -471,45 +512,54 @@ function handleShehai(
     );
   }
 
+  const uniqueDepths = new Set(depths.values());
+
+  // PHP 逻辑：若所有候选涉害深度均相同 → 用孟仲季区分
+  // 若深度不同 → 取最深者（唯一则直接取，多个则取第一个）
+  if (uniqueDepths.size === 1) {
+    // 所有深度相同 → 孟仲季 tiebreaker（应用于所有候选的 lower 位置）
+    // PHP 用 sikeXia（各候选的"下"地盘位）与四孟四仲求交集
+    const lowerGrounds = shehaiArr.map((idx) => {
+      const lesson = fourLessons[idx];
+      return lesson.lowerType === "stem" ? STEM_LODGING[dayStem] : lesson.lower;
+    });
+
+    const mengHits = lowerGrounds.filter((lg) => SI_MENG.has(lg));
+    const zhongHits = lowerGrounds.filter((lg) => SI_ZHONG.has(lg));
+
+    if (mengHits.length > 0 && mengHits.length < lowerGrounds.length) {
+      // 见机格：有孟且不全为孟 → 取孟
+      const mengIdx = shehaiArr[lowerGrounds.indexOf(mengHits[0])];
+      const initial = fourLessons[mengIdx].upper;
+      const { middle, final } = standardMiddleFinal(initial, heavenBoard);
+      trace.push(`涉害见机：取孟下${DI_ZHI[mengHits[0]]}对应第${mengIdx + 1}课上神${DI_ZHI[initial]}`);
+      return { initial, middle, final, method: "涉害见机", trace };
+    }
+
+    if (zhongHits.length > 0 && zhongHits.length < lowerGrounds.length) {
+      // 察微格：有仲且不全为仲 → 取仲
+      const zhongIdx = shehaiArr[lowerGrounds.indexOf(zhongHits[0])];
+      const initial = fourLessons[zhongIdx].upper;
+      const { middle, final } = standardMiddleFinal(initial, heavenBoard);
+      trace.push(`涉害察微：取仲下${DI_ZHI[zhongHits[0]]}对应第${zhongIdx + 1}课上神${DI_ZHI[initial]}`);
+      return { initial, middle, final, method: "涉害察微", trace };
+    }
+
+    // 缀瑕格：孟仲季俱同 → 阳日取干上神，阴日取支上神
+    const isYang = STEM_YIN_YANG[dayStem] === 1;
+    const initial = isYang ? fourLessons[0].upper : fourLessons[2].upper;
+    const { middle, final } = standardMiddleFinal(initial, heavenBoard);
+    trace.push(`涉害缀瑕：${isYang ? "阳" : "阴"}日取${isYang ? "干" : "支"}上课${DI_ZHI[initial]}`);
+    return { initial, middle, final, method: "涉害缀瑕", trace };
+  }
+
+  // 深度不同 → 取最深者
   const maxDepth = Math.max(...depths.values());
-  const deepest = biyongArr.filter((idx) => depths.get(idx) === maxDepth);
-
-  if (deepest.length === 1) {
-    const idx = deepest[0];
-    const initial = fourLessons[idx].upper;
-    const { middle, final } = standardMiddleFinal(initial, heavenBoard);
-    trace.push(`涉害：取最深层${idx + 1}，初传${DI_ZHI[initial]}`);
-    return { initial, middle, final, method: "涉害", trace };
-  }
-
-  // 深度相同 → 孟 > 仲 > 季
-  const mengCandidates = deepest.filter((idx) => SI_MENG.has(fourLessons[idx].lower));
-  const zhongCandidates = deepest.filter((idx) => SI_ZHONG.has(fourLessons[idx].lower));
-
-  if (mengCandidates.length > 0 && mengCandidates.length < deepest.length) {
-    // 见机格：取孟
-    const idx = mengCandidates[0];
-    const initial = fourLessons[idx].upper;
-    const { middle, final } = standardMiddleFinal(initial, heavenBoard);
-    trace.push(`涉害见机：取孟上神${DI_ZHI[initial]}`);
-    return { initial, middle, final, method: "涉害见机", trace };
-  }
-
-  if (zhongCandidates.length > 0 && zhongCandidates.length < deepest.length) {
-    // 察微格：取仲
-    const idx = zhongCandidates[0];
-    const initial = fourLessons[idx].upper;
-    const { middle, final } = standardMiddleFinal(initial, heavenBoard);
-    trace.push(`涉害察微：取仲上神${DI_ZHI[initial]}`);
-    return { initial, middle, final, method: "涉害察微", trace };
-  }
-
-  // 缀瑕格：阳日取干上课，阴日取支上课
-  const isYang = STEM_YIN_YANG[dayStem] === 1;
-  const initial = isYang ? fourLessons[0].upper : fourLessons[2].upper;
+  const deepestIdx = shehaiArr.find((idx) => depths.get(idx) === maxDepth)!;
+  const initial = fourLessons[deepestIdx].upper;
   const { middle, final } = standardMiddleFinal(initial, heavenBoard);
-  trace.push(`涉害缀瑕：${isYang ? "阳" : "阴"}日取${isYang ? "干" : "支"}上课${DI_ZHI[initial]}`);
-  return { initial, middle, final, method: "涉害缀瑕", trace };
+  trace.push(`涉害：取最深层第${deepestIdx + 1}，初传${DI_ZHI[initial]}`);
+  return { initial, middle, final, method: "涉害", trace };
 }
 
 // ─── 遥克处理 ──────────────────────────────────────
@@ -525,11 +575,10 @@ function tryYaoke(
   const yaokeShangKeXia: number[] = []; // 四课上神克日干
   const yaokeXiaZeiShang: number[] = []; // 日干克四课上神
 
-  // 遥克：与 PHP 保持一致，只检查第1、2、4课（索引 0、1、3）
-  // PHP 的 sikeUnique 去重后 key=5（第3课/支上课）被跳过（因第2、4课常重复）
-  // 索引 0=第1课(干上课), 1=第2课(干上神的上课), 3=第4课(支上神的上课)
-  const yaokeIndices = [0, 1, 3];
-  for (const i of yaokeIndices) {
+  // 遥克：检查第1、2、3、4课（索引 0、1、2、3）
+  // PHP 的 sikeUnique 按"上神五行+下五行"去重；TS 直接对四课做检查，
+  // 若上神相同则后续命中同一初传，效果等价。
+  for (let i = 0; i < 4; i++) {
     const lessonUpperElem = lessonUpperElement(fourLessons[i]);
     if (keOf(lessonUpperElem) === dayElem) {
       yaokeShangKeXia.push(i); // 上神克日干
