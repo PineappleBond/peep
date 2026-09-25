@@ -65,7 +65,29 @@ export function hourToBranch(hour: number): number {
  * 23 时按次日早子时计）。
  */
 export function calculateFourPillars(solar: Solar): FourPillars {
-  const lunar = solar.getLunar();
+  // 处理早子时：23:00-00:00 属于下一天的子时
+  let adjustedSolar = solar;
+  if (solar.getHour() >= 23) {
+    // 加一天
+    const date = new Date(
+      solar.getYear(),
+      solar.getMonth() - 1,
+      solar.getDay() + 1,
+      solar.getHour(),
+      solar.getMinute(),
+      solar.getSecond()
+    );
+    adjustedSolar = Solar.fromYmdHms(
+      date.getFullYear(),
+      date.getMonth() + 1,
+      date.getDate(),
+      solar.getHour(),
+      solar.getMinute(),
+      solar.getSecond()
+    );
+  }
+
+  const lunar = adjustedSolar.getLunar();
 
   const yearStem = lunar.getYearGanIndex();
   const yearBranch = lunar.getYearZhiIndex();
