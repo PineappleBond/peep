@@ -4480,3 +4480,546 @@ body {
   font-size: 0.7rem;
   color: var(--dim);
 }
+
+/* ════════════════════════════════════════════════════
+   Wiki 阅读器（右侧展示区）
+   ════════════════════════════════════════════════════ */
+
+.wiki-reader {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(10, 16, 34, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 22px 26px 18px;
+  min-height: calc(100vh - 100px);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── 空状态 ── */
+.wiki-reader.wiki-reader-empty {
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+}
+
+.wiki-empty-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  color: var(--dim);
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+.wiki-empty-hint::before {
+  content: "📖";
+  font-size: 2.6rem;
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  animation: wiki-empty-float 4s ease-in-out infinite;
+}
+
+@keyframes wiki-empty-float {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(-6px); opacity: 0.7; }
+}
+
+.wiki-empty-hint::after {
+  content: "✦";
+  position: absolute;
+  font-size: 0.8rem;
+  color: var(--gold);
+  opacity: 0.3;
+  top: 38%;
+  right: 28%;
+  animation: wiki-empty-sparkle 3s ease-in-out infinite 0.5s;
+}
+
+@keyframes wiki-empty-sparkle {
+  0%, 100% { opacity: 0.3; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.6; transform: scale(1.2) rotate(180deg); }
+}
+
+/* ── 文档头部 ── */
+.wiki-reader-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.wiki-reader-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(243, 201, 107, 0.4) 50%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+.wiki-reader-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wiki-reader-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  text-shadow:
+    0 0 18px rgba(243, 201, 107, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+  word-break: break-word;
+}
+
+/* ── 元信息条 ── */
+.wiki-reader-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--dim);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+.wiki-meta-person::before {
+  content: "◎";
+  margin-right: 5px;
+  color: var(--cyan);
+  opacity: 0.7;
+  font-size: 0.7rem;
+}
+
+.wiki-meta-person {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.wiki-meta-time {
+  color: var(--dim);
+  position: relative;
+  padding-left: 14px;
+}
+
+.wiki-meta-time::before {
+  content: "·";
+  position: absolute;
+  left: 4px;
+  color: var(--faint);
+}
+
+.wiki-meta-tags {
+  display: inline-flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding-left: 14px;
+  position: relative;
+}
+
+.wiki-meta-tags::before {
+  content: "·";
+  position: absolute;
+  left: 4px;
+  color: var(--faint);
+}
+
+/* 阅读器内的标签 chip（覆盖编辑器样式，适配暗色主题） */
+.wiki-reader .wiki-tag-chip {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(85, 215, 255, 0.12), rgba(85, 215, 255, 0.04));
+  border: 1px solid rgba(85, 215, 255, 0.25);
+  color: var(--cyan);
+  font-size: 0.7rem;
+  font-family: var(--font-body);
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+}
+
+/* ── 编辑按钮 ── */
+.wiki-edit-btn {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(243, 201, 107, 0.4);
+  background: rgba(243, 201, 107, 0.04);
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-family: inherit;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 4px;
+}
+
+.wiki-edit-btn:hover {
+  background: linear-gradient(135deg, rgba(243, 201, 107, 0.15), rgba(219, 166, 60, 0.08));
+  border-color: rgba(243, 201, 107, 0.7);
+  box-shadow:
+    0 0 12px rgba(243, 201, 107, 0.35),
+    inset 0 0 5px rgba(243, 201, 107, 0.08);
+  transform: translateY(-1px);
+}
+
+.wiki-edit-btn:active {
+  transform: translateY(0);
+}
+
+/* ════════════════════════════════════════════════════
+   Markdown 正文排版
+   ════════════════════════════════════════════════════ */
+
+.wiki-reader-content {
+  flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* 首字下沉（可选的雅致效果） */
+.wiki-reader-content > p:first-of-type::first-letter {
+  font-family: var(--font-display);
+  font-size: 2.6em;
+  float: left;
+  line-height: 1;
+  margin-right: 8px;
+  margin-top: 4px;
+  color: var(--gold);
+  text-shadow: 0 0 14px rgba(243, 201, 107, 0.4);
+  font-weight: 700;
+}
+
+/* ── 段落 ── */
+.wiki-reader-content p {
+  margin: 0 0 1em;
+}
+
+.wiki-reader-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── 标题 ── */
+.wiki-reader-content h1,
+.wiki-reader-content h2,
+.wiki-reader-content h3,
+.wiki-reader-content h4,
+.wiki-reader-content h5,
+.wiki-reader-content h6 {
+  font-family: var(--font-display);
+  color: var(--gold);
+  margin: 1.4em 0 0.6em;
+  line-height: 1.4;
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 10px rgba(243, 201, 107, 0.2);
+}
+
+.wiki-reader-content h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.4em;
+}
+
+.wiki-reader-content h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding-left: 12px;
+  border-left: 3px solid var(--gold);
+  box-shadow: -3px 0 10px -2px rgba(243, 201, 107, 0.25);
+}
+
+.wiki-reader-content h3 {
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: var(--cyan);
+  padding-left: 10px;
+  border-left: 3px solid var(--cyan);
+  text-shadow: 0 0 10px rgba(85, 215, 255, 0.25);
+}
+
+.wiki-reader-content h4,
+.wiki-reader-content h5,
+.wiki-reader-content h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wiki-reader-content h4 {
+  color: rgba(217, 228, 255, 0.92);
+}
+
+/* ── 引用块 ── */
+.wiki-reader-content blockquote {
+  margin: 1.2em 0;
+  padding: 12px 18px;
+  border-left: 3px solid var(--gold-deep);
+  background: linear-gradient(90deg,
+    rgba(201, 153, 46, 0.06) 0%,
+    rgba(10, 16, 34, 0.3) 100%);
+  border-radius: 0 8px 8px 0;
+  color: rgba(217, 228, 255, 0.88);
+  font-family: var(--font-display);
+  font-size: 0.96em;
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+  position: relative;
+  box-shadow:
+    -3px 0 12px -2px rgba(201, 153, 46, 0.25),
+    inset 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.wiki-reader-content blockquote::before {
+  content: "❝";
+  position: absolute;
+  top: -8px;
+  left: 8px;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--gold-deep);
+  opacity: 0.4;
+}
+
+/* ── 代码块 ── */
+.wiki-reader-content pre {
+  margin: 1.2em 0;
+  padding: 14px 18px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow-x: auto;
+  position: relative;
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.wiki-reader-content pre::before {
+  content: "CODE";
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 0.6rem;
+  color: var(--faint);
+  letter-spacing: 0.15em;
+  font-family: var(--font-body);
+  opacity: 0.5;
+}
+
+.wiki-reader-content pre code {
+  font-family: "JetBrains Mono", "Fira Code", "Monaco", "Consolas", monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: rgba(217, 228, 255, 0.9);
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* ── 行内代码 ── */
+.wiki-reader-content code {
+  font-family: "JetBrains Mono", "Fira Code", "Monaco", "Consolas", monospace;
+  font-size: 0.86em;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(85, 215, 255, 0.15);
+  border-radius: 4px;
+  color: var(--cyan);
+  letter-spacing: 0.02em;
+}
+
+/* ── 链接 ── */
+.wiki-reader-content a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 0 8px rgba(85, 215, 255, 0.2);
+}
+
+.wiki-reader-content a:hover {
+  border-bottom-color: var(--cyan);
+  text-shadow: 0 0 12px rgba(85, 215, 255, 0.5);
+}
+
+/* ── 列表 ── */
+.wiki-reader-content ul,
+.wiki-reader-content ol {
+  margin: 1em 0;
+  padding-left: 1.6em;
+}
+
+.wiki-reader-content ul {
+  list-style: none;
+}
+
+.wiki-reader-content ul li {
+  position: relative;
+  padding-left: 4px;
+  margin-bottom: 0.4em;
+}
+
+.wiki-reader-content ul li::before {
+  content: "◆";
+  position: absolute;
+  left: -1.3em;
+  color: var(--gold);
+  font-size: 0.55em;
+  top: 0.55em;
+  opacity: 0.85;
+  text-shadow: 0 0 6px rgba(243, 201, 107, 0.4);
+}
+
+.wiki-reader-content ol li {
+  margin-bottom: 0.4em;
+  padding-left: 4px;
+}
+
+.wiki-reader-content ol li::marker {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* ── 分隔线 ── */
+.wiki-reader-content hr {
+  margin: 1.8em 0;
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--line-strong) 50%,
+    transparent 100%);
+  position: relative;
+}
+
+.wiki-reader-content hr::after {
+  content: "✦";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--gold);
+  font-size: 0.7rem;
+  opacity: 0.5;
+  background: var(--bg);
+  padding: 0 8px;
+}
+
+/* ── 强调 ── */
+.wiki-reader-content strong {
+  color: var(--gold);
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(243, 201, 107, 0.2);
+}
+
+.wiki-reader-content em {
+  font-style: italic;
+  color: rgba(217, 228, 255, 0.95);
+  letter-spacing: 0.02em;
+}
+
+/* ════════════════════════════════════════════════════
+   关联文档面板
+   ════════════════════════════════════════════════════ */
+
+.wiki-related-panel {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  position: relative;
+}
+
+.wiki-related-panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(85, 215, 255, 0.35) 50%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+.wiki-related-title {
+  margin: 0 0 10px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+
+.wiki-related-title::before {
+  content: "📎 ";
+  opacity: 0.7;
+  font-size: 0.9em;
+}
+
+.wiki-related-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.wiki-related-item {
+  margin: 0;
+}
+
+.wiki-related-link {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: rgba(10, 16, 34, 0.4);
+  color: var(--text);
+  font-size: 0.78rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.02em;
+}
+
+.wiki-related-link:hover {
+  color: var(--cyan);
+  border-color: var(--line-strong);
+  background: rgba(85, 215, 255, 0.06);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.15);
+  transform: translateX(3px);
+  text-shadow: 0 0 8px rgba(85, 215, 255, 0.4);
+}
