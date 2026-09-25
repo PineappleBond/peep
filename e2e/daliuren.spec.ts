@@ -298,6 +298,41 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     expect(names).toContain("天医");
     expect(names).toContain("丧门");
     expect(names).toContain("文昌");
+    expect(names).toContain("三丘");
+    expect(names).toContain("五墓");
+
+    // 2024-06-15 是庚戌日（日支戌=10，寅午戌局），月支午=6（夏季）
+    // 精确验证神煞落宫
+    const shaMap: Record<string, number> = {};
+    for (const s of result.shenSha) {
+      shaMap[s.name] = s.branch;
+    }
+    // 驿马：寅午戌马在申(8)（长生对冲）
+    expect(shaMap["驿马"]).toBe(8);
+    // 劫煞：寅午戌劫煞在亥(11)（绝位）
+    expect(shaMap["劫煞"]).toBe(11);
+    // 亡神：寅午戌亡神在子(0)（帝旺对冲）
+    expect(shaMap["亡神"]).toBe(0);
+    // 将星：寅午戌将星在午(6)（帝旺）
+    expect(shaMap["将星"]).toBe(6);
+    // 华盖：寅午戌华盖在戌(10)（墓库）
+    expect(shaMap["华盖"]).toBe(10);
+    // 咸池：寅午戌咸池在卯(3)（沐浴位）
+    expect(shaMap["咸池"]).toBe(3);
+    // 岁破：年支辰(4)对冲→戌(10)
+    expect(shaMap["岁破"]).toBe(10);
+    // 丧门：年支辰(4)+2=午(6)
+    expect(shaMap["丧门"]).toBe(6);
+    // 吊客：年支辰(4)+10=寅(2)
+    expect(shaMap["吊客"]).toBe(2);
+    // 病符：年支辰(4)+11=卯(3)
+    expect(shaMap["病符"]).toBe(3);
+    // 三丘：夏季→辰(4)（与 PHP ZaieShensha 对照）
+    expect(shaMap["三丘"]).toBe(4);
+    // 五墓：夏季→戌(10)（与 PHP ZaieShensha 对照）
+    expect(shaMap["五墓"]).toBe(10);
+    // 月德：夏季→申(8)
+    expect(shaMap["月德"]).toBe(8);
   });
 
   // 第三阶段：遁干和刑冲破害

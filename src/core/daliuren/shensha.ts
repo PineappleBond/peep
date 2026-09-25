@@ -4,8 +4,6 @@
  * 根据年支、月支、日干、日支、时支计算各类神煞。
  * 参考 PHP ZaieShensha.php 及传统六壬典籍。
  */
-import { DI_ZHI, BRANCH_ELEMENT, STEM_ELEMENT } from "./constants";
-
 // ─── 类型定义 ────────────────────────────────────────────
 
 export interface ShenSha {
@@ -48,24 +46,22 @@ function getSeasonIndex(monthBranch: number): number {
 
 // ─── 单个神煞计算函数 ────────────────────────────────────
 
-/** 驿马：日支三合的第一位（长生位），也即冲将星 */
+/** 驿马：日支三合局长生位的对冲（申子辰马在寅，寅午戌马在申…） */
 function yiMa(dayBranch: number): number {
   const [changSheng] = getSanHeGroup(dayBranch);
-  return changSheng;
+  return (changSheng + 6) % 12;
 }
 
-/** 劫煞：日支三合最后一位（墓库位后冲？不对——劫煞是三合局的绝位） */
+/** 劫煞：三合局绝位 = (长生 + 9) % 12 */
 function jieSha(dayBranch: number): number {
-  // 劫煞 = 三合局最后一位（墓库位）
-  const [, , mu] = getSanHeGroup(dayBranch);
-  return mu;
+  const [changSheng] = getSanHeGroup(dayBranch);
+  return (changSheng + 9) % 12;
 }
 
-/** 亡神：三合局第二位（帝旺位）的三合库？实际上亡神=三合局墓库的对冲？ */
+/** 亡神：三合局帝旺位的对冲 = (帝旺 + 6) % 12 */
 function wangShen(dayBranch: number): number {
-  // 亡神 = 三合局的第二位（帝旺位）
   const [, diWang] = getSanHeGroup(dayBranch);
-  return diWang;
+  return (diWang + 6) % 12;
 }
 
 /** 将星：三合局中间位（帝旺） */
@@ -80,14 +76,10 @@ function huaGai(dayBranch: number): number {
   return mu;
 }
 
-/** 咸池（桃花）：日支三合的第一位（沐浴位）— 即长生后一位 */
+/** 咸池（桃花）：三合局沐浴位 = (长生 + 1) % 12 */
 function xianChi(dayBranch: number): number {
-  // 咸池：三合局第一位的后两位（沐浴位）
-  // 申子辰→酉(9)、巳酉丑→午(6)、寅午戌→卯(3)、亥卯未→子(0)
   const [changSheng] = getSanHeGroup(dayBranch);
-  return (changSheng + 9) % 12; // 沐浴 = 长生 + 1（在十二宫中），但按三合桃花算法：
-  // 实际桃花：子辰→酉、寅午→卯、巳酉→午、亥未→子
-  // 用三合第一位 + 1（地支序）: 申→酉、寅→卯、巳→午、亥→子
+  return (changSheng + 1) % 12;
 }
 
 /** 岁破：年支对冲 */
@@ -170,15 +162,13 @@ function tianDe(monthBranch: number): number {
   return table[monthBranch];
 }
 
-/** 月德：月支对应的月德贵人 */
+/** 月德：按季节查月德贵人（与 PHP seasonOf 对照） */
 function yueDe(monthBranch: number): number {
-  // 寅→丙(寄巳5)、卯→亥(11)、辰→壬(寄亥11)、巳→辛(寄戌10)...
-  // 按月建三合：寅午戌→丙(巳5)、申子辰→壬(亥11)、亥卯未→甲(寅2)、巳酉丑→庚(申8)
-  const [changSheng] = getSanHeGroup(monthBranch);
-  // 三合第一位的五行对应的天干寄宫
-  const elem = BRANCH_ELEMENT[changSheng];
-  // 木→寅(2)、火→巳(5)、土→辰(4)?、金→申(8)、水→亥(11)
-  return [2, 5, 4, 8, 11][elem];
+  // 春(寅卯辰)→巳(5)、夏(巳午未)→申(8)、秋(申酉戌)→亥(11)、冬(亥子丑)→寅(2)
+  // 规律：每季月德 = 该季三合局长生位
+  // 春=寅午戌局长生=巳(5)、夏=申子辰局长生=申(8)...
+  const season = getSeasonIndex(monthBranch);
+  return [5, 8, 11, 2][season];
 }
 
 /** 红艳：日干查（咸池类桃花） */
@@ -206,6 +196,20 @@ function fuYang(monthBranch: number): number {
 /** 岁虎：岁后四辰 */
 function suiHu(yearBranch: number): number {
   return (yearBranch + 8) % 12;
+}
+
+/** 三丘：按季节查（与 PHP ZaieShensha SEASONS 对照） */
+function sanQiu(monthBranch: number): number {
+  // 春→丑(1)、夏→辰(4)、秋→未(7)、冬→戌(10)
+  const season = getSeasonIndex(monthBranch);
+  return [1, 4, 7, 10][season];
+}
+
+/** 五墓：按季节查（与三丘互为冲位，与 PHP ZaieShensha SEASONS 对照） */
+function wuMu(monthBranch: number): number {
+  // 春→未(7)、夏→戌(10)、秋→丑(1)、冬→辰(4)
+  const season = getSeasonIndex(monthBranch);
+  return [7, 10, 1, 4][season];
 }
 
 // ─── 主入口 ────────────────────────────────────────────
@@ -316,25 +320,37 @@ export function calculateShenSha(
     type: "凶",
     description: "正月起酉逆行四仲，主殃咎",
   });
+  sha.push({
+    name: "三丘",
+    branch: sanQiu(monthBranch),
+    type: "凶",
+    description: "季节丘位，主讼事",
+  });
+  sha.push({
+    name: "五墓",
+    branch: wuMu(monthBranch),
+    type: "凶",
+    description: "季节墓位，主暗昧",
+  });
 
   // ── 日煞（干/支） ──
   sha.push({
     name: "驿马",
     branch: yiMa(dayBranch),
     type: "吉",
-    description: "日支三合长生位，主传送出行",
+    description: "日支三合长生对冲，主传送出行",
   });
   sha.push({
     name: "劫煞",
     branch: jieSha(dayBranch),
     type: "凶",
-    description: "日支三合墓库位，主劫夺",
+    description: "日支三合绝位，主劫夺",
   });
   sha.push({
     name: "亡神",
     branch: wangShen(dayBranch),
     type: "凶",
-    description: "日支三合帝旺位，主失脱",
+    description: "日支三合帝旺对冲，主失脱",
   });
   sha.push({
     name: "将星",
