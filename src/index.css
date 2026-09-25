@@ -2427,3 +2427,386 @@ body {
   height: 13px;
   cursor: pointer;
 }
+
+/* ── 通用模态弹窗 ── */
+.dlg-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 6, 14, 0.78);
+  backdrop-filter: blur(8px);
+  animation: dlg-fadein 0.18s ease-out;
+}
+
+@keyframes dlg-fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dlg-panel {
+  position: relative;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 0;
+  border-radius: 16px;
+  background: linear-gradient(170deg, rgba(16, 25, 50, 0.98), rgba(9, 14, 30, 0.99));
+  border: 1px solid var(--line-strong);
+  box-shadow:
+    0 0 50px rgba(85, 215, 255, 0.12),
+    0 20px 60px rgba(0, 0, 0, 0.7),
+    inset 0 0 20px rgba(10, 18, 40, 0.6);
+  animation: dlg-slidein 0.22s ease-out;
+}
+
+@keyframes dlg-slidein {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.dlg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.dlg-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 3px;
+  background: linear-gradient(120deg, #f3c96b, #fff3d1 50%, #f3c96b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(243, 201, 107, 0.35));
+}
+
+.dlg-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--dim);
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dlg-close:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.25);
+}
+
+.dlg-body {
+  padding: 16px 20px;
+}
+
+.dlg-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px 16px;
+  border-top: 1px dashed var(--line);
+}
+
+/* ── 弹窗按钮 ── */
+.btn-cancel {
+  padding: 8px 18px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--dim);
+  font-size: 0.8rem;
+  font-family: inherit;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.btn-cancel:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.btn-save {
+  padding: 8px 22px;
+  border-radius: 9px;
+  border: 1px solid rgba(85, 215, 255, 0.5);
+  background: rgba(85, 215, 255, 0.12);
+  color: var(--cyan);
+  font-size: 0.8rem;
+  font-family: inherit;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-save:hover {
+  background: rgba(85, 215, 255, 0.22);
+  box-shadow: 0 0 16px rgba(85, 215, 255, 0.4);
+}
+
+.btn-danger {
+  padding: 8px 18px;
+  border-radius: 9px;
+  border: 1px solid rgba(227, 91, 216, 0.5);
+  background: rgba(227, 91, 216, 0.1);
+  color: var(--m-ji);
+  font-size: 0.8rem;
+  font-family: inherit;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-danger:hover {
+  background: rgba(227, 91, 216, 0.2);
+  box-shadow: 0 0 14px rgba(227, 91, 216, 0.35);
+}
+
+/* ── 确认弹窗 ── */
+.confirm-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 6px;
+  text-align: center;
+}
+
+.confirm-icon {
+  font-size: 2.4rem;
+  color: var(--m-ke);
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+  line-height: 1;
+}
+
+.confirm-msg {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* ── Header 人物选择器 ── */
+.person-sel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.person-select {
+  background: rgba(5, 9, 20, 0.8);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  outline: none;
+  min-width: 140px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.person-select:focus {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.2);
+}
+
+.person-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dim);
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.person-btn:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  color: var(--cyan);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.25);
+}
+
+.person-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.person-del:hover:not(:disabled) {
+  border-color: rgba(227, 91, 216, 0.5);
+  color: var(--m-ji);
+  box-shadow: 0 0 10px rgba(227, 91, 216, 0.25);
+}
+
+/* ── 人物编辑表单 ── */
+.person-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+}
+
+.form-grid .fld {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.form-grid .fld > span {
+  color: var(--dim);
+  letter-spacing: 1px;
+  font-size: 0.78rem;
+  flex: none;
+}
+
+.form-grid input[type="text"],
+.form-grid input:not([type]),
+.form-grid input[type="date"],
+.form-grid input[type="time"],
+.form-grid select {
+  background: rgba(5, 9, 20, 0.8);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 6px 9px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.2);
+}
+
+.form-grid .seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: hidden;
+  background: rgba(5, 9, 20, 0.6);
+}
+
+.form-grid .seg button {
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  transition: 0.2s;
+}
+
+.form-grid .seg button.on {
+  background: linear-gradient(135deg, rgba(85, 215, 255, 0.22), rgba(85, 215, 255, 0.05));
+  color: var(--cyan);
+  text-shadow: 0 0 8px rgba(85, 215, 255, 0.7);
+}
+
+.form-grid .ck {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.form-grid .ck input {
+  accent-color: var(--cyan);
+}
+
+.form-grid .ts-row {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.form-grid .dst-hint {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.07);
+  color: var(--m-ke);
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+
+.form-grid .ts-lng {
+  color: var(--dim);
+  font-size: 0.72rem;
+}
+
+.form-grid .tz-select {
+  max-width: 240px;
+}
+
+.form-grid .residence {
+  width: 140px;
+}
+
+/* ── 响应式：人物选择器 ── */
+@media (max-width: 760px) {
+  .person-sel {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .person-select {
+    min-width: 120px;
+    font-size: 0.72rem;
+  }
+  .person-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  .dlg-panel {
+    width: 96vw !important;
+    max-height: 92vh;
+  }
+  .dlg-head {
+    padding: 12px 14px 10px;
+  }
+  .dlg-title {
+    font-size: 1rem;
+  }
+  .dlg-body {
+    padding: 12px 14px;
+  }
+  .dlg-foot {
+    padding: 10px 14px 12px;
+  }
+  .form-grid {
+    gap: 8px 10px;
+  }
+}

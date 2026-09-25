@@ -1,0 +1,135 @@
+/**
+ * Header 人物选择器：下拉选择 + 新增/编辑/删除
+ */
+import { useEffect, useState } from "react";
+import type { Person } from "../core/personDb";
+import {
+  listPersons,
+  addPerson,
+  updatePerson,
+  deletePerson,
+  getDefaultPerson,
+} from "../core/personDb";
+import type { BirthInput } from "../core/useZwds";
+import { PersonDialog } from "./PersonDialog";
+import { ConfirmDialog } from "./ConfirmDialog";
+
+type PersonSelectorProps = {
+  /** 当前选中人物 ID */
+  currentId: number | null;
+  /** 选择人物回调 */
+  onSelect: (person: Person) => void;
+};
+
+export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
+  const [persons, setPersons] = useState<Person[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | undefined>();
+  const [confirmDelete, setConfirmDelete] = useState<Person | null>(null);
+
+  const loadPersons = async () => {
+    const list = await listPersons();
+    setPersons(list);
+  };
+
+  useEffect(() => {
+    loadPersons();
+  }, []);
+
+  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = Number(e.target.value);
+    const person = persons.find((p) => p.id === id);
+    if (person) onSelect(person);
+  };
+
+  const handleAdd = () => {
+    setEditingPerson(undefined);
+    setDialogOpen(true);
+  };
+
+  const handleEdit = () => {
+    const current = persons.find((p) => p.id === currentId);
+    if (current) {
+      setEditingPerson(current);
+      setDialogOpen(true);
+    }
+  };
+
+  const handleSave = async (input: BirthInput) => {
+    if (editingPerson?.id) {
+      await updatePerson(editingPerson.id, input);
+      const updated = { ...input, id: editingPerson.id, savedAt: Date.now(), isDefault: editingPerson.isDefault };
+      onSelect(updated as Person);
+    } else {
+      const newPerson = await addPerson(input);
+      onSelect(newPerson);
+    }
+    await loadPersons();
+  };
+
+  const handleDeleteClick = () => {
+    const current = persons.find((p) => p.id === currentId);
+    if (current) setConfirmDelete(current);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!confirmDelete?.id) return;
+    await deletePerson(confirmDelete.id);
+    const defaultPerson = await getDefaultPerson();
+    onSelect(defaultPerson);
+    setConfirmDelete(null);
+    await loadPersons();
+  };
+
+  const currentPerson = persons.find((p) => p.id === currentId);
+  const canDelete = currentPerson && !currentPerson.isDefault;
+
+  return (
+    <>
+      <div className="person-sel">
+        <select
+          value={currentId || ""}
+          onChange={handleSelect}
+          className="person-select"
+        >
+          {persons.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name || "无名"} · {p.gender}
+            </option>
+          ))}
+        </select>
+        <button className="person-btn" onClick={handleAdd} title="新增人物">
+          +
+        </button>
+        <button className="person-btn" onClick={handleEdit} title="编辑当前人物">
+          ✎
+        </button>
+        <button
+          className="person-btn person-del"
+          onClick={handleDeleteClick}
+          disabled={!canDelete}
+          title={canDelete ? "删除当前人物" : "默认人物不可删除"}
+        >
+          ✕
+        </button>
+      </div>
+
+      <PersonDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSave={handleSave}
+        initialData={editingPerson}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setConfirmDelete(null)}
+        title="删除人物"
+        message={`确定删除人物「${confirmDelete?.name || "无名"}」吗？此操作不可撤销。`}
+        confirmText="确定删除"
+        cancelText="取消"
+      />
+    </>
+  );
+}

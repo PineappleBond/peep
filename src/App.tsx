@@ -1,57 +1,63 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DEFAULT_BIRTH_INPUT, useZwds, BirthInput } from "./core/useZwds";
-import { InputPanel } from "./components/InputPanel";
 import { Chart } from "./components/Chart";
 import { HoroscopeBar } from "./components/HoroscopeBar";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { PersonSelector } from "./components/PersonSelector";
+import { getDefaultPerson, type Person } from "./core/personDb";
 
-const STORAGE_KEY = "zwds-input-v2";
+const STORAGE_KEY = "zwds-current-person-id";
 
-// 清理旧版拨盘/K线持久化：现仅存起盘参数，拨盘信息不再持久化
+// 清理旧版持久化
 try {
+  localStorage.removeItem("zwds-input-v2");
   localStorage.removeItem("zwds-nav-v1");
   localStorage.removeItem("zwds-kline-domain");
+  localStorage.removeItem("zwds-archive-v1");
 } catch {
   /* ignore */
 }
 
-/** 演示盘：在中性默认参数上叠加示例生辰 */
-const DEFAULT_INPUT: BirthInput = {
-  ...DEFAULT_BIRTH_INPUT,
-  name: "演示",
-  date: "2000-08-16",
-  timeIndex: 2,
-};
-
-function loadInput(): BirthInput {
-  try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    if (s) return { ...DEFAULT_INPUT, ...(JSON.parse(s) as Partial<BirthInput>) };
-  } catch {
-    /* ignore */
-  }
-  return DEFAULT_INPUT;
-}
-
-export default function App() {
-  const [input, setInput] = useState<BirthInput>(loadInput);
-  // 每次起盘自增，用于强制盘面回到默认命宫位置（即使命宫索引与上一盘相同）
+function App() {
+  const [currentPersonId, setCurrentPersonId] = useState<number | null>(null);
+  const [input, setInput] = useState<BirthInput>(DEFAULT_BIRTH_INPUT);
   const [genId, setGenId] = useState(0);
   const z = useZwds(input);
 
-  // 开发调试句柄：控制台可直接取盘验证导出（生产构建不注入）
+  // 初始化：加载默认人物
+  useEffect(() => {
+    const init = async () => {
+      const savedId = localStorage.getItem(STORAGE_KEY);
+      if (savedId) {
+        const id = Number(savedId);
+        setCurrentPersonId(id);
+        // 这里应该从 DB 加载，但先用默认值
+        const person = await getDefaultPerson();
+        setInput(person);
+      } else {
+        const person = await getDefaultPerson();
+        if (person.id) {
+          setCurrentPersonId(person.id);
+          localStorage.setItem(STORAGE_KEY, String(person.id));
+        }
+        setInput(person);
+      }
+    };
+    init();
+  }, []);
+
+  // 开发调试句柄
   if (import.meta.env.DEV) {
     (window as unknown as { __zwds: typeof z }).__zwds = z;
   }
 
-  const apply = (v: BirthInput) => {
-    setInput(v);
-    setGenId((g) => g + 1);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(v));
-    } catch {
-      /* ignore */
+  const handleSelectPerson = (person: Person) => {
+    if (person.id) {
+      setCurrentPersonId(person.id);
+      localStorage.setItem(STORAGE_KEY, String(person.id));
     }
+    setInput(person);
+    setGenId((g) => g + 1);
   };
 
   return (
@@ -61,14 +67,15 @@ export default function App() {
       <header className="top">
         <h1>紫微斗数</h1>
         <span className="top-sub">玄机排盘 · iztro 引擎 · 自研盘面</span>
+        <div className="top-actions">
+          <PersonSelector currentId={currentPersonId} onSelect={handleSelectPerson} />
+        </div>
       </header>
-
-      <HoroscopeBar z={z} />
-      <InputPanel value={input} onApply={apply} />
 
       {z.astrolabe ? (
         <ErrorBoundary>
           <Chart z={z} genId={genId} />
+          <HoroscopeBar z={z} />
         </ErrorBoundary>
       ) : (
         <div className="err-box">
@@ -86,3 +93,5 @@ export default function App() {
     </div>
   );
 }
+
+export default App;
