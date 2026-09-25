@@ -25,7 +25,13 @@ export function Layout({ children }: LayoutProps) {
   useEffect(() => {
     const init = async () => {
       try {
-        const savedId = localStorage.getItem(STORAGE_KEY);
+        let savedId: string | null = null;
+        try {
+          savedId = localStorage.getItem(STORAGE_KEY);
+        } catch (err) {
+          console.warn("[Layout] 读取 localStorage 失败（可能已被禁用）", err);
+        }
+
         if (savedId) {
           const id = Number(savedId);
           setCurrentPersonId(id);
@@ -36,7 +42,11 @@ export function Layout({ children }: LayoutProps) {
           const person = await getDefaultPerson();
           if (person.id) {
             setCurrentPersonId(person.id);
-            localStorage.setItem(STORAGE_KEY, String(person.id));
+            try {
+              localStorage.setItem(STORAGE_KEY, String(person.id));
+            } catch (err) {
+              console.warn("[Layout] 写入 localStorage 失败（存储已满或被禁用）", err);
+            }
           }
           currentPersonRef.current = person;
           globalEvents.emit("person.changed", person);
@@ -68,7 +78,11 @@ export function Layout({ children }: LayoutProps) {
   const handleSelectPerson = (person: Person) => {
     if (person.id) {
       setCurrentPersonId(person.id);
-      localStorage.setItem(STORAGE_KEY, String(person.id));
+      try {
+        localStorage.setItem(STORAGE_KEY, String(person.id));
+      } catch (err) {
+        console.warn("[Layout] 写入 localStorage 失败（存储已满或被禁用）", err);
+      }
     }
     currentPersonRef.current = person;
     // 通知页面组件人物已变更

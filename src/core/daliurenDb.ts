@@ -36,78 +36,103 @@ export async function listLiurenRecords(
   personId: number,
   filters: LiurenListFilters = {}
 ): Promise<LiurenListResult> {
-  const { searchText = "", tags = [], page = 1, pageSize = 20 } = filters;
+  try {
+    const { searchText = "", tags = [], page = 1, pageSize = 20 } = filters;
 
-  // 基础查询：按人物 ID 过滤
-  let query = db.liurenRecords.where("personId").equals(personId);
+    // 基础查询：按人物 ID 过滤
+    let query = db.liurenRecords.where("personId").equals(personId);
 
-  // 收集所有匹配的记录
-  let allRecords = await query.reverse().sortBy("savedAt");
+    // 收集所有匹配的记录
+    let allRecords = await query.reverse().sortBy("savedAt");
 
-  // 文本搜索：匹配 question、note、background
-  if (searchText.trim()) {
-    const keyword = searchText.trim().toLowerCase();
-    allRecords = allRecords.filter(
-      (r) =>
-        r.question.toLowerCase().includes(keyword) ||
-        r.note.toLowerCase().includes(keyword) ||
-        r.background.toLowerCase().includes(keyword)
-    );
+    // 文本搜索：匹配 question、note、background
+    if (searchText.trim()) {
+      const keyword = searchText.trim().toLowerCase();
+      allRecords = allRecords.filter(
+        (r) =>
+          r.question.toLowerCase().includes(keyword) ||
+          r.note.toLowerCase().includes(keyword) ||
+          r.background.toLowerCase().includes(keyword)
+      );
+    }
+
+    // Tag 筛选：多值匹配（记录包含任一选中的 tag）
+    if (tags.length > 0) {
+      allRecords = allRecords.filter((r) =>
+        r.tags.some((t) => tags.includes(t))
+      );
+    }
+
+    const total = allRecords.length;
+
+    // 分页
+    const start = (page - 1) * pageSize;
+    const records = allRecords.slice(start, start + pageSize);
+
+    return { records, total, page, pageSize };
+  } catch (err) {
+    console.error("[daliurenDb] 查询记录列表失败", err);
+    throw new Error("无法读取起课记录列表");
   }
-
-  // Tag 筛选：多值匹配（记录包含任一选中的 tag）
-  if (tags.length > 0) {
-    allRecords = allRecords.filter((r) =>
-      r.tags.some((t) => tags.includes(t))
-    );
-  }
-
-  const total = allRecords.length;
-
-  // 分页
-  const start = (page - 1) * pageSize;
-  const records = allRecords.slice(start, start + pageSize);
-
-  return { records, total, page, pageSize };
 }
 
 /**
  * 获取单条大六壬记录
  */
 export async function getLiurenRecord(id: number): Promise<LiurenRecord | undefined> {
-  return db.liurenRecords.get(id);
+  try {
+    return await db.liurenRecords.get(id);
+  } catch (err) {
+    console.error("[daliurenDb] 获取记录详情失败", err);
+    throw new Error("无法读取起课记录详情");
+  }
 }
 
 /**
  * 保存大六壬记录（新增或更新）
  */
 export async function saveLiurenRecord(record: LiurenRecord): Promise<number> {
-  // put：有 id 则更新，无 id 则新增
-  const id = await db.liurenRecords.put(record);
-  return id;
+  try {
+    // put：有 id 则更新，无 id 则新增
+    const id = await db.liurenRecords.put(record);
+    return id;
+  } catch (err) {
+    console.error("[daliurenDb] 保存记录失败", err);
+    throw new Error("保存起课记录失败，请重试");
+  }
 }
 
 /**
  * 删除大六壬记录
  */
 export async function deleteLiurenRecord(id: number): Promise<void> {
-  await db.liurenRecords.delete(id);
+  try {
+    await db.liurenRecords.delete(id);
+  } catch (err) {
+    console.error("[daliurenDb] 删除记录失败", err);
+    throw new Error("删除起课记录失败，请重试");
+  }
 }
 
 /**
  * 获取所有已使用的标签（用于 tag 筛选下拉）
  */
 export async function getAllLiurenTags(personId: number): Promise<string[]> {
-  const records = await db.liurenRecords
-    .where("personId")
-    .equals(personId)
-    .toArray();
+  try {
+    const records = await db.liurenRecords
+      .where("personId")
+      .equals(personId)
+      .toArray();
 
-  const tagSet = new Set<string>();
-  for (const r of records) {
-    for (const t of r.tags) {
-      tagSet.add(t);
+    const tagSet = new Set<string>();
+    for (const r of records) {
+      for (const t of r.tags) {
+        tagSet.add(t);
+      }
     }
+    return Array.from(tagSet).sort();
+  } catch (err) {
+    console.error("[daliurenDb] 获取标签列表失败", err);
+    return [];
   }
-  return Array.from(tagSet).sort();
 }

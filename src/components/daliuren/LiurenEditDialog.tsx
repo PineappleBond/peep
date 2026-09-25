@@ -41,7 +41,10 @@ export function LiurenEditDialog({
   }, [record, open]);
 
   const handleSubmit = async () => {
-    if (!record) return;
+    if (!record) {
+      setError("未找到要编辑的记录");
+      return;
+    }
     if (!question.trim()) {
       setError("占事问题不能为空");
       return;
@@ -103,6 +106,7 @@ export function LiurenEditDialog({
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="例如：问事业、问感情..."
+            maxLength={200}
             autoFocus
           />
         </div>
@@ -113,6 +117,7 @@ export function LiurenEditDialog({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="选填"
+            maxLength={500}
           />
         </div>
         <div className="liuren-form-field">
@@ -122,6 +127,7 @@ export function LiurenEditDialog({
             onChange={(e) => setBackground(e.target.value)}
             placeholder="选填，可描述当前背景..."
             rows={3}
+            maxLength={2000}
           />
         </div>
         <div className="liuren-form-field">

@@ -104,23 +104,33 @@ const DEFAULT_PERSON: Omit<Person, "id"> = {
   isDefault: true,
 };
 
-/** 确保默认人物存在（首次调用时自动种子，Promise 缓存防并发重复插入） */
+/**
+ * 确保默认人物存在（首次调用时自动种子，Promise 缓存防并发重复插入）。
+ * 失败时清空缓存，允许下次调用重试，避免「一次失败，永久不可用」。
+ */
 let defaultPromise: Promise<Person> | null = null;
 
 function ensureDefault(): Promise<Person> {
   if (!defaultPromise) {
     defaultPromise = (async () => {
-      const defaults = await db.persons.filter((p) => p.isDefault).toArray();
-      if (defaults.length > 1) {
-        // 去重：保留最早的一条（id 最小），删除其余
-        defaults.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
-        const [keep, ...dupes] = defaults;
-        await db.persons.bulkDelete(dupes.map((d) => d.id!));
-        return keep;
+      try {
+        const defaults = await db.persons.filter((p) => p.isDefault).toArray();
+        if (defaults.length > 1) {
+          // 去重：保留最早的一条（id 最小），删除其余
+          defaults.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+          const [keep, ...dupes] = defaults;
+          await db.persons.bulkDelete(dupes.map((d) => d.id!));
+          return keep;
+        }
+        if (defaults.length === 1) return defaults[0];
+        const id = await db.persons.add(DEFAULT_PERSON);
+        return { ...DEFAULT_PERSON, id };
+      } catch (err) {
+        // 失败时清空缓存，允许下次重试
+        defaultPromise = null;
+        console.error("[personDb] 初始化默认人物失败", err);
+        throw new Error("数据库初始化失败，请检查浏览器存储设置后重试");
       }
-      if (defaults.length === 1) return defaults[0];
-      const id = await db.persons.add(DEFAULT_PERSON);
-      return { ...DEFAULT_PERSON, id };
     })();
   }
   return defaultPromise;
@@ -128,13 +138,23 @@ function ensureDefault(): Promise<Person> {
 
 /** 获取全部人物列表 */
 export async function listPersons(): Promise<Person[]> {
-  await ensureDefault();
-  return db.persons.orderBy("savedAt").reverse().toArray();
+  try {
+    await ensureDefault();
+    return await db.persons.orderBy("savedAt").reverse().toArray();
+  } catch (err) {
+    console.error("[personDb] 获取人物列表失败", err);
+    throw new Error("无法读取人物列表，请检查浏览器存储设置");
+  }
 }
 
 /** 获取单个人物 */
 export async function getPerson(id: number): Promise<Person | undefined> {
-  return db.persons.get(id);
+  try {
+    return await db.persons.get(id);
+  } catch (err) {
+    console.error("[personDb] 获取人物详情失败", err);
+    throw new Error("无法读取人物信息");
+  }
 }
 
 /**
@@ -146,29 +166,41 @@ export async function savePerson(
   input: BirthInput,
   isDefault: boolean
 ): Promise<Person> {
-  return db.transaction("rw", db.persons, async () => {
-    if (isDefault) {
-      // 事务内清除所有现有默认标记
-      const currentDefaults = await db.persons.filter((p) => p.isDefault).toArray();
-      for (const d of currentDefaults) {
-        if (d.id != null && d.id !== id) await db.persons.update(d.id, { isDefault: false });
+  try {
+    return await db.transaction("rw", db.persons, async () => {
+      if (isDefault) {
+        // 事务内清除所有现有默认标记
+        const currentDefaults = await db.persons.filter((p) => p.isDefault).toArray();
+        for (const d of currentDefaults) {
+          if (d.id != null && d.id !== id) await db.persons.update(d.id, { isDefault: false });
+        }
       }
-    }
-    const now = Date.now();
-    if (id != null) {
-      await db.persons.update(id, { ...input, savedAt: now, isDefault });
-      return { ...input, id, savedAt: now, isDefault };
-    }
-    const newId = await db.persons.add({ ...input, savedAt: now, isDefault });
-    return { ...input, id: newId, savedAt: now, isDefault };
-  });
+      const now = Date.now();
+      if (id != null) {
+        await db.persons.update(id, { ...input, savedAt: now, isDefault });
+        return { ...input, id, savedAt: now, isDefault };
+      }
+      const newId = await db.persons.add({ ...input, savedAt: now, isDefault });
+      return { ...input, id: newId, savedAt: now, isDefault };
+    });
+  } catch (err) {
+    console.error("[personDb] 保存人物失败", err);
+    throw new Error("保存人物失败，请重试");
+  }
 }
 
 /** 删除人物（默认人物不可删除） */
 export async function deletePerson(id: number): Promise<void> {
-  const person = await db.persons.get(id);
-  if (person?.isDefault) throw new Error("默认人物不可删除");
-  await db.persons.delete(id);
+  try {
+    const person = await db.persons.get(id);
+    if (person?.isDefault) throw new Error("默认人物不可删除");
+    await db.persons.delete(id);
+  } catch (err) {
+    // 保留业务错误（默认人物不可删除），包装其他错误
+    if (err instanceof Error && err.message === "默认人物不可删除") throw err;
+    console.error("[personDb] 删除人物失败", err);
+    throw new Error("删除人物失败，请重试");
+  }
 }
 
 /** 获取默认人物 */

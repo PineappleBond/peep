@@ -163,6 +163,23 @@ export function PersonDialog({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    // 客户端兜底校验（HTML5 校验可能因浏览器差异被绕过）
+    if (!draft.date || !/^\d{4}-\d{1,2}-\d{1,2}$/.test(draft.date)) {
+      alert("出生日期格式不正确，请使用 YYYY-MM-DD 格式");
+      return;
+    }
+    if (draft.timeIndex < 0 || draft.timeIndex > 12) {
+      alert("时辰索引超出范围（0~12）");
+      return;
+    }
+    if (draft.useTrueSolar && !draft.exactTime) {
+      alert("启用真太阳时时必须填写出生时刻");
+      return;
+    }
+    if (draft.useTrueSolar && draft.placeMode === "overseas" && !draft.timezone) {
+      alert("海外出生时必须选择时区");
+      return;
+    }
     onSave(draft, isDefault);
     onClose();
   };

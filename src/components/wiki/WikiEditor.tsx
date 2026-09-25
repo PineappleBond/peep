@@ -54,16 +54,23 @@ export function WikiEditor({
       setTags(doc.tags);
       // 加载已关联的文档 ID 及其标题
       (async () => {
-        if (doc.id == null) return;
-        const targetIds = await getWikiLinks(doc.id);
-        setLinkTargetIds(targetIds);
-        // 批量查询标题
-        const docs = await Promise.all(targetIds.map((id) => getWikiDoc(id)));
-        const titles: Record<number, string> = {};
-        docs.forEach((d, i) => {
-          if (d) titles[targetIds[i]] = d.title;
-        });
-        setLinkTargetTitles(titles);
+        try {
+          if (doc.id == null) return;
+          const targetIds = await getWikiLinks(doc.id);
+          setLinkTargetIds(targetIds);
+          // 批量查询标题
+          const docs = await Promise.all(targetIds.map((id) => getWikiDoc(id)));
+          const titles: Record<number, string> = {};
+          docs.forEach((d, i) => {
+            if (d) titles[targetIds[i]] = d.title;
+          });
+          setLinkTargetTitles(titles);
+        } catch (err) {
+          console.error("[WikiEditor] 加载关联文档信息失败", err);
+          // 降级：不阻断编辑，但清空关联数据
+          setLinkTargetIds([]);
+          setLinkTargetTitles({});
+        }
       })();
     } else {
       setTitle("");
@@ -153,9 +160,13 @@ export function WikiEditor({
     if (!linkTargetIds.includes(targetId)) {
       setLinkTargetIds([...linkTargetIds, targetId]);
       // 查询标题并缓存
-      const targetDoc = await getWikiDoc(targetId);
-      if (targetDoc) {
-        setLinkTargetTitles((prev) => ({ ...prev, [targetId]: targetDoc.title }));
+      try {
+        const targetDoc = await getWikiDoc(targetId);
+        if (targetDoc) {
+          setLinkTargetTitles((prev) => ({ ...prev, [targetId]: targetDoc.title }));
+        }
+      } catch (err) {
+        console.error("[WikiEditor] 查询关联文档标题失败", err);
       }
     }
     setLinkSearchText("");
@@ -216,6 +227,7 @@ export function WikiEditor({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="文档标题"
+          maxLength={200}
           autoFocus
         />
       </div>
@@ -228,6 +240,7 @@ export function WikiEditor({
           onChange={(e) => setContent(e.target.value)}
           placeholder="使用 Markdown 格式撰写..."
           rows={20}
+          maxLength={100000}
         />
       </div>
 

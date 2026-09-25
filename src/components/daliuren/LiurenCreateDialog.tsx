@@ -94,7 +94,9 @@ export function LiurenCreateDialog({
       const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
-      const birthYear = parseInt(person.date.split("-")[0], 10);
+      // 解析出生年份（防御性处理：格式异常时降级为 2000）
+      const parsedYear = parseInt(person.date.split("-")[0], 10);
+      const birthYear = Number.isFinite(parsedYear) ? parsedYear : 2000;
       const gender = (person.gender as "男" | "女") ?? "男";
 
       const result = calculateDaLiuRen(dateStr, timeStr, { birthYear, gender });
@@ -149,6 +151,7 @@ export function LiurenCreateDialog({
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="例如：问事业、问感情..."
+            maxLength={200}
             autoFocus
           />
         </div>
@@ -159,6 +162,7 @@ export function LiurenCreateDialog({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="选填"
+            maxLength={500}
           />
         </div>
         <div className="liuren-form-field">
@@ -168,6 +172,7 @@ export function LiurenCreateDialog({
             onChange={(e) => setBackground(e.target.value)}
             placeholder="选填，可描述当前背景..."
             rows={3}
+            maxLength={2000}
           />
         </div>
         <div className="liuren-form-field">

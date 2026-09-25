@@ -19,6 +19,8 @@ import { registerDaLiuRenCallbacks } from "../core/debugApi";
 export function DaLiuRenPage() {
   const [person, setPerson] = useState<Person | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<LiurenRecord | null>(null);
+  /** 初始化失败时展示错误提示（避免无限 loading） */
+  const [initError, setInitError] = useState<string | null>(null);
 
   // Dialog 状态
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -49,9 +51,11 @@ export function DaLiuRenPage() {
     getDefaultPerson()
       .then((p) => {
         if (p.id != null) setPerson(p);
+        else setInitError("未找到默认人物，请刷新页面重试");
       })
       .catch((err) => {
         console.error("[DaLiuRenPage] 加载默认人物失败", err);
+        setInitError("加载人物信息失败，请检查浏览器存储设置后刷新页面");
       });
   }, []);
 
@@ -229,6 +233,13 @@ export function DaLiuRenPage() {
   }, [refreshList, dialogRecord, selectedRecord]);
 
   if (person === null) {
+    if (initError) {
+      return (
+        <div className="liuren-page">
+          <div className="err-box">{initError}</div>
+        </div>
+      );
+    }
     return (
       <div className="liuren-page">
         <div className="liuren-loading">加载中...</div>

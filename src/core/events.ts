@@ -28,7 +28,16 @@ class EventEmitter {
   }
 
   emit<E extends EventName>(event: E, ...args: Parameters<EventMap[E]>) {
-    this.listeners.get(event)?.forEach((listener) => listener(...args));
+    const listeners = this.listeners.get(event);
+    if (!listeners) return;
+    listeners.forEach((listener) => {
+      try {
+        listener(...args);
+      } catch (err) {
+        // 单个监听器失败不影响其他监听器执行
+        console.error(`[events] 事件 "${event}" 监听器执行失败`, err);
+      }
+    });
   }
 }
 

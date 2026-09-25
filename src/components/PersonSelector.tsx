@@ -27,8 +27,14 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
   const [confirmDelete, setConfirmDelete] = useState<Person | null>(null);
 
   const loadPersons = async () => {
-    const list = await listPersons();
-    setPersons(list);
+    try {
+      const list = await listPersons();
+      setPersons(list);
+    } catch (err) {
+      console.error("[PersonSelector] 加载人物列表失败", err);
+      // 降级：显示空列表，避免整个组件崩溃
+      setPersons([]);
+    }
   };
 
   useEffect(() => {
@@ -55,9 +61,14 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
   };
 
   const handleSave = async (input: BirthInput, isDefault: boolean) => {
-    const saved = await savePerson(editingPerson?.id, input, isDefault);
-    onSelect(saved);
-    await loadPersons();
+    try {
+      const saved = await savePerson(editingPerson?.id, input, isDefault);
+      onSelect(saved);
+      await loadPersons();
+    } catch (err) {
+      console.error("[PersonSelector] 保存人物失败", err);
+      alert(err instanceof Error ? err.message : "保存失败，请重试");
+    }
   };
 
   const handleDeleteClick = () => {
@@ -67,11 +78,16 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
 
   const handleDeleteConfirm = async () => {
     if (!confirmDelete?.id) return;
-    await deletePerson(confirmDelete.id);
-    const defaultPerson = await getDefaultPerson();
-    onSelect(defaultPerson);
-    setConfirmDelete(null);
-    await loadPersons();
+    try {
+      await deletePerson(confirmDelete.id);
+      const defaultPerson = await getDefaultPerson();
+      onSelect(defaultPerson);
+      setConfirmDelete(null);
+      await loadPersons();
+    } catch (err) {
+      console.error("[PersonSelector] 删除人物失败", err);
+      alert(err instanceof Error ? err.message : "删除失败，请重试");
+    }
   };
 
   const currentPerson = persons.find((p) => p.id === currentId);

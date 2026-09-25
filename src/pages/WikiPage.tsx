@@ -22,6 +22,8 @@ export function WikiPage() {
   const [deletingDoc, setDeletingDoc] = useState<WikiDocument | null>(null);
   const [listRefreshKey, setListRefreshKey] = useState(0);
   const [existingTags, setExistingTags] = useState<string[]>([]);
+  /** 初始化失败时展示错误提示（避免无限 loading） */
+  const [initError, setInitError] = useState<string | null>(null);
   const wikiListRef = useRef<WikiListHandle>(null);
   const selectedDocRef = useRef<WikiDocument | null>(null);
 
@@ -30,9 +32,11 @@ export function WikiPage() {
     getDefaultPerson()
       .then((p) => {
         if (p.id != null) setPerson(p);
+        else setInitError("未找到默认人物，请刷新页面重试");
       })
       .catch((err) => {
         console.error("[WikiPage] 加载默认人物失败", err);
+        setInitError("加载人物信息失败，请检查浏览器存储设置后刷新页面");
       });
   }, []);
 
@@ -113,9 +117,14 @@ export function WikiPage() {
   // 列表选中：加载文档详情，切换到 read 模式
   const handleSelect = useCallback(async (doc: WikiDocument) => {
     if (doc.id == null) return;
-    const full = await getWikiDoc(doc.id);
-    setSelectedDoc(full || doc);
-    setMode("read");
+    try {
+      const full = await getWikiDoc(doc.id);
+      setSelectedDoc(full || doc);
+      setMode("read");
+    } catch (err) {
+      console.error("[WikiPage] 加载文档详情失败", err);
+      alert("无法加载文档详情，请重试");
+    }
   }, []);
 
   // 新建：清空 editingDoc，切换到 edit 模式
@@ -139,30 +148,40 @@ export function WikiPage() {
   // 确认删除
   const handleConfirmDelete = useCallback(async () => {
     if (!deletingDoc?.id) return;
-    await deleteWikiDoc(deletingDoc.id);
-    setDeleteDialogOpen(false);
-    setDeletingDoc(null);
-    // 如果删除的是当前选中的文档，清空右侧
-    if (selectedDoc?.id === deletingDoc.id) {
-      setSelectedDoc(null);
+    try {
+      await deleteWikiDoc(deletingDoc.id);
+      setDeleteDialogOpen(false);
+      setDeletingDoc(null);
+      // 如果删除的是当前选中的文档，清空右侧
+      if (selectedDoc?.id === deletingDoc.id) {
+        setSelectedDoc(null);
+      }
+      setListRefreshKey((k) => k + 1);
+    } catch (err) {
+      console.error("[WikiPage] 删除文档失败", err);
+      alert(err instanceof Error ? err.message : "删除文档失败，请重试");
     }
-    setListRefreshKey((k) => k + 1);
   }, [deletingDoc, selectedDoc]);
 
   // 编辑保存
   const handleSave = useCallback(async (doc: WikiDocument, linkTargetIds: number[]) => {
-    // 保存文档
-    const savedId = await saveWikiDoc(doc);
-    // 保存链接关系
-    await saveWikiLinks(savedId, linkTargetIds);
-    // 刷新列表
-    setListRefreshKey((k) => k + 1);
-    // 切换到 read 模式，选中新/更新的文档
-    const refreshed = await getWikiDoc(savedId);
-    if (refreshed) {
-      setSelectedDoc(refreshed);
+    try {
+      // 保存文档
+      const savedId = await saveWikiDoc(doc);
+      // 保存链接关系
+      await saveWikiLinks(savedId, linkTargetIds);
+      // 刷新列表
+      setListRefreshKey((k) => k + 1);
+      // 切换到 read 模式，选中新/更新的文档
+      const refreshed = await getWikiDoc(savedId);
+      if (refreshed) {
+        setSelectedDoc(refreshed);
+      }
+      setMode("read");
+    } catch (err) {
+      console.error("[WikiPage] 保存文档失败", err);
+      alert(err instanceof Error ? err.message : "保存文档失败，请重试");
     }
-    setMode("read");
   }, []);
 
   // 取消编辑
@@ -174,61 +193,85 @@ export function WikiPage() {
   // 导出 llms.txt
   const handleExport = useCallback(async () => {
     if (!person?.id) return;
-    const result = await listWikiDocs(person.id, { pageSize: 9999 });
-    const docs = result.docs;
+    try {
+      const result = await listWikiDocs(person.id, { pageSize: 9999 });
+      const docs = result.docs;
 
-    // 按标签分组
-    const tagMap = new Map<string, WikiDocument[]>();
-    const untagged: WikiDocument[] = [];
-    for (const doc of docs) {
-      if (doc.tags.length === 0) {
-        untagged.push(doc);
-      } else {
-        for (const tag of doc.tags) {
-          if (!tagMap.has(tag)) tagMap.set(tag, []);
-          tagMap.get(tag)?.push(doc);
+      if (docs.length === 0) {
+        alert("暂无文档可导出");
+        return;
+      }
+
+      // 按标签分组
+      const tagMap = new Map<string, WikiDocument[]>();
+      const untagged: WikiDocument[] = [];
+      for (const doc of docs) {
+        if (doc.tags.length === 0) {
+          untagged.push(doc);
+        } else {
+          for (const tag of doc.tags) {
+            if (!tagMap.has(tag)) tagMap.set(tag, []);
+            tagMap.get(tag)?.push(doc);
+          }
         }
       }
+
+      let md = `# 知识库 — ${person.name || "未命名"}\n\n`;
+      md += `> ${person.name || "未命名"} 的紫微斗数知识库\n\n`;
+
+      const renderDocs = (list: WikiDocument[]) =>
+        list
+          .map((d) => {
+            const preview = d.content.split("\n")[0].slice(0, 100) || "（无内容）";
+            return `- [${d.title || "（无标题）"}](#doc-${d.id}): ${preview}`;
+          })
+          .join("\n");
+
+      for (const [tag, list] of Array.from(tagMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
+        md += `## ${tag}\n\n${renderDocs(list)}\n\n`;
+      }
+      if (untagged.length > 0) {
+        md += `## 未分类\n\n${renderDocs(untagged)}\n\n`;
+      }
+
+      const blob = new Blob([md], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `llms-${person.name || "wiki"}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[WikiPage] 导出失败", err);
+      alert("导出失败，请重试");
     }
-
-    let md = `# 知识库 — ${person.name || "未命名"}\n\n`;
-    md += `> ${person.name || "未命名"} 的紫微斗数知识库\n\n`;
-
-    const renderDocs = (list: WikiDocument[]) =>
-      list
-        .map((d) => {
-          const preview = d.content.split("\n")[0].slice(0, 100) || "（无内容）";
-          return `- [${d.title || "（无标题）"}](#doc-${d.id}): ${preview}`;
-        })
-        .join("\n");
-
-    for (const [tag, list] of Array.from(tagMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-      md += `## ${tag}\n\n${renderDocs(list)}\n\n`;
-    }
-    if (untagged.length > 0) {
-      md += `## 未分类\n\n${renderDocs(untagged)}\n\n`;
-    }
-
-    const blob = new Blob([md], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `llms-${person.name || "wiki"}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
   }, [person]);
 
   // 关联文档跳转：加载目标文档，显示在右侧
   const handleDocClick = useCallback(async (docId: number) => {
-    const doc = await getWikiDoc(docId);
-    if (doc) {
-      setSelectedDoc(doc);
-      setMode("read");
+    try {
+      const doc = await getWikiDoc(docId);
+      if (doc) {
+        setSelectedDoc(doc);
+        setMode("read");
+      } else {
+        alert("文档不存在或已被删除");
+      }
+    } catch (err) {
+      console.error("[WikiPage] 加载关联文档失败", err);
+      alert("无法加载关联文档，请重试");
     }
   }, []);
 
   // 加载中状态
   if (person === null) {
+    if (initError) {
+      return (
+        <div className="wiki-page">
+          <div className="err-box">{initError}</div>
+        </div>
+      );
+    }
     return (
       <div className="wiki-page">
         <div className="wiki-loading">加载中...</div>
