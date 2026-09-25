@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DEFAULT_BIRTH_INPUT, useZwds, BirthInput } from "./core/useZwds";
 import { Chart } from "./components/Chart";
 import { HoroscopeBar } from "./components/HoroscopeBar";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { PersonSelector } from "./components/PersonSelector";
-import { getDefaultPerson, type Person } from "./core/personDb";
+import { getDefaultPerson, listPersons, type Person } from "./core/personDb";
+import { initDebugApi, registerDebugApi } from "./core/debugApi";
+
+// 初始化调试 API
+initDebugApi();
 
 const STORAGE_KEY = "zwds-current-person-id";
 
@@ -23,6 +27,7 @@ function App() {
   const [input, setInput] = useState<BirthInput>(DEFAULT_BIRTH_INPUT);
   const [genId, setGenId] = useState(0);
   const z = useZwds(input);
+  const currentPersonRef = useRef<Person | null>(null);
 
   // 初始化：加载默认人物
   useEffect(() => {
@@ -34,6 +39,7 @@ function App() {
         // 这里应该从 DB 加载，但先用默认值
         const person = await getDefaultPerson();
         setInput(person);
+        currentPersonRef.current = person;
       } else {
         const person = await getDefaultPerson();
         if (person.id) {
@@ -41,15 +47,26 @@ function App() {
           localStorage.setItem(STORAGE_KEY, String(person.id));
         }
         setInput(person);
+        currentPersonRef.current = person;
       }
     };
     init();
   }, []);
 
-  // 开发调试句柄
-  if (import.meta.env.DEV) {
-    (window as unknown as { __zwds: typeof z }).__zwds = z;
-  }
+  // 注册调试 API 回调
+  useEffect(() => {
+    registerDebugApi({
+      selectPerson: async (personId: number) => {
+        const persons = await listPersons();
+        const person = persons.find((p) => p.id === personId);
+        if (person) {
+          handleSelectPerson(person);
+        }
+      },
+      getZwds: () => z,
+      getPerson: () => currentPersonRef.current,
+    });
+  }, [z]);
 
   const handleSelectPerson = (person: Person) => {
     if (person.id) {
@@ -58,6 +75,7 @@ function App() {
     }
     setInput(person);
     setGenId((g) => g + 1);
+    currentPersonRef.current = person;
   };
 
   return (
