@@ -4,3 +4,4 @@ dist
 .DS_Store
 *.log
 .claude/launch.json
+test-results/.last-run.json

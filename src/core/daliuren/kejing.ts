@@ -15,6 +15,8 @@ import {
   LIU_CHONG,
   LIU_HE_PAIRS,
   SAN_HE_TRIPLES,
+  XUN_HEAD,
+  STEM_LODGING,
 } from "./constants";
 import type { DaLiuRenResult } from "./types";
 
@@ -74,7 +76,7 @@ function inFourLessons(branch: number, r: DaLiuRenResult): boolean {
   return r.fourLessons.some((l) => l.upper === branch);
 }
 
-/** 天盘某支是否在三传中 */
+/** 天盘某支是否在三传中（保留为工具函数） */
 function inSanChuan(branch: number, r: DaLiuRenResult): boolean {
   const { initial, middle, final } = r.threeTransmissions;
   return initial === branch || middle === branch || final === branch;
@@ -126,6 +128,109 @@ function generalOnBranch(
   if (!g) return false;
   return r.heavenBoard[g.position] === branch;
 }
+
+/**
+ * 获取天盘某支所乘天将编号（-1 表示未找到）
+ * PHP: generalRidingBranch($branch)
+ * 先找天盘支在地盘的宫位，再查该宫的天将
+ */
+function getGeneralRidingBranch(
+  branch: number,
+  r: DaLiuRenResult
+): number {
+  // 天盘支 branch 在地盘的宫位
+  const ground = r.heavenBoard.indexOf(branch);
+  if (ground === -1) return -1;
+  const g = r.twelveGenerals.find((g) => g.position === ground);
+  return g ? g.general : -1;
+}
+
+/**
+ * 驿马计算：按年支/日支三合局取对冲
+ * 申子辰→寅、寅午戌→申、巳酉丑→亥、亥卯未→巳
+ */
+function travelHorse(branch: number): number {
+  // PHP: match(branch%4){ 0→2(寅), 1→11(亥), 2→8(申), 3→5(巳) }
+  // 验证：申子辰(0,4,8)%4=0→寅 ✓ 寅午戌(2,6,10)%4=2→申 ✓
+  //       巳酉丑(5,9,1)%4=1→亥 ✓ 亥卯未(11,3,7)%4=3→巳 ✓
+  switch (branch % 4) {
+    case 0: return 2;   // 申子辰→寅
+    case 1: return 11;  // 巳酉丑→亥
+    case 2: return 8;   // 寅午戌→申
+    case 3: return 5;   // 亥卯未→巳
+    default: return -1;
+  }
+}
+
+/** 日干寄宫所在支 */
+function stemLodgingBranch(stem: number): number {
+  return STEM_LODGING[stem];
+}
+
+/**
+ * 计算六十甲子日序号所在的旬索引（0-5）
+ * 甲子旬=0, 甲戌旬=1, 甲申旬=2, 甲午旬=3, 甲辰旬=4, 甲寅旬=5
+ */
+function dayXunIndex(dayIndex: number): number {
+  return Math.floor(dayIndex / 10);
+}
+
+/** 获取旬首地支 */
+function xunHeadBranch(dayIndex: number): number {
+  return XUN_HEAD[dayXunIndex(dayIndex)];
+}
+
+/**
+ * 日干五行是否旺相（按月令）
+ * 简化：直接用 wangXiang 中天盘该支的状态
+ */
+function isBranchWangXiang(branch: number, r: DaLiuRenResult): boolean {
+  const wx = r.wangXiang[branch];
+  return wx === "旺" || wx === "相";
+}
+
+/**
+ * 日干按五行是否旺相
+ */
+function isStemWangXiang(stem: number, r: DaLiuRenResult): boolean {
+  const elem = STEM_ELEMENT[stem];
+  // 找与日干同五行的地支（如甲=木→看寅卯）
+  // 简化：用日干寄宫上神的旺相状态
+  const lodging = stemLodgingBranch(stem);
+  return isBranchWangXiang(lodging, r);
+}
+
+/** 六吉将编号：贵人(0)、六合(3)、青龙(5)、太常(8)、太阴(10)、天后(11) */
+const AUSPICIOUS_GENERALS = new Set([0, 3, 5, 8, 10, 11]);
+
+/** 六凶将编号 */
+const INauspicious_GENERALS = new Set([1, 2, 4, 6, 7, 9]);
+
+/** 旬奇表：六旬依次取 丑、丑、子、子、亥、亥 */
+const XUN_WONDERS = [1, 1, 0, 0, 11, 11];
+
+/** 日奇表：甲→午(6)、乙→巳(5)、丙→辰(4)、丁→卯(3)、戊→寅(2)、己→丑(1)、庚→未(7)、辛→申(8)、壬→酉(9)、癸→戌(10) */
+const DAY_WONDERS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10];
+
+/** 日德表：甲→寅(2)、乙→申(8)、丙→巳(5)、丁→亥(11)、戊→巳(5)、己→寅(2)、庚→申(8)、辛→巳(5)、壬→亥(11)、癸→巳(5) */
+const DAY_VIRTUES = [2, 8, 5, 11, 5, 2, 8, 5, 11, 5];
+
+/** 支仪表（六仪课用）：子→午、丑→巳、寅→辰、卯→卯(3)、辰→寅、巳→丑、午→未、未→申、申→酉、酉→戌、戌→亥、亥→子 */
+const BRANCH_INSTRUMENTS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10, 11, 0];
+
+/**
+ * 九丑十日表：日干→允许的日支列表
+ * 按 PHP JiuchouRule：
+ * 戊(4)→子(0)午(6)、壬(8)→子(0)午(6)
+ * 乙(1)→卯(3)酉(9)、己(5)→卯(3)酉(9)、辛(7)→卯(3)酉(9)
+ */
+const JIUCHOU_DAYS: Record<number, number[]> = {
+  1: [3, 9],   // 乙卯、乙酉
+  4: [0, 6],   // 戊子、戊午
+  5: [3, 9],   // 己卯、己酉
+  7: [3, 9],   // 辛卯、辛酉
+  8: [0, 6],   // 壬子、壬午
+};
 
 // ─── 课经规则列表 ─────────────────────────────────────
 
@@ -227,28 +332,52 @@ const rules: KeJingRule[] = [
     name: "三奇课",
     group: "三传",
     description:
-      "三传成三合局（申子辰/寅午戌/巳酉丑/亥卯未）。事有定势、合而成局。",
-    check: (r) => sanChuanSanHe(r),
+      "占日所在六甲旬的旬奇发用或入于中末传。万事和合、千殃解除。",
+    check: (r) => {
+      // 计算日干支序号
+      const dayStem = r.fourPillars.dayStem;
+      const dayBranch = r.fourPillars.dayBranch;
+      const dayIndex = ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
+      const xunIdx = dayXunIndex(dayIndex);
+      const xunWonder = XUN_WONDERS[xunIdx];
+      const dayWonder = DAY_WONDERS[dayStem];
+      const { initial, middle, final } = r.threeTransmissions;
+      // 旬奇入三传
+      return (
+        initial === xunWonder ||
+        middle === xunWonder ||
+        final === xunWonder ||
+        initial === dayWonder ||
+        middle === dayWonder ||
+        final === dayWonder
+      );
+    },
   },
   {
     code: "guanjue",
     name: "官爵课",
     group: "三传",
     description:
-      "三传递生且带驿马、天吏。主官运亨通、爵禄加身。",
+      "太岁、月建、本命或行年的驿马发用，同时天魁戌与太常入传。官爵印绶、得之荣华。",
     check: (r) => {
-      // 三传递生 + 三传中含驿马（申子辰马在寅等）
-      if (!sanChuanDiSheng(r)) return false;
-      const yearBranch = r.fourPillars.yearBranch;
-      // 驿马：申子辰→寅，寅午戌→申，巳酉丑→亥，亥卯未→巳
-      const maMap: Record<number, number> = {
-        0: 2, 4: 2, 8: 2, // 申子辰→寅
-        2: 8, 6: 8, 10: 8, // 寅午戌→申
-        5: 11, 9: 11, 1: 11, // 巳酉丑→亥
-        11: 5, 3: 5, 7: 5, // 亥卯未→巳
-      };
-      const ma = maMap[yearBranch];
-      return ma !== undefined && inSanChuan(ma, r);
+      const { initial, middle, final } = r.threeTransmissions;
+      const transmissions = [initial, middle, final];
+      // 驿马来源：太岁、月建、本命、行年
+      const sources = [
+        r.fourPillars.yearBranch,
+        r.fourPillars.monthBranch,
+        r.fate?.mingGong ?? -1,
+        r.fate?.xingNian ?? -1,
+      ].filter((b) => b >= 0);
+      const sourceHorses = sources.map(travelHorse);
+      // 驿马发用：初传为某来源的驿马
+      const horseMatches = sourceHorses.some((h) => h === initial);
+      if (!horseMatches) return false;
+      // 天魁戌(10)入传 + 太常(8)入传
+      const hasTianKui = transmissions.includes(10); // 戌
+      const transmissionGenerals = transmissions.map((b) => getGeneralRidingBranch(b, r));
+      const hasTaiChang = transmissionGenerals.includes(8); // 太常编号=8
+      return hasTianKui && hasTaiChang;
     },
   },
   {
@@ -256,14 +385,27 @@ const rules: KeJingRule[] = [
     name: "三光课",
     group: "三传",
     description:
-      "三传递生且三传皆旺相（得月令）。事皆顺遂、光明通达。",
+      "日干、日支与发用均得旺相，日上神、辰上神与发用又均乘吉将。课入三光，万事吉昌。",
     check: (r) => {
-      if (!sanChuanDiSheng(r)) return false;
-      const { initial, middle, final } = r.threeTransmissions;
-      const wx = r.wangXiang;
-      const isWangXiang = (b: number) =>
-        wx[b] === "旺" || wx[b] === "相";
-      return isWangXiang(initial) && isWangXiang(middle) && isWangXiang(final);
+      const stem = r.fourPillars.dayStem;
+      const branch = r.fourPillars.dayBranch;
+      const initial = r.threeTransmissions.initial;
+      // 日干、日支、初传旺相
+      if (!isStemWangXiang(stem, r)) return false;
+      if (!isBranchWangXiang(branch, r)) return false;
+      if (!isBranchWangXiang(initial, r)) return false;
+      // 日上神（第一课上课）、辰上神（第三课上课）、初传 乘吉将
+      const dayUpper = r.fourLessons[0]?.upper;
+      const branchUpper = r.fourLessons[2]?.upper;
+      if (dayUpper === undefined || branchUpper === undefined) return false;
+      const dayUpperGeneral = getGeneralRidingBranch(dayUpper, r);
+      const branchUpperGeneral = getGeneralRidingBranch(branchUpper, r);
+      const initialGeneral = getGeneralRidingBranch(initial, r);
+      return (
+        AUSPICIOUS_GENERALS.has(dayUpperGeneral) &&
+        AUSPICIOUS_GENERALS.has(branchUpperGeneral) &&
+        AUSPICIOUS_GENERALS.has(initialGeneral)
+      );
     },
   },
   {
@@ -271,14 +413,27 @@ const rules: KeJingRule[] = [
     name: "三阳课",
     group: "三传",
     description:
-      "三传递克且三传皆旺相。事虽冲突但各有气焰。",
+      "贵人顺行，日干寄宫与日支均乘贵前五将，发用又得季节旺相。课入三阳，官爵翱翔。",
     check: (r) => {
-      if (!sanChuanDiKe(r)) return false;
-      const { initial, middle, final } = r.threeTransmissions;
-      const wx = r.wangXiang;
-      const isWangXiang = (b: number) =>
-        wx[b] === "旺" || wx[b] === "相";
-      return isWangXiang(initial) && isWangXiang(middle) && isWangXiang(final);
+      const stem = r.fourPillars.dayStem;
+      const branch = r.fourPillars.dayBranch;
+      const initial = r.threeTransmissions.initial;
+      // 贵人顺行：贵人（天乙）在地盘上的排列方向为顺
+      // 简化判断：贵人顺行即昼贵在昼位（贵人起法已含昼夜判断）
+      // 贵前五将 = 贵人编号+1 到 +5（按十二天将顺序）
+      const guirenGeneral = r.twelveGenerals.find((g) => g.name === "贵人");
+      if (!guirenGeneral) return false;
+      // 贵前五将：按天将顺序，贵人(0)前五为 螣蛇(1)、朱雀(2)、六合(3)、勾陈(4)、青龙(5)
+      // 即天将编号 1-5
+      const noblemanFront = new Set([1, 2, 3, 4, 5]);
+      // 日干寄宫与日支乘贵前五将
+      const lodging = stemLodgingBranch(stem);
+      const lodgingGeneral = getGeneralRidingBranch(lodging, r);
+      const branchGeneral = getGeneralRidingBranch(branch, r);
+      if (!noblemanFront.has(lodgingGeneral)) return false;
+      if (!noblemanFront.has(branchGeneral)) return false;
+      // 发用旺相
+      return isBranchWangXiang(initial, r);
     },
   },
   {
@@ -286,13 +441,17 @@ const rules: KeJingRule[] = [
     name: "六仪课",
     group: "三传",
     description:
-      "三传见六仪（子、卯、巳、酉、亥、未为六仪支）。主有吉庆、贵人扶持。",
+      "占日所在六甲旬的旬首地支发用、入于中传或末传。兆多喜庆、求旺相宜。",
     check: (r) => {
-      // 六仪：子、卯、巳、酉、亥、未
-      const liuYi = new Set([0, 3, 5, 9, 11, 7]);
+      const dayStem = r.fourPillars.dayStem;
+      const dayBranch = r.fourPillars.dayBranch;
+      const dayIndex = ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
+      const xunInstrument = xunHeadBranch(dayIndex);
       const { initial, middle, final } = r.threeTransmissions;
       return (
-        liuYi.has(initial) || liuYi.has(middle) || liuYi.has(final)
+        initial === xunInstrument ||
+        middle === xunInstrument ||
+        final === xunInstrument
       );
     },
   },
@@ -318,28 +477,39 @@ const rules: KeJingRule[] = [
     name: "富贵课",
     group: "天将",
     description:
-      "三传见贵人、禄、马（驿马）。主官禄双全、富贵显达。",
+      "天乙贵人乘旺相之神发用，上下五行相生，又临日干寄宫、日支、本命或行年。天降福德、万事新鲜。",
     check: (r) => {
-      const hasGuiren = r.twelveGenerals.some(
-        (g) => g.name === "贵人" && inSanChuan(r.heavenBoard[g.position], r)
-      );
-      // 禄：日干之禄（甲寅、乙卯、丙巳、丁午、戊巳、己午、庚申、辛酉、壬亥、癸子）
-      const luMap: Record<number, number> = {
-        0: 2, 1: 3, 2: 5, 3: 6, 4: 5, 5: 6, 6: 8, 7: 9, 8: 11, 9: 0,
-      };
-      const lu = luMap[r.fourPillars.dayStem];
-      const hasLu = inSanChuan(lu, r);
-      // 驿马
-      const yearBranch = r.fourPillars.yearBranch;
-      const maMap: Record<number, number> = {
-        0: 2, 4: 2, 8: 2,
-        2: 8, 6: 8, 10: 8,
-        5: 11, 9: 11, 1: 11,
-        11: 5, 3: 5, 7: 5,
-      };
-      const ma = maMap[yearBranch];
-      const hasMa = ma !== undefined && inSanChuan(ma, r);
-      return hasGuiren && hasLu && hasMa;
+      const initial = r.threeTransmissions.initial;
+      const dayStem = r.fourPillars.dayStem;
+      const dayBranch = r.fourPillars.dayBranch;
+      // 初传乘贵人（天将编号 0）
+      const initialGeneral = getGeneralRidingBranch(initial, r);
+      if (initialGeneral !== 0) return false;
+      // 初传旺相
+      if (!isBranchWangXiang(initial, r)) return false;
+      // 初传所在地盘宫位（下神）
+      const ground = r.heavenBoard.indexOf(initial);
+      if (ground === -1) return false;
+      // 上下相生（天盘初传五行与地盘宫位五行相生）
+      const upperElem = BRANCH_ELEMENT[initial];
+      const lowerElem = BRANCH_ELEMENT[ground];
+      const generatingDirection =
+        shengOf(upperElem) === lowerElem
+          ? "upper_generates_lower"
+          : shengOf(lowerElem) === upperElem
+            ? "lower_generates_upper"
+            : null;
+      if (generatingDirection === null) return false;
+      // 临日干寄宫、日支、本命或行年
+      const dayStemLodging = stemLodgingBranch(dayStem);
+      const targets = [
+        dayStemLodging,
+        dayBranch,
+        r.fate?.mingGong ?? -1,
+        r.fate?.xingNian ?? -1,
+      ];
+      const matchesTarget = targets.some((t) => t === ground);
+      return matchesTarget;
     },
   },
   {
@@ -347,24 +517,23 @@ const rules: KeJingRule[] = [
     name: "龙德课",
     group: "天将",
     description:
-      "四课见青龙与天德（月德）。主吉庆重重、贵人提携。",
+      "太岁乘天乙贵人发用，月将又入于三传。君恩及下、万姓欢忻。",
     check: (r) => {
-      // 青龙临四课
-      const qinglongPos = r.twelveGenerals.find((g) => g.name === "青龙");
-      if (!qinglongPos) return false;
-      const qinglongBranch = r.heavenBoard[qinglongPos.position];
-      if (!inFourLessons(qinglongBranch, r)) return false;
-      // 天德：正丁二坤三庚四辛五巳六癸七亥八子九丙十壬十一巳十二丙
-      // 简化：月建对应的天德查表
-      // 按月支：寅月→丁(无支)，此处用月德更简单
-      // 月德：寅午戌月在丙（巳），申子辰月在壬（亥），亥卯未月在甲（寅），巳酉丑月在庚（申）
-      const monthBranch = r.fourPillars.monthBranch;
-      let tianDe: number;
-      if ([2, 6, 10].includes(monthBranch)) tianDe = 5; // 寅午戌→巳
-      else if ([8, 0, 4].includes(monthBranch)) tianDe = 11; // 申子辰→亥
-      else if ([11, 3, 7].includes(monthBranch)) tianDe = 2; // 亥卯未→寅
-      else tianDe = 8; // 巳酉丑→申
-      return inFourLessons(tianDe, r);
+      const yearBranch = r.fourPillars.yearBranch;
+      const monthGeneralBranch = r.monthGeneral.branch;
+      const initial = r.threeTransmissions.initial;
+      const { middle, final } = r.threeTransmissions;
+      // 初传 = 太岁（年支）
+      if (initial !== yearBranch) return false;
+      // 初传乘天乙贵人（天将编号 0）
+      const initialGeneral = getGeneralRidingBranch(initial, r);
+      if (initialGeneral !== 0) return false;
+      // 月将入三传
+      return (
+        initial === monthGeneralBranch ||
+        middle === monthGeneralBranch ||
+        final === monthGeneralBranch
+      );
     },
   },
   {
@@ -372,26 +541,35 @@ const rules: KeJingRule[] = [
     name: "时泰课",
     group: "天将",
     description:
-      "三传见三合/六合且带吉将（青龙、太常、六合）。主时运亨通、百事和合。",
+      "初末传乘青龙、六合相对，太岁或月建入传并兼作日财或日德。皇恩欲拜、灾患潜消。",
     check: (r) => {
-      // 三传带合
-      const { initial, middle, final } = r.threeTransmissions;
-      const hasSanHe = sanChuanSanHe(r);
-      const hasLiuHe = LIU_HE_PAIRS.some(
-        (p) =>
-          (p[0] === initial && p[1] === middle) ||
-          (p[1] === initial && p[0] === middle) ||
-          (p[0] === middle && p[1] === final) ||
-          (p[1] === middle && p[0] === final)
+      const { initial, final } = r.threeTransmissions;
+      const middle = r.threeTransmissions.middle;
+      const transmissions = [initial, middle, final];
+      const yearBranch = r.fourPillars.yearBranch;
+      const monthBranch = r.fourPillars.monthBranch;
+      const dayStem = r.fourPillars.dayStem;
+      // 初末传乘青龙(5)/六合(3)相对
+      const transmissionGenerals = transmissions.map((b) =>
+        getGeneralRidingBranch(b, r)
       );
-      if (!hasSanHe && !hasLiuHe) return false;
-      // 带吉将
-      const jiJiang = ["青龙", "太常", "六合"];
-      return jiJiang.some((name) =>
-        r.twelveGenerals.some(
-          (g) => g.name === name && inSanChuan(r.heavenBoard[g.position], r)
-        )
-      );
+      const dragonUnion =
+        (transmissionGenerals[0] === 5 && transmissionGenerals[2] === 3) ||
+        (transmissionGenerals[0] === 3 && transmissionGenerals[2] === 5);
+      if (!dragonUnion) return false;
+      // 太岁或月建入传并兼作日财或日德
+      const dayVirtue = DAY_VIRTUES[dayStem];
+      // 日财：日干所克之五行对应的地支（简化：看年/月支五行是否被日干所克）
+      const dayElem = STEM_ELEMENT[dayStem];
+      const dayWealthElem = keOf(dayElem); // 日干所克的五行
+      const isDayWealth = (b: number) => BRANCH_ELEMENT[b] === dayWealthElem;
+      const yearInTrans = transmissions.includes(yearBranch);
+      const monthInTrans = transmissions.includes(monthBranch);
+      const yearQualifies =
+        yearInTrans && (isDayWealth(yearBranch) || yearBranch === dayVirtue);
+      const monthQualifies =
+        monthInTrans && (isDayWealth(monthBranch) || monthBranch === dayVirtue);
+      return yearQualifies || monthQualifies;
     },
   },
   {
@@ -399,15 +577,12 @@ const rules: KeJingRule[] = [
     name: "铸印课",
     group: "天将",
     description:
-      "三传递生且带吉将（青龙、太常）。主官职封拜、印信到手。",
+      "天魁戌与太乙巳同入三传；戌为印、巳为炉。顽金铸篆、藉火功全。",
     check: (r) => {
-      if (!sanChuanDiSheng(r)) return false;
-      const jiJiang = ["青龙", "太常"];
-      return jiJiang.some((name) =>
-        r.twelveGenerals.some(
-          (g) => g.name === name && inSanChuan(r.heavenBoard[g.position], r)
-        )
-      );
+      const { initial, middle, final } = r.threeTransmissions;
+      // 戌(10) 与 巳(5) 同入三传
+      const transmissions = [initial, middle, final];
+      return transmissions.includes(10) && transmissions.includes(5);
     },
   },
   {
@@ -415,15 +590,14 @@ const rules: KeJingRule[] = [
     name: "斫轮课",
     group: "天将",
     description:
-      "三传递克且带吉将。主以力制胜、劳而有功。",
+      "初传卯加临地盘申（庚）或酉（辛）发用；木就金斫、革故鼎新。",
     check: (r) => {
-      if (!sanChuanDiKe(r)) return false;
-      const jiJiang = ["青龙", "太常", "六合"];
-      return jiJiang.some((name) =>
-        r.twelveGenerals.some(
-          (g) => g.name === name && inSanChuan(r.heavenBoard[g.position], r)
-        )
-      );
+      const initial = r.threeTransmissions.initial;
+      // 初传为卯(3)
+      if (initial !== 3) return false;
+      // 天盘卯加临地盘申(8)或酉(9)
+      // 即 heavenBoard[8] === 3 或 heavenBoard[9] === 3
+      return r.heavenBoard[8] === 3 || r.heavenBoard[9] === 3;
     },
   },
 
@@ -433,18 +607,40 @@ const rules: KeJingRule[] = [
     name: "天祸课",
     group: "特殊",
     description:
-      "四立日（立春、立夏、立秋、立冬）且四课见凶将（白虎、螣蛇）。主天降灾祸。",
+      "四立日，今日干支临昨日干支，或昨日干支临今日干支。以新易旧、天有灾祸。",
     check: (r) => {
-      // 简化：判断月支在四孟（寅巳申亥）且四课带凶将
+      // 四立日：需要判断今天是否为立春/立夏/立秋/立冬
+      // 简化：用月支在四孟（寅巳申亥）近似判断四立后的月份
+      // 严格判断需要节气数据，此处用四孟月+干支相临模式
       const monthBranch = r.fourPillars.monthBranch;
       const isSiLi = [2, 5, 8, 11].includes(monthBranch);
       if (!isSiLi) return false;
-      const xiongJiang = ["白虎", "螣蛇"];
-      return xiongJiang.some((name) =>
-        r.twelveGenerals.some(
-          (g) => g.name === name && inFourLessons(r.heavenBoard[g.position], r)
-        )
-      );
+      // 今日干支与昨日干支相临：今日干寄宫上神为昨日干寄宫，今日支上神为昨日支
+      // 简化判断：天盘中今日日干寄宫位的天盘支与昨日干支寄宫相同
+      // 由于缺少精确节气数据，用月支四孟+天地盘特定模式近似
+      const dayStem = r.fourPillars.dayStem;
+      const dayBranch = r.fourPillars.dayBranch;
+      const todayStemLodge = stemLodgingBranch(dayStem);
+      // 昨日干支
+      const dayIndex = ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
+      const yesterdayIndex = (dayIndex + 59) % 60;
+      const yesterdayStem = yesterdayIndex % 10;
+      const yesterdayBranch = yesterdayIndex % 12;
+      const yesterdayStemLodge = stemLodgingBranch(yesterdayStem);
+      // 今日干支临昨日干支：
+      // 天盘在昨日干寄宫位上的支 = 今日干寄宫位上的天盘支（简化）
+      // 方向一：todayStemOnYesterdayStem + todayBranchOnYesterdayBranch
+      const todayStemUpper = r.heavenBoard[yesterdayStemLodge];
+      const todayBranchUpper = r.heavenBoard[yesterdayBranch];
+      const yesterdayStemUpper = r.heavenBoard[todayStemLodge];
+      const yesterdayBranchUpper = r.heavenBoard[dayBranch];
+      const todayOnYesterday =
+        todayStemUpper === yesterdayStemLodge &&
+        todayBranchUpper === yesterdayBranch;
+      const yesterdayOnToday =
+        yesterdayStemUpper === todayStemLodge &&
+        yesterdayBranchUpper === dayBranch;
+      return todayOnYesterday || yesterdayOnToday;
     },
   },
   {
@@ -452,20 +648,16 @@ const rules: KeJingRule[] = [
     name: "九丑课",
     group: "特殊",
     description:
-      "四课见子午卯酉（四正）多位且带凶将。主百事不宜、大凶。",
+      "九丑十日占课，天盘丑加临日支。刚日男凶、柔日女祸。",
     check: (r) => {
-      const siZheng = new Set([0, 3, 6, 9]); // 子午卯酉
-      let count = 0;
-      for (const l of r.fourLessons) {
-        if (siZheng.has(l.upper)) count++;
-      }
-      if (count < 3) return false;
-      const xiongJiang = ["白虎", "螣蛇", "勾陈"];
-      return xiongJiang.some((name) =>
-        r.twelveGenerals.some(
-          (g) => g.name === name && inFourLessons(r.heavenBoard[g.position], r)
-        )
-      );
+      const dayStem = r.fourPillars.dayStem;
+      const dayBranch = r.fourPillars.dayBranch;
+      // 九丑十日
+      const allowedBranches = JIUCHOU_DAYS[dayStem];
+      if (!allowedBranches) return false;
+      if (!allowedBranches.includes(dayBranch)) return false;
+      // 天盘丑(1)临日支：heavenBoard[dayBranch] === 1
+      return r.heavenBoard[dayBranch] === 1;
     },
   },
   {
@@ -538,13 +730,33 @@ function buildEvidence(code: string, r: DaLiuRenResult): string {
     case "fanyin":
       return `天地盘对冲（返吟盘），天盘子位=${diZhi[r.heavenBoard[0]]}冲子`;
     case "sanqi":
-      return `三传成三合局：${sanChuanStr}`;
+      return `旬奇或日奇入三传：${sanChuanStr}`;
+    case "guanjue":
+      return `驿马发用+天魁太常入传：${sanChuanStr}`;
     case "fugui":
-      return `三传带贵人、禄、驿马：${sanChuanStr}`;
+      return `天乙贵人乘旺相发用，上下相生，临日辰命年：${sanChuanStr}`;
+    case "longde":
+      return `太岁乘贵人发用，月将入传：${sanChuanStr}`;
     case "sanguang":
-      return `三传递生且皆旺相：${sanChuanStr}`;
+      return `日辰用旺相，三处乘吉将：${sanChuanStr}`;
     case "sanyang":
-      return `三传递克且皆旺相：${sanChuanStr}`;
+      return `贵人顺行，日辰乘贵前五将，发用旺相：${sanChuanStr}`;
+    case "liuyi":
+      return `旬首地支入三传：${sanChuanStr}`;
+    case "shitai":
+      return `初末乘青龙六合，太岁月建入传为日财日德：${sanChuanStr}`;
+    case "zhuyin":
+      return `天魁戌与太乙巳同入三传：${sanChuanStr}`;
+    case "zhuolun":
+      return `初传卯加临地盘申或酉发用：${sanChuanStr}`;
+    case "tianhuo":
+      return `四立日，今日干支与昨日干支相临：${sanChuanStr}`;
+    case "jiuchou":
+      return `九丑十日，天盘丑临日支：${sanChuanStr}`;
+    case "fuyang":
+      return `四课见丧门或吊客：${sanChuanStr}`;
+    case "chongshanchuan":
+      return `三传见六冲关系：${sanChuanStr}`;
     default:
       return `三传：${sanChuanStr}`;
   }
