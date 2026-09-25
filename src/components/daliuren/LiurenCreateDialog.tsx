@@ -3,7 +3,7 @@
  * - 表单：占事问题（必填）、备注、背景信息、tags
  * - 提交：自动用当前时间 + 当前人物出生年调用 calculateDaLiuRen，保存记录
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog } from "../Dialog";
 import { TagInput } from "./TagInput";
 import { calculateDaLiuRen } from "../../core/daliuren/calculator";
@@ -15,6 +15,15 @@ interface LiurenCreateDialogProps {
   onClose: () => void;
   person: Person;
   onSaved: () => void;
+  /** 调试 API：预填充的表单数据 */
+  initialData?: {
+    question: string;
+    note: string;
+    background: string;
+    tags: string[];
+  };
+  /** 调试 API：提交触发计数器，变化时自动提交 */
+  submitTrigger?: number;
 }
 
 export function LiurenCreateDialog({
@@ -22,6 +31,8 @@ export function LiurenCreateDialog({
   onClose,
   person,
   onSaved,
+  initialData,
+  submitTrigger,
 }: LiurenCreateDialogProps) {
   const [question, setQuestion] = useState("");
   const [note, setNote] = useState("");
@@ -29,6 +40,28 @@ export function LiurenCreateDialog({
   const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 当 Dialog 打开且有 initialData 时，预填充表单
+  useEffect(() => {
+    if (open && initialData) {
+      setQuestion(initialData.question);
+      setNote(initialData.note);
+      setBackground(initialData.background);
+      setTags(initialData.tags);
+    }
+  }, [open, initialData]);
+
+  // 调试 API：当 submitTrigger 变化时，自动提交
+  const prevSubmitTriggerRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (submitTrigger !== undefined && submitTrigger !== prevSubmitTriggerRef.current && open && !saving) {
+      prevSubmitTriggerRef.current = submitTrigger;
+      // 延迟一帧，确保 initialData 触发的表单状态更新已生效
+      setTimeout(() => {
+        handleSubmit();
+      }, 50);
+    }
+  }, [submitTrigger, open, saving]);
 
   const resetForm = () => {
     setQuestion("");

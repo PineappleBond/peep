@@ -5,10 +5,11 @@
 import { getChartDataForScope, type ScopeChartData } from "./analysis";
 import type { Scope } from "./utils";
 import type { Zwds } from "./useZwds";
-import type { Person } from "./personDb";
+import type { Person, LiurenRecord } from "./personDb";
 import { buildHbarData, type HbarData } from "./hbar";
 import { calculateDaLiuRen } from "./daliuren/calculator";
 import type { DaLiuRenResult } from "./daliuren/types";
+import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
 
 /** 运限级别 */
 export type ScopeName = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
@@ -26,15 +27,35 @@ let _selectPerson: ((personId: number) => Promise<void>) | null = null;
 let _getZwds: (() => Zwds | null) | null = null;
 let _getPerson: (() => Person | null) | null = null;
 
+/** 大六壬 React 回调注册：从 DaLiuRenPage.tsx 注入 */
+let _getDaLiuRenList: ((filters: LiurenListFilters) => Promise<LiurenListResult>) | null = null;
+let _openCreateDialog: (() => void) | null = null;
+let _fillCreateForm: ((data: { question: string; note?: string; background?: string; tags?: string[] }) => void) | null = null;
+let _submitCreateForm: (() => Promise<LiurenRecord>) | null = null;
+let _selectRecord: ((recordId: number) => Promise<void>) | null = null;
+let _getSelectedRecord: (() => LiurenRecord | null) | null = null;
+
 /** 注册 React 回调（App.tsx 初始化时调用） */
 export function registerDebugApi(opts: {
   selectPerson?: (personId: number) => Promise<void>;
   getZwds?: () => Zwds | null;
   getPerson?: () => Person | null;
+  getDaLiuRenList?: (filters: LiurenListFilters) => Promise<LiurenListResult>;
+  openCreateDialog?: () => void;
+  fillCreateForm?: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
+  submitCreateForm?: () => Promise<LiurenRecord>;
+  selectRecord?: (recordId: number) => Promise<void>;
+  getSelectedRecord?: () => LiurenRecord | null;
 }) {
   if (opts.selectPerson) _selectPerson = opts.selectPerson;
   if (opts.getZwds) _getZwds = opts.getZwds;
   if (opts.getPerson) _getPerson = opts.getPerson;
+  if (opts.getDaLiuRenList) _getDaLiuRenList = opts.getDaLiuRenList;
+  if (opts.openCreateDialog) _openCreateDialog = opts.openCreateDialog;
+  if (opts.fillCreateForm) _fillCreateForm = opts.fillCreateForm;
+  if (opts.submitCreateForm) _submitCreateForm = opts.submitCreateForm;
+  if (opts.selectRecord) _selectRecord = opts.selectRecord;
+  if (opts.getSelectedRecord) _getSelectedRecord = opts.getSelectedRecord;
 }
 
 /**
@@ -154,6 +175,142 @@ export function DaLiuRen(
   return calculateDaLiuRen(date, time, fateInput);
 }
 
+/**
+ * 大六壬起课调试接口
+ * 跳转到 /liuren 页面，选择人物，打开新建 Dialog，填写表单，提交
+ */
+export async function DaLiuRenCreate(params: {
+  personId: number;
+  question: string;
+  note?: string;
+  background?: string;
+  tags?: string[];
+}): Promise<LiurenRecord> {
+  if (!_selectPerson || !_openCreateDialog || !_fillCreateForm || !_submitCreateForm) {
+    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+  }
+
+  // 1. 跳转到 /liuren 页面
+  window.location.hash = "#/liuren";
+  await waitForPageLoad();
+
+  // 2. 选择人物
+  await _selectPerson(params.personId);
+  await waitForStateUpdate();
+
+  // 3. 填写表单（在打开 Dialog 之前设置初始数据）
+  _fillCreateForm({
+    question: params.question,
+    note: params.note || "",
+    background: params.background || "",
+    tags: params.tags || [],
+  });
+  await waitForFormFill();
+
+  // 4. 打开新建 Dialog（Dialog 打开时会读取已设置的初始数据）
+  _openCreateDialog();
+  await waitForDialogOpen();
+
+  // 5. 提交表单
+  const record = await _submitCreateForm();
+  await waitForSaveComplete();
+
+  return record;
+}
+
+/**
+ * 大六壬起课列表调试接口
+ * 跳转到 /liuren 页面，选择人物，设置过滤条件，返回列表
+ */
+export async function DaLiuRenList(params: {
+  personId: number;
+  searchText?: string;
+  tags?: string[];
+  page?: number;
+  pageSize?: number;
+}): Promise<{ records: LiurenRecord[]; total: number }> {
+  if (!_selectPerson || !_getDaLiuRenList) {
+    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+  }
+
+  // 1. 跳转到 /liuren 页面
+  window.location.hash = "#/liuren";
+  await waitForPageLoad();
+
+  // 2. 选择人物
+  await _selectPerson(params.personId);
+  await waitForStateUpdate();
+
+  // 3. 获取列表
+  const filters: LiurenListFilters = {
+    searchText: params.searchText,
+    tags: params.tags,
+    page: params.page,
+    pageSize: params.pageSize,
+  };
+  const result = await _getDaLiuRenList(filters);
+
+  return { records: result.records, total: result.total };
+}
+
+/**
+ * 大六壬起课详情调试接口
+ * 跳转到 /liuren 页面，选择人物，点击某条记录，返回详情
+ */
+export async function DaLiuRenView(params: {
+  personId: number;
+  recordId: number;
+}): Promise<LiurenRecord> {
+  if (!_selectPerson || !_selectRecord || !_getSelectedRecord) {
+    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+  }
+
+  // 1. 跳转到 /liuren 页面
+  window.location.hash = "#/liuren";
+  await waitForPageLoad();
+
+  // 2. 选择人物
+  await _selectPerson(params.personId);
+  await waitForStateUpdate();
+
+  // 3. 点击某条记录
+  await _selectRecord(params.recordId);
+  await waitForStateUpdate();
+
+  // 4. 获取详情
+  const record = _getSelectedRecord();
+  if (!record) {
+    throw new Error(`记录 ${params.recordId} 未找到或加载失败`);
+  }
+
+  return record;
+}
+
+/** 辅助函数：等待页面加载 */
+function waitForPageLoad(): Promise<void> {
+  return new Promise((r) => setTimeout(r, 200));
+}
+
+/** 辅助函数：等待状态更新 */
+function waitForStateUpdate(): Promise<void> {
+  return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+}
+
+/** 辅助函数：等待 Dialog 打开 */
+function waitForDialogOpen(): Promise<void> {
+  return new Promise((r) => setTimeout(r, 100));
+}
+
+/** 辅助函数：等待表单填写 */
+function waitForFormFill(): Promise<void> {
+  return new Promise((r) => setTimeout(r, 50));
+}
+
+/** 辅助函数：等待保存完成 */
+function waitForSaveComplete(): Promise<void> {
+  return new Promise((r) => setTimeout(r, 150));
+}
+
 /** 初始化 window.peep（仅在开发环境） */
 export function initDebugApi() {
   if (typeof window === "undefined") return;
@@ -162,6 +319,9 @@ export function initDebugApi() {
   (window as any).peep = {
     ZiWei,
     DaLiuRen,
+    DaLiuRenCreate,
+    DaLiuRenList,
+    DaLiuRenView,
     getChartDataForScope,
   };
 }

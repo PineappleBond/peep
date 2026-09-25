@@ -3,7 +3,7 @@
  * 左侧：历史列表区（30%宽度）
  * 右侧：盘面区（70%宽度）
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { LiurenList } from "../components/daliuren/LiurenList";
 import { LiurenChart } from "../components/daliuren/LiurenChart";
 import { LiurenCreateDialog } from "../components/daliuren/LiurenCreateDialog";
@@ -12,8 +12,9 @@ import { LiurenEditDialog } from "../components/daliuren/LiurenEditDialog";
 import { LiurenDeleteDialog } from "../components/daliuren/LiurenDeleteDialog";
 import type { LiurenRecord, Person } from "../core/personDb";
 import { getDefaultPerson } from "../core/personDb";
-import { getLiurenRecord } from "../core/daliurenDb";
+import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
 import { globalEvents } from "../core/events";
+import { registerDebugApi } from "../core/debugApi";
 
 export function DaLiuRenPage() {
   const [person, setPerson] = useState<Person | null>(null);
@@ -28,6 +29,13 @@ export function DaLiuRenPage() {
 
   // 列表刷新计数器（用于在 Dialog 操作后触发刷新）
   const [listRefreshKey, setListRefreshKey] = useState(0);
+  const listRefreshKeyRef = useRef(0);
+  listRefreshKeyRef.current = listRefreshKey;
+
+  // 调试 API：用于预填充新建 Dialog 的表单数据
+  const createFormInitialDataRef = useRef<{ question: string; note: string; background: string; tags: string[] } | null>(null);
+  // 调试 API：提交触发计数器
+  const [createSubmitTrigger, setCreateSubmitTrigger] = useState(0);
 
   // 获取当前人物（默认人物）
   useEffect(() => {
@@ -49,6 +57,68 @@ export function DaLiuRenPage() {
       globalEvents.off("person.changed", handlePersonChanged);
     };
   }, []);
+
+  // 注册大六壬调试 API 回调
+  useEffect(() => {
+    registerDebugApi({
+      getDaLiuRenList: async (filters: LiurenListFilters) => {
+        if (!person?.id) {
+          throw new Error("人物未选择");
+        }
+        return listLiurenRecords(person.id, filters);
+      },
+      openCreateDialog: () => {
+        setCreateDialogOpen(true);
+      },
+      fillCreateForm: (data) => {
+        createFormInitialDataRef.current = {
+          question: data.question,
+          note: data.note || "",
+          background: data.background || "",
+          tags: data.tags || [],
+        };
+      },
+      submitCreateForm: async () => {
+        // 触发 Dialog 的提交
+        return new Promise<LiurenRecord>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error("提交超时"));
+          }, 5000);
+
+          // 触发提交（通过递增 submitTrigger）
+          setCreateSubmitTrigger((t) => t + 1);
+
+          // 监听 listRefreshKey 变化（表示保存成功）
+          const originalRefreshKey = listRefreshKeyRef.current;
+          const checkInterval = setInterval(() => {
+            if (listRefreshKeyRef.current > originalRefreshKey) {
+              clearInterval(checkInterval);
+              clearTimeout(timeout);
+              // 获取最新记录（刚刚创建的）
+              if (person?.id) {
+                listLiurenRecords(person.id, { page: 1, pageSize: 1 }).then((result) => {
+                  if (result.records.length > 0) {
+                    resolve(result.records[0]);
+                  } else {
+                    reject(new Error("未找到新创建的记录"));
+                  }
+                });
+              } else {
+                reject(new Error("人物未选择"));
+              }
+            }
+          }, 100);
+        });
+      },
+      selectRecord: async (recordId: number) => {
+        const record = await getLiurenRecord(recordId);
+        if (record) {
+          setSelectedRecord(record);
+        }
+      },
+      getSelectedRecord: () => selectedRecord,
+    });
+  }, [person, selectedRecord]);
 
   // 当列表选中变化时，如果当前选中记录被删除/改变，需同步
   const handleSelect = useCallback((record: LiurenRecord) => {
@@ -140,6 +210,8 @@ export function DaLiuRenPage() {
         onClose={() => setCreateDialogOpen(false)}
         person={person}
         onSaved={handleCreateSaved}
+        initialData={createFormInitialDataRef.current ?? undefined}
+        submitTrigger={createSubmitTrigger}
       />
       <LiurenViewDialog
         open={viewDialogOpen}
