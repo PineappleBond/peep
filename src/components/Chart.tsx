@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MUTAGEN_CHARS, fixIndex, type Scope, type ScopeSelfMark, type MutagenChar } from "../core/utils";
+import { MUTAGEN_CHARS, fixIndex, type Scope, type MutagenChar } from "../core/utils";
 import { getChartDataForScope } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 import { PalaceCard } from "./Palace";

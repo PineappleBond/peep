@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { util } from "iztro";
-import { SCOPES, abbrPalace, fixIndex, type Scope, type MutagenChar, type ScopeSelfMark } from "../core/utils";
+import { abbrPalace, fixIndex, type Scope, type MutagenChar, type ScopeSelfMark } from "../core/utils";
 import type { PalaceData, Zwds } from "../core/useZwds";
 import { StarCell } from "./StarCell";
 
