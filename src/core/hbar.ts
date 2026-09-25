@@ -47,11 +47,20 @@ export type CellHour = { hour: number; label: string; gz: string };
 export type HbarData = {
   decades: DecadeInfo[];
   childhood: Childhood | null;
+  /** 当前大限索引（-1 = 童限） */
   activeDecadeIdx: number;
   years: CellYear[];
+  /** 当前流年在 years 数组中的索引 */
+  activeYearIdx: number;
   months: CellMonth[];
+  /** 当前流月在 months 数组中的索引 */
+  activeMonthIdx: number;
   days: CellDay[];
+  /** 当前流日在 days 数组中的索引 */
+  activeDayIdx: number;
   hours: CellHour[];
+  /** 当前流时在 hours 数组中的索引（0-11） */
+  activeHourIdx: number;
   pick: PickState;
   effLeap: boolean;
   clampedDay: number;
@@ -180,6 +189,7 @@ export function buildHbarData(
   const activeDecadeIdx = calcActiveDecadeIdx(pick.year, decades, birthLunarYear);
 
   const years = buildYears(activeDecadeIdx, decades, childhood, birthLunarYear);
+  const activeYearIdx = years.findIndex((y) => y.year === pick.year);
 
   const yearLeapMonth = leapMonthOf(pick.year);
   const effLeap = pick.leap && pick.month === yearLeapMonth;
@@ -187,18 +197,27 @@ export function buildHbarData(
   const clampedDay = Math.min(pick.day, monthDays);
 
   const months = buildMonths(pick.year, yearLeapMonth);
+  const activeMonthIdx = months.findIndex((m) => m.month === pick.month && m.leap === pick.leap);
+
   const days = buildDays(pick.year, pick.month, monthDays, effLeap);
+  const activeDayIdx = clampedDay - 1; // days 数组从 day=1 开始，索引从 0 开始
+
   const dayStem = days[clampedDay - 1]?.gz.charAt(0) ?? "";
   const hours = buildHours(dayStem);
+  const activeHourIdx = pick.hour; // hours 数组索引就是时辰索引 0-11
 
   return {
     decades,
     childhood,
     activeDecadeIdx,
     years,
+    activeYearIdx,
     months,
+    activeMonthIdx,
     days,
+    activeDayIdx,
     hours,
+    activeHourIdx,
     pick,
     effLeap,
     clampedDay,
