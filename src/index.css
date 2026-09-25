@@ -153,6 +153,41 @@ body {
   cursor: not-allowed;
 }
 
+/* ── 顶部导航图标 ── */
+.top-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dim);
+  cursor: pointer;
+  transition: 0.2s;
+  text-decoration: none;
+}
+
+.nav-icon:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.2);
+}
+
+.nav-icon.active {
+  color: var(--gold);
+  border-color: rgba(243, 201, 107, 0.5);
+  background: rgba(243, 201, 107, 0.08);
+  box-shadow: 0 0 12px rgba(243, 201, 107, 0.3);
+}
+
 /* ── 输入条 ── */
 .input-panel {
   display: flex;
@@ -2820,4 +2855,54 @@ body {
   .form-grid {
     gap: 8px 10px;
   }
+}
+
+/* ── 大六壬页面 ── */
+.liuren-page {
+  padding: 20px 0;
+}
+
+.liuren-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.liuren-empty-icon {
+  font-size: 4rem;
+  color: var(--cyan);
+  opacity: 0.6;
+  margin-bottom: 20px;
+  text-shadow: 0 0 20px rgba(85, 215, 255, 0.5);
+}
+
+.liuren-empty-title {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.3em;
+  background: linear-gradient(120deg, #f3c96b, #fff2cf 45%, #f3c96b 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 12px rgba(243, 201, 107, 0.35));
+}
+
+.liuren-empty-desc {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: var(--dim);
+  letter-spacing: 0.15em;
+  line-height: 1.8;
+}
+
+.liuren-empty-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--faint);
+  letter-spacing: 0.1em;
 }

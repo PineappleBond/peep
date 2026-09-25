@@ -28,13 +28,13 @@ let _getPerson: (() => Person | null) | null = null;
 
 /** 注册 React 回调（App.tsx 初始化时调用） */
 export function registerDebugApi(opts: {
-  selectPerson: (personId: number) => Promise<void>;
-  getZwds: () => Zwds | null;
-  getPerson: () => Person | null;
+  selectPerson?: (personId: number) => Promise<void>;
+  getZwds?: () => Zwds | null;
+  getPerson?: () => Person | null;
 }) {
-  _selectPerson = opts.selectPerson;
-  _getZwds = opts.getZwds;
-  _getPerson = opts.getPerson;
+  if (opts.selectPerson) _selectPerson = opts.selectPerson;
+  if (opts.getZwds) _getZwds = opts.getZwds;
+  if (opts.getPerson) _getPerson = opts.getPerson;
 }
 
 /**
