@@ -304,7 +304,7 @@ export function calculateThreeTransmissions(
 function handleFuyin(
   fourLessons: FourLesson[],
   dayStem: number,
-  _dayBranch: number,
+  dayBranch: number,
   _heavenBoard: number[],
   xiaZeiShangIdx: number[],
   shangKeXiaIdx: number[],
@@ -356,11 +356,13 @@ function handleFuyin(
 
   if (SELF_XING.has(initial)) {
     // 杜传格：初传自刑
+    // 与 PHP 保持一致：阳日中传取日支本身（sike[5]=rizhi），
+    // 阴日中传取干上课（sike[1]=天盘[寄宫]；伏吟盘上天盘=地盘，故=寄宫本身）
     method = "伏吟杜传";
     if (isYang) {
-      middle = fourLessons[2].upper; // 取支上神
+      middle = dayBranch; // PHP: sike[5] = rizhi
     } else {
-      middle = fourLessons[0].upper; // 取干上神
+      middle = STEM_LODGING[dayStem]; // PHP: sike[1] = tianpan[jigong[rigan]] = jigong（伏吟）
     }
     trace.push(`杜传：初传${DI_ZHI[initial]}自刑，中传取${DI_ZHI[middle]}`);
   } else {
@@ -523,7 +525,11 @@ function tryYaoke(
   const yaokeShangKeXia: number[] = []; // 四课上神克日干
   const yaokeXiaZeiShang: number[] = []; // 日干克四课上神
 
-  for (let i = 0; i < 4; i++) {
+  // 遥克：与 PHP 保持一致，只检查第1、2、4课（索引 0、1、3）
+  // PHP 的 sikeUnique 去重后 key=5（第3课/支上课）被跳过（因第2、4课常重复）
+  // 索引 0=第1课(干上课), 1=第2课(干上神的上课), 3=第4课(支上神的上课)
+  const yaokeIndices = [0, 1, 3];
+  for (const i of yaokeIndices) {
     const lessonUpperElem = lessonUpperElement(fourLessons[i]);
     if (keOf(lessonUpperElem) === dayElem) {
       yaokeShangKeXia.push(i); // 上神克日干
