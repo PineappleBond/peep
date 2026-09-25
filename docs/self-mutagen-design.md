@@ -1,7 +1,7 @@
 # 自化可视化功能设计方案
 
 **日期**：2026-09-25  
-**版本**：v2（经第 1 轮架构师 Review 修订）  
+**版本**：v3（经第 2 轮架构师 Review 修订）  
 **状态**：设计中
 
 ---
@@ -9,11 +9,12 @@
 ## 一、背景与目标
 
 ### 1.1 现状
+
 - **已有功能**：
   - 宫位卡片显示生年四化（实心标记）和离心自化（虚线标记）
   - 飞宫模式显示本命飞星连线
   - 详情面板（`PalaceDetail.tsx`）显示离心+向心自化文字信息
-  
+
 - **缺失功能**：
   - 图表中无向心自化的可视化
   - 不支持运限级别（大运、流年、流月、流日、流时）的自化显示
@@ -36,25 +37,36 @@
 本命盘排盘（`astro.bySolar()`）是重量级操作，在 `useZwds` hook 中由 `useMemo` 保护。
 数据层函数作为纯计算函数，在组件层通过 `useMemo` 缓存结果，本命盘只计算一次。
 
-### 2.2 核心方法
+### 2.2 类型定义
+
+新增公共类型（在 `utils.ts` 中导出）：
+
+```typescript
+export type MutagenChar = (typeof MUTAGEN_CHARS)[number]; // "禄" | "权" | "科" | "忌"
+```
+
+### 2.3 核心方法
 
 #### `getChartDataForScope(params)`
 
 获取指定运限级别的 Chart 盘面自化数据。
 
 **参数**：
+
 ```typescript
 type ChartDataForScopeParams = {
   astrolabe: Astrolabe;       // 已缓存的本命盘
   horoscope: Horoscope;       // 已缓存的运限对象
   scope: Scope;               // "decadal" | "yearly" | "monthly" | "daily" | "hourly"
-  analysis: ChartAnalysis;    // 已有的分析缓存（含 flyMatrix 等）
 };
 // Scope 类型沿用 utils.ts 现有定义，不含 "natal"
 // 本命自化由现有 analysis.flyMatrix 提供，不走此函数
 ```
 
+> **注意**：参数中不再包含 `analysis`。运限自化计算只需要 `astrolabe` + `horoscope`，`chartIndex` 由函数内部通过 `buildChartIndex(astrolabe)` 获取（该操作轻量且结果可被 `useMemo` 缓存）。
+
 **返回值**：
+
 ```typescript
 type ScopeChartData = {
   scope: Scope;
@@ -64,7 +76,7 @@ type ScopeChartData = {
     starMarks: Array<{
       starName: string;
       marks: Array<{
-        char: "禄" | "权" | "科" | "忌";
+        char: MutagenChar;
         direction: "outward" | "inward"; // 离心 | 向心
       }>;
     }>;
@@ -73,27 +85,67 @@ type ScopeChartData = {
   selfLinks: Array<{
     fromIndex: number;
     toIndex: number;
-    char: "禄" | "权" | "科" | "忌";
+    char: MutagenChar;
     direction: "outward" | "inward";
     star: string;              // 发生自化的星名
+    isSelfLoop: boolean;       // 离心时 fromIndex === toIndex，SVG 渲染为星芒而非连线
   }>;
 };
 ```
 
+**聚合逻辑伪代码**：
+
+```text
+getChartDataForScope(params):
+  palaceIdx = horoscope[scope].index     // 运限命宫在本命盘的宫位索引
+  stem = horoscope[scope].heavenlyStem   // 运限天干
+  chartIndex = buildChartIndex(astrolabe)
+
+  // 1. 计算运限命宫的离心 + 向心自化
+  rawMarks = getSelfMarksForScope(palaceIdx, stem, astrolabe, chartIndex)
+
+  // 2. 构建 palaceSelfMarks（12 宫，大部分宫位为空数组）
+  palaceSelfMarks = 12宫.map(palace => {
+    if (palace.index !== palaceIdx) return { palaceIndex: palace.index, starMarks: [] }
+    // 只有运限命宫有自化标记
+    stars = palace.stars.filter(s => rawMarks.outward 中有 s 或 rawMarks.inward 中有 s)
+    return { palaceIndex, starMarks: stars.map(...) }
+  })
+
+  // 3. 构建 selfLinks（扁平连线数据）
+  oppIdx = fixIndex(palaceIdx + 6)
+  selfLinks = [
+    // 离心：运限命宫 → 运限命宫（isSelfLoop = true）
+    ...rawMarks.outward.map(m => ({
+      fromIndex: palaceIdx, toIndex: palaceIdx, isSelfLoop: true,
+      char: m.char, direction: "outward", star: m.star
+    })),
+    // 向心：对宫 → 运限命宫（isSelfLoop = false）
+    ...rawMarks.inward.map(m => ({
+      fromIndex: oppIdx, toIndex: palaceIdx, isSelfLoop: false,
+      char: m.char, direction: "inward", star: m.star
+    })),
+  ]
+
+  return { scope, palaceSelfMarks, selfLinks }
+```
+
 **使用方式**：
+
 ```typescript
 // 在 Chart 组件或 hook 中
 const scopeResults = useMemo(() => {
   return SCOPES.filter(s => z.visible[s]).map(s =>
-    getChartDataForScope({ astrolabe: z.astrolabe, horoscope: z.horoscope, scope: s, analysis: z.analysis })
+    getChartDataForScope({ astrolabe: z.astrolabe, horoscope: z.horoscope, scope: s })
   );
-}, [z.astrolabe, z.horoscope, z.visible, z.analysis]);
+}, [z.astrolabe, z.horoscope, z.visible]);
 // 合并所有 scope 的结果，按 scope 用不同颜色渲染
 ```
 
 **命名说明**：
 
 - 返回的自化标记命名为 `selfMarks` / `palaceSelfMarks`，区别于 `Palace.tsx` 中现有的 `selfMutagens`（宫干四化对应的四颗星名数组）。避免同名歧义。
+- 核心计算函数也统一命名为 `getSelfMarksForScope`（非旧名 `getSelfMutagensForScope`）。
 
 #### 本命自化数据来源
 
@@ -105,31 +157,42 @@ const scopeResults = useMemo(() => {
 
 无需新增函数，Chart 渲染层直接从 `z.analysis.flyMatrix` 读取。
 
-### 2.3 HoroscopeBarData
+### 2.4 HoroscopeBarData
 
-**定位澄清**：`HoroscopeBar` 当前直接从 `z: Zwds` 获取数据（`z.decades`、`z.years` 等）。
-这些数据已在 `useZwds` 中计算好，不需要新建独立的数据获取方法。
+**结论**：无需新增。`HoroscopeBar` 当前直接从 `z: Zwds` 获取数据（`z.decades`、`z.years` 等），这些数据已在 `useZwds` 中计算好且由 `useMemo` 保护，读取方式简洁高效。新增 `horoscopeBarData` 派生属性属于过度抽象，删除此节。
 
-**方案**：在 `useZwds` 中新增派生属性 `horoscopeBarData`，格式化为 UI 友好的结构：
+### 2.5 数据流完整路径
 
-```typescript
-// useZwds 返回值新增
-horoscopeBarData: {
-  [K in Scope]: {
-    items: Array<{
-      key: number;           // startAge / year / month / day / hour
-      label: string;         // 显示文本
-      palaceName: string;
-      stem: string;
-      selected: boolean;
-    }>;
-  };
-};
+```text
+getChartDataForScope() → ScopeChartData
+  ↓ palaceSelfMarks
+PalaceCard（props 新增 selfScopeMarks）
+  ↓ 传递给
+StarCell（props 新增 selfScopeMarks）
+  ↓ 渲染
+.mut-scope-self 标记（点线，运限色）
+
+  ↓ selfLinks
+Chart.tsx SVG 层
+  ↓ 计算坐标 + 渲染
+离心星芒 / 向心虚线箭头
 ```
 
-这样新增 scope 只需扩展 `Scope` 类型和 `SCOPE_META`，无需改动数据结构。
+**StarCell 新增 props**：
 
-### 2.4 职责分离原则
+```typescript
+// StarCell.tsx 新增
+selfScopeMarks?: Array<{
+  scope: Scope;
+  char: MutagenChar;
+  direction: "outward" | "inward";
+}>;
+```
+
+StarCell 现有三种标记：本命四化（`.mut-natal`）、运限四化（`.mut-scope`）、本命自化（`.mut-self`）。
+新增第四种：运限自化（`.mut-scope-self`），按 scope 用运限色。
+
+### 2.6 职责分离原则
 
 - **数据层**：纯计算函数，只返回"是什么"（哪颗星有什么四化/自化）
 - **渲染层**：负责"怎么画"（坐标计算、SVG 绘制、颜色应用）
@@ -166,8 +229,7 @@ horoscopeBarData: {
 | `daily`    | `horoscope.daily.heavenlyStem`          | `horoscope.daily.index`          |
 | `hourly`   | `horoscope.hourly.heavenlyStem`         | `horoscope.hourly.index`         |
 
-> **实现时需验证**：iztro 的 `horoscope.daily.heavenlyStem` 和 `horoscope.hourly.heavenlyStem` 是否存在。  
-> 若不存在，回退方案：从 `dayGanZhi(solar)` / `hourGanZhi(dayStem, i)` 返回值中提取天干部分。
+> **已验证**：iztro `HoroscopeItem` 类型包含 `heavenlyStem: HeavenlyStemName`，`daily` 和 `hourly` 均为 `HoroscopeItem` 类型，无需回退方案。
 
 #### 3.2.3 离心自化计算
 
@@ -175,8 +237,9 @@ horoscopeBarData: {
 1. palaceIdx = horoscope[scope].index     // 运限命宫在本命盘的宫位索引
 2. stem = horoscope[scope].heavenlyStem   // 运限天干（非本命天干！）
 3. 四化星 = getMutagensByHeavenlyStem(stem)  // [禄星, 权星, 科星, 忌星]
-4. 对每颗四化星，查其在盘中的位置（复用 chartIndex.pos）
-5. 如果四化星的位置 === palaceIdx → 离心自化
+4. 对每颗四化星，查其在盘中的位置（chartIndex.pos.get(star) ?? -1）
+5. 如果位置为 -1，跳过该星（星不在盘中，不产生自化标记）
+6. 如果四化星的位置 === palaceIdx → 离心自化
 ```
 
 #### 3.2.4 向心自化计算
@@ -187,23 +250,42 @@ horoscopeBarData: {
 3. oppStem = a.palaces[oppIdx].heavenlyStem  // 对宫位置的本命天干
    （宫干随宫位固定，不随运限变化；运限迁移宫在本命盘上对应 oppIdx 宫位）
 4. 四化星 = getMutagensByHeavenlyStem(oppStem)
-5. 对每颗四化星，查其在盘中的位置
-6. 如果四化星的位置 === palaceIdx → 向心自化
+5. 对每颗四化星，查其在盘中的位置（chartIndex.pos.get(star) ?? -1）
+6. 如果位置为 -1，跳过该星
+7. 如果四化星的位置 === palaceIdx → 向心自化
 ```
 
-> **关键区分**：向心自化中，取的是对宫位置的**本命天干**（宫干固定在宫位上），  
+> **关键区分**：向心自化中，取的是对宫位置的**本命天干**（宫干固定在宫位上），
 > 而非"运限迁移宫的运限天干"（运限天干只用于离心自化）。
 
-#### 3.2.5 童限处理
+#### 3.2.5 边界条件处理
 
-出生到起运前为童限期，此时 `activeDecadeIdx = -1`，无大限数据。  
-**策略**：童限期间不计算 `decadal` scope 的自化，其余 scope（yearly/monthly/daily/hourly）正常计算。
+**童限**：
+
+- 判断条件：`activeDecadeIdx === -1`
+- 策略：跳过 `decadal` scope 的 `getChartDataForScope` 调用
+- 注意：`horoscope.decadal` 在童限期间仍有数据（iztro 不返回 null），但该数据不对应命主实际大限，应跳过
+
+**闰月**：
+
+- `effLeap = true` 时，iztro 已根据实际公历日期计算 `horoscope.monthly/daily/hourly`
+- 闰月与本月共享月建干支，运限自化计算不受影响（取的是 `horoscope[scope].heavenlyStem`）
+
+**子时跨日**：
+
+- `dayDivide` 配置（`"forward"` | `"current"`）控制晚子时（23:00-00:00）归当日还是次日
+- 已由 iztro 在 `horoscope()` 计算中处理，`getChartDataForScope` 直接读取即可
+- 测试用例应覆盖晚子时场景（`timeIndex=12`）
+
+**星不在盘中**：
+
+- `chartIndex.pos.get(star)` 返回 `undefined` 时，取 `-1`，跳过该星
+- 与现有 `getFlyMatrix` 的处理方式一致
 
 ### 3.3 实现函数签名
 
 ```typescript
-function getSelfMutagensForScope(
-  scope: Scope,
+function getSelfMarksForScope(
   palaceIdx: number,          // 运限命宫在本命盘的索引
   stem: string,               // 运限天干
   astrolabe: Astrolabe,
@@ -214,7 +296,7 @@ function getSelfMutagensForScope(
 }
 ```
 
-此函数签名与 `scanHoroscopePatterns`（`patterns.ts`）的参数风格对齐，  
+此函数签名与 `scanHoroscopePatterns`（`patterns.ts`）的参数风格对齐，
 可在同一调用点一起使用，共享 scope 数据。
 
 ---
@@ -225,6 +307,7 @@ function getSelfMutagensForScope(
 
 **离心自化**：
 
+- `isSelfLoop = true`：`fromIndex === toIndex`，SVG 渲染为环绕锚点的星芒（非连线）
 - 箭头从宫位中心向外放射（长度 15-20px）
 - 多条自化时，按角度均匀分散（类似星芒）
 - 实线，运限色
@@ -253,13 +336,37 @@ function getSelfMutagensForScope(
 --c-hourly:  #ff77b7;   /* 流时 = 粉 */
 ```
 
-### 4.2 宫位卡片标记
+### 4.2 SVG 层级策略
+
+SVG 渲染顺序（从底到顶）：
+
+1. 三方四正线（底层，非飞宫模式时显示）
+2. 飞宫连线（中层，飞宫模式时显示）
+3. 自化箭头（顶层，自化模式时显示）
+
+箭头使用 `marker-end` 三角形 + 不同 `stroke-dasharray` 区分离心（实线星芒）/向心（虚线箭头），与飞宫线的实线视觉上可区分。
+
+### 4.3 宫位卡片标记
 
 **星曜旁的自化标记**：
 
 - 本命自化：虚线圆圈，四化色（现有 `.mut-self`）
 - 运限自化：点线标记，运限色（新增 `.mut-scope-self`）
 - 多个级别的自化标记堆叠显示
+
+**StarCell 标记 DOM 结构**：
+
+```html
+<!-- 本命四化（实心） -->
+<b class="mut mut-natal" data-m="禄">禄</b>
+<!-- 运限四化（描边按限色） -->
+<b class="mut mut-scope mut-decadal" data-m="权">权</b>
+<!-- 本命自化（虚线，四化色） -->
+<b class="mut mut-self" data-m="忌">忌</b>
+<!-- 运限自化（点线，运限色）——新增 -->
+<b class="mut mut-scope-self mut-decadal" data-m="禄">禄</b>
+<b class="mut mut-scope-self mut-yearly" data-m="科">科</b>
+```
 
 **样式**：
 
@@ -269,14 +376,14 @@ function getSelfMutagensForScope(
   border: 1px dotted;
   line-height: 12px;
 }
-.mut-scope-self[data-scope="decadal"] {
+.mut-scope-self.mut-decadal {
   border-color: var(--c-decadal);
   color: var(--c-decadal);
 }
 /* yearly/monthly/daily/hourly 类推 */
 ```
 
-### 4.3 模式交互规则
+### 4.4 模式交互规则
 
 自化模式与飞宫模式**正交设计**，可同时开启，互不干扰：
 
@@ -287,78 +394,80 @@ function getSelfMutagensForScope(
 | 仅自化模式     | ✅ 显示      | ❌         | ✅ 显示    |
 | 两者都开       | ❌ 隐藏      | ✅ 显示    | ✅ 显示    |
 
-**开关位置**：自化模式 toggle 按钮放在 `CenterPanel` 中，与飞宫模式按钮相邻。
+**开关位置**：自化模式 toggle 按钮放在 `CenterPanel` 的 `depth-row` 中，飞宫按钮右侧，样式为 `.db.db-self`。
+小屏幕（`<640px`）时 `depth-row` 允许 `flex-wrap: wrap`，自化按钮折行到第二行。
 
-### 4.4 性能策略
+### 4.5 性能策略
+
+**箭头数量估算**：
+
+- 每个 scope 最多 8 条箭头（离心 4 + 向心 4），5 scope 最多 40 条
+- 实际因星曜位置重叠（同一颗星不可能同时化禄和化权），通常每 scope 2-4 条
+- 40 条远低于 SVG 性能瓶颈，无需退化逻辑
 
 **视口裁剪**：
 
-- 跨宫自化箭头只为 `focus` 宫位及其三方四正范围内的宫位渲染
+- 跨宫自化箭头（向心连线）只为 `focus` 宫位及其三方四正范围内的宫位渲染
 - 非 focus 区域只在星曜旁显示小标记，不画跨宫连线
 
 **缓存**：
 
-- `getChartDataForScope` 结果通过 `useMemo` 缓存，依赖 `[astrolabe, horoscope, scope, analysis]`
+- `getChartDataForScope` 结果通过 `useMemo` 缓存，依赖 `[astrolabe, horoscope, scope]`
 - SVG 箭头坐标计算通过 `useMemo` 缓存
-
-**极端情况**：
-
-- 5 scope × 12 宫 × 4 化 × 2 方向 = 最多 480 条箭头（理论极端值，实际远少于此）
-- 如果可见箭头超过 100 条，退化为仅显示 focus 区域的箭头
 
 ---
 
 ## 五、实现步骤
 
-### 阶段一：运限自化计算（核心逻辑）
+### 阶段一：类型与核心计算
 
-1. 在 `analysis.ts` 新增 `getSelfMutagensForScope` 函数
-2. 验证 iztro `horoscope.daily/hourly.heavenlyStem` 是否存在
-3. 编写单元测试（基于 `testFixtures.ts` 中的固定人物参数）
-4. 处理童限期间的 decadal scope 边界情况
+1. 在 `utils.ts` 新增 `MutagenChar` 类型导出
+2. 在 `analysis.ts` 新增 `getSelfMarksForScope` 函数
+3. 处理边界条件：星不在盘中（`pos.get() ?? -1` → 跳过）
+4. 编写单元测试（基于 `testFixtures.ts` 中的固定人物参数）
 
-### 阶段二：数据层集成
+### 阶段二：数据层聚合
 
-1. 新增 `getChartDataForScope` 函数，封装宫位级标记 + 跨宫连线数据
-2. 在 `useZwds` 中新增 `horoscopeBarData` 派生属性
+1. 新增 `getChartDataForScope` 函数，封装聚合逻辑（伪代码见 2.3 节）
+2. 构建 `palaceSelfMarks`（12 宫）+ `selfLinks`（扁平连线）
 3. 确保本命自化数据（`flyMatrix`）与运限自化数据格式一致
 
 ### 阶段三：UI 渲染
 
-1. 在 `CenterPanel` 添加"自化模式"开关（正交于飞宫模式）
-2. 修改 `StarCell.tsx`，渲染运限自化标记（点线，运限色）
-3. 修改 `Chart.tsx`，绘制离心/向心箭头（SVG，含视口裁剪）
-4. 修改 `PalaceDetail.tsx`，详情面板展示运限自化信息
-5. 添加 CSS 样式（`.mut-scope-self`、箭头、连线）
+1. 在 `CenterPanel` 添加"自化模式"开关（正交于飞宫模式，`.db.db-self`）
+2. 修改 `Palace.tsx`：从 `scopeResults` 提取 `selfScopeMarks` 传给 `StarCell`
+3. 修改 `StarCell.tsx`：渲染运限自化标记（`.mut-scope-self`，点线，运限色）
+4. 修改 `Chart.tsx`：SVG 层绘制离心星芒 / 向心虚线箭头（含视口裁剪）
+5. 修改 `PalaceDetail.tsx`：详情面板展示运限自化信息
+6. 添加 CSS 样式（`.mut-scope-self[data-scope]`、SVG 箭头、`<marker>` 定义）
 
 ### 阶段四：集成测试
 
 1. 验证各运限级别的自化显示正确（对比已知盘面手动验证）
 2. 验证颜色区分和模式交互逻辑
 3. 验证与现有飞宫模式的兼容性（两者同时开启）
-4. 验证童限期间的边界情况
+4. 验证边界情况（童限、晚子时、闰月）
 
 ---
 
 ## 六、测试策略
 
-### 6.1 数据层测试
+### 6.1 核心计算测试
 
 基于现有 `testFixtures.ts` 中的固定人物参数构造测试用例：
 
 ```typescript
 import { testFixtures } from "./testFixtures";
-import { getSelfMutagensForScope } from "./analysis";
+import { getSelfMarksForScope, buildChartIndex } from "./analysis";
 
-test("大运离心自化——命宫天干四化飞回命宫", () => {
+test("大运离心自化——运限天干四化飞回运限命宫", () => {
   const { astrolabe, horoscope } = testFixtures.standard;
   const palaceIdx = horoscope.decadal.index;
   const stem = horoscope.decadal.heavenlyStem;
   const chartIndex = buildChartIndex(astrolabe);
   
-  const result = getSelfMutagensForScope("decadal", palaceIdx, stem, astrolabe, chartIndex);
+  const result = getSelfMarksForScope(palaceIdx, stem, astrolabe, chartIndex);
   
-  // 验证返回结构正确
   expect(result.outward).toBeArray();
   result.outward.forEach(m => {
     expect(m.star).toBeString();
@@ -370,12 +479,65 @@ test("向心自化——对宫本命天干四化飞入运限命宫", () => {
   // ...
 });
 
-test("童限期间 decadal scope 返回空", () => {
+test("星不在盘中——跳过该星不产生自化标记", () => {
   // ...
 });
 ```
 
-### 6.2 UI 测试
+### 6.2 聚合函数测试
+
+```typescript
+test("getChartDataForScope——palaceSelfMarks 只在运限命宫有标记", () => {
+  const result = getChartDataForScope({ astrolabe, horoscope, scope: "decadal" });
+  const palaceIdx = horoscope.decadal.index;
+  
+  // 只有运限命宫有自化标记，其余 11 宫为空
+  const nonEmpty = result.palaceSelfMarks.filter(p => p.starMarks.length > 0);
+  expect(nonEmpty).toHaveLength(1);
+  expect(nonEmpty[0].palaceIndex).toBe(palaceIdx);
+});
+
+test("getChartDataForScope——selfLinks 方向正确", () => {
+  const result = getChartDataForScope({ astrolabe, horoscope, scope: "yearly" });
+  
+  result.selfLinks.forEach(link => {
+    if (link.direction === "outward") {
+      expect(link.isSelfLoop).toBe(true);
+      expect(link.fromIndex).toBe(link.toIndex);
+    } else {
+      expect(link.isSelfLoop).toBe(false);
+      expect(link.fromIndex).toBe(fixIndex(link.toIndex + 6));
+    }
+  });
+});
+```
+
+### 6.3 多 scope 叠加测试
+
+```typescript
+test("多 scope 叠加：大运离心 + 流年向心同时存在", () => {
+  // 构造某宫同时有大运自化和流年自化的场景
+  // 验证 palaceSelfMarks 正确区分 scope 和 direction
+});
+```
+
+### 6.4 边界条件测试
+
+```typescript
+test("童限期间 decadal scope 返回空", () => {
+  // activeDecadeIdx === -1 的场景
+});
+
+test("晚子时流日自化：dayDivide=forward 时归次日", () => {
+  // timeIndex = 12 的场景
+});
+
+test("闰月流月自化：闰五月与五月共用月建干支", () => {
+  // effLeap = true 的场景
+});
+```
+
+### 6.5 UI 测试
 
 - 验证自化模式下，箭头正确显示
 - 验证不同 scope 的颜色区分
@@ -388,25 +550,24 @@ test("童限期间 decadal scope 返回空", () => {
 
 | 文件 | 改动 |
 | --- | --- |
-| `src/core/analysis.ts` | 新增 `getSelfMutagensForScope`，运限自化计算核心 |
-| `src/core/useZwds.ts` | 新增 `horoscopeBarData` 派生属性 |
+| `src/core/utils.ts` | 新增 `MutagenChar` 类型导出 |
+| `src/core/analysis.ts` | 新增 `getSelfMarksForScope` + `getChartDataForScope` |
 | `src/components/Chart.tsx` | 集成自化模式，SVG 箭头绘制（含视口裁剪） |
-| `src/components/CenterPanel.tsx` | 添加自化模式开关 |
-| `src/components/StarCell.tsx` | 渲染运限自化标记（`.mut-scope-self`） |
-| `src/components/Palace.tsx` | 传递运限自化数据给 StarCell |
+| `src/components/CenterPanel.tsx` | 添加自化模式开关（`.db.db-self`） |
+| `src/components/StarCell.tsx` | 渲染运限自化标记（`.mut-scope-self`），新增 `selfScopeMarks` prop |
+| `src/components/Palace.tsx` | 从 `scopeResults` 提取数据传给 StarCell |
 | `src/components/PalaceDetail.tsx` | 详情面板展示运限自化信息 |
-| `src/index.css` | 新增 `.mut-scope-self[data-scope]` 样式 |
-| `src/core/analysis.test.ts` | 新增运限自化单元测试 |
+| `src/index.css` | 新增 `.mut-scope-self` 样式、SVG marker 定义 |
+| `src/core/analysis.test.ts` | 新增运限自化单元测试 + 聚合测试 + 边界测试 |
 
 ---
 
 ## 八、风险与注意事项
 
 1. **斗数学理准确性**：运限自化的取干规则（离心用运干、向心用对宫本命干）需与斗数理论一致，建议实现后与已知盘面交叉验证
-2. **iztro 兼容性**：daily/hourly 的 `heavenlyStem` 字段需运行时验证，准备回退方案
-3. **童限边界**：起运前无大限，需特殊处理 decadal scope
-4. **视觉清晰度**：多级别箭头叠加时，通过视口裁剪+focus 区域限制控制数量
-5. **与 patterns 模块协同**：`getSelfMutagensForScope` 的参数风格与 `scanHoroscopePatterns` 对齐，可共享调用点
+2. **童限边界**：`activeDecadeIdx === -1` 时跳过 decadal scope
+3. **视觉清晰度**：向心连线最多 40 条，远低于 SVG 性能瓶颈
+4. **与 patterns 模块协同**：`getSelfMarksForScope` 的参数风格与 `scanHoroscopePatterns` 对齐，可共享调用点
 
 ---
 
@@ -415,7 +576,6 @@ test("童限期间 decadal scope 返回空", () => {
 1. **按需计算**：只为 `visible[s]` 为 true 的 scope 计算自化
 2. **导出功能**：支持将自化数据导出为 JSON/CSV
 3. **动画效果**：自化箭头的渐显动画
-4. **Canvas 降级**：箭头数量超过阈值时考虑 Canvas 替代 SVG
 
 ---
 
@@ -424,7 +584,7 @@ test("童限期间 decadal scope 返回空", () => {
 ### v1 → v2 修订（第 1 轮架构师 Review）
 
 | # | 问题 | 修订 |
-|---|---|---|
+| --- | --- | --- |
 | 1 | `getChartData(personId, ...)` 导致本命盘重复计算 | 改为接收已缓存的 `Astrolabe` + `Horoscope` |
 | 2 | `scope: "natal"` 与运限 scope 混在类型中 | "natal" 不纳入 Scope，本命自化由现有 flyMatrix 提供 |
 | 3 | ChartData 缺少跨宫自化连线的扁平数据 | 新增 `selfLinks` 顶层字段 |
@@ -443,6 +603,31 @@ test("童限期间 decadal scope 返回空", () => {
 | 16 | 未考虑童限期间 | 补充童限处理策略 |
 | 17 | 标签内容规范不完整 | 补充标签格式和避让策略 |
 | 18 | 测试示例假设 personId 数据库 | 改为基于 testFixtures 的固定参数 |
+
+### v2 → v3 修订（第 2 轮架构师 Review）
+
+| # | 问题 | 修订 |
+| --- | --- | --- |
+| 1 | 函数名 `getSelfMutagensForScope` 与数据命名 `selfMarks` 矛盾 | 统一为 `getSelfMarksForScope` |
+| 2 | `getChartDataForScope` 聚合逻辑缺失 | 补充完整伪代码（12 宫遍历 + selfLinks 生成） |
+| 3 | `analysis` 参数用途不明 | 从参数中移除，`chartIndex` 由函数内部构建 |
+| 4 | `horoscopeBarData` 无消费方（死代码） | 删除此节，HoroscopeBar 保持现有读取方式 |
+| 5 | StarCell 数据传递路径不清晰 | 补充完整数据流路径 + StarCell 新增 props 定义 |
+| 6 | 星不在盘中的处理缺失 | 步骤 4-5 间加入 `pos.get() ?? -1` → 跳过防御 |
+| 7 | 闰月影响未说明 | 补充闰月边界说明（iztro 已处理） |
+| 8 | 子时跨日影响未说明 | 补充 dayDivide 说明 + 测试覆盖 |
+| 9 | 童限判断条件不明确 | 明确 `activeDecadeIdx === -1` 判断 |
+| 10 | `MutagenChar` 类型未定义 | 新增 `utils.ts` 导出 |
+| 11 | 类型定义冗余 | 统一引用 `MutagenChar` |
+| 12 | `getChartDataForScope` 无测试计划 | 补充聚合函数测试（palaceSelfMarks + selfLinks） |
+| 13 | 缺少多 scope 叠加测试 | 补充叠加场景测试用例 |
+| 14 | 缺少晚子时 + 闰月边界测试 | 补充边界测试用例 |
+| 15 | iztro daily/hourly heavenlyStem 待验证 | 已确认存在，删除回退方案说明 |
+| 16 | SVG 层级冲突未说明 | 补充 SVG 渲染顺序策略（三层） |
+| 17 | CenterPanel 按钮布局未说明 | 补充 flex-wrap 小屏幕适配 |
+| 18 | `horoscopeBarData` 性能隐患 | 删除（见 #4） |
+| 19 | 离心 selfLink 的 fromIndex === toIndex 语义不清 | 新增 `isSelfLoop` 字段，SVG 渲染为星芒 |
+| 20 | "480 条箭头"估算有误 | 修正为 40 条，删除退化逻辑 |
 
 ---
 
