@@ -17,7 +17,7 @@ class PeepDatabase extends Dexie {
   persons!: Table<Person, number>;
 
   constructor() {
-    super("peep-persons");
+    super("peep");
     this.version(1).stores({
       persons: "++id, savedAt, isDefault",
     });
@@ -25,6 +25,13 @@ class PeepDatabase extends Dexie {
 }
 
 const db = new PeepDatabase();
+
+/** 清理旧版数据库（peep-persons → peep） */
+try {
+  indexedDB.deleteDatabase("peep-persons");
+} catch {
+  /* ignore */
+}
 
 /** 默认人物数据 */
 const DEFAULT_PERSON: Omit<Person, "id"> = {
@@ -38,7 +45,7 @@ const DEFAULT_PERSON: Omit<Person, "id"> = {
 
 /** 确保默认人物存在（首次调用时自动种子） */
 async function ensureDefault(): Promise<Person> {
-  const existing = await db.persons.where("isDefault").equals(1).first();
+  const existing = await db.persons.filter((p) => p.isDefault).first();
   if (existing) return existing;
   const id = await db.persons.add(DEFAULT_PERSON);
   return { ...DEFAULT_PERSON, id };
