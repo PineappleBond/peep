@@ -4,6 +4,7 @@
  */
 import Dexie, { type Table } from "dexie";
 import { DEFAULT_BIRTH_INPUT, type BirthInput } from "./useZwds";
+import type { DaLiuRenResult } from "./daliuren/types";
 
 export type Person = {
   id?: number;
@@ -13,18 +14,44 @@ export type Person = {
   isDefault: boolean;
 } & BirthInput;
 
+/** 大六壬起课记录 */
+export interface LiurenRecord {
+  id?: number;
+  /** 关联人物 ID */
+  personId: number;
+  /** 起课时间（YYYY-MM-DD HH:mm:ss） */
+  calculationTime: string;
+  /** 占事问题 */
+  question: string;
+  /** 备注 */
+  note: string;
+  /** 背景信息 */
+  background: string;
+  /** 标签数组 */
+  tags: string[];
+  /** 完整卦象数据 */
+  result: DaLiuRenResult;
+  /** 保存时间戳 */
+  savedAt: number;
+}
+
 class PeepDatabase extends Dexie {
   persons!: Table<Person, number>;
+  liurenRecords!: Table<LiurenRecord, number>;
 
   constructor() {
     super("peep");
     this.version(1).stores({
       persons: "++id, savedAt, isDefault",
     });
+    this.version(2).stores({
+      persons: "++id, savedAt, isDefault",
+      liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
+    });
   }
 }
 
-const db = new PeepDatabase();
+export const db = new PeepDatabase();
 
 /** 清理旧版数据库（peep-persons → peep） */
 try {
