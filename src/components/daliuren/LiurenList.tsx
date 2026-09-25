@@ -8,7 +8,6 @@ import {
   getAllLiurenTags,
   type LiurenListFilters,
 } from "../../core/daliurenDb";
-import { DI_ZHI } from "../../core/daliuren/constants";
 
 interface LiurenListProps {
   personId: number;

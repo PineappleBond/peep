@@ -11,7 +11,7 @@ import { LiurenViewDialog } from "../components/daliuren/LiurenViewDialog";
 import { LiurenEditDialog } from "../components/daliuren/LiurenEditDialog";
 import { LiurenDeleteDialog } from "../components/daliuren/LiurenDeleteDialog";
 import type { LiurenRecord, Person } from "../core/personDb";
-import { getPerson, getDefaultPerson } from "../core/personDb";
+import { getDefaultPerson } from "../core/personDb";
 import { getLiurenRecord } from "../core/daliurenDb";
 
 export function DaLiuRenPage() {
@@ -74,7 +74,6 @@ export function DaLiuRenPage() {
     refreshList();
     // 编辑保存后，如果编辑的是当前选中的记录，更新右侧盘面
     if (dialogRecord && selectedRecord?.id === dialogRecord.id) {
-      getPerson(dialogRecord.id!).catch(() => {});
       // 重新加载该记录
       if (dialogRecord.id) {
         getLiurenRecord(dialogRecord.id).then((r) => {
