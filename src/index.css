@@ -2502,15 +2502,16 @@ body {
   background: linear-gradient(170deg, rgba(16, 25, 50, 0.98), rgba(9, 14, 30, 0.99));
   border: 1px solid var(--line-strong);
   box-shadow:
-    0 0 50px rgba(85, 215, 255, 0.12),
-    0 20px 60px rgba(0, 0, 0, 0.7),
-    inset 0 0 20px rgba(10, 18, 40, 0.6);
+    0 0 60px rgba(85, 215, 255, 0.14),
+    0 24px 64px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 24px rgba(10, 18, 40, 0.55);
   animation: dlg-slidein 0.22s ease-out;
 }
 
 @keyframes dlg-slidein {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from { transform: translateY(16px) scale(0.96); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 .dlg-head {
@@ -2536,13 +2537,13 @@ body {
 .dlg-close {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: 50%;
   border: 1px solid var(--line);
   background: transparent;
   color: var(--dim);
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
-  transition: 0.18s;
+  transition: 0.22s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2551,11 +2552,36 @@ body {
 .dlg-close:hover {
   color: var(--text);
   border-color: var(--line-strong);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.25);
+  background: rgba(85, 215, 255, 0.08);
+  box-shadow: 0 0 12px rgba(85, 215, 255, 0.3);
 }
 
 .dlg-body {
-  padding: 16px 20px;
+  padding: 18px 22px;
+  line-height: 1.6;
+}
+
+/* ── 弹窗内文档提示 ── */
+.dlg-hint {
+  margin: 12px 0 0;
+  font-size: 0.84rem;
+  color: var(--dim);
+  font-style: italic;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+
+.dlg-hint::before {
+  content: "📄 ";
+  font-style: normal;
+  opacity: 0.75;
+}
+
+/* ── 弹窗按钮容器 ── */
+.dlg-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .dlg-foot {
@@ -2570,19 +2596,20 @@ body {
 .btn-cancel {
   padding: 8px 18px;
   border-radius: 9px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   background: transparent;
   color: var(--dim);
   font-size: 0.8rem;
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.18s;
+  transition: 0.22s ease;
 }
 
 .btn-cancel:hover {
-  border-color: var(--line-strong);
+  border-color: var(--text);
   color: var(--text);
+  background: rgba(217, 228, 255, 0.04);
 }
 
 .btn-save {
@@ -2604,21 +2631,26 @@ body {
 }
 
 .btn-danger {
-  padding: 8px 18px;
+  padding: 8px 20px;
   border-radius: 9px;
-  border: 1px solid rgba(227, 91, 216, 0.5);
-  background: rgba(227, 91, 216, 0.1);
-  color: var(--m-ji);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  background: linear-gradient(135deg, rgba(185, 28, 28, 0.85), rgba(127, 29, 29, 0.92));
+  color: #fff;
   font-size: 0.8rem;
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: 0.22s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .btn-danger:hover {
-  background: rgba(227, 91, 216, 0.2);
-  box-shadow: 0 0 14px rgba(227, 91, 216, 0.35);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(153, 27, 27, 0.95));
+  border-color: rgba(248, 113, 113, 0.6);
+  box-shadow:
+    0 0 18px rgba(239, 68, 68, 0.45),
+    0 0 6px rgba(239, 68, 68, 0.25);
+  transform: translateY(-1px);
 }
 
 /* ── 确认弹窗 ── */
