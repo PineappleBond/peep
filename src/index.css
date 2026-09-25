@@ -99,16 +99,28 @@ body {
 /* ── 页头 ── */
 .top {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  padding-top: 20px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  background: rgba(10, 16, 34, 0.6);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 20px rgba(85, 215, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.top:hover {
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35), 0 0 24px rgba(85, 215, 255, 0.08);
 }
 
 .top h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: 0.4em;
   background: linear-gradient(120deg, #f3c96b, #fff2cf 45%, #f3c96b 75%);
@@ -116,23 +128,30 @@ body {
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 16px rgba(243, 201, 107, 0.4));
+  transition: filter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.top:hover h1 {
+  filter: drop-shadow(0 0 20px rgba(243, 201, 107, 0.5));
 }
 
 .top-sub {
   color: var(--dim);
   font-size: 0.75rem;
   letter-spacing: 0.3em;
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .top-actions {
   margin-left: auto;
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .top-actions button {
-  padding: 6px 14px;
-  border-radius: 9px;
+  padding: 7px 16px;
+  border-radius: 8px;
   border: 1px solid rgba(85, 215, 255, 0.4);
   background: rgba(85, 215, 255, 0.07);
   color: var(--cyan);
@@ -140,12 +159,25 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .top-actions button:hover:not(:disabled) {
   background: rgba(85, 215, 255, 0.16);
+  border-color: rgba(85, 215, 255, 0.6);
   box-shadow: 0 0 14px rgba(85, 215, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.top-actions button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.top-actions button:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 
 .top-actions button:disabled {
@@ -156,7 +188,7 @@ body {
 /* ── 顶部导航图标 ── */
 .top-nav {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
@@ -164,28 +196,46 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   color: var(--dim);
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .nav-icon:hover {
   border-color: var(--line-strong);
   color: var(--text);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.2);
+  background: rgba(85, 215, 255, 0.08);
+  box-shadow: 0 0 12px rgba(85, 215, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.nav-icon:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.nav-icon:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 
 .nav-icon.active {
   color: var(--gold);
   border-color: rgba(243, 201, 107, 0.5);
-  background: rgba(243, 201, 107, 0.08);
-  box-shadow: 0 0 12px rgba(243, 201, 107, 0.3);
+  background: rgba(243, 201, 107, 0.1);
+  box-shadow: 0 0 14px rgba(243, 201, 107, 0.35);
+}
+
+.nav-icon.active:hover {
+  box-shadow: 0 0 18px rgba(243, 201, 107, 0.45);
+  transform: translateY(-2px);
 }
 
 /* ── 输入条 ── */
@@ -1380,10 +1430,14 @@ body {
 
 @media (max-width: 760px) {
   .app { padding: 0 8px 20px; }
-  .top { gap: 10px; padding-top: 12px; }
+  .top { gap: 10px; padding: 12px 14px; margin-bottom: 14px; }
   .top h1 { font-size: 1.35rem; letter-spacing: 0.25em; }
   .top-sub { display: none; }
   .top-actions button { padding: 5px 9px; font-size: 0.68rem; }
+  .nav-icon { width: 34px; height: 34px; border-radius: 8px; }
+  .person-sel { gap: 6px; padding: 3px; }
+  .person-select { min-width: 120px; font-size: 0.72rem; padding: 6px 10px; }
+  .person-btn { width: 28px; height: 28px; font-size: 12px; }
   .input-panel { gap: 8px 10px; padding: 8px 10px; margin: 10px 0; }
   .btn-go { margin-left: 0; width: 100%; }
   .chart-outer { padding: 2px 0 6px; }
@@ -1401,6 +1455,23 @@ body {
   /* 中宫内容允许纵向滚动，防止被裁切 */
   .center { overflow-y: auto; }
   .target-line { margin-top: 6px; }
+}
+
+/* ── 移动端补充：Header/PersonSelector ≤600px ── */
+@media (max-width: 600px) {
+  .top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
+  .top h1 { font-size: 1.2rem; letter-spacing: 0.2em; }
+  .top-nav { order: -1; width: 100%; justify-content: center; }
+  .top-actions { width: 100%; justify-content: center; }
+  .person-sel { flex-wrap: wrap; justify-content: center; width: 100%; }
+  .person-select { min-width: 0; flex: 1; font-size: 0.7rem; }
+  .nav-icon { width: 32px; height: 32px; }
+  .nav-icon svg { width: 18px; height: 18px; }
 }
 
 /* ── 宫位详情弹层 ── */
@@ -2730,46 +2801,94 @@ body {
 .person-sel {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(5, 9, 20, 0.5);
+  border: 1px solid rgba(96, 165, 250, 0.1);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.person-sel:hover {
+  border-color: rgba(96, 165, 250, 0.2);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.08);
 }
 
 .person-select {
-  background: rgba(5, 9, 20, 0.8);
+  background: rgba(5, 9, 20, 0.85);
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
-  padding: 6px 12px;
+  padding: 7px 14px;
   font-size: 0.78rem;
   font-family: inherit;
   outline: none;
-  min-width: 140px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  min-width: 150px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237787a8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+
+.person-select:hover {
+  border-color: var(--line-strong);
+  background-color: rgba(5, 9, 20, 0.95);
 }
 
 .person-select:focus {
   border-color: var(--line-strong);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.2);
+  box-shadow: 0 0 12px rgba(85, 215, 255, 0.25), inset 0 0 4px rgba(85, 215, 255, 0.05);
+}
+
+.person-select:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.person-select option {
+  background: rgba(13, 20, 40, 0.98);
+  color: var(--text);
+  padding: 8px;
 }
 
 .person-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   color: var(--dim);
   font-size: 14px;
   cursor: pointer;
-  transition: 0.18s;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .person-btn:hover:not(:disabled) {
   border-color: var(--line-strong);
   color: var(--cyan);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.25);
+  background: rgba(85, 215, 255, 0.1);
+  box-shadow: 0 0 12px rgba(85, 215, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.person-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.93);
+}
+
+.person-btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 
 .person-btn:disabled {
@@ -2780,7 +2899,8 @@ body {
 .person-del:hover:not(:disabled) {
   border-color: rgba(227, 91, 216, 0.5);
   color: var(--m-ji);
-  box-shadow: 0 0 10px rgba(227, 91, 216, 0.25);
+  background: rgba(227, 91, 216, 0.1);
+  box-shadow: 0 0 12px rgba(227, 91, 216, 0.3);
 }
 
 /* ── 人物编辑表单 ── */
@@ -2902,21 +3022,8 @@ body {
   width: 140px;
 }
 
-/* ── 响应式：人物选择器 ── */
+/* ── 响应式：弹窗 ── */
 @media (max-width: 760px) {
-  .person-sel {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .person-select {
-    min-width: 120px;
-    font-size: 0.72rem;
-  }
-  .person-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-  }
   .dlg-panel {
     width: 96vw !important;
     max-height: 92vh;
