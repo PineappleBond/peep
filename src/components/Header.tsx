@@ -6,6 +6,7 @@ import { useLocation, NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
 import { LiurenIcon } from "./icons/LiurenIcon";
+import { WikiIcon } from "./icons/WikiIcon";
 import type { Person } from "../core/personDb";
 
 type HeaderProps = {
@@ -17,6 +18,9 @@ type HeaderProps = {
 
 /** 根据路由获取标题 */
 function getTitleByPath(pathname: string): string {
+  if (pathname.startsWith("/wiki")) {
+    return "知识库";
+  }
   if (pathname.startsWith("/liuren")) {
     return "大六壬";
   }
@@ -25,6 +29,9 @@ function getTitleByPath(pathname: string): string {
 
 /** 根据路由获取副标题 */
 function getSubtitleByPath(pathname: string): string {
+  if (pathname.startsWith("/wiki")) {
+    return "LLM 知识底座 · Markdown · 实体关联";
+  }
   if (pathname.startsWith("/liuren")) {
     return "古法占课 · 天地盘 · 四课三传";
   }
@@ -55,6 +62,13 @@ export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
           title="大六壬"
         >
           <LiurenIcon />
+        </NavLink>
+        <NavLink
+          to="/wiki"
+          className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
+          title="知识库"
+        >
+          <WikiIcon />
         </NavLink>
       </nav>
       <div className="top-actions">

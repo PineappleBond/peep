@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ZiweiPage } from "./pages/ZiweiPage";
 import { DaLiuRenPage } from "./pages/DaLiuRenPage";
+import { WikiPage } from "./pages/WikiPage";
 import { initDebugApi } from "./core/debugApi";
 
 // 初始化调试 API
@@ -28,6 +29,7 @@ function App() {
         <Routes>
           <Route path="/" element={<ZiweiPage />} />
           <Route path="/liuren" element={<DaLiuRenPage />} />
+          <Route path="/wiki" element={<WikiPage />} />
         </Routes>
       </Layout>
     </BrowserRouter>
