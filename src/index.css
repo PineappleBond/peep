@@ -3625,3 +3625,201 @@ body {
   color: var(--faint);
   letter-spacing: 0.1em;
 }
+
+
+/* ============ 大六壬 Dialog 表单样式 ============ */
+
+.liuren-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.liuren-form-error {
+  padding: 9px 12px;
+  background: rgba(204, 68, 68, 0.12);
+  border: 1px solid rgba(204, 68, 68, 0.35);
+  border-radius: 6px;
+  color: #f77;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+}
+
+.liuren-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.liuren-form-field label {
+  font-size: 0.82rem;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+}
+
+.liuren-form-field label .required {
+  color: var(--gold);
+}
+
+.liuren-form-field input,
+.liuren-form-field textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(243, 201, 107, 0.2);
+  border-radius: 6px;
+  padding: 8px 11px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.liuren-form-field input:focus,
+.liuren-form-field textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 6px rgba(243, 201, 107, 0.2);
+}
+
+.liuren-form-field input::placeholder,
+.liuren-form-field textarea::placeholder {
+  color: var(--faint);
+}
+
+.liuren-form-field textarea {
+  resize: vertical;
+  min-height: 56px;
+}
+
+.liuren-form-field.readonly {
+  opacity: 0.7;
+}
+
+.liuren-form-static {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(243, 201, 107, 0.1);
+  border-radius: 6px;
+  padding: 8px 11px;
+  color: var(--dim);
+  font-size: 0.88rem;
+}
+
+/* 查看详情 Dialog */
+.liuren-view-dialog-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.liuren-view-dialog-content .liuren-chart {
+  padding: 0;
+}
+
+/* 删除确认 */
+.liuren-delete-confirm {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.liuren-delete-msg {
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+  color: var(--text);
+  letter-spacing: 0.03em;
+  line-height: 1.6;
+}
+
+.liuren-delete-info {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(243, 201, 107, 0.1);
+  border-radius: 6px;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.82rem;
+  color: var(--dim);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.liuren-delete-info strong {
+  color: var(--gold);
+  margin-right: 4px;
+}
+
+/* ============ TagInput ============ */
+
+.tag-input {
+  width: 100%;
+}
+
+.tag-input-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(243, 201, 107, 0.2);
+  border-radius: 6px;
+  min-height: 36px;
+  align-items: center;
+  cursor: text;
+  transition: border-color 0.15s;
+}
+
+.tag-input-tags:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 6px rgba(243, 201, 107, 0.2);
+}
+
+.tag-input-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  background: rgba(243, 201, 107, 0.12);
+  border: 1px solid rgba(243, 201, 107, 0.35);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  color: var(--gold);
+  letter-spacing: 0.03em;
+}
+
+.tag-input-tag-text {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-input-tag-remove {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+
+.tag-input-tag-remove:hover {
+  opacity: 1;
+}
+
+.tag-input-field {
+  flex: 1;
+  min-width: 80px;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  padding: 2px 0;
+}
+
+.tag-input-field::placeholder {
+  color: var(--faint);
+}
+

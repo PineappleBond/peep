@@ -17,6 +17,9 @@ interface LiurenListProps {
   onNewClick: () => void;
   onEditClick: (record: LiurenRecord) => void;
   onDeleteClick: (record: LiurenRecord) => void;
+  onViewClick?: (record: LiurenRecord) => void;
+  /** 刷新计数器，变化时重新加载列表 */
+  refreshKey?: number;
 }
 
 /** 相对时间格式化 */
@@ -44,6 +47,8 @@ export function LiurenList({
   onNewClick,
   onEditClick,
   onDeleteClick,
+  onViewClick,
+  refreshKey = 0,
 }: LiurenListProps) {
   const [records, setRecords] = useState<LiurenRecord[]>([]);
   const [total, setTotal] = useState(0);
@@ -64,7 +69,8 @@ export function LiurenList({
     const result = await listLiurenRecords(personId, filters);
     setRecords(result.records);
     setTotal(result.total);
-  }, [personId, searchText, selectedTags, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personId, searchText, selectedTags, page, refreshKey]);
 
   useEffect(() => {
     loadRecords();
@@ -72,7 +78,8 @@ export function LiurenList({
 
   useEffect(() => {
     getAllLiurenTags(personId).then(setAllTags);
-  }, [personId, records.length]); // 记录变化时刷新标签
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personId, records.length, refreshKey]); // 记录变化时刷新标签
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -164,6 +171,18 @@ export function LiurenList({
               </div>
               {hoveredId === record.id && (
                 <div className="liuren-list-item-actions">
+                  {onViewClick && (
+                    <button
+                      className="liuren-action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewClick(record);
+                      }}
+                      title="查看盘面"
+                    >
+                      ⚏
+                    </button>
+                  )}
                   <button
                     className="liuren-action-btn"
                     onClick={(e) => {

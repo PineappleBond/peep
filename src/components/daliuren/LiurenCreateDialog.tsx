@@ -1,0 +1,147 @@
+/**
+ * 新建起课 Dialog
+ * - 表单：占事问题（必填）、备注、背景信息、tags
+ * - 提交：自动用当前时间 + 当前人物出生年调用 calculateDaLiuRen，保存记录
+ */
+import { useState } from "react";
+import { Dialog } from "../Dialog";
+import { TagInput } from "./TagInput";
+import { calculateDaLiuRen } from "../../core/daliuren/calculator";
+import { saveLiurenRecord } from "../../core/daliurenDb";
+import type { LiurenRecord, Person } from "../../core/personDb";
+
+interface LiurenCreateDialogProps {
+  open: boolean;
+  onClose: () => void;
+  person: Person;
+  onSaved: () => void;
+}
+
+export function LiurenCreateDialog({
+  open,
+  onClose,
+  person,
+  onSaved,
+}: LiurenCreateDialogProps) {
+  const [question, setQuestion] = useState("");
+  const [note, setNote] = useState("");
+  const [background, setBackground] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setQuestion("");
+    setNote("");
+    setBackground("");
+    setTags([]);
+    setError(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    if (!question.trim()) {
+      setError("占事问题不能为空");
+      return;
+    }
+    if (person.date == null) {
+      setError("人物出生日期未设置");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+
+      const birthYear = parseInt(person.date.split("-")[0], 10);
+      const gender = (person.gender as "男" | "女") ?? "男";
+
+      const result = calculateDaLiuRen(dateStr, timeStr, { birthYear, gender });
+
+      const record: LiurenRecord = {
+        personId: person.id!,
+        calculationTime: `${dateStr} ${timeStr}`,
+        question: question.trim(),
+        note: note.trim(),
+        background: background.trim(),
+        tags,
+        result,
+        savedAt: Date.now(),
+      };
+
+      await saveLiurenRecord(record);
+      resetForm();
+      onSaved();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "起课失败，请重试");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      title="新建起课"
+      width={520}
+      footer={
+        <>
+          <button className="btn-cancel" onClick={handleClose} disabled={saving}>
+            取消
+          </button>
+          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
+            {saving ? "起课中..." : "起课并保存"}
+          </button>
+        </>
+      }
+    >
+      <div className="liuren-dialog-form">
+        {error && <div className="liuren-form-error">{error}</div>}
+        <div className="liuren-form-field">
+          <label>
+            占事问题 <span className="required">*</span>
+          </label>
+          <input
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="例如：问事业、问感情..."
+            autoFocus
+          />
+        </div>
+        <div className="liuren-form-field">
+          <label>备注</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="选填"
+          />
+        </div>
+        <div className="liuren-form-field">
+          <label>背景信息</label>
+          <textarea
+            value={background}
+            onChange={(e) => setBackground(e.target.value)}
+            placeholder="选填，可描述当前背景..."
+            rows={3}
+          />
+        </div>
+        <div className="liuren-form-field">
+          <label>标签</label>
+          <TagInput value={tags} onChange={setTags} placeholder="输入标签后按回车..." />
+        </div>
+      </div>
+    </Dialog>
+  );
+}

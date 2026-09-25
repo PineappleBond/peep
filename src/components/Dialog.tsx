@@ -11,9 +11,11 @@ type DialogProps = {
   children: ReactNode;
   /** 面板宽度，默认 480px */
   width?: number;
+  /** 底部按钮区（可选） */
+  footer?: ReactNode;
 };
 
-export function Dialog({ open, onClose, title, children, width = 480 }: DialogProps) {
+export function Dialog({ open, onClose, title, children, width = 480, footer }: DialogProps) {
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -39,6 +41,7 @@ export function Dialog({ open, onClose, title, children, width = 480 }: DialogPr
           </button>
         </div>
         <div className="dlg-body">{children}</div>
+        {footer && <div className="dlg-foot">{footer}</div>}
       </div>
     </div>
   );
