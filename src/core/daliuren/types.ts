@@ -115,8 +115,11 @@ export interface XunKong {
 
 import type { ShenSha } from "./shensha";
 import type { BranchRelation } from "./relations";
+import type { KeJingMatch } from "./kejing";
+import type { JianChuType } from "./jianchu";
+import type { FateInfo } from "./fate";
 
-/** 大六壬最终返回结构（阶段三：含旺衰、六亲、遁干、神煞、刑冲破害） */
+/** 大六壬最终返回结构（阶段四：含课经、命宫行年、建除、纳音） */
 export interface DaLiuRenResult {
   /** 起课时间字符串（YYYY-MM-DD HH:mm:ss） */
   calculationTime: string;
@@ -148,6 +151,14 @@ export interface DaLiuRenResult {
   shenSha: ShenSha[];
   /** 刑冲破害关系 */
   relations: BranchRelation[];
+  /** 课经规则匹配（阶段四） */
+  keJing: KeJingMatch[];
+  /** 命宫行年（需额外传入生年和性别，否则为 undefined） */
+  fate?: FateInfo;
+  /** 建除十二直（每个地支的建除类型，阶段四） */
+  jianChu: Record<number, JianChuType>;
+  /** 纳音（每个地支的纳音，阶段四） */
+  naYin: Record<number, string>;
   /** 计算追踪记录 */
   calculationTrace: string[];
 }

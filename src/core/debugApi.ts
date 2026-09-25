@@ -144,9 +144,14 @@ function setHoroscopeTime(z: Zwds, date: Date): void {
  *
  * @param date 公历日期（YYYY-MM-DD）
  * @param time 时间（HH:mm 或 HH:mm:ss）
+ * @param fateInput 可选：生年与性别
  */
-export function DaLiuRen(date: string, time: string): DaLiuRenResult {
-  return calculateDaLiuRen(date, time);
+export function DaLiuRen(
+  date: string,
+  time: string,
+  fateInput?: { birthYear: number; gender: "男" | "女" }
+): DaLiuRenResult {
+  return calculateDaLiuRen(date, time, fateInput);
 }
 
 /** 初始化 window.peep（仅在开发环境） */

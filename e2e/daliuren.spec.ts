@@ -334,4 +334,187 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
       expect(["冲", "刑", "破", "害", "合"]).toContain(rel.type);
     }
   });
+
+  // 第四阶段：课经规则
+  test("课经规则：应识别常见课经格局", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep?.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // @ts-ignore
+      return await window.peep.DaLiuRen("2024-06-15", "12:00");
+    });
+
+    // 应有 keJing 字段
+    expect(result.keJing).toBeDefined();
+    expect(Array.isArray(result.keJing)).toBe(true);
+
+    // 每个匹配项都有 rule 和 evidence
+    for (const match of result.keJing) {
+      expect(match).toHaveProperty("rule");
+      expect(match).toHaveProperty("evidence");
+      expect(match.rule).toHaveProperty("code");
+      expect(match.rule).toHaveProperty("name");
+      expect(match.rule).toHaveProperty("group");
+      expect(match.rule).toHaveProperty("description");
+      expect(Array.isArray(match.evidence)).toBe(true);
+      expect(match.evidence.length).toBeGreaterThan(0);
+    }
+
+    // 至少应匹配到 1 个课经（多数盘面都会有三传类课经）
+    expect(result.keJing.length).toBeGreaterThanOrEqual(1);
+
+    // 多个日期测试，应覆盖多种课经
+    const multipleResults = await page.evaluate(async () => {
+      const testCases = [
+        { date: "2024-06-15", time: "12:00" },
+        { date: "2024-01-01", time: "08:00" },
+        { date: "2024-03-20", time: "14:00" },
+        { date: "2024-06-21", time: "10:00" },
+        { date: "2024-09-23", time: "16:00" },
+        { date: "2024-12-21", time: "20:00" },
+      ];
+      return Promise.all(
+        testCases.map(({ date, time }) =>
+          // @ts-ignore
+          window.peep.DaLiuRen(date, time)
+        )
+      );
+    });
+
+    const allCodes = new Set<string>();
+    for (const r of multipleResults) {
+      for (const m of r.keJing) {
+        allCodes.add(m.rule.code);
+      }
+    }
+    // 至少应识别 3 种不同的课经
+    expect(allCodes.size).toBeGreaterThanOrEqual(3);
+  });
+
+  // 第四阶段：建除十二直
+  test("建除十二直：应正确标注每个地支的建除类型", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep?.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // @ts-ignore
+      return await window.peep.DaLiuRen("2024-06-15", "12:00");
+    });
+
+    // 应有 jianChu 字段
+    expect(result.jianChu).toBeDefined();
+    expect(typeof result.jianChu).toBe("object");
+
+    // 12 个地支都应有建除标注
+    const entries = Object.entries(result.jianChu);
+    expect(entries.length).toBe(12);
+
+    // 所有建除类型都应是 12 种之一
+    const validTypes = new Set([
+      "建", "除", "满", "平", "定", "执", "破", "危", "成", "收", "开", "闭",
+    ]);
+    for (const [branch, type] of entries) {
+      expect(Number(branch)).toBeGreaterThanOrEqual(0);
+      expect(Number(branch)).toBeLessThan(12);
+      expect(validTypes.has(type as string)).toBe(true);
+    }
+
+    // 建除 12 个类型应全部出现（每支一个）
+    const typeSet = new Set(entries.map(([, t]) => t));
+    expect(typeSet.size).toBe(12);
+
+    // 月建所在支应为"建"
+    // 2024-06-15 在芒种后，月支为午（索引 6），所以 6 应为"建"
+    expect(result.jianChu["6"]).toBe("建");
+    // 月建次一位为"除"：午→未（7）
+    expect(result.jianChu["7"]).toBe("除");
+  });
+
+  // 第四阶段：纳音五行
+  test("纳音五行：应正确标注每个干支的纳音", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep?.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // @ts-ignore
+      return await window.peep.DaLiuRen("2024-06-15", "12:00");
+    });
+
+    // 应有 naYin 字段
+    expect(result.naYin).toBeDefined();
+    expect(typeof result.naYin).toBe("object");
+
+    // 12 个地支都应有纳音
+    const entries = Object.entries(result.naYin);
+    expect(entries.length).toBe(12);
+
+    // 每个纳音应为 30 个纳音名之一
+    const validNaYin = new Set([
+      "海中金", "炉中火", "大林木", "路旁土", "剑锋金",
+      "山头火", "涧下水", "城头土", "白蜡金", "杨柳木",
+      "泉中水", "屋上土", "霹雳火", "松柏木", "长流水",
+      "沙中金", "山下火", "平地木", "壁上土", "金箔金",
+      "覆灯火", "天河水", "大驿土", "钗钏金", "桑柘木",
+      "大溪水", "沙中土", "天上火", "石榴木", "大海水",
+    ]);
+    for (const [, nayin] of entries) {
+      expect(validNaYin.has(nayin as string)).toBe(true);
+    }
+
+    // 2024-06-15 是庚戌日（日干庚=6），庚配子=壁上土
+    // 庚子纳音=壁上土
+    expect(result.naYin["0"]).toBe("壁上土");
+  });
+
+  // 第四阶段：命宫行年
+  test("命宫行年：传入生年和性别时应返回命宫行年信息", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep?.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // 1984 年是甲子年，男命，起课 2024 年
+      // @ts-ignore
+      return await window.peep.DaLiuRen("2024-06-15", "12:00", {
+        birthYear: 1984,
+        gender: "男",
+      });
+    });
+
+    // 应有 fate 字段
+    expect(result.fate).toBeDefined();
+    expect(result.fate).toHaveProperty("mingGong");
+    expect(result.fate).toHaveProperty("xingNian");
+    expect(result.fate).toHaveProperty("xingNianStem");
+    expect(result.fate).toHaveProperty("xingNianIndex");
+    expect(result.fate).toHaveProperty("age");
+
+    // 1984 年是甲子年，年支=子（0）
+    expect(result.fate.mingGong).toBe(0);
+    // 虚岁 = 2024 - 1984 + 1 = 41
+    expect(result.fate.age).toBe(41);
+
+    // 不传 fateInput 时 fate 应为 undefined
+    const resultNoFate = await page.evaluate(async () => {
+      // @ts-ignore
+      return await window.peep.DaLiuRen("2024-06-15", "12:00");
+    });
+    expect(resultNoFate.fate).toBeUndefined();
+  });
 });

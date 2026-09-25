@@ -29,6 +29,11 @@ import { getAllLiuQin } from "./liuqin";
 import { calculateXunDun, calculateRiDun } from "./dungan";
 import { calculateShenSha } from "./shensha";
 import { findBranchRelations } from "./relations";
+import { evaluateKeJing } from "./kejing";
+import { getMonthJianChu } from "./jianchu";
+import { getBoardNaYin } from "./nayin";
+import { calculateFate } from "./fate";
+import type { FateInfo } from "./fate";
 
 // ─── 内部辅助 ────────────────────────────────────────────
 
@@ -215,15 +220,17 @@ export function calculateXunKong(dayStem: number, dayBranch: number): XunKong {
 // ─── 主入口 ────────────────────────────────────────────
 
 /**
- * 大六壬排盘（阶段三）
+ * 大六壬排盘（阶段四）
  *
  * @param dateStr 公历日期（YYYY-MM-DD 或 YYYY/MM/DD）
  * @param timeStr 时间（HH:mm 或 HH:mm:ss）
- * @returns 完整盘面数据（四柱、月将、天地盘、四课、旬空、三传、天将、旺衰、六亲、遁干、神煞、刑冲破害）
+ * @param fateInput 可选：生年与性别（用于计算命宫行年）
+ * @returns 完整盘面数据（四柱、月将、天地盘、四课、旬空、三传、天将、旺衰、六亲、遁干、神煞、刑冲破害、课经、建除、纳音）
  */
 export function calculateDaLiuRen(
   dateStr: string,
-  timeStr: string
+  timeStr: string,
+  fateInput?: { birthYear: number; gender: "男" | "女" }
 ): DaLiuRenResult {
   // 解析时间
   const [year, month, day] = dateStr.split(/[\/-]/).map(Number);
@@ -325,7 +332,10 @@ export function calculateDaLiuRen(
     `天将: ${twelveGenerals.map((g) => g.name).join(",")}`,
   ];
 
-  return {
+  // ── 阶段四新增：课经、建除、纳音、命宫行年 ──
+
+  // 构造部分结果供课经规则引擎使用
+  const partialResult: DaLiuRenResult = {
     calculationTime,
     fourPillars,
     monthGeneral,
@@ -341,6 +351,33 @@ export function calculateDaLiuRen(
     riDun,
     shenSha,
     relations,
+    keJing: [],
+    jianChu: {},
+    naYin: {},
     calculationTrace,
+  };
+
+  // 课经规则
+  const keJing = evaluateKeJing(partialResult);
+
+  // 建除十二直（以月建起）
+  const jianChu = getMonthJianChu(fourPillars.monthBranch);
+
+  // 纳音（以日干配十二地支）
+  const naYin = getBoardNaYin(fourPillars.dayStem, boards.heaven);
+
+  // 命宫行年（可选）
+  let fate: FateInfo | undefined;
+  if (fateInput) {
+    const [currentYear] = dateStr.split(/[\/-]/).map(Number);
+    fate = calculateFate(fateInput.birthYear, fateInput.gender, currentYear);
+  }
+
+  return {
+    ...partialResult,
+    keJing,
+    jianChu,
+    naYin,
+    fate,
   };
 }
