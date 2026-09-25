@@ -34,7 +34,7 @@ let _setListFilters: ((filters: { searchText?: string; tags?: string[]; page?: n
 let _openCreateDialog: (() => void) | null = null;
 let _fillCreateForm: ((data: { question: string; note?: string; background?: string; tags?: string[] }) => void) | null = null;
 let _submitCreateForm: (() => Promise<LiurenRecord>) | null = null;
-let _selectRecord: ((recordId: number) => Promise<void>) | null = null;
+let _selectRecord: ((recordId: number) => Promise<LiurenRecord | null>) | null = null;
 let _getSelectedRecord: (() => LiurenRecord | null) | null = null;
 
 /** 回调注册状态追踪 */
@@ -57,7 +57,7 @@ export function registerDebugApi(opts: {
   openCreateDialog?: () => void;
   fillCreateForm?: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
   submitCreateForm?: () => Promise<LiurenRecord>;
-  selectRecord?: (recordId: number) => Promise<void>;
+  selectRecord?: (recordId: number) => Promise<LiurenRecord | null>;
   getSelectedRecord?: () => LiurenRecord | null;
 }) {
   if (opts.selectPerson) _selectPerson = opts.selectPerson;
@@ -88,7 +88,7 @@ export function registerDaLiuRenCallbacks(opts: {
   openCreateDialog: () => void;
   fillCreateForm: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
   submitCreateForm: () => Promise<LiurenRecord>;
-  selectRecord: (recordId: number) => Promise<void>;
+  selectRecord: (recordId: number) => Promise<LiurenRecord | null>;
   getSelectedRecord: () => LiurenRecord | null;
 }) {
   _getDaLiuRenList = opts.getDaLiuRenList;
@@ -373,17 +373,17 @@ export async function DaLiuRenView(params: {
   await _selectPerson(params.personId);
   await waitForStateUpdate();
 
-  // 3. 点击某条记录
-  await _selectRecord(params.recordId);
+  // 3. 点击某条记录（selectRecord 直接返回记录数据）
+  const record = await _selectRecord(params.recordId);
   await waitForStateUpdate();
 
-  // 4. 获取详情
-  const record = _getSelectedRecord();
-  if (!record) {
+  // 4. 获取详情（优先使用 selectRecord 返回值，回退到 getSelectedRecord）
+  const selectedRecord = record ?? _getSelectedRecord();
+  if (!selectedRecord) {
     throw new Error(`记录 ${params.recordId} 未找到或加载失败`);
   }
 
-  return record;
+  return selectedRecord;
 }
 
 /** 辅助函数：等待页面加载 */

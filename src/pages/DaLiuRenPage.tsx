@@ -39,6 +39,8 @@ export function DaLiuRenPage() {
   const createFormInitialDataRef = useRef<{ question: string; note: string; background: string; tags: string[] } | null>(null);
   // 调试 API：提交触发计数器
   const [createSubmitTrigger, setCreateSubmitTrigger] = useState(0);
+  // 调试 API：selectedRecord 的 ref 镜像，避免 getSelectedRecord 回调的闭包过时问题
+  const selectedRecordRef = useRef<LiurenRecord | null>(null);
 
   // 获取当前人物（默认人物）
   useEffect(() => {
@@ -60,6 +62,11 @@ export function DaLiuRenPage() {
       globalEvents.off("person.changed", handlePersonChanged);
     };
   }, []);
+
+  // 同步 selectedRecord 到 ref（供调试 API 的 getSelectedRecord 回调读取最新值）
+  useEffect(() => {
+    selectedRecordRef.current = selectedRecord;
+  }, [selectedRecord]);
 
   // 注册大六壬调试 API 回调
   useEffect(() => {
@@ -124,11 +131,13 @@ export function DaLiuRenPage() {
         const record = await getLiurenRecord(recordId);
         if (record) {
           setSelectedRecord(record);
+          return record;
         }
+        return null;
       },
-      getSelectedRecord: () => selectedRecord,
+      getSelectedRecord: () => selectedRecordRef.current,
     });
-  }, [person, selectedRecord]);
+  }, [person]);
 
   // 当列表选中变化时，如果当前选中记录被删除/改变，需同步
   const handleSelect = useCallback((record: LiurenRecord) => {
@@ -163,6 +172,8 @@ export function DaLiuRenPage() {
     refreshList();
     // 新建后清空右侧盘面（让用户自行点击新记录查看）
     setSelectedRecord(null);
+    // 清空调试 API 预填充数据，避免下次手动打开 Dialog 时残留旧数据
+    createFormInitialDataRef.current = null;
   }, [refreshList]);
 
   const handleEditSaved = useCallback(() => {
