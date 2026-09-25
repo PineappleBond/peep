@@ -1,13 +1,18 @@
 /**
  * 大六壬历史列表组件（左侧）
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import type { LiurenRecord } from "../../core/personDb";
 import {
   listLiurenRecords,
   getAllLiurenTags,
   type LiurenListFilters,
 } from "../../core/daliurenDb";
+
+/** LiurenList 暴露给父组件的命令式接口 */
+export interface LiurenListHandle {
+  setFilters: (filters: { searchText?: string; selectedTags?: string[]; page?: number }) => void;
+}
 
 interface LiurenListProps {
   personId: number;
@@ -39,7 +44,7 @@ function formatRelativeTime(savedAt: number): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-export function LiurenList({
+export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function LiurenList({
   personId,
   selectedId,
   onSelect,
@@ -48,7 +53,7 @@ export function LiurenList({
   onDeleteClick,
   onViewClick,
   refreshKey = 0,
-}: LiurenListProps) {
+}, ref) {
   const [records, setRecords] = useState<LiurenRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -57,6 +62,21 @@ export function LiurenList({
   const [allTags, setAllTags] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const pageSize = 20;
+
+  // 暴露命令式接口：允许外部设置过滤条件
+  useImperativeHandle(ref, () => ({
+    setFilters: (filters: { searchText?: string; selectedTags?: string[]; page?: number }) => {
+      if (filters.searchText !== undefined) {
+        setSearchText(filters.searchText);
+      }
+      if (filters.selectedTags !== undefined) {
+        setSelectedTags(filters.selectedTags);
+      }
+      if (filters.page !== undefined) {
+        setPage(filters.page);
+      }
+    },
+  }));
 
   const loadRecords = useCallback(async () => {
     const filters: LiurenListFilters = {
@@ -231,4 +251,4 @@ export function LiurenList({
       )}
     </div>
   );
-}
+});

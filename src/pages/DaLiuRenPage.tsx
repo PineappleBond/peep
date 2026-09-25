@@ -4,7 +4,7 @@
  * 右侧：盘面区（70%宽度）
  */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { LiurenList } from "../components/daliuren/LiurenList";
+import { LiurenList, type LiurenListHandle } from "../components/daliuren/LiurenList";
 import { LiurenChart } from "../components/daliuren/LiurenChart";
 import { LiurenCreateDialog } from "../components/daliuren/LiurenCreateDialog";
 import { LiurenViewDialog } from "../components/daliuren/LiurenViewDialog";
@@ -31,6 +31,9 @@ export function DaLiuRenPage() {
   const [listRefreshKey, setListRefreshKey] = useState(0);
   const listRefreshKeyRef = useRef(0);
   listRefreshKeyRef.current = listRefreshKey;
+
+  // LiurenList 组件 ref（用于调试 API 设置过滤条件）
+  const liurenListRef = useRef<LiurenListHandle>(null);
 
   // 调试 API：用于预填充新建 Dialog 的表单数据
   const createFormInitialDataRef = useRef<{ question: string; note: string; background: string; tags: string[] } | null>(null);
@@ -66,6 +69,13 @@ export function DaLiuRenPage() {
           throw new Error("人物未选择");
         }
         return listLiurenRecords(person.id, filters);
+      },
+      setListFilters: (filters: { searchText?: string; tags?: string[]; page?: number }) => {
+        liurenListRef.current?.setFilters({
+          searchText: filters.searchText,
+          selectedTags: filters.tags,
+          page: filters.page,
+        });
       },
       openCreateDialog: () => {
         setCreateDialogOpen(true);
@@ -189,6 +199,7 @@ export function DaLiuRenPage() {
       <div className="liuren-layout">
         <div className="liuren-left">
           <LiurenList
+            ref={liurenListRef}
             personId={person.id!}
             selectedId={selectedRecord?.id ?? null}
             onSelect={handleSelect}

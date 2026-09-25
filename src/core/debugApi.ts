@@ -30,6 +30,7 @@ let _navigate: ((path: string) => void) | null = null;
 
 /** 大六壬 React 回调注册：从 DaLiuRenPage.tsx 注入 */
 let _getDaLiuRenList: ((filters: LiurenListFilters) => Promise<LiurenListResult>) | null = null;
+let _setListFilters: ((filters: { searchText?: string; tags?: string[]; page?: number }) => void) | null = null;
 let _openCreateDialog: (() => void) | null = null;
 let _fillCreateForm: ((data: { question: string; note?: string; background?: string; tags?: string[] }) => void) | null = null;
 let _submitCreateForm: (() => Promise<LiurenRecord>) | null = null;
@@ -52,6 +53,7 @@ export function registerDebugApi(opts: {
   getPerson?: () => Person | null;
   navigate?: (path: string) => void;
   getDaLiuRenList?: (filters: LiurenListFilters) => Promise<LiurenListResult>;
+  setListFilters?: (filters: { searchText?: string; tags?: string[]; page?: number }) => void;
   openCreateDialog?: () => void;
   fillCreateForm?: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
   submitCreateForm?: () => Promise<LiurenRecord>;
@@ -63,6 +65,7 @@ export function registerDebugApi(opts: {
   if (opts.getPerson) _getPerson = opts.getPerson;
   if (opts.navigate) _navigate = opts.navigate;
   if (opts.getDaLiuRenList) _getDaLiuRenList = opts.getDaLiuRenList;
+  if (opts.setListFilters) _setListFilters = opts.setListFilters;
   if (opts.openCreateDialog) _openCreateDialog = opts.openCreateDialog;
   if (opts.fillCreateForm) _fillCreateForm = opts.fillCreateForm;
   if (opts.submitCreateForm) _submitCreateForm = opts.submitCreateForm;
@@ -81,6 +84,7 @@ export function registerZiWeiCallbacks(opts: {
 /** 注册大六壬页面回调（DaLiuRenPage.tsx 调用） */
 export function registerDaLiuRenCallbacks(opts: {
   getDaLiuRenList: (filters: LiurenListFilters) => Promise<LiurenListResult>;
+  setListFilters?: (filters: { searchText?: string; tags?: string[]; page?: number }) => void;
   openCreateDialog: () => void;
   fillCreateForm: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
   submitCreateForm: () => Promise<LiurenRecord>;
@@ -88,6 +92,7 @@ export function registerDaLiuRenCallbacks(opts: {
   getSelectedRecord: () => LiurenRecord | null;
 }) {
   _getDaLiuRenList = opts.getDaLiuRenList;
+  if (opts.setListFilters) _setListFilters = opts.setListFilters;
   _openCreateDialog = opts.openCreateDialog;
   _fillCreateForm = opts.fillCreateForm;
   _submitCreateForm = opts.submitCreateForm;
@@ -318,7 +323,17 @@ export async function DaLiuRenList(params: {
   await _selectPerson(params.personId);
   await waitForStateUpdate();
 
-  // 3. 获取列表
+  // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
+  if (_setListFilters && (params.searchText || params.tags || params.page)) {
+    _setListFilters({
+      searchText: params.searchText,
+      tags: params.tags,
+      page: params.page,
+    });
+    await waitForStateUpdate();
+  }
+
+  // 4. 获取列表
   const filters: LiurenListFilters = {
     searchText: params.searchText,
     tags: params.tags,
