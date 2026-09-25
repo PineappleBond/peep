@@ -3,7 +3,6 @@ import { DEFAULT_BIRTH_INPUT, useZwds, BirthInput } from "./core/useZwds";
 import { InputPanel } from "./components/InputPanel";
 import { Chart } from "./components/Chart";
 import { HoroscopeBar } from "./components/HoroscopeBar";
-import { SynastryPanel } from "./components/SynastryPanel";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const STORAGE_KEY = "zwds-input-v2";
@@ -38,15 +37,7 @@ export default function App() {
   const [input, setInput] = useState<BirthInput>(loadInput);
   // 每次起盘自增，用于强制盘面回到默认命宫位置（即使命宫索引与上一盘相同）
   const [genId, setGenId] = useState(0);
-  const [showSyn, setShowSyn] = useState(false);
   const z = useZwds(input);
-
-  const toggleSyn = () => {
-    setShowSyn((v) => {
-      if (!v) setTimeout(() => document.getElementById("synastry")?.scrollIntoView({ behavior: "smooth" }), 60);
-      return !v;
-    });
-  };
 
   // 开发调试句柄：控制台可直接取盘验证导出（生产构建不注入）
   if (import.meta.env.DEV) {
@@ -70,17 +61,6 @@ export default function App() {
       <header className="top">
         <h1>紫微斗数</h1>
         <span className="top-sub">玄机排盘 · iztro 引擎 · 自研盘面</span>
-        <div className="top-actions">
-          <button
-            type="button"
-            disabled={!z.astrolabe}
-            className={showSyn ? "on-syn" : ""}
-            onClick={toggleSyn}
-            title="合盘：与另一人（同性/异性均可）互参姻缘、事业合伙、金钱财路相性"
-          >
-            合盘
-          </button>
-        </div>
       </header>
 
       <InputPanel value={input} onApply={apply} />
@@ -89,7 +69,6 @@ export default function App() {
         <ErrorBoundary>
           <Chart z={z} genId={genId} />
           <HoroscopeBar z={z} />
-          {showSyn && <SynastryPanel z={z} />}
         </ErrorBoundary>
       ) : (
         <div className="err-box">

@@ -1,6 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { listArchive, removeFromArchive, saveToArchive } from "../core/archive";
-import { RectifyPanel } from "./RectifyPanel";
 import {
   LUNAR_DAYS,
   LUNAR_MONTHS,
@@ -33,7 +32,6 @@ export function InputPanel({
   onApply: (v: BirthInput) => void;
 }) {
   const [draft, setDraft] = useState<BirthInput>(value);
-  const [showRectify, setShowRectify] = useState(false);
   /** 档案版本号：存/删后自增触发重读 */
   const [arcVer, setArcVer] = useState(0);
   const archive = useMemo(() => listArchive(), [arcVer]);
@@ -176,16 +174,7 @@ export function InputPanel({
   };
   const hasCurrentInArchive = archive.some((e) => e.name === ((draft.name || "").trim() || "无名"));
 
-  /** 校时选定：回填时辰并直接起盘（关闭真太阳时——时辰不详即无可靠钟表时刻） */
-  const pickHour = (timeIndex: number) => {
-    const next = { ...draft, timeIndex, useTrueSolar: false };
-    setDraft(next);
-    setShowRectify(false);
-    onApply(next);
-  };
-
   return (
-    <>
     <form className="input-panel" onSubmit={submit}>
       <label className="fld">
         <span>姓名</span>
@@ -364,14 +353,6 @@ export function InputPanel({
           ))}
         </select>
       </label>
-      <button
-        type="button"
-        className="arc-btn rf-open"
-        onClick={() => setShowRectify(true)}
-        title="生时校正助手：出生时辰不详时，十三时辰并排对比 + 性格特征/大事年份匹配评分"
-      >
-        校时
-      </button>
 
       <label className="fld">
         <span>流派</span>
@@ -567,9 +548,5 @@ export function InputPanel({
         </div>
       )}
     </form>
-    {showRectify && (
-      <RectifyPanel input={draft} onPick={pickHour} onClose={() => setShowRectify(false)} />
-    )}
-    </>
   );
 }
