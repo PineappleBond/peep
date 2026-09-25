@@ -160,11 +160,12 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
   const perPalaceSelfMarks = useMemo(() => {
     const map: Record<number, Record<string, ScopeSelfMark[]>> = {};
     for (const r of scopeResults) {
-      for (const pm of r.palaceSelfMarks) {
-        if (!map[pm.palaceIndex]) map[pm.palaceIndex] = {};
-        for (const sm of pm.starMarks) {
-          const marks = sm.marks.map((m) => ({ scope: r.scope, char: m.char, direction: m.direction }));
-          (map[pm.palaceIndex][sm.starName] ??= []).push(...marks);
+      for (const palace of r.palaces) {
+        if (palace.scopeSelfMutagens.length === 0) continue;
+        if (!map[palace.palaceIndex]) map[palace.palaceIndex] = {};
+        for (const m of palace.scopeSelfMutagens) {
+          const mark = { scope: r.scope, char: m.char, direction: m.direction };
+          (map[palace.palaceIndex][m.star] ??= []).push(mark);
         }
       }
     }

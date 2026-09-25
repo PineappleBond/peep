@@ -424,19 +424,53 @@ export function getSelfMarksForScope(
   return { outward, inward };
 }
 
-/** 运限自化 Chart 数据（单 scope） */
+/** 运限 Chart 完整数据（单 scope） */
 export type ScopeChartData = {
   scope: Scope;
-  palaceSelfMarks: Array<{
+  /** 12 宫完整数据 */
+  palaces: Array<{
     palaceIndex: number;
-    starMarks: Array<{
-      starName: string;
-      marks: Array<{
-        char: MutagenChar;
-        direction: "outward" | "inward";
-      }>;
+    palaceName: string;
+    branch: string;
+    heavenlyStem: string;
+    // 星曜
+    majorStars: Array<{ name: string; brightness: string; mutagen?: string }>;
+    minorStars: Array<{ name: string; brightness: string; mutagen?: string }>;
+    adjectiveStars: Array<{ name: string }>;
+    // 运限标签（如"大兄""年财"）
+    scopePalaceName: string;
+    // 运限星曜
+    scopeStars: Array<{ name: string }>;
+    // 四化标记
+    natalMutagens: Array<{ star: string; char: MutagenChar }>;
+    scopeMutagens: Array<{ star: string; char: MutagenChar }>;
+    selfMutagens: Array<{ star: string; char: MutagenChar; direction: "outward" }>;
+    scopeSelfMutagens: Array<{ star: string; char: MutagenChar; direction: "outward" | "inward" }>;
+    // 其他
+    decadalRange: [number, number];
+    ages: number[];
+    changsheng12: string;
+    boshi12: string;
+    suiqian12: string;
+    jiangqian12: string;
+    isBodyPalace: boolean;
+    isOriginalPalace: boolean;
+  }>;
+  /** 飞星数据（宫干四化飞入何宫） */
+  flyMatrix: Array<{
+    fromIndex: number;
+    fromName: string;
+    stem: string;
+    flies: Array<{
+      mutagen: MutagenChar;
+      star: string;
+      toIndex: number;
+      toName: string;
+      isSelf: boolean;
+      isOpposite: boolean;
     }>;
   }>;
+  /** 自化连线数据 */
   selfLinks: Array<{
     fromIndex: number;
     toIndex: number;
@@ -455,59 +489,135 @@ export type ChartDataForScopeParams = {
 };
 
 /**
- * 获取指定运限级别的 Chart 盘面自化数据。
- * 每次调用只处理一个 scope，Chart 层按 visible scope 循环调用。
+ * 获取指定运限级别的完整 Chart 盘面数据。
+ * 包含：星曜、四化、飞星、自化、运限标签等所有 UI 渲染所需数据。
  */
 export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChartData {
   const { astrolabe, horoscope, scope, chartIndex } = params;
   const ix = chartIndex ?? buildChartIndex(astrolabe);
 
   if (!horoscope) {
-    return { scope, palaceSelfMarks: [], selfLinks: [] };
+    return { scope, palaces: [], flyMatrix: [], selfLinks: [] };
   }
 
-  const palaceIdx = horoscope[scope].index;
-  const stem = horoscope[scope].heavenlyStem as string;
+  const scopePalaceIdx = horoscope[scope].index;
+  const scopeStem = horoscope[scope].heavenlyStem as string;
+  const scopeMutagenStars = util.getMutagensByHeavenlyStem(scopeStem as never) as string[];
 
-  // 1. 计算运限命宫的离心 + 向心自化
-  const rawMarks = getSelfMarksForScope(palaceIdx, stem, astrolabe, ix);
+  // 计算运限命宫的离心 + 向心自化
+  const rawMarks = getSelfMarksForScope(scopePalaceIdx, scopeStem, astrolabe, ix);
 
-  // 2. 构建 palaceSelfMarks（12 宫，大部分宫位为空数组）
-  const palaceSelfMarks = astrolabe.palaces.map((palace) => {
-    if (palace.index !== palaceIdx) {
-      return { palaceIndex: palace.index, starMarks: [] };
+  // 构建 12 宫完整数据
+  const palaces = astrolabe.palaces.map((palace) => {
+    // 本命四化（生年天干）
+    const pillars = astrolabe.chineseDate.split(" ");
+    const natalStem = pillars[0]?.charAt(0) ?? "";
+    const natalMutagenStars = util.getMutagensByHeavenlyStem(natalStem as never) as string[];
+    const natalMutagens = natalMutagenStars
+      .map((star, k) => {
+        const pos = ix.pos.get(star) ?? -1;
+        return pos === palace.index ? { star, char: MUTAGEN_CHARS[k] } : null;
+      })
+      .filter((m): m is { star: string; char: MutagenChar } => m !== null);
+
+    // 运限四化
+    const scopeMutagens = scopeMutagenStars
+      .map((star, k) => {
+        const pos = ix.pos.get(star) ?? -1;
+        return pos === palace.index ? { star, char: MUTAGEN_CHARS[k] } : null;
+      })
+      .filter((m): m is { star: string; char: MutagenChar } => m !== null);
+
+    // 本命自化（离心）
+    const palaceStem = palace.heavenlyStem as string;
+    const selfMutagenStars = util.getMutagensByHeavenlyStem(palaceStem as never) as string[];
+    const selfMutagens = selfMutagenStars
+      .map((star, k) => {
+        const pos = ix.pos.get(star) ?? -1;
+        return pos === palace.index ? { star, char: MUTAGEN_CHARS[k], direction: "outward" as const } : null;
+      })
+      .filter((m): m is { star: string; char: MutagenChar; direction: "outward" } => m !== null);
+
+    // 运限自化（离心 + 向心）
+    const scopeSelfMutagens: Array<{ star: string; char: MutagenChar; direction: "outward" | "inward" }> = [];
+    if (palace.index === scopePalaceIdx) {
+      for (const m of rawMarks.outward) {
+        scopeSelfMutagens.push({ star: m.star, char: m.char, direction: "outward" });
+      }
+      for (const m of rawMarks.inward) {
+        scopeSelfMutagens.push({ star: m.star, char: m.char, direction: "inward" });
+      }
     }
-    // 只有运限命宫有自化标记
-    const allStars = [...palace.majorStars, ...palace.minorStars];
-    const selfStarMap = new Map<string, Array<{ char: MutagenChar; direction: "outward" | "inward" }>>();
 
-    for (const m of rawMarks.outward) {
-      const arr = selfStarMap.get(m.star) ?? [];
-      arr.push({ char: m.char, direction: "outward" });
-      selfStarMap.set(m.star, arr);
-    }
-    for (const m of rawMarks.inward) {
-      const arr = selfStarMap.get(m.star) ?? [];
-      arr.push({ char: m.char, direction: "inward" });
-      selfStarMap.set(m.star, arr);
-    }
+    // 运限标签
+    const scopePalaceName = horoscope[scope].palaceNames[palace.index] || palace.name;
 
-    const starMarks = allStars
-      .filter((s) => selfStarMap.has(s.name))
-      .map((s) => ({
-        starName: s.name,
-        marks: selfStarMap.get(s.name)!,
-      }));
+    // 运限星曜
+    const scopeStars = horoscope[scope].stars?.[palace.index]?.map((s: any) => ({ name: s.name })) || [];
 
-    return { palaceIndex: palace.index, starMarks };
+    return {
+      palaceIndex: palace.index,
+      palaceName: palace.name,
+      branch: palace.earthlyBranch as string,
+      heavenlyStem: palace.heavenlyStem as string,
+      majorStars: palace.majorStars.map((s) => ({
+        name: s.name,
+        brightness: s.brightness || "",
+        mutagen: s.mutagen,
+      })),
+      minorStars: palace.minorStars.map((s) => ({
+        name: s.name,
+        brightness: s.brightness || "",
+        mutagen: s.mutagen,
+      })),
+      adjectiveStars: palace.adjectiveStars.map((s) => ({ name: s.name })),
+      scopePalaceName,
+      scopeStars,
+      natalMutagens,
+      scopeMutagens,
+      selfMutagens,
+      scopeSelfMutagens,
+      decadalRange: palace.decadal.range as [number, number],
+      ages: palace.ages,
+      changsheng12: palace.changsheng12,
+      boshi12: palace.boshi12,
+      suiqian12: palace.suiqian12,
+      jiangqian12: palace.jiangqian12,
+      isBodyPalace: palace.isBodyPalace,
+      isOriginalPalace: palace.isOriginalPalace,
+    };
   });
 
-  // 3. 构建 selfLinks（扁平连线数据）
-  const oppIdx = fixIndex(palaceIdx + 6);
+  // 飞星数据
+  const flyMatrix = astrolabe.palaces.map((palace) => {
+    const stem = palace.heavenlyStem as string;
+    const flyStars = util.getMutagensByHeavenlyStem(stem as never) as string[];
+    const flies = flyStars.map((star, k) => {
+      const to = ix.pos.get(star) ?? -1;
+      const toPalace = to >= 0 ? astrolabe.palaces[to] : null;
+      return {
+        mutagen: MUTAGEN_CHARS[k],
+        star,
+        toIndex: to,
+        toName: toPalace?.name ?? "（星不在盘中）",
+        isSelf: to === palace.index,
+        isOpposite: to === fixIndex(palace.index + 6),
+      };
+    });
+    return {
+      fromIndex: palace.index,
+      fromName: palace.name,
+      stem,
+      flies,
+    };
+  });
+
+  // 自化连线数据
+  const oppIdx = fixIndex(scopePalaceIdx + 6);
   const selfLinks = [
     ...rawMarks.outward.map((m) => ({
-      fromIndex: palaceIdx,
-      toIndex: palaceIdx,
+      fromIndex: scopePalaceIdx,
+      toIndex: scopePalaceIdx,
       isSelfLoop: true,
       char: m.char,
       direction: "outward" as const,
@@ -515,7 +625,7 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
     })),
     ...rawMarks.inward.map((m) => ({
       fromIndex: oppIdx,
-      toIndex: palaceIdx,
+      toIndex: scopePalaceIdx,
       isSelfLoop: false,
       char: m.char,
       direction: "inward" as const,
@@ -523,7 +633,7 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
     })),
   ];
 
-  return { scope, palaceSelfMarks, selfLinks };
+  return { scope, palaces, flyMatrix, selfLinks };
 }
 
 export function analyzeChart(a: Astrolabe): ChartAnalysis {
