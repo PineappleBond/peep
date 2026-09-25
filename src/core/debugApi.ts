@@ -80,6 +80,10 @@ export async function ZiWei(
     throw new Error("调试 API 未初始化，请确认 App 已加载");
   }
 
+  // 跳转到 / 页面（紫微斗数）
+  window.location.hash = "#/";
+  await waitForPageLoad();
+
   // 1. 切换人物（操控 UI）
   await _selectPerson(personId);
 
