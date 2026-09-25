@@ -40,6 +40,12 @@ export function registerDebugApi(opts: {
 /**
  * 核心调试接口：切换人物 + 运限级别 + 时间，同时操控 UI 并返回数据
  *
+ * 执行顺序：
+ * 1. 切换人物（等待 astrolabe 重新计算完成）
+ * 2. 设置时间（在 pick 被 useEffect 重置为"今天"之后）
+ * 3. 设置运限级别（只显示目标 scope）
+ * 4. 等待所有状态更新完成
+ *
  * @param personId 人物 ID
  * @param scope 运限级别（decadal/yearly/monthly/daily/hourly）
  * @param time 可选时间参数（Date 或时间戳），用于设置运限时间
@@ -56,29 +62,32 @@ export async function ZiWei(
   // 1. 切换人物（操控 UI）
   await _selectPerson(personId);
 
+  // 等待 astrolabe 重新计算 + useEffect 重置 pick 完成
+  await new Promise((r) => setTimeout(r, 100));
+
   const z = _getZwds();
   if (!z) {
     throw new Error("排盘数据未就绪");
   }
 
-  // 2. 设置运限级别（操控 UI：只显示目标 scope，其他全部关闭）
-  if (scope) {
-    z.actions.showScope(scope);
-
-    // 设置时间
-    if (time) {
-      const date = parseDate(time);
-      if (isNaN(date.getTime())) {
-        throw new Error(`无法解析时间：${time}`);
-      }
-      setHoroscopeTime(z, date);
+  // 2. 设置时间（在 useEffect 重置之后）
+  if (time) {
+    const date = parseDate(time);
+    if (isNaN(date.getTime())) {
+      throw new Error(`无法解析时间：${time}`);
     }
-
-    // 等待 React 状态更新完成（两个 rAF 确保渲染完成）
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    setHoroscopeTime(z, date);
   }
 
-  // 3. 获取数据
+  // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
+  if (scope) {
+    z.actions.showScope(scope);
+  }
+
+  // 4. 等待所有状态更新完成（双 rAF 确保渲染完成）
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  // 5. 获取数据
   const person = _getPerson();
   const hbar = {
     visible: { ...z.visible },
