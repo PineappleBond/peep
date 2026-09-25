@@ -3,15 +3,19 @@ import type { Zwds } from "../core/useZwds";
 
 const PILLAR_LABELS = ["年", "月", "日", "时"];
 
-/** 中宫：命盘信息 + 观测点 + 本限年月日时切换 + 飞宫模式 */
+/** 中宫：命盘信息 + 观测点 + 本限年月日时切换 + 飞宫模式 + 自化模式 */
 export function CenterPanel({
   z,
   flyMode = false,
   onToggleFly,
+  selfMode = false,
+  onToggleSelf,
 }: {
   z: Zwds;
   flyMode?: boolean;
   onToggleFly?: () => void;
+  selfMode?: boolean;
+  onToggleSelf?: () => void;
 }) {
   const a = z.astrolabe;
   if (!a) return <div className="center" style={{ gridArea: "c" }} />;
@@ -147,6 +151,15 @@ export function CenterPanel({
             title="飞宫模式：点任一宫，显示该宫宫干四化飞入何宫（禄绿·权蓝·科金·忌紫）；再点关闭恢复三方四正连线"
           >
             飞
+          </button>
+        )}
+        {onToggleSelf && (
+          <button
+            className={`db db-self ${selfMode ? "on" : ""}`}
+            onClick={onToggleSelf}
+            title="自化模式：显示运限离心（向外放射）与向心（指向本宫）自化箭头，颜色区分运限级别"
+          >
+            化
           </button>
         )}
       </div>

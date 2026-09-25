@@ -135,6 +135,14 @@ export const SCOPE_META: Record<Scope, { label: string; prefix: string; rowLabel
 };
 
 export const MUTAGEN_CHARS = ["禄", "权", "科", "忌"] as const;
+export type MutagenChar = (typeof MUTAGEN_CHARS)[number];
+
+// 运限自化标记（StarCell / PalaceCard / PalaceDetail 共用）
+export type ScopeSelfMark = {
+  scope: Scope;
+  char: MutagenChar;
+  direction: "outward" | "inward";
+};
 
 /**
  * 各流派的岁首（年分界）默认值：

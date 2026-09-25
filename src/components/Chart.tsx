@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { MUTAGEN_CHARS, fixIndex, type Scope } from "../core/utils";
+import { MUTAGEN_CHARS, fixIndex, type Scope, type ScopeSelfMark } from "../core/utils";
+import { getChartDataForScope } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 import { PalaceCard } from "./Palace";
 import { CenterPanel } from "./CenterPanel";
@@ -53,6 +54,8 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
   const [userFocus, setUserFocus] = useState<number | null>(null);
   /** 飞宫模式：连线改画选中宫的宫干四化飞向 */
   const [flyMode, setFlyMode] = useState(false);
+  /** 自化模式：显示运限离心/向心自化箭头 */
+  const [selfMode, setSelfMode] = useState(false);
   /** 宫位详情弹层 */
   const [detailIdx, setDetailIdx] = useState<number | null>(null);
 
@@ -133,12 +136,40 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
     return out;
   }, [flyMode, focus, z.analysis]);
 
+  /* 运限自化数据：按 visible scope 循环计算 */
+  const scopeResults = useMemo(() => {
+    if (!z.horoscope || !selfMode || !z.astrolabe) return [];
+    const astrolabe = z.astrolabe; // 缓存引用，避免 TS 推断为可能 null
+    const effectiveScopes = (["decadal", "yearly", "monthly", "daily", "hourly"] as Scope[]).filter((s) => {
+      if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
+      return z.visible[s];
+    });
+    return effectiveScopes.map((s) =>
+      getChartDataForScope({ astrolabe, horoscope: z.horoscope, scope: s })
+    );
+  }, [z.astrolabe, z.horoscope, z.visible, z.activeDecadeIdx, selfMode]);
+
+  /* 按 palaceIndex → starName 二级分组，供 PalaceCard 消费 */
+  const perPalaceSelfMarks = useMemo(() => {
+    const map: Record<number, Record<string, ScopeSelfMark[]>> = {};
+    for (const r of scopeResults) {
+      for (const pm of r.palaceSelfMarks) {
+        if (!map[pm.palaceIndex]) map[pm.palaceIndex] = {};
+        for (const sm of pm.starMarks) {
+          const marks = sm.marks.map((m) => ({ scope: r.scope, char: m.char, direction: m.direction }));
+          (map[pm.palaceIndex][sm.starName] ??= []).push(...marks);
+        }
+      }
+    }
+    return map;
+  }, [scopeResults]);
+
   if (!a) return null;
 
   return (
     <div className="chart-outer">
       <div className="chart-wrap">
-        <div className={`chart ${flyMode ? "chart-flymode" : ""}`}>
+        <div className={`chart ${flyMode ? "chart-flymode" : ""} ${selfMode ? "chart-selfmode" : ""}`}>
           {a.palaces.map((p) => (
             <PalaceCard
               key={p.index}
@@ -147,9 +178,16 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
               focus={focus}
               onFocus={handleFocus}
               onDetail={setDetailIdx}
+              selfScopeMarks={perPalaceSelfMarks[p.index] ?? {}}
             />
           ))}
-          <CenterPanel z={z} flyMode={flyMode} onToggleFly={() => setFlyMode((v) => !v)} />
+          <CenterPanel
+            z={z}
+            flyMode={flyMode}
+            onToggleFly={() => setFlyMode((v) => !v)}
+            selfMode={selfMode}
+            onToggleSelf={() => setSelfMode((v) => !v)}
+          />
           <svg
             className="chart-lines"
             viewBox="0 0 400 400"

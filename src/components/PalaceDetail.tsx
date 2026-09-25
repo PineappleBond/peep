@@ -1,4 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { SCOPES, SCOPE_META, type Scope } from "../core/utils";
+import { getSelfMarksForScope, buildChartIndex } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 
 /** 宫位详情弹层：三方四正快照 + 飞宫四化/自化 + 相关格局 + 夹宫 + 借星 */
@@ -39,6 +41,22 @@ export function PalaceDetail({
     }
     return false;
   });
+
+  /* 运限自化：按 visible scope 计算 */
+  const scopeSelfMarks = useMemo(() => {
+    if (!z.horoscope) return [];
+    const chartIndex = buildChartIndex(a);
+    const visibleScopes = SCOPES.filter((s) => {
+      if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
+      return z.visible[s];
+    });
+    return visibleScopes.map((scope) => {
+      const palaceIdx = z.horoscope![scope].index;
+      const stem = z.horoscope![scope].heavenlyStem as string;
+      const marks = getSelfMarksForScope(palaceIdx, stem, a, chartIndex);
+      return { scope, outward: marks.outward, inward: marks.inward };
+    });
+  }, [a, z.horoscope, z.visible, z.activeDecadeIdx]);
 
   return (
     <div className="pd-overlay" onClick={onClose}>
@@ -157,6 +175,20 @@ export function PalaceDetail({
               <p key={k} className="pd-jia">
                 <i className={`pd-kind pd-kind-${j.good ? "吉" : "凶"}`}>{j.kind}</i>
                 {j.detail}
+              </p>
+            ))}
+          </section>
+        )}
+
+        {scopeSelfMarks.length > 0 && (
+          <section>
+            <h4>运限自化</h4>
+            {scopeSelfMarks.map((s) => (
+              <p key={s.scope}>
+                <span className={`pat-scope pat-scope-${s.scope}`}>{SCOPE_META[s.scope].rowLabel}</span>
+                离心：{s.outward.length ? s.outward.map((m) => `${m.star}化${m.char}`).join("、") : "无"}
+                {" / "}
+                向心：{s.inward.length ? s.inward.map((m) => `${m.star}化${m.char}`).join("、") : "无"}
               </p>
             ))}
           </section>

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { util } from "iztro";
-import { SCOPES, abbrPalace, fixIndex } from "../core/utils";
+import { SCOPES, abbrPalace, fixIndex, type ScopeSelfMark } from "../core/utils";
 import type { PalaceData, Zwds } from "../core/useZwds";
 import { StarCell } from "./StarCell";
 
@@ -11,12 +11,14 @@ export function PalaceCard({
   focus,
   onFocus,
   onDetail,
+  selfScopeMarks = {},
 }: {
   palace: PalaceData;
   z: Zwds;
   focus: number;
   onFocus: (i: number) => void;
   onDetail?: (i: number) => void;
+  selfScopeMarks?: Record<string, ScopeSelfMark[]>;
 }) {
   const { horoscope, visible } = z;
   const i = palace.index;
@@ -92,6 +94,7 @@ export function PalaceCard({
               horoscope={horoscope}
               visible={visible}
               selfMutagens={selfMutagens}
+              selfScopeMarks={selfScopeMarks[s.name]}
             />
           ))}
           {palace.minorStars.map((s) => (
@@ -101,6 +104,7 @@ export function PalaceCard({
               horoscope={horoscope}
               visible={visible}
               selfMutagens={selfMutagens}
+              selfScopeMarks={selfScopeMarks[s.name]}
             />
           ))}
         </div>

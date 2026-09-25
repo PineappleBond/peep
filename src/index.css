@@ -578,6 +578,14 @@ body {
 .mut-self[data-m="科"] { border-color: var(--m-ke); color: var(--m-ke); }
 .mut-self[data-m="忌"] { border-color: var(--m-ji); color: var(--m-ji); }
 
+/* 运限自化：点线框，按运限色 */
+.mut-scope-self {
+  background: transparent;
+  border: 1px dotted;
+  line-height: 12px;
+}
+/* 无需为每个 scope 写复合规则——.mut-decadal 等已设置正确的 border-color 和 color */
+
 .mut-decadal { border-color: var(--c-decadal); color: var(--c-decadal); }
 .mut-yearly { border-color: var(--c-yearly); color: var(--c-yearly); }
 .mut-monthly { border-color: var(--c-monthly); color: var(--c-monthly); }
@@ -918,6 +926,9 @@ body {
 .db-fly { color: var(--m-lu); border-color: rgba(52, 211, 153, 0.4); }
 .db-fly:hover { box-shadow: 0 0 12px rgba(52, 211, 153, 0.4); color: var(--m-lu); }
 .db-fly.on { background: var(--m-lu); color: #03140b; border-color: transparent; box-shadow: 0 0 13px rgba(52, 211, 153, 0.6); }
+.db-self { color: var(--m-ji); border-color: rgba(227, 91, 216, 0.4); }
+.db-self:hover { box-shadow: 0 0 12px rgba(227, 91, 216, 0.4); color: var(--m-ji); }
+.db-self.on { background: var(--m-ji); color: #ffffff; border-color: transparent; box-shadow: 0 0 13px rgba(227, 91, 216, 0.6); }
 
 /* ── 底部运限拨盘 ── */
 .hbar {

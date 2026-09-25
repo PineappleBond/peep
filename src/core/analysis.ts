@@ -8,7 +8,7 @@
  */
 import { util } from "iztro";
 import type { Astrolabe } from "./useZwds";
-import { MUTAGEN_CHARS, fixIndex } from "./utils";
+import { MUTAGEN_CHARS, fixIndex, type MutagenChar, type ScopeSelfMark, type Scope } from "./utils";
 import {
   AUSPICIOUS_MINORS,
   SEAT_ROLES,
@@ -374,6 +374,157 @@ export type ChartAnalysis = {
   jiaGong: JiaGong[];
   borrowed: BorrowedInfo[];
 };
+
+/* ─────────────── 六、运限自化计算 ─────────────── */
+
+/**
+ * 运限自化核心计算：给定运限命宫索引和天干，计算离心+向心自化。
+ *
+ * @param palaceIdx 运限命宫在本命盘的宫位索引
+ * @param stem 运限天干（HeavenlyStemName 类型，此处用 string 避免依赖 iztro 内部类型）
+ * @param a 本命盘
+ * @param ix 盘索引（可选，外部缓存则传入）
+ */
+export function getSelfMarksForScope(
+  palaceIdx: number,
+  stem: string,
+  a: Astrolabe,
+  ix: ChartIndex = buildChartIndex(a)
+): {
+  outward: Array<{ star: string; char: MutagenChar }>;
+  inward: Array<{ star: string; char: MutagenChar }>;
+} {
+  const outward: Array<{ star: string; char: MutagenChar }> = [];
+  const inward: Array<{ star: string; char: MutagenChar }> = [];
+
+  // 1. 离心自化：运限天干四化飞回运限命宫
+  const outwardStars = util.getMutagensByHeavenlyStem(stem as never) as string[];
+  for (let k = 0; k < outwardStars.length; k++) {
+    const star = outwardStars[k];
+    const pos = ix.pos.get(star) ?? -1;
+    if (pos === -1) continue; // 星不在盘中，跳过
+    if (pos === palaceIdx) {
+      outward.push({ star, char: MUTAGEN_CHARS[k] });
+    }
+  }
+
+  // 2. 向心自化：对宫本命天干四化飞入运限命宫
+  const oppIdx = fixIndex(palaceIdx + 6);
+  const oppStem = a.palaces[oppIdx].heavenlyStem as string;
+  const inwardStars = util.getMutagensByHeavenlyStem(oppStem as never) as string[];
+  for (let k = 0; k < inwardStars.length; k++) {
+    const star = inwardStars[k];
+    const pos = ix.pos.get(star) ?? -1;
+    if (pos === -1) continue;
+    if (pos === palaceIdx) {
+      inward.push({ star, char: MUTAGEN_CHARS[k] });
+    }
+  }
+
+  return { outward, inward };
+}
+
+/** 运限自化 Chart 数据（单 scope） */
+export type ScopeChartData = {
+  scope: Scope;
+  palaceSelfMarks: Array<{
+    palaceIndex: number;
+    starMarks: Array<{
+      starName: string;
+      marks: Array<{
+        char: MutagenChar;
+        direction: "outward" | "inward";
+      }>;
+    }>;
+  }>;
+  selfLinks: Array<{
+    fromIndex: number;
+    toIndex: number;
+    char: MutagenChar;
+    direction: "outward" | "inward";
+    star: string;
+    isSelfLoop: boolean;
+  }>;
+};
+
+export type ChartDataForScopeParams = {
+  astrolabe: Astrolabe;
+  horoscope: any; // Horoscope 类型从 iztro 导入较复杂，此处用 any
+  scope: Scope;
+  chartIndex?: ChartIndex;
+};
+
+/**
+ * 获取指定运限级别的 Chart 盘面自化数据。
+ * 每次调用只处理一个 scope，Chart 层按 visible scope 循环调用。
+ */
+export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChartData {
+  const { astrolabe, horoscope, scope, chartIndex } = params;
+  const ix = chartIndex ?? buildChartIndex(astrolabe);
+
+  if (!horoscope) {
+    return { scope, palaceSelfMarks: [], selfLinks: [] };
+  }
+
+  const palaceIdx = horoscope[scope].index;
+  const stem = horoscope[scope].heavenlyStem as string;
+
+  // 1. 计算运限命宫的离心 + 向心自化
+  const rawMarks = getSelfMarksForScope(palaceIdx, stem, astrolabe, ix);
+
+  // 2. 构建 palaceSelfMarks（12 宫，大部分宫位为空数组）
+  const palaceSelfMarks = astrolabe.palaces.map((palace) => {
+    if (palace.index !== palaceIdx) {
+      return { palaceIndex: palace.index, starMarks: [] };
+    }
+    // 只有运限命宫有自化标记
+    const allStars = [...palace.majorStars, ...palace.minorStars];
+    const selfStarMap = new Map<string, Array<{ char: MutagenChar; direction: "outward" | "inward" }>>();
+
+    for (const m of rawMarks.outward) {
+      const arr = selfStarMap.get(m.star) ?? [];
+      arr.push({ char: m.char, direction: "outward" });
+      selfStarMap.set(m.star, arr);
+    }
+    for (const m of rawMarks.inward) {
+      const arr = selfStarMap.get(m.star) ?? [];
+      arr.push({ char: m.char, direction: "inward" });
+      selfStarMap.set(m.star, arr);
+    }
+
+    const starMarks = allStars
+      .filter((s) => selfStarMap.has(s.name))
+      .map((s) => ({
+        starName: s.name,
+        marks: selfStarMap.get(s.name)!,
+      }));
+
+    return { palaceIndex: palace.index, starMarks };
+  });
+
+  // 3. 构建 selfLinks（扁平连线数据）
+  const oppIdx = fixIndex(palaceIdx + 6);
+  const selfLinks = [
+    ...rawMarks.outward.map((m) => ({
+      fromIndex: palaceIdx,
+      toIndex: palaceIdx,
+      isSelfLoop: true,
+      char: m.char,
+      direction: "outward" as const,
+      star: m.star,
+    })),
+    ...rawMarks.inward.map((m) => ({
+      fromIndex: oppIdx,
+      toIndex: palaceIdx,
+      isSelfLoop: false,
+      char: m.char,
+      direction: "inward" as const,
+      star: m.star,
+    })),
+  ];
+
+  return { scope, palaceSelfMarks, selfLinks };
+}
 
 export function analyzeChart(a: Astrolabe): ChartAnalysis {
   const ix = buildChartIndex(a); // 整盘建一次索引，六个分析共享

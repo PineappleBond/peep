@@ -1,4 +1,4 @@
-import { MUTAGEN_CHARS, SCOPES, Scope } from "../core/utils";
+import { MUTAGEN_CHARS, SCOPES, Scope, SCOPE_META, type ScopeSelfMark } from "../core/utils";
 import type { Horoscope } from "../core/useZwds";
 
 type StarLike = {
@@ -8,18 +8,21 @@ type StarLike = {
   mutagen?: string;
 };
 
-/** 单颗星：竖排星名 + 亮度 + 生年四化（实心）/ 自化（虚线）/ 运限四化（描边按限色） */
+/** 单颗星：竖排星名 + 亮度 + 生年四化（实心）/ 自化（虚线）/ 运限四化（描边按限色）/ 运限自化（点线按限色） */
 export function StarCell({
   star,
   horoscope,
   visible,
   selfMutagens,
+  selfScopeMarks = [],
 }: {
   star: StarLike;
   horoscope?: Horoscope | null;
   visible?: Record<Scope, boolean>;
   /** 本宫宫干四化表（[禄权科忌] 星名），用于自化 */
   selfMutagens?: string[];
+  /** 运限自化标记（多 scope 叠加） */
+  selfScopeMarks?: ScopeSelfMark[];
 }) {
   const scopeMuts: { scope: Scope; char: string }[] = [];
   if (horoscope && visible) {
@@ -37,7 +40,7 @@ export function StarCell({
     <div className={`star star-${star.type ?? "adjective"}`}>
       <span className="star-name">{star.name}</span>
       <span className="star-bright">{star.brightness || "　"}</span>
-      {(star.mutagen || selfChar || scopeMuts.length > 0) && (
+      {(star.mutagen || selfChar || scopeMuts.length > 0 || selfScopeMarks.length > 0) && (
         <span className="star-muts">
           {star.mutagen && (
             <b className="mut mut-natal" data-m={star.mutagen}>
@@ -58,6 +61,20 @@ export function StarCell({
               {m.char}
             </b>
           ))}
+          {selfScopeMarks.map((m, idx) => {
+            const dirLabel = m.direction === "outward" ? "离心" : "向心";
+            const scopeLabel = SCOPE_META[m.scope].rowLabel;
+            return (
+              <b
+                key={`${m.scope}-${m.direction}-${idx}`}
+                className={`mut mut-scope-self mut-${m.scope}`}
+                data-m={m.char}
+                title={`${dirLabel}·${scopeLabel}${m.char}`}
+              >
+                {m.char}
+              </b>
+            );
+          })}
         </span>
       )}
     </div>

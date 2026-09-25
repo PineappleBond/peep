@@ -74,8 +74,8 @@ function App() {
 
       {z.astrolabe ? (
         <ErrorBoundary>
-          <Chart z={z} genId={genId} />
           <HoroscopeBar z={z} />
+          <Chart z={z} genId={genId} />
         </ErrorBoundary>
       ) : (
         <div className="err-box">
