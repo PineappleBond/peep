@@ -120,7 +120,7 @@ getChartDataForScope(params):
   palaceSelfMarks = 12宫.map(palace => {
     if (palace.index !== palaceIdx) return { palaceIndex: palace.index, starMarks: [] }
     // 只有运限命宫有自化标记
-    stars = palace.stars.filter(s => rawMarks.outward 中有 s 或 rawMarks.inward 中有 s)
+    stars = [...palace.majorStars, ...palace.minorStars].filter(s => rawMarks.outward 中有 s 或 rawMarks.inward 中有 s)
     return { palaceIndex, starMarks: stars.map(...) }
   })
 
@@ -347,7 +347,7 @@ selfScopeMarks?: ScopeSelfMark[];
 ```typescript
 function getSelfMarksForScope(
   palaceIdx: number,          // 运限命宫在本命盘的索引
-  stem: string,               // 运限天干
+  stem: string,               // 运限天干（调用方从 horoscope[scope].heavenlyStem 传入，HeavenlyStemName 类型，此处用 string 避免依赖 iztro 内部类型）
   astrolabe: Astrolabe,
   chartIndex: ChartIndex
 ): {
@@ -469,13 +469,7 @@ const [selfMode, setSelfMode] = useState(false);
 
 **开关位置**：自化模式 toggle 按钮放在 `CenterPanel` 的 `depth-row` 中，飞宫按钮右侧，样式为 `.db.db-self`。通过 `onToggleSelf` 回调传给 `CenterPanel`。
 
-小屏幕（`<640px`）添加 flex-wrap：
-
-```css
-@media (max-width: 640px) {
-  .depth-row { flex-wrap: wrap; }
-}
-```
+小屏幕适配：`.depth-row` 已有无条件 `flex-wrap: wrap`（`index.css:888`），无需额外媒体查询。
 
 **`.db-self` 按钮样式**（类比现有 `.db-fly`）：
 
@@ -573,13 +567,13 @@ const [selfMode, setSelfMode] = useState(false);
 基于现有 `testFixtures.ts` 中的固定人物参数构造测试用例：
 
 ```typescript
-import { testFixtures } from "./testFixtures";
+import { makeZwdsFixture } from "./testFixtures";
 import { getSelfMarksForScope, buildChartIndex } from "./analysis";
 
 test("大运离心自化——运限天干四化飞回运限命宫", () => {
-  const { astrolabe, horoscope } = testFixtures.standard;
+  const { astrolabe, horoscope } = makeZwdsFixture();
   const palaceIdx = horoscope.decadal.index;
-  const stem = horoscope.decadal.heavenlyStem;
+  const stem = horoscope.decadal.heavenlyStem as string;
   const chartIndex = buildChartIndex(astrolabe);
   
   const result = getSelfMarksForScope(palaceIdx, stem, astrolabe, chartIndex);
