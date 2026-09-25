@@ -63,12 +63,12 @@ export default function App() {
         <span className="top-sub">玄机排盘 · iztro 引擎 · 自研盘面</span>
       </header>
 
+      <HoroscopeBar z={z} />
       <InputPanel value={input} onApply={apply} />
 
       {z.astrolabe ? (
         <ErrorBoundary>
           <Chart z={z} genId={genId} />
-          <HoroscopeBar z={z} />
         </ErrorBoundary>
       ) : (
         <div className="err-box">
