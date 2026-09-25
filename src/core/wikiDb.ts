@@ -4,6 +4,14 @@
  */
 import { db, type WikiDocument, type WikiLink } from "./personDb";
 
+/** 标签缓存：避免每次打开列表都全表扫描提取 tags */
+let _wikiTagCache: { personId: number; tags: string[] } | null = null;
+
+/** 写入/删除后使标签缓存失效 */
+function invalidateWikiTagCache() {
+  _wikiTagCache = null;
+}
+
 /** Wiki 列表查询过滤条件 */
 export interface WikiListFilters {
   /** 文本搜索（匹配 title、content） */
@@ -95,11 +103,13 @@ export async function saveWikiDoc(doc: WikiDocument): Promise<number> {
     if (doc.id != null) {
       // 更新：保留原 savedAt，更新 updatedAt
       await db.wikiDocs.update(doc.id, { ...doc, updatedAt: now });
+      invalidateWikiTagCache();
       return doc.id;
     }
     // 新增：设置 savedAt 和 updatedAt
     const newDoc = { ...doc, savedAt: now, updatedAt: now };
     const id = await db.wikiDocs.add(newDoc);
+    invalidateWikiTagCache();
     return id;
   } catch (err) {
     console.error("[wikiDb] 保存文档失败", err);
@@ -128,14 +138,20 @@ export async function deleteWikiDoc(id: number): Promise<void> {
   } catch (err) {
     console.error("[wikiDb] 删除文档失败", err);
     throw new Error("删除文档失败，请重试");
+  } finally {
+    invalidateWikiTagCache();
   }
 }
 
 /**
  * 获取某人物下所有已使用的标签（用于 tag 筛选下拉）
+ * 使用内存缓存避免每次全表扫描；写入/删除后自动失效
  */
 export async function getAllWikiTags(personId: number): Promise<string[]> {
   try {
+    if (_wikiTagCache && _wikiTagCache.personId === personId) {
+      return _wikiTagCache.tags;
+    }
     const docs = await db.wikiDocs
       .where("personId")
       .equals(personId)
@@ -147,7 +163,9 @@ export async function getAllWikiTags(personId: number): Promise<string[]> {
         tagSet.add(t);
       }
     }
-    return Array.from(tagSet).sort();
+    const tags = Array.from(tagSet).sort();
+    _wikiTagCache = { personId, tags };
+    return tags;
   } catch (err) {
     console.error("[wikiDb] 获取标签列表失败", err);
     return [];

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { MUTAGEN_CHARS, SCOPES, Scope, SCOPE_META, type ScopeSelfMark } from "../core/utils";
 import type { Horoscope } from "../core/useZwds";
 
@@ -9,7 +10,7 @@ type StarLike = {
 };
 
 /** 单颗星：竖排星名 + 亮度 + 生年四化（实心）/ 自化（虚线）/ 运限四化（描边按限色）/ 运限自化（点线按限色） */
-export function StarCell({
+export const StarCell = memo(function StarCell({
   star,
   horoscope,
   visible,
@@ -79,4 +80,4 @@ export function StarCell({
       )}
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { util } from "iztro";
 import { abbrPalace, fixIndex, type Scope, type MutagenChar, type ScopeSelfMark } from "../core/utils";
 import type { PalaceData, Zwds } from "../core/useZwds";
@@ -13,7 +13,7 @@ type ScopeDataItem = {
 };
 
 /** 单个宫位卡片 */
-export function PalaceCard({
+export const PalaceCard = memo(function PalaceCard({
   palace,
   z,
   focus,
@@ -174,4 +174,4 @@ export function PalaceCard({
       </div>
     </div>
   );
-}
+});

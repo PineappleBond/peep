@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, memo } from "react";
 import type { Scope } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
 
@@ -72,7 +72,7 @@ function Cell({
   );
 }
 
-export function HoroscopeBar({ z }: { z: Zwds }) {
+export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
   const { decades, childhood, activeDecadeIdx, years, months, days, hours, pick, clampedDay, effLeap, visible, actions } = z;
 
   return (
@@ -187,4 +187,4 @@ export function HoroscopeBar({ z }: { z: Zwds }) {
       </Row>
     </section>
   );
-}
+});

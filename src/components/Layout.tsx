@@ -2,7 +2,7 @@
  * Layout 组件 - 全局布局
  * 包含背景光雾、Header（含 PersonSelector）、main、footer
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "./Header";
@@ -75,7 +75,7 @@ export function Layout({ children }: LayoutProps) {
     });
   }, [navigate]);
 
-  const handleSelectPerson = (person: Person) => {
+  const handleSelectPerson = useCallback((person: Person) => {
     if (person.id) {
       setCurrentPersonId(person.id);
       try {
@@ -87,7 +87,7 @@ export function Layout({ children }: LayoutProps) {
     currentPersonRef.current = person;
     // 通知页面组件人物已变更
     globalEvents.emit("person.changed", person);
-  };
+  }, []);
 
   return (
     <div className="app">

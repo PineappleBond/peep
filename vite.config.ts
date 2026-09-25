@@ -19,13 +19,21 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // rolldown（vite 8 内核）不支持对象式 manualChunks，用 advancedChunks 等价迁移；
-        // 分组按旧 manualChunks 的依赖闭包展开（engine 含 iztro 全部子依赖）
-        advancedChunks: {
-          groups: [
-            { name: "engine", test: /node_modules[\\/](iztro|lunar-lite|lunar-typescript|dayjs|i18next)[\\/]/ },
-            { name: "react", test: /node_modules[\\/](react|react-dom|scheduler|loose-envify)[\\/]/ },
-          ],
+        // rolldown（vite 8 内核）下 advancedChunks 已弃用，
+        // 改用 manualChunks 函数形式实现相同分组逻辑
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return;
+          // 命理学引擎依赖（iztro + 农历 + 日期 + 国际化）
+          if (/(iztro|lunar-lite|lunar-typescript|dayjs|i18next)/.test(id)) {
+            return "engine";
+          }
+          // React 核心（精确匹配 react、react-dom、scheduler、loose-envify，
+          // 避免误匹配 react-router 等其他 react-* 库）
+          if (
+            /\/node_modules\/(react|react-dom)\/|\/node_modules\/scheduler\/|\/node_modules\/loose-envify\//.test(id)
+          ) {
+            return "react";
+          }
         },
       },
     },

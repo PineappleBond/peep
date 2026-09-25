@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, memo } from "react";
 import { MUTAGEN_CHARS, fixIndex, type Scope, type MutagenChar } from "../core/utils";
 import { getChartDataForScope } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
@@ -38,7 +38,7 @@ type FlyLine = {
 };
 
 /** 星盘：十二宫 + 中宫 + 三方四正/飞宫四化连线 */
-export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
+export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
   const a = z.astrolabe;
 
   /* 默认自动选中命宫：流时>流日>流月>流年>大限的命宫，全关则本命命宫 */
@@ -66,7 +66,13 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
   }, [genId]);
 
   const focus = userFocus ?? autoFocus;
-  const handleFocus = (i: number) => setUserFocus(i === focus ? null : i);
+  // 使用 useCallback 避免每次渲染重建函数导致 PalaceCard memo 失效
+  const handleFocus = useCallback(
+    (i: number) => setUserFocus((prev) => (prev === i ? null : i)),
+    []
+  );
+  const handleToggleFly = useCallback(() => setFlyMode((v) => !v), []);
+  const handleCloseDetail = useCallback(() => setDetailIdx(null), []);
 
   /* 三方四正连线（飞宫模式关闭时） */
   const lines = useMemo(() => {
@@ -194,7 +200,7 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
           <CenterPanel
             z={z}
             flyMode={flyMode}
-            onToggleFly={() => setFlyMode((v) => !v)}
+            onToggleFly={handleToggleFly}
           />
           <svg
             className="chart-lines"
@@ -254,7 +260,7 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
           </svg>
         </div>
       </div>
-      {detailIdx != null && <PalaceDetail z={z} index={detailIdx} onClose={() => setDetailIdx(null)} />}
+      {detailIdx != null && <PalaceDetail z={z} index={detailIdx} onClose={handleCloseDetail} />}
     </div>
   );
-}
+});

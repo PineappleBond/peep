@@ -1,10 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, memo } from "react";
 import { SCOPES, SCOPE_META, type Scope } from "../core/utils";
 import { getSelfMarksForScope, buildChartIndex } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 
 /** 宫位详情弹层：三方四正快照 + 飞宫四化/自化 + 相关格局 + 夹宫 + 借星 */
-export function PalaceDetail({
+export const PalaceDetail = memo(function PalaceDetail({
   z,
   index,
   onClose,
@@ -24,6 +24,22 @@ export function PalaceDetail({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  /* 运限自化：按 visible scope 计算 —— 移到条件 return 之前以满足 hooks 规则 */
+  const scopeSelfMarks = useMemo(() => {
+    if (!a || !z.horoscope) return [];
+    const chartIndex = buildChartIndex(a);
+    const visibleScopes = SCOPES.filter((s) => {
+      if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
+      return z.visible[s];
+    });
+    return visibleScopes.map((scope) => {
+      const palaceIdx = z.horoscope![scope].index;
+      const stem = z.horoscope![scope].heavenlyStem as string;
+      const marks = getSelfMarksForScope(palaceIdx, stem, a, chartIndex);
+      return { scope, outward: marks.outward, inward: marks.inward };
+    });
+  }, [a, z.horoscope, z.visible, z.activeDecadeIdx]);
+
   if (!a || !an) return null;
   const palace = a.palaces[index];
   if (!palace) return null;
@@ -41,22 +57,6 @@ export function PalaceDetail({
     }
     return false;
   });
-
-  /* 运限自化：按 visible scope 计算 */
-  const scopeSelfMarks = useMemo(() => {
-    if (!z.horoscope) return [];
-    const chartIndex = buildChartIndex(a);
-    const visibleScopes = SCOPES.filter((s) => {
-      if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
-      return z.visible[s];
-    });
-    return visibleScopes.map((scope) => {
-      const palaceIdx = z.horoscope![scope].index;
-      const stem = z.horoscope![scope].heavenlyStem as string;
-      const marks = getSelfMarksForScope(palaceIdx, stem, a, chartIndex);
-      return { scope, outward: marks.outward, inward: marks.inward };
-    });
-  }, [a, z.horoscope, z.visible, z.activeDecadeIdx]);
 
   return (
     <div className="pd-overlay" onClick={onClose}>
@@ -196,4 +196,4 @@ export function PalaceDetail({
       </div>
     </div>
   );
-}
+});

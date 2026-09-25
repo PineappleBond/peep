@@ -115,7 +115,7 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 20px rgba(85, 215, 255, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .top:hover {
@@ -164,7 +164,7 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -208,7 +208,7 @@ body {
   background: rgba(217, 228, 255, 0.03);
   color: var(--dim);
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
   text-decoration: none;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -345,7 +345,7 @@ body {
   cursor: pointer;
   font-size: 0.8rem;
   font-family: inherit;
-  transition: 0.2s;
+  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
 }
 
 .seg button.on {
@@ -379,7 +379,7 @@ body {
   text-indent: 0.35em;
   cursor: pointer;
   box-shadow: 0 0 18px rgba(85, 215, 255, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.25);
-  transition: 0.2s;
+  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
 }
 
 .btn-go:hover {
@@ -532,7 +532,7 @@ body {
   font-size: 11px;
   font-family: inherit;
   cursor: pointer;
-  transition: 0.18s ease;
+  transition: color .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .18s ease, transform .18s ease;
 }
 
 .p-detail-btn:hover {
@@ -1003,7 +1003,7 @@ body {
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
-  transition: 0.18s;
+  transition: color .18s, background .18s, border-color .18s, box-shadow .18s, opacity .18s, transform .18s;
 }
 
 .db:hover {
@@ -1072,7 +1072,7 @@ body {
   font-family: inherit;
   letter-spacing: 3px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
 }
 
 .hrow-decadal .hlabel.on { color: var(--c-decadal); border-color: rgba(46, 230, 200, 0.6); box-shadow: 0 0 11px rgba(46, 230, 200, 0.3); text-shadow: 0 0 7px rgba(46, 230, 200, 0.8); }
@@ -1548,7 +1548,7 @@ body {
   color: var(--dim);
   cursor: pointer;
   font-family: inherit;
-  transition: 0.2s ease;
+  transition: color .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease, opacity .2s ease, transform .2s ease;
 }
 
 .pd-close:hover { color: var(--text); border-color: var(--line-strong); }
@@ -1702,7 +1702,7 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.18s;
+  transition: color .18s, background .18s, border-color .18s, box-shadow .18s, opacity .18s, transform .18s;
 }
 
 .kline-mbtn:hover {
@@ -1953,7 +1953,7 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
 }
 
 .syn-foot button:hover {
@@ -2145,7 +2145,7 @@ body {
   font-size: 0.75rem;
   font-family: inherit;
   cursor: pointer;
-  transition: 0.18s;
+  transition: color .18s, background .18s, border-color .18s, box-shadow .18s, opacity .18s, transform .18s;
 }
 
 .arc-btn:hover {
@@ -2208,7 +2208,7 @@ body {
   font-size: 0.73rem;
   font-family: inherit;
   cursor: pointer;
-  transition: 0.18s;
+  transition: color .18s, background .18s, border-color .18s, box-shadow .18s, opacity .18s, transform .18s;
 }
 
 .rf-chip:hover { border-color: var(--line-strong); color: var(--text); }
@@ -2292,7 +2292,7 @@ body {
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: 0.18s;
+  transition: color .18s, background .18s, border-color .18s, box-shadow .18s, opacity .18s, transform .18s;
 }
 
 .rf-use:hover {
@@ -2475,7 +2475,7 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
 }
 
 .export-actions button:hover {
@@ -2535,7 +2535,7 @@ body {
   font-size: 0.7rem;
   font-family: inherit;
   cursor: pointer;
-  transition: 0.15s;
+  transition: color .15s, background .15s, border-color .15s, box-shadow .15s, opacity .15s, transform .15s;
 }
 
 .export-tabs button:hover { color: var(--cyan); }
@@ -2668,7 +2668,7 @@ body {
   color: var(--dim);
   font-size: 13px;
   cursor: pointer;
-  transition: 0.22s ease;
+  transition: color .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease, opacity .22s ease, transform .22s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2728,7 +2728,7 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.22s ease;
+  transition: color .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease, opacity .22s ease, transform .22s ease;
 }
 
 .btn-cancel:hover {
@@ -2747,7 +2747,7 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
 }
 
 .btn-save:hover {
@@ -2765,7 +2765,7 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: 0.22s ease;
+  transition: color .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease, opacity .22s ease, transform .22s ease;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
@@ -2813,7 +2813,7 @@ body {
   border: 1px solid rgba(96, 165, 250, 0.1);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
 }
 
 .person-sel:hover {
@@ -2832,7 +2832,7 @@ body {
   outline: none;
   min-width: 150px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237787a8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
@@ -2871,7 +2871,7 @@ body {
   color: var(--dim);
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .22s cubic-bezier(.4,0,.2,1), background .22s cubic-bezier(.4,0,.2,1), border-color .22s cubic-bezier(.4,0,.2,1), box-shadow .22s cubic-bezier(.4,0,.2,1), opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2973,7 +2973,7 @@ body {
   cursor: pointer;
   font-size: 0.8rem;
   font-family: inherit;
-  transition: 0.2s;
+  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
 }
 
 .form-grid .seg button.on {
@@ -3205,7 +3205,7 @@ body {
   font-size: 0.8rem;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
   letter-spacing: 0.1em;
 }
 
@@ -3238,7 +3238,7 @@ body {
   font-size: 0.75rem;
   font-family: inherit;
   outline: none;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
 }
 
 .liuren-search-input:focus {
@@ -3271,7 +3271,7 @@ body {
   font-size: 0.65rem;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
 .liuren-tag-filter:hover {
@@ -3351,7 +3351,7 @@ body {
   border-radius: 6px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
 .liuren-list-item:hover {
@@ -3448,7 +3448,7 @@ body {
   color: var(--dim);
   font-size: 0.7rem;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .15s cubic-bezier(.4,0,.2,1), background .15s cubic-bezier(.4,0,.2,1), border-color .15s cubic-bezier(.4,0,.2,1), box-shadow .15s cubic-bezier(.4,0,.2,1), opacity .15s cubic-bezier(.4,0,.2,1), transform .15s cubic-bezier(.4,0,.2,1);
 }
 
 .liuren-action-btn:hover {
@@ -3486,7 +3486,7 @@ body {
   color: var(--dim);
   font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
 .liuren-list-pagination button:hover:not(:disabled) {
@@ -4129,7 +4129,7 @@ body {
   color: var(--text);
   font-size: 0.88rem;
   font-family: inherit;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
 }
 
 .liuren-form-field input:focus,
@@ -4243,7 +4243,7 @@ body {
   min-height: 36px;
   align-items: center;
   cursor: text;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
 }
 
 .tag-input-tags:focus-within {
@@ -4382,7 +4382,7 @@ body {
   border: 1px solid var(--line-strong);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
   letter-spacing: 0.03em;
 }
 
@@ -4875,7 +4875,7 @@ body {
   letter-spacing: 1.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .22s cubic-bezier(.4,0,.2,1), background .22s cubic-bezier(.4,0,.2,1), border-color .22s cubic-bezier(.4,0,.2,1), box-shadow .22s cubic-bezier(.4,0,.2,1), opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1);
 }
 
 .wiki-editor-footer .btn-primary:hover,
@@ -4935,7 +4935,7 @@ body {
   font-size: 0.8rem;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
   letter-spacing: 0.1em;
 }
 
@@ -4963,7 +4963,7 @@ body {
   font-size: 0.75rem;
   font-family: inherit;
   outline: none;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
 }
 
 .wiki-search-input:focus {
@@ -4996,7 +4996,7 @@ body {
   font-size: 0.65rem;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
 .wiki-tag-filter:hover {
@@ -5063,7 +5063,7 @@ body {
   border-radius: 6px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
 .wiki-list-item:hover {
@@ -5162,7 +5162,7 @@ body {
   gap: 4px;
   opacity: 0;
   transform: translateX(4px);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
   pointer-events: none;
 }
 
@@ -5186,7 +5186,7 @@ body {
   color: var(--dim);
   font-size: 0.7rem;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .15s cubic-bezier(.4,0,.2,1), background .15s cubic-bezier(.4,0,.2,1), border-color .15s cubic-bezier(.4,0,.2,1), box-shadow .15s cubic-bezier(.4,0,.2,1), opacity .15s cubic-bezier(.4,0,.2,1), transform .15s cubic-bezier(.4,0,.2,1);
 }
 
 .wiki-action-btn:hover {
@@ -5224,7 +5224,7 @@ body {
   color: var(--dim);
   font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
 .wiki-list-pagination button:hover:not(:disabled) {
@@ -5442,7 +5442,7 @@ body {
   font-family: inherit;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
   margin-top: 4px;
 }
 
@@ -5631,7 +5631,7 @@ body {
   color: var(--cyan);
   text-decoration: none;
   border-bottom: 1px solid transparent;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
   text-shadow: 0 0 8px rgba(85, 215, 255, 0.2);
 }
 
@@ -5779,7 +5779,7 @@ body {
   font-size: 0.78rem;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
   letter-spacing: 0.02em;
 }
 
@@ -5790,4 +5790,16 @@ body {
   box-shadow: 0 0 10px rgba(85, 215, 255, 0.15);
   transform: translateX(3px);
   text-shadow: 0 0 8px rgba(85, 215, 255, 0.4);
+}
+
+/* ─── 懒加载占位指示器 ─── */
+.lazy-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--dim);
+  font-size: 0.95rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
 }

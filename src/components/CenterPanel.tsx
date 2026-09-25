@@ -1,10 +1,11 @@
+import { memo } from "react";
 import { BRANCHES, SCOPES, SCOPE_META, bodyPalaceBranchOf, isYangStem } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
 
 const PILLAR_LABELS = ["年", "月", "日", "时"];
 
 /** 中宫：命盘信息 + 观测点 + 本限年月日时切换 + 飞宫模式 + 自化模式 */
-export function CenterPanel({
+export const CenterPanel = memo(function CenterPanel({
   z,
   flyMode = false,
   onToggleFly,
@@ -158,4 +159,4 @@ export function CenterPanel({
       </div>
     </div>
   );
-}
+});

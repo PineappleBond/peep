@@ -3,6 +3,7 @@
  *
  * 渲染完整盘面：四柱、月将、天地盘、四课、三传、十二天将、神煞、课经/毕法、占事信息
  */
+import { memo } from "react";
 import type { LiurenRecord } from "../../core/personDb";
 import type { DaLiuRenResult } from "../../core/daliuren/types";
 import { DI_ZHI } from "../../core/daliuren/constants";
@@ -322,7 +323,7 @@ function QuestionInfoSection({ record }: { record: LiurenRecord }) {
   );
 }
 
-export function LiurenChart({ record }: LiurenChartProps) {
+export const LiurenChart = memo(function LiurenChart({ record }: LiurenChartProps) {
   if (!record) {
     return <LiurenEmpty />;
   }
@@ -344,4 +345,4 @@ export function LiurenChart({ record }: LiurenChartProps) {
       <BiFaSection result={result} />
     </div>
   );
-}
+});

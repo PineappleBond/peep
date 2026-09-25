@@ -4,6 +4,14 @@
 import Dexie from "dexie";
 import { db, type LiurenRecord } from "./personDb";
 
+/** 标签缓存：避免每次打开列表都全表扫描提取 tags */
+let _tagCache: { personId: number; tags: string[] } | null = null;
+
+/** 写入/删除后使标签缓存失效 */
+export function invalidateLiurenTagCache() {
+  _tagCache = null;
+}
+
 /** 列表查询过滤条件 */
 export interface LiurenListFilters {
   /** 文本搜索（匹配 question、note、background） */
@@ -95,6 +103,7 @@ export async function saveLiurenRecord(record: LiurenRecord): Promise<number> {
   try {
     // put：有 id 则更新，无 id 则新增
     const id = await db.liurenRecords.put(record);
+    invalidateLiurenTagCache();
     return id;
   } catch (err) {
     console.error("[daliurenDb] 保存记录失败", err);
@@ -108,6 +117,7 @@ export async function saveLiurenRecord(record: LiurenRecord): Promise<number> {
 export async function deleteLiurenRecord(id: number): Promise<void> {
   try {
     await db.liurenRecords.delete(id);
+    invalidateLiurenTagCache();
   } catch (err) {
     console.error("[daliurenDb] 删除记录失败", err);
     throw new Error("删除起课记录失败，请重试");
@@ -116,9 +126,13 @@ export async function deleteLiurenRecord(id: number): Promise<void> {
 
 /**
  * 获取所有已使用的标签（用于 tag 筛选下拉）
+ * 使用内存缓存避免每次全表扫描；写入/删除后自动失效
  */
 export async function getAllLiurenTags(personId: number): Promise<string[]> {
   try {
+    if (_tagCache && _tagCache.personId === personId) {
+      return _tagCache.tags;
+    }
     const records = await db.liurenRecords
       .where("personId")
       .equals(personId)
@@ -130,7 +144,9 @@ export async function getAllLiurenTags(personId: number): Promise<string[]> {
         tagSet.add(t);
       }
     }
-    return Array.from(tagSet).sort();
+    const tags = Array.from(tagSet).sort();
+    _tagCache = { personId, tags };
+    return tags;
   } catch (err) {
     console.error("[daliurenDb] 获取标签列表失败", err);
     return [];
