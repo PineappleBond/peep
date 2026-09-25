@@ -35,9 +35,37 @@ export interface LiurenRecord {
   savedAt: number;
 }
 
+/** Wiki 文档 */
+export interface WikiDocument {
+  id?: number;
+  /** 关联人物 ID */
+  personId: number;
+  /** 标题 */
+  title: string;
+  /** 内容（Markdown） */
+  content: string;
+  /** 标签数组 */
+  tags: string[];
+  /** 保存时间戳（首次创建） */
+  savedAt: number;
+  /** 最近更新时间戳 */
+  updatedAt: number;
+}
+
+/** Wiki 链接关系 */
+export interface WikiLink {
+  id?: number;
+  /** 源文档 ID */
+  sourceDocId: number;
+  /** 目标文档 ID */
+  targetDocId: number;
+}
+
 class PeepDatabase extends Dexie {
   persons!: Table<Person, number>;
   liurenRecords!: Table<LiurenRecord, number>;
+  wikiDocs!: Table<WikiDocument, number>;
+  wikiLinks!: Table<WikiLink, number>;
 
   constructor() {
     super("peep");
@@ -47,6 +75,12 @@ class PeepDatabase extends Dexie {
     this.version(2).stores({
       persons: "++id, savedAt, isDefault",
       liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
+    });
+    this.version(3).stores({
+      persons: "++id, savedAt, isDefault",
+      liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
+      wikiDocs: "++id, personId, updatedAt, savedAt, *tags",
+      wikiLinks: "++id, sourceDocId, targetDocId",
     });
   }
 }
