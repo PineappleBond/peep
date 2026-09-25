@@ -158,7 +158,7 @@ describe("全面综合对比测试（第 5 轮 - 最终轮）", () => {
         console.log(`差异:`);
         checks.forEach(c => console.log(`  - ${c}`));
         console.log(`PHP 天将: ${JSON.stringify(phpResult.tianjiang)}`);
-        console.log(`TS 天将: ${JSON.stringify(tsResult.twelveGenerals.map(g => g.general))}`);
+        console.log(`TS 天将: ${JSON.stringify(tsResult.twelveGenerals.map((g: { general: number }) => g.general))}`);
       }
 
       expect(checks).toHaveLength(0);
