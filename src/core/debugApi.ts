@@ -10,7 +10,7 @@ import { buildHbarData, type HbarData } from "./hbar";
 import { calculateDaLiuRen } from "./daliuren/calculator";
 import type { DaLiuRenResult } from "./daliuren/types";
 import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
-import type { WikiListFilters, WikiListResult } from "./wikiDb";
+import { getWikiLinks, type WikiListFilters, type WikiListResult } from "./wikiDb";
 
 /** 运限级别 */
 export type ScopeName = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
@@ -525,7 +525,7 @@ export async function WikiCreate(params: {
 export async function WikiView(params: {
   personId: number;
   docId: number;
-}): Promise<WikiDocument> {
+}): Promise<WikiDocument & { linkTargetIds: number[] }> {
   // 1. 跳转到 /wiki 页面
   if (_navigate) {
     _navigate("/wiki");
@@ -555,7 +555,9 @@ export async function WikiView(params: {
     throw new Error(`文档 ${params.docId} 未找到或加载失败`);
   }
 
-  return selectedDoc;
+  // 5. 查询正向链接目标 ID，附加到返回结果
+  const linkTargetIds = selectedDoc.id ? await getWikiLinks(selectedDoc.id) : [];
+  return { ...selectedDoc, linkTargetIds };
 }
 
 /** 辅助函数：等待页面加载 */
