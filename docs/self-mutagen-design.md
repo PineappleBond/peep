@@ -1,7 +1,7 @@
 # 自化可视化功能设计方案
 
 **日期**：2026-09-25  
-**版本**：v4（经第 3 轮架构师 Review 修订）  
+**版本**：v5（经第 5 轮架构师 Review 修订）  
 **状态**：设计中
 
 ---
@@ -212,7 +212,7 @@ const perPalaceSelfMarks = useMemo(() => {
       if (!map[pm.palaceIndex]) map[pm.palaceIndex] = {};
       for (const sm of pm.starMarks) {
         const marks = sm.marks.map(m => ({ scope: r.scope, char: m.char, direction: m.direction }));
-        map[pm.palaceIndex][sm.starName] = marks;
+        (map[pm.palaceIndex][sm.starName] ??= []).push(...marks);
       }
     }
   }
@@ -388,21 +388,17 @@ function getSelfMarksForScope(
 
 **颜色规范（已有 CSS 变量，无需新增）**：
 
-现有 `index.css` 已定义 `--c-decadal` 到 `--c-hourly`，以及 `.mut-decadal` 到 `.mut-hourly` 类。
-只需新增 `.mut-scope-self` 的 `border-style: dotted` 覆盖：
+现有 `index.css` 已定义 `--c-decadal` 到 `--c-hourly`，以及 `.mut-decadal` 到 `.mut-hourly` 类（已设置 `border-color` 和 `color`）。
+只需新增 `.mut-scope-self` 基础规则覆盖 `border-style`，运限色由现有 `.mut-{scope}` 类自动生效：
 
 ```css
-/* 新增：运限自化 = 点线边框 + 运限色（复用现有 --c-{scope} 变量） */
+/* 新增：运限自化 = 点线边框（颜色由现有 .mut-{scope} 类提供） */
 .mut-scope-self {
   background: transparent;
   border: 1px dotted;
   line-height: 12px;
 }
-.mut-scope-self.mut-decadal { border-color: var(--c-decadal); color: var(--c-decadal); }
-.mut-scope-self.mut-yearly  { border-color: var(--c-yearly);  color: var(--c-yearly);  }
-.mut-scope-self.mut-monthly { border-color: var(--c-monthly); color: var(--c-monthly); }
-.mut-scope-self.mut-daily   { border-color: var(--c-daily);   color: var(--c-daily);   }
-.mut-scope-self.mut-hourly  { border-color: var(--c-hourly);  color: var(--c-hourly);  }
+/* 无需为每个 scope 写复合规则——.mut-decadal 等已设置正确的 border-color 和 color */
 ```
 
 ### 4.2 SVG 层级策略
@@ -493,7 +489,9 @@ const [selfMode, setSelfMode] = useState(false);
 
 ### 4.5 PalaceDetail 运限自化展示
 
-在 `PalaceDetail.tsx` 中新增"运限自化" section（与现有"宫干四化" section 并列）：
+在 `PalaceDetail.tsx` 中新增"运限自化" section（与现有"宫干四化" section 并列）。
+
+**数据来源**：`PalaceDetail` 已接收 `z: Zwds`（含 `z.astrolabe`、`z.horoscope`），内部直接调用 `getSelfMarksForScope` 计算各 visible scope 的自化数据（无需从 Chart 层传入）。
 
 ```html
 <section>
