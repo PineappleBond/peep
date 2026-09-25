@@ -44,7 +44,7 @@ export function WikiEditor({
 
   // Refs
   const tagInputRef = useRef<HTMLInputElement>(null);
-  const linkSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const linkSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 初始化：编辑模式加载数据（含已关联文档及标题），新建模式清空
   useEffect(() => {

@@ -41,12 +41,18 @@ export function DaLiuRenPage() {
   const [createSubmitTrigger, setCreateSubmitTrigger] = useState(0);
   // 调试 API：selectedRecord 的 ref 镜像，避免 getSelectedRecord 回调的闭包过时问题
   const selectedRecordRef = useRef<LiurenRecord | null>(null);
+  // 调试 API：submitCreateForm 轮询定时器（组件卸载时清理，防止泄漏）
+  const submitPollRef = useRef<{ interval: ReturnType<typeof setInterval>; timeout: ReturnType<typeof setTimeout> } | null>(null);
 
   // 获取当前人物（默认人物）
   useEffect(() => {
-    getDefaultPerson().then((p) => {
-      if (p.id != null) setPerson(p);
-    });
+    getDefaultPerson()
+      .then((p) => {
+        if (p.id != null) setPerson(p);
+      })
+      .catch((err) => {
+        console.error("[DaLiuRenPage] 加载默认人物失败", err);
+      });
   }, []);
 
   // 监听人物切换事件——切换后刷新列表、清空右侧盘面
@@ -67,6 +73,17 @@ export function DaLiuRenPage() {
   useEffect(() => {
     selectedRecordRef.current = selectedRecord;
   }, [selectedRecord]);
+
+  // 组件卸载时清理 submitCreateForm 的轮询定时器
+  useEffect(() => {
+    return () => {
+      if (submitPollRef.current) {
+        clearInterval(submitPollRef.current.interval);
+        clearTimeout(submitPollRef.current.timeout);
+        submitPollRef.current = null;
+      }
+    };
+  }, []);
 
   // 注册大六壬调试 API 回调
   useEffect(() => {
@@ -99,6 +116,10 @@ export function DaLiuRenPage() {
         // 触发 Dialog 的提交
         return new Promise<LiurenRecord>((resolve, reject) => {
           const timeout = setTimeout(() => {
+            if (submitPollRef.current) {
+              clearInterval(submitPollRef.current.interval);
+              submitPollRef.current = null;
+            }
             reject(new Error("提交超时"));
           }, 5000);
 
@@ -111,20 +132,26 @@ export function DaLiuRenPage() {
             if (listRefreshKeyRef.current > originalRefreshKey) {
               clearInterval(checkInterval);
               clearTimeout(timeout);
+              submitPollRef.current = null;
               // 获取最新记录（刚刚创建的）
               if (person?.id) {
-                listLiurenRecords(person.id, { page: 1, pageSize: 1 }).then((result) => {
-                  if (result.records.length > 0) {
-                    resolve(result.records[0]);
-                  } else {
-                    reject(new Error("未找到新创建的记录"));
-                  }
-                });
+                listLiurenRecords(person.id, { page: 1, pageSize: 1 })
+                  .then((result) => {
+                    if (result.records.length > 0) {
+                      resolve(result.records[0]);
+                    } else {
+                      reject(new Error("未找到新创建的记录"));
+                    }
+                  })
+                  .catch((err) => reject(err));
               } else {
                 reject(new Error("人物未选择"));
               }
             }
           }, 100);
+
+          // 记录定时器引用，供组件卸载时清理
+          submitPollRef.current = { interval: checkInterval, timeout };
         });
       },
       selectRecord: async (recordId: number) => {
@@ -182,9 +209,13 @@ export function DaLiuRenPage() {
     if (dialogRecord && selectedRecord?.id === dialogRecord.id) {
       // 重新加载该记录
       if (dialogRecord.id) {
-        getLiurenRecord(dialogRecord.id).then((r) => {
-          if (r) setSelectedRecord(r);
-        });
+        getLiurenRecord(dialogRecord.id)
+          .then((r) => {
+            if (r) setSelectedRecord(r);
+          })
+          .catch((err) => {
+            console.error("[DaLiuRenPage] 重新加载记录失败", err);
+          });
       }
     }
   }, [refreshList, dialogRecord, selectedRecord]);

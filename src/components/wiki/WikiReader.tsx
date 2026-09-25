@@ -45,21 +45,23 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
     let cancelled = false;
 
     async function loadRelated() {
+      if (!doc?.id) return;
+      const docId = doc.id;
       const [forwardIds, backIds] = await Promise.all([
-        getWikiLinks(doc!.id!),
-        getWikiBacklinks(doc!.id!),
+        getWikiLinks(docId),
+        getWikiBacklinks(docId),
       ]);
       // 合并去重
       const idSet = new Set<number>([...forwardIds, ...backIds]);
       // 过滤掉自身
-      idSet.delete(doc!.id!);
+      idSet.delete(docId);
       // 批量查询标题
       const docs = await Promise.all(
         Array.from(idSet).map((id) => getWikiDoc(id))
       );
       if (cancelled) return;
       const items: RelatedDoc[] = docs
-        .filter((d): d is WikiDocument => !!d)
+        .filter((d): d is WikiDocument => !!d && d.id != null)
         .map((d) => ({ id: d.id!, title: d.title }));
       setRelatedDocs(items);
     }

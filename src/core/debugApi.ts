@@ -18,8 +18,8 @@ export type ScopeName = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
 /** ZiWei 返回数据 */
 export type ZiWeiResult = {
   person: Person | null;
-  /** 运限拨盘完整数据（含大运/流年/流月/流日/流时列表） */
-  hbar: HbarData & { visible: Record<Scope, boolean> };
+  /** 运限拨盘完整数据（含大运/流年/流月/流日/流时列表）；拨盘计算失败时为 null */
+  hbar: (HbarData & { visible: Record<Scope, boolean> }) | null;
   chart: ScopeChartData | null;
 };
 
@@ -208,7 +208,7 @@ export async function ZiWei(
   const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
   const hbar = hbarBase
     ? { ...hbarBase, visible: { ...z.visible } }
-    : { visible: { ...z.visible } } as any;
+    : null;
 
   let chart: ScopeChartData | null = null;
   if (scope && z.astrolabe && z.horoscope) {
@@ -590,7 +590,7 @@ export function initDebugApi() {
   if (typeof window === "undefined") return;
   if (!import.meta.env.DEV) return;
 
-  (window as any).peep = {
+  window.peep = {
     ZiWei,
     DaLiuRen,
     DaLiuRenCreate,

@@ -24,21 +24,25 @@ export function Layout({ children }: LayoutProps) {
   // 初始化：加载默认人物
   useEffect(() => {
     const init = async () => {
-      const savedId = localStorage.getItem(STORAGE_KEY);
-      if (savedId) {
-        const id = Number(savedId);
-        setCurrentPersonId(id);
-        const person = await getDefaultPerson();
-        currentPersonRef.current = person;
-        globalEvents.emit("person.changed", person);
-      } else {
-        const person = await getDefaultPerson();
-        if (person.id) {
-          setCurrentPersonId(person.id);
-          localStorage.setItem(STORAGE_KEY, String(person.id));
+      try {
+        const savedId = localStorage.getItem(STORAGE_KEY);
+        if (savedId) {
+          const id = Number(savedId);
+          setCurrentPersonId(id);
+          const person = await getDefaultPerson();
+          currentPersonRef.current = person;
+          globalEvents.emit("person.changed", person);
+        } else {
+          const person = await getDefaultPerson();
+          if (person.id) {
+            setCurrentPersonId(person.id);
+            localStorage.setItem(STORAGE_KEY, String(person.id));
+          }
+          currentPersonRef.current = person;
+          globalEvents.emit("person.changed", person);
         }
-        currentPersonRef.current = person;
-        globalEvents.emit("person.changed", person);
+      } catch (err) {
+        console.error("[Layout] 初始化人物失败", err);
       }
     };
     init();

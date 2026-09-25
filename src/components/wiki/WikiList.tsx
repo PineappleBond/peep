@@ -79,15 +79,19 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   }));
 
   const loadDocs = useCallback(async () => {
-    const filters: WikiListFilters = {
-      searchText,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
-      page,
-      pageSize,
-    };
-    const result = await listWikiDocs(personId, filters);
-    setDocs(result.docs);
-    setTotal(result.total);
+    try {
+      const filters: WikiListFilters = {
+        searchText,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        page,
+        pageSize,
+      };
+      const result = await listWikiDocs(personId, filters);
+      setDocs(result.docs);
+      setTotal(result.total);
+    } catch (err) {
+      console.error("[WikiList] 加载文档失败", err);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, searchText, selectedTags, page, refreshKey]);
 
@@ -96,15 +100,23 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   }, [loadDocs]);
 
   useEffect(() => {
-    getAllWikiTags(personId).then(setAllTags);
+    getAllWikiTags(personId)
+      .then(setAllTags)
+      .catch((err) => {
+        console.error("[WikiList] 加载标签失败", err);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, docs.length, refreshKey]); // 记录变化时刷新标签
 
   // 查询关联人物名称
   useEffect(() => {
-    getPerson(personId).then((p) => {
-      if (p) setPersonName(p.name);
-    });
+    getPerson(personId)
+      .then((p) => {
+        if (p) setPersonName(p.name);
+      })
+      .catch((err) => {
+        console.error("[WikiList] 加载人物信息失败", err);
+      });
   }, [personId]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));

@@ -79,15 +79,19 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
   }));
 
   const loadRecords = useCallback(async () => {
-    const filters: LiurenListFilters = {
-      searchText,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
-      page,
-      pageSize,
-    };
-    const result = await listLiurenRecords(personId, filters);
-    setRecords(result.records);
-    setTotal(result.total);
+    try {
+      const filters: LiurenListFilters = {
+        searchText,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        page,
+        pageSize,
+      };
+      const result = await listLiurenRecords(personId, filters);
+      setRecords(result.records);
+      setTotal(result.total);
+    } catch (err) {
+      console.error("[LiurenList] 加载记录失败", err);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, searchText, selectedTags, page, refreshKey]);
 
@@ -96,7 +100,11 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
   }, [loadRecords]);
 
   useEffect(() => {
-    getAllLiurenTags(personId).then(setAllTags);
+    getAllLiurenTags(personId)
+      .then(setAllTags)
+      .catch((err) => {
+        console.error("[LiurenList] 加载标签失败", err);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, records.length, refreshKey]); // 记录变化时刷新标签
 

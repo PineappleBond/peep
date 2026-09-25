@@ -27,9 +27,13 @@ export function WikiPage() {
 
   // 初始化：获取默认人物
   useEffect(() => {
-    getDefaultPerson().then((p) => {
-      if (p.id != null) setPerson(p);
-    });
+    getDefaultPerson()
+      .then((p) => {
+        if (p.id != null) setPerson(p);
+      })
+      .catch((err) => {
+        console.error("[WikiPage] 加载默认人物失败", err);
+      });
   }, []);
 
   // 同步 selectedDoc 到 ref，避免闭包过时
@@ -61,9 +65,12 @@ export function WikiPage() {
         await saveWikiLinks(savedId, linkTargetIds);
         setListRefreshKey((k) => k + 1);
         const refreshed = await getWikiDoc(savedId);
-        if (refreshed) setSelectedDoc(refreshed);
-        setMode("read");
-        return refreshed!;
+        if (refreshed) {
+          setSelectedDoc(refreshed);
+          setMode("read");
+          return refreshed;
+        }
+        throw new Error(`保存后未找到文档 #${savedId}`);
       },
       selectWikiDoc: async (docId: number) => {
         const doc = await getWikiDoc(docId);
@@ -96,7 +103,11 @@ export function WikiPage() {
   // 刷新已有标签列表
   useEffect(() => {
     if (!person?.id) return;
-    getAllWikiTags(person.id).then(setExistingTags);
+    getAllWikiTags(person.id)
+      .then(setExistingTags)
+      .catch((err) => {
+        console.error("[WikiPage] 加载标签列表失败", err);
+      });
   }, [person?.id, listRefreshKey]);
 
   // 列表选中：加载文档详情，切换到 read 模式
@@ -175,7 +186,7 @@ export function WikiPage() {
       } else {
         for (const tag of doc.tags) {
           if (!tagMap.has(tag)) tagMap.set(tag, []);
-          tagMap.get(tag)!.push(doc);
+          tagMap.get(tag)?.push(doc);
         }
       }
     }

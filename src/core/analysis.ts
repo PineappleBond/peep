@@ -483,10 +483,28 @@ export type ScopeChartData = {
 
 export type ChartDataForScopeParams = {
   astrolabe: Astrolabe;
-  horoscope: any; // Horoscope 类型从 iztro 导入较复杂，此处用 any
+  /** Horoscope 类型从 iztro 导入较复杂，此处用 unknown + 安全访问器 */
+  horoscope: unknown;
   scope: Scope;
   chartIndex?: ChartIndex;
 };
+
+/**
+ * Horoscope 安全访问器：从 unknown 类型的 horoscope 对象中提取指定 scope 的数据。
+ * 避免使用 any，同时保证属性存在性检查。
+ */
+function horoscopeScope(horoscope: unknown, scope: Scope) {
+  const h = horoscope as Record<string, unknown> | null;
+  if (!h || typeof h !== "object") return null;
+  const s = h[scope] as Record<string, unknown> | undefined;
+  if (!s || typeof s !== "object") return null;
+  return {
+    index: s.index as number,
+    heavenlyStem: s.heavenlyStem as string,
+    palaceNames: s.palaceNames as string[],
+    stars: (s.stars as Array<Array<{ name: string }>> | undefined) ?? undefined,
+  };
+}
 
 /**
  * 获取指定运限级别的完整 Chart 盘面数据。
@@ -500,8 +518,13 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
     return { scope, palaces: [], flyMatrix: [], selfLinks: [] };
   }
 
-  const scopePalaceIdx = horoscope[scope].index;
-  const scopeStem = horoscope[scope].heavenlyStem as string;
+  const scopeData = horoscopeScope(horoscope, scope);
+  if (!scopeData) {
+    return { scope, palaces: [], flyMatrix: [], selfLinks: [] };
+  }
+
+  const scopePalaceIdx = scopeData.index;
+  const scopeStem = scopeData.heavenlyStem;
   const scopeMutagenStars = util.getMutagensByHeavenlyStem(scopeStem as never) as string[];
 
   // 计算运限命宫的离心 + 向心自化
@@ -550,10 +573,10 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
     }
 
     // 运限标签
-    const scopePalaceName = horoscope[scope].palaceNames[palace.index] || palace.name;
+    const scopePalaceName = scopeData.palaceNames[palace.index] || palace.name;
 
-    // 运限星曜
-    const scopeStars = horoscope[scope].stars?.[palace.index]?.map((s: any) => ({ name: s.name })) || [];
+    // 运限星曜（通过安全访问器取数据）
+    const scopeStars = scopeData.stars?.[palace.index]?.map((s) => ({ name: s.name })) || [];
 
     return {
       palaceIndex: palace.index,
