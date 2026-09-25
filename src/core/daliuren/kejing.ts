@@ -676,6 +676,188 @@ const rules: KeJingRule[] = [
       );
     },
   },
+
+  // ──── 补充课经规则 ────
+  {
+    code: "lianzhu",
+    name: "连珠课",
+    group: "三传",
+    description:
+      "三传连续相生（初生中、中生末），如连珠不绝。主事情连绵不断、顺遂无阻。",
+    check: (r) => sanChuanDiSheng(r),
+  },
+  {
+    code: "lianru",
+    name: "连茹课",
+    group: "三传",
+    description:
+      "三传地支连续相同或形成三合局。主事情纠缠、连绵不绝。",
+    check: (r) => {
+      const { initial, middle, final } = r.threeTransmissions;
+      // 三传相同
+      if (initial === middle && middle === final) return true;
+      // 三传为三合局
+      return sanChuanSanHe(r);
+    },
+  },
+  {
+    code: "xuanGuan",
+    name: "玄关课",
+    group: "特殊",
+    description:
+      "日干寄宫上神与日支上神相生，且发用为日干长生位。主玄机暗通、事有妙应。",
+    check: (r) => {
+      const dayStem = r.fourPillars.dayStem;
+      const lodging = stemLodgingBranch(dayStem);
+      const dayBranch = r.fourPillars.dayBranch;
+      const ganShang = r.fourLessons[0]?.upper;
+      const zhiShang = r.fourLessons[2]?.upper;
+      if (ganShang === undefined || zhiShang === undefined) return false;
+      // 干上神生支上神
+      const generates = shengOf(elemB(ganShang)) === elemB(zhiShang);
+      // 初传为日干长生位
+      const DAY_ORIGIN = [11, 11, 2, 2, 8, 8, 5, 5, 8, 8];
+      const origin = DAY_ORIGIN[dayStem];
+      const initial = r.threeTransmissions.initial;
+      return generates && initial === origin;
+    },
+  },
+  {
+    code: "tianXin",
+    name: "天心课",
+    group: "特殊",
+    description:
+      "四建（太岁、月建、日支、占时）尽入四课整体地支集合。主非常之事可即日而成。",
+    check: (r) => {
+      const lessonBranches = new Set<number>();
+      r.fourLessons.forEach((l) => {
+        lessonBranches.add(l.upper);
+        lessonBranches.add(l.lower);
+      });
+      const nianzhi = r.fourPillars.yearBranch;
+      const yuezhi = r.fourPillars.monthBranch;
+      const rizhi = r.fourPillars.dayBranch;
+      const shizhi = r.fourPillars.hourBranch;
+      return (
+        lessonBranches.has(nianzhi) &&
+        lessonBranches.has(yuezhi) &&
+        lessonBranches.has(rizhi) &&
+        lessonBranches.has(shizhi)
+      );
+    },
+  },
+  {
+    code: "tianMu",
+    name: "天目课",
+    group: "特殊",
+    description:
+      "天魁戌乘朱雀发用。主文书口舌、眼目之疾。",
+    check: (r) => {
+      const initial = r.threeTransmissions.initial;
+      if (initial !== 10) return false; // 戌
+      const initialGeneral = getGeneralRidingBranch(initial, r);
+      return initialGeneral === 2; // 朱雀
+    },
+  },
+  {
+    code: "tianEr",
+    name: "天耳课",
+    group: "特殊",
+    description:
+      "天魁戌乘太阴发用。主暗中听闻、机密之事。",
+    check: (r) => {
+      const initial = r.threeTransmissions.initial;
+      if (initial !== 10) return false; // 戌
+      const initialGeneral = getGeneralRidingBranch(initial, r);
+      return initialGeneral === 10; // 太阴
+    },
+  },
+  {
+    code: "jinHua",
+    name: "金华课",
+    group: "特殊",
+    description:
+      "太白酉乘太阴或天后发用。主阴私暗昧、女子之事。",
+    check: (r) => {
+      const initial = r.threeTransmissions.initial;
+      if (initial !== 9) return false; // 酉
+      const initialGeneral = getGeneralRidingBranch(initial, r);
+      return initialGeneral === 10 || initialGeneral === 11; // 太阴或天后
+    },
+  },
+  {
+    code: "yuTang",
+    name: "玉堂课",
+    group: "特殊",
+    description:
+      "日干寄宫上神乘贵人或青龙。主文章显达、科甲高中。",
+    check: (r) => {
+      const ganShang = r.fourLessons[0]?.upper;
+      if (ganShang === undefined) return false;
+      const general = getGeneralRidingBranch(ganShang, r);
+      return general === 0 || general === 5; // 贵人或青龙
+    },
+  },
+  {
+    code: "jinRu",
+    name: "进儒课",
+    group: "特殊",
+    description:
+      "日干寄宫上神得旺相且乘吉将，发用又生之日干。主学业进步、科举得中。",
+    check: (r) => {
+      const dayStem = r.fourPillars.dayStem;
+      const ganShang = r.fourLessons[0]?.upper;
+      if (ganShang === undefined) return false;
+      const general = getGeneralRidingBranch(ganShang, r);
+      const isWangXiang = isBranchWangXiang(ganShang, r);
+      const generatesStem = shengOf(elemB(ganShang)) === STEM_ELEMENT[dayStem];
+      return isWangXiang && generatesStem && AUSPICIOUS_GENERALS.has(general);
+    },
+  },
+  {
+    code: "tuiRu",
+    name: "退儒课",
+    group: "特殊",
+    description:
+      "日干寄宫上神休囚且乘凶将，发用又克之日干。主学业退步、科举落第。",
+    check: (r) => {
+      const dayStem = r.fourPillars.dayStem;
+      const ganShang = r.fourLessons[0]?.upper;
+      if (ganShang === undefined) return false;
+      const general = getGeneralRidingBranch(ganShang, r);
+      const isWangXiang = isBranchWangXiang(ganShang, r);
+      const keStem = keOf(elemB(ganShang)) === STEM_ELEMENT[dayStem];
+      return !isWangXiang && keStem && INauspicious_GENERALS.has(general);
+    },
+  },
+  {
+    code: "longhu",
+    name: "龙虎课",
+    group: "天将",
+    description:
+      "青龙与白虎同入三传，或分临初末传。主竞争激烈的变动。",
+    check: (r) => {
+      const { initial, middle, final } = r.threeTransmissions;
+      const generals = [initial, middle, final].map((b) =>
+        getGeneralRidingBranch(b, r)
+      );
+      const hasDragon = generals.includes(5); // 青龙
+      const hasTiger = generals.includes(7); // 白虎
+      return hasDragon && hasTiger;
+    },
+  },
+  {
+    code: "tianluo_diwan",
+    name: "天罗地网课",
+    group: "特殊",
+    description:
+      "四课中见天罗（戌）与地网（辰）。主困厄难出、事多阻碍。",
+    check: (r) => {
+      const hasTianLuo = inFourLessons(10, r); // 戌
+      const hasDiWang = inFourLessons(4, r); // 辰
+      return hasTianLuo && hasDiWang;
+    },
+  },
 ];
 
 // ─── 主入口 ─────────────────────────────────────────
@@ -757,6 +939,30 @@ function buildEvidence(code: string, r: DaLiuRenResult): string {
       return `四课见丧门或吊客：${sanChuanStr}`;
     case "chongshanchuan":
       return `三传见六冲关系：${sanChuanStr}`;
+    case "lianzhu":
+      return `三传递生（连珠课）：${sanChuanStr}`;
+    case "lianru":
+      return `三传连茹（相同或三合局）：${sanChuanStr}`;
+    case "xuanGuan":
+      return `日干上神生支上神，初传为日干长生（玄关课）：${sanChuanStr}`;
+    case "tianXin":
+      return `四建尽入四课（天心课）：${sanChuanStr}`;
+    case "tianMu":
+      return `天魁戌乘朱雀发用（天目课）：${sanChuanStr}`;
+    case "tianEr":
+      return `天魁戌乘太阴发用（天耳课）：${sanChuanStr}`;
+    case "jinHua":
+      return `太白酉乘太阴或天后发用（金华课）：${sanChuanStr}`;
+    case "yuTang":
+      return `日干上神乘贵人或青龙（玉堂课）：${sanChuanStr}`;
+    case "jinRu":
+      return `日干上神旺相乘吉将，生之日干（进儒课）：${sanChuanStr}`;
+    case "tuiRu":
+      return `日干上神休囚乘凶将，克之日干（退儒课）：${sanChuanStr}`;
+    case "longhu":
+      return `青龙白虎同入三传（龙虎课）：${sanChuanStr}`;
+    case "tianluo_diwan":
+      return `四课见天罗地网（辰戌）：${sanChuanStr}`;
     default:
       return `三传：${sanChuanStr}`;
   }

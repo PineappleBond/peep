@@ -212,6 +212,93 @@ function wuMu(monthBranch: number): number {
   return [7, 10, 1, 4][season];
 }
 
+/** 天德合：月德所临之合支（与天德相对） */
+function tianDeHe(monthBranch: number): number {
+  const td = tianDe(monthBranch);
+  // 天德的六合位
+  const liuheMap: Record<number, number> = {
+    0: 1, 1: 0, 2: 11, 3: 10, 4: 9, 5: 8, 6: 7, 7: 6, 8: 5, 9: 4, 10: 3, 11: 2,
+  };
+  return liuheMap[td] ?? td;
+}
+
+/** 月德合：月德所临之合支 */
+function yueDeHe(monthBranch: number): number {
+  const yd = yueDe(monthBranch);
+  const liuheMap: Record<number, number> = {
+    0: 1, 1: 0, 2: 11, 3: 10, 4: 9, 5: 8, 6: 7, 7: 6, 8: 5, 9: 4, 10: 3, 11: 2,
+  };
+  return liuheMap[yd] ?? yd;
+}
+
+/** 天恩：月支所对应的天恩贵人（春戌、夏丑、秋辰、冬未） */
+function tianEn(monthBranch: number): number {
+  const season = getSeasonIndex(monthBranch);
+  return [10, 1, 4, 7][season]; // 戌丑辰未
+}
+
+/** 天赦：按季节查天赦日（春戊寅、夏甲午、秋戊申、冬甲子）简化取支 */
+function tianShe(monthBranch: number): number {
+  const season = getSeasonIndex(monthBranch);
+  return [2, 6, 8, 0][season]; // 寅午申子
+}
+
+/** 圣心：月建对应的圣心贵人 */
+function shengXin(monthBranch: number): number {
+  const season = getSeasonIndex(monthBranch);
+  return [5, 11, 2, 8][season]; // 巳亥寅申
+}
+
+/** 皇恩：太岁三合之帝旺（与将星同） */
+function huangEn(yearBranch: number): number {
+  return jiangXing(yearBranch);
+}
+
+/** 天成：月建三合之长生位 */
+function tianCheng(monthBranch: number): number {
+  const [changSheng] = getSanHeGroup(monthBranch);
+  return changSheng;
+}
+
+/** 天官：按日干查天官贵人 */
+function tianGuan(dayStem: number): number {
+  // 甲→未、乙→戌、丙→巳、丁→亥、戊→卯、己→寅、庚→午、辛→申、壬→酉、癸→辰
+  const table = [7, 10, 5, 11, 3, 2, 6, 8, 9, 4];
+  return table[dayStem];
+}
+
+/** 天福：按日干查天福贵人 */
+function tianFu(dayStem: number): number {
+  // 甲→酉、乙→申、丙→子、丁→亥、戊→子、己→亥、庚→寅、辛→卯、壬→午、癸→巳
+  const table = [9, 8, 0, 11, 0, 11, 2, 3, 6, 5];
+  return table[dayStem];
+}
+
+/** 天财：日干所克之五行对应的地支（日财） */
+function tianCai(dayStem: number): number {
+  // 甲乙木→土(辰戌丑未)取辰、丙丁火→金(申酉)取申、戊己土→水(亥子)取亥、
+  // 庚辛金→木(寅卯)取寅、壬癸水→火(巳午)取巳
+  const table = [4, 4, 8, 8, 11, 11, 2, 2, 5, 5];
+  return table[dayStem];
+}
+
+/** 禄神：日干之临官位 */
+function luShen(dayStem: number): number {
+  // 甲→寅、乙→卯、丙→巳、丁→午、戊→巳、己→午、庚→申、辛→酉、壬→亥、癸→子
+  const table = [2, 3, 5, 6, 5, 6, 8, 9, 11, 0];
+  return table[dayStem];
+}
+
+/** 天罗：戌亥为地网对应（火命人逢戌亥为天罗） */
+function tianLuo(): number {
+  return 10; // 戌
+}
+
+/** 地网：辰巳对应（水土命人逢辰巳为地网） */
+function diWang(): number {
+  return 4; // 辰
+}
+
 // ─── 主入口 ────────────────────────────────────────────
 
 /**
@@ -393,6 +480,86 @@ export function calculateShenSha(
     branch: ciGuan(dayStem),
     type: "吉",
     description: "日干词馆位，主词章",
+  });
+
+  // ── 补充神煞 ──
+  sha.push({
+    name: "天德合",
+    branch: tianDeHe(monthBranch),
+    type: "吉",
+    description: "天德贵人之合支，化凶为吉",
+  });
+  sha.push({
+    name: "月德合",
+    branch: yueDeHe(monthBranch),
+    type: "吉",
+    description: "月德贵人之合支，解厄消灾",
+  });
+  sha.push({
+    name: "天恩",
+    branch: tianEn(monthBranch),
+    type: "吉",
+    description: "季节恩辰，主恩赦",
+  });
+  sha.push({
+    name: "天赦",
+    branch: tianShe(monthBranch),
+    type: "吉",
+    description: "季节赦辰，主宽宥",
+  });
+  sha.push({
+    name: "圣心",
+    branch: shengXin(monthBranch),
+    type: "吉",
+    description: "月建圣心贵人，主通达",
+  });
+  sha.push({
+    name: "皇恩",
+    branch: huangEn(yearBranch),
+    type: "吉",
+    description: "太岁三合帝旺位，主皇恩",
+  });
+  sha.push({
+    name: "天成",
+    branch: tianCheng(monthBranch),
+    type: "吉",
+    description: "月建三合长生位，主成就",
+  });
+  sha.push({
+    name: "天官",
+    branch: tianGuan(dayStem),
+    type: "吉",
+    description: "日干天官贵人，主官职",
+  });
+  sha.push({
+    name: "天福",
+    branch: tianFu(dayStem),
+    type: "吉",
+    description: "日干天福贵人，主福德",
+  });
+  sha.push({
+    name: "天财",
+    branch: tianCai(dayStem),
+    type: "吉",
+    description: "日干之财辰，主财富",
+  });
+  sha.push({
+    name: "禄神",
+    branch: luShen(dayStem),
+    type: "吉",
+    description: "日干临官位，主禄位",
+  });
+  sha.push({
+    name: "天罗",
+    branch: tianLuo(),
+    type: "凶",
+    description: "戌为火命天罗，主困厄",
+  });
+  sha.push({
+    name: "地网",
+    branch: diWang(),
+    type: "凶",
+    description: "辰为水土地网，主阻碍",
   });
 
   return sha;

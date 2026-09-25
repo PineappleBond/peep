@@ -30,6 +30,7 @@ import { calculateXunDun, calculateRiDun } from "./dungan";
 import { calculateShenSha } from "./shensha";
 import { findBranchRelations } from "./relations";
 import { evaluateKeJing } from "./kejing";
+import { evaluateBiFa } from "./bifa";
 import { getMonthJianChu } from "./jianchu";
 import { getBoardNaYin } from "./nayin";
 import { calculateFate } from "./fate";
@@ -443,6 +444,7 @@ export function calculateDaLiuRen(
     shenSha,
     relations,
     keJing: [],
+    biFa: [],
     jianChu: {},
     naYin: {},
     calculationTrace,
@@ -450,6 +452,9 @@ export function calculateDaLiuRen(
 
   // 课经规则
   const keJing = evaluateKeJing(partialResult);
+
+  // 毕法规则
+  const biFa = evaluateBiFa(partialResult);
 
   // 建除十二直（以月建起）
   const jianChu = getMonthJianChu(fourPillars.monthBranch);
@@ -467,6 +472,7 @@ export function calculateDaLiuRen(
   return {
     ...partialResult,
     keJing,
+    biFa,
     jianChu,
     naYin,
     fate,

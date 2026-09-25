@@ -116,6 +116,7 @@ export interface XunKong {
 import type { ShenSha } from "./shensha";
 import type { BranchRelation } from "./relations";
 import type { KeJingMatch } from "./kejing";
+import type { BiFaMatch } from "./bifa";
 import type { JianChuType } from "./jianchu";
 import type { FateInfo } from "./fate";
 
@@ -153,6 +154,8 @@ export interface DaLiuRenResult {
   relations: BranchRelation[];
   /** 课经规则匹配（阶段四） */
   keJing: KeJingMatch[];
+  /** 毕法规则匹配（阶段五） */
+  biFa: BiFaMatch[];
   /** 命宫行年（需额外传入生年和性别，否则为 undefined） */
   fate?: FateInfo;
   /** 建除十二直（每个地支的建除类型，阶段四） */

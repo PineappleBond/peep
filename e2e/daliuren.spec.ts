@@ -848,4 +848,72 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 冬至后→子(0)
     expect(result.after.monthGeneral.branch).toBe(0);
   });
+
+  // 第五阶段：毕法规则
+  test("毕法规则：应识别毕法赋前六法", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const result = await page.evaluate(async () => {
+      // @ts-ignore
+      if (!window.peep?.DaLiuRen) {
+        throw new Error("window.peep.DaLiuRen 未注册");
+      }
+      // @ts-ignore
+      return await window.peep.DaLiuRen("2024-06-15", "12:00");
+    });
+
+    // 应有 biFa 字段
+    expect(result.biFa).toBeDefined();
+    expect(Array.isArray(result.biFa)).toBe(true);
+
+    // 每个匹配项都有 rule 和 evidence
+    for (const match of result.biFa) {
+      expect(match).toHaveProperty("rule");
+      expect(match).toHaveProperty("evidence");
+      expect(match.rule).toHaveProperty("code");
+      expect(match.rule).toHaveProperty("name");
+      expect(match.rule).toHaveProperty("description");
+      expect(Array.isArray(match.evidence)).toBe(true);
+      expect(match.evidence.length).toBeGreaterThan(0);
+    }
+
+    // 已注册规则数应为 6
+    const codeSet = new Set(result.biFa.map((m: any) => m.rule.code));
+    // 所有可能的 code 都应是 bifa.01~bifa.06 之一
+    for (const code of codeSet) {
+      expect(/^bifa\.0[1-6]$/.test(code)).toBe(true);
+    }
+
+    // 多个日期测试，应覆盖至少 1 个毕法规则命中
+    const multipleResults = await page.evaluate(async () => {
+      const testCases = [
+        { date: "2024-06-15", time: "12:00" },
+        { date: "2024-01-01", time: "08:00" },
+        { date: "2024-03-20", time: "14:00" },
+        { date: "2024-06-21", time: "10:00" },
+        { date: "2024-09-23", time: "16:00" },
+        { date: "2024-12-21", time: "20:00" },
+        { date: "2025-02-10", time: "09:00" },
+        { date: "2025-05-05", time: "15:00" },
+      ];
+      return Promise.all(
+        testCases.map(({ date, time }) =>
+          // @ts-ignore
+          window.peep.DaLiuRen(date, time)
+        )
+      );
+    });
+
+    let totalMatches = 0;
+    const allBiFaCodes = new Set<string>();
+    for (const r of multipleResults) {
+      totalMatches += r.biFa.length;
+      for (const m of r.biFa) {
+        allBiFaCodes.add(m.rule.code);
+      }
+    }
+    // 至少应命中 1 次（六个日期覆盖多种盘面）
+    expect(totalMatches).toBeGreaterThanOrEqual(1);
+  });
 });
