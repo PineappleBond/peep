@@ -844,8 +844,10 @@ export function evaluateKeJing(result: DaLiuRenResult): KeJingMatch[] {
       matched = false;
     }
     if (matched) {
+      // 只存储可序列化的规则元数据，排除 check 函数（否则 IndexedDB 无法克隆）
+      const { check: _check, ...serializableRule } = rule;
       matches.push({
-        rule,
+        rule: serializableRule as KeJingRule,
         evidence: [buildEvidence(rule.code, result)],
       });
     }

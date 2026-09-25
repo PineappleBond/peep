@@ -347,8 +347,10 @@ export function evaluateBiFa(result: DaLiuRenResult): BiFaMatch[] {
       matched = false;
     }
     if (matched) {
+      // 只存储可序列化的规则元数据，排除 check 函数（否则 IndexedDB 无法克隆）
+      const { check: _check, ...serializableRule } = rule;
       matches.push({
-        rule,
+        rule: serializableRule as BiFaRule,
         evidence: [buildBiFaEvidence(rule.code, result)],
       });
     }
