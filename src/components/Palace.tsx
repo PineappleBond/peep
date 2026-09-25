@@ -1,8 +1,16 @@
 import { useMemo } from "react";
 import { util } from "iztro";
-import { SCOPES, abbrPalace, fixIndex, type ScopeSelfMark } from "../core/utils";
+import { SCOPES, abbrPalace, fixIndex, type Scope, type MutagenChar, type ScopeSelfMark } from "../core/utils";
 import type { PalaceData, Zwds } from "../core/useZwds";
 import { StarCell } from "./StarCell";
+
+type ScopeDataItem = {
+  scope: Scope;
+  palaceName: string;
+  stars: Array<{ name: string }>;
+  mutagens: Array<{ star: string; char: MutagenChar }>;
+  selfMutagens: Array<{ star: string; char: MutagenChar; direction: "outward" | "inward" }>;
+};
 
 /** 单个宫位卡片 */
 export function PalaceCard({
@@ -11,14 +19,14 @@ export function PalaceCard({
   focus,
   onFocus,
   onDetail,
-  selfScopeMarks = {},
+  scopeData = [],
 }: {
   palace: PalaceData;
   z: Zwds;
   focus: number;
   onFocus: (i: number) => void;
   onDetail?: (i: number) => void;
-  selfScopeMarks?: Record<string, ScopeSelfMark[]>;
+  scopeData?: ScopeDataItem[];
 }) {
   const { horoscope, visible } = z;
   const i = palace.index;
@@ -29,28 +37,29 @@ export function PalaceCard({
     [palace.heavenlyStem, z.input.algorithm]
   );
 
-  /* 运限宫名徽章：大官 / 年子 / 小田 / 月父 / 日疾 / 时兄 */
-  const chips: { key: string; cls: string; text: string }[] = [];
-  if (horoscope) {
-    if (visible.decadal)
-      chips.push({ key: "d", cls: "decadal", text: "大" + abbrPalace(horoscope.decadal.palaceNames[i]) });
-    if (visible.yearly) {
-      chips.push({ key: "y", cls: "yearly", text: "年" + abbrPalace(horoscope.yearly.palaceNames[i]) });
-      if (horoscope.age.palaceNames?.length)
-        chips.push({ key: "a", cls: "age", text: "小" + abbrPalace(horoscope.age.palaceNames[i]) });
-    }
-    if (visible.monthly)
-      chips.push({ key: "m", cls: "monthly", text: "月" + abbrPalace(horoscope.monthly.palaceNames[i]) });
-    if (visible.daily)
-      chips.push({ key: "dd", cls: "daily", text: "日" + abbrPalace(horoscope.daily.palaceNames[i]) });
-    if (visible.hourly)
-      chips.push({ key: "h", cls: "hourly", text: "时" + abbrPalace(horoscope.hourly.palaceNames[i]) });
-  }
+  /* 运限宫名徽章：从 scopeData 获取 */
+  const chips = scopeData.map((sd) => ({
+    key: sd.scope,
+    cls: sd.scope,
+    text: abbrPalace(sd.palaceName),
+  }));
 
-  /* 流耀（运昌运曲、流魁流钺…） */
-  const horoStarRows = SCOPES.filter(
-    (s) => visible[s] && horoscope?.[s]?.stars?.[i]?.length
-  ).map((s) => ({ scope: s, stars: horoscope![s].stars![i] }));
+  /* 流耀：从 scopeData 获取 */
+  const horoStarRows = scopeData
+    .filter((sd) => sd.stars.length > 0)
+    .map((sd) => ({ scope: sd.scope, stars: sd.stars }));
+
+  /* 按星曜名分组自化标记，供 StarCell 消费 */
+  const selfMarksByStar = useMemo(() => {
+    const map: Record<string, ScopeSelfMark[]> = {};
+    for (const sd of scopeData) {
+      for (const m of sd.selfMutagens) {
+        if (!map[m.star]) map[m.star] = [];
+        map[m.star].push({ scope: sd.scope, char: m.char, direction: m.direction });
+      }
+    }
+    return map;
+  }, [scopeData]);
 
   /* 岁前/将前十二神：看流年时切换为流年位 */
   const sui =
@@ -94,7 +103,7 @@ export function PalaceCard({
               horoscope={horoscope}
               visible={visible}
               selfMutagens={selfMutagens}
-              selfScopeMarks={selfScopeMarks[s.name]}
+              selfScopeMarks={selfMarksByStar[s.name]}
             />
           ))}
           {palace.minorStars.map((s) => (
@@ -104,7 +113,7 @@ export function PalaceCard({
               horoscope={horoscope}
               visible={visible}
               selfMutagens={selfMutagens}
-              selfScopeMarks={selfScopeMarks[s.name]}
+              selfScopeMarks={selfMarksByStar[s.name]}
             />
           ))}
         </div>

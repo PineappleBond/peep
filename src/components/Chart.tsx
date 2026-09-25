@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MUTAGEN_CHARS, fixIndex, type Scope, type ScopeSelfMark } from "../core/utils";
+import { MUTAGEN_CHARS, fixIndex, type Scope, type ScopeSelfMark, type MutagenChar } from "../core/utils";
 import { getChartDataForScope } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 import { PalaceCard } from "./Palace";
@@ -156,17 +156,28 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
     );
   }, [z.astrolabe, z.horoscope, z.visible, z.activeDecadeIdx, selfMode]);
 
-  /* 按 palaceIndex → starName 二级分组，供 PalaceCard 消费 */
-  const perPalaceSelfMarks = useMemo(() => {
-    const map: Record<number, Record<string, ScopeSelfMark[]>> = {};
+  /* 聚合所有 scope 的数据，按 palaceIndex 分组，供 PalaceCard 消费 */
+  const perPalaceScopeData = useMemo(() => {
+    const map: Record<
+      number,
+      Array<{
+        scope: Scope;
+        palaceName: string;
+        stars: Array<{ name: string }>;
+        mutagens: Array<{ star: string; char: MutagenChar }>;
+        selfMutagens: Array<{ star: string; char: MutagenChar; direction: "outward" | "inward" }>;
+      }>
+    > = {};
     for (const r of scopeResults) {
       for (const palace of r.palaces) {
-        if (palace.scopeSelfMutagens.length === 0) continue;
-        if (!map[palace.palaceIndex]) map[palace.palaceIndex] = {};
-        for (const m of palace.scopeSelfMutagens) {
-          const mark = { scope: r.scope, char: m.char, direction: m.direction };
-          (map[palace.palaceIndex][m.star] ??= []).push(mark);
-        }
+        if (!map[palace.palaceIndex]) map[palace.palaceIndex] = [];
+        map[palace.palaceIndex].push({
+          scope: r.scope,
+          palaceName: palace.scopePalaceName,
+          stars: palace.scopeStars,
+          mutagens: palace.scopeMutagens,
+          selfMutagens: palace.scopeSelfMutagens,
+        });
       }
     }
     return map;
@@ -186,7 +197,7 @@ export function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
               focus={focus}
               onFocus={handleFocus}
               onDetail={setDetailIdx}
-              selfScopeMarks={perPalaceSelfMarks[p.index] ?? {}}
+              scopeData={perPalaceScopeData[p.index] ?? []}
             />
           ))}
           <CenterPanel
