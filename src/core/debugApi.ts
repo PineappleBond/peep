@@ -6,6 +6,7 @@ import { getChartDataForScope, type ScopeChartData } from "./analysis";
 import type { Scope } from "./utils";
 import type { Zwds } from "./useZwds";
 import type { Person } from "./personDb";
+import { buildHbarData, type HbarData } from "./hbar";
 
 /** 运限级别 */
 export type ScopeName = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
@@ -13,11 +14,8 @@ export type ScopeName = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
 /** ZiWei 返回数据 */
 export type ZiWeiResult = {
   person: Person | null;
-  hbar: {
-    visible: Record<Scope, boolean>;
-    pick: { year: number; month: number; day: number; hour: number };
-    activeDecadeIdx: number;
-  };
+  /** 运限拨盘完整数据（含大运/流年/流月/流日/流时列表） */
+  hbar: HbarData & { visible: Record<Scope, boolean> };
   chart: ScopeChartData | null;
 };
 
@@ -89,11 +87,10 @@ export async function ZiWei(
 
   // 5. 获取数据
   const person = _getPerson();
-  const hbar = {
-    visible: { ...z.visible },
-    pick: { ...z.pick },
-    activeDecadeIdx: z.activeDecadeIdx,
-  };
+  const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
+  const hbar = hbarBase
+    ? { ...hbarBase, visible: { ...z.visible } }
+    : { visible: { ...z.visible } } as any;
 
   let chart: ScopeChartData | null = null;
   if (scope && z.astrolabe && z.horoscope) {

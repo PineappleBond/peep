@@ -7,19 +7,13 @@ import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
 import {
   BRANCHES,
-  LUNAR_DAYS,
-  LUNAR_MONTHS,
   MUTAGEN_TABLES,
   MutagenTableKey,
   Scope,
   applyTrueSolar,
-  hourGanZhi,
-  monthGanZhi,
-  yearGanZhi,
 } from "./utils";
 import {
   daysInLunarMonth,
-  dayGanZhi,
   fmtSolar,
   leapMonthOf,
   lunarStrToSolarStr,
@@ -29,6 +23,25 @@ import {
 import { resolveBirthPlace } from "./place";
 import { buildLifeKline } from "./lifeKline";
 import { analyzeChart } from "./analysis";
+import {
+  buildDecades,
+  buildChildhood,
+  calcActiveDecadeIdx,
+  buildYears,
+  buildMonths,
+  buildDays,
+  buildHours,
+  type PickState,
+  type DecadeInfo,
+  type Childhood,
+  type CellYear,
+  type CellMonth,
+  type CellDay,
+  type CellHour,
+} from "./hbar";
+
+// 重新导出 hbar 类型供外部使用
+export type { PickState, DecadeInfo, Childhood, CellYear, CellMonth, CellDay, CellHour };
 
 export type Astrolabe = ReturnType<typeof astro.bySolar>;
 export type Horoscope = ReturnType<Astrolabe["horoscope"]>;
@@ -111,22 +124,7 @@ export type TrueSolarInfo = {
   place: string;
 };
 
-export type PickState = { year: number; month: number; day: number; hour: number; leap: boolean };
 export type ScopeVisible = Record<Scope, boolean>;
-
-export type DecadeInfo = {
-  palaceIndex: number;
-  range: [number, number];
-  heavenlyStem: string;
-  earthlyBranch: string;
-  startYear: number;
-  endYear: number;
-};
-
-export type CellYear = { year: number; gz: string; age: number };
-export type CellMonth = { month: number; leap: boolean; label: string; gz: string };
-export type CellDay = { day: number; label: string; gz: string };
-export type CellHour = { hour: number; label: string; gz: string };
 
 function initPick(): PickState {
   const t = todayLunar();
@@ -239,31 +237,16 @@ export function useZwds(input: BirthInput) {
   const birthLunarYear = astrolabe?.rawDates.lunarDate.lunarYear ?? new Date().getFullYear();
 
   /** 十二大限，按起限年龄升序 */
-  const decades = useMemo<DecadeInfo[]>(() => {
-    if (!astrolabe) return [];
-    return astrolabe.palaces
-      .map((p) => ({
-        palaceIndex: p.index,
-        range: p.decadal.range,
-        heavenlyStem: p.decadal.heavenlyStem as string,
-        earthlyBranch: p.decadal.earthlyBranch as string,
-        startYear: birthLunarYear + p.decadal.range[0] - 1,
-        endYear: birthLunarYear + p.decadal.range[1] - 1,
-      }))
-      .sort((a, b) => a.range[0] - b.range[0]);
-  }, [astrolabe, birthLunarYear]);
+  const decades = useMemo<DecadeInfo[]>(
+    () => (astrolabe ? buildDecades(astrolabe, birthLunarYear) : []),
+    [astrolabe, birthLunarYear]
+  );
 
   /** 童限（出生 ~ 起运前一年） */
-  const childhood = useMemo(() => {
-    if (!decades.length) return null;
-    const first = decades[0].range[0];
-    if (first <= 1) return null;
-    return {
-      startYear: birthLunarYear,
-      endYear: birthLunarYear + first - 2,
-      label: `1~${first - 1}岁`,
-    };
-  }, [decades, birthLunarYear]);
+  const childhood = useMemo(
+    () => buildChildhood(decades, birthLunarYear),
+    [decades, birthLunarYear]
+  );
 
   // 拨盘导航不持久化：命盘由存储的起盘参数直接渲染，拨盘位置每次刷新/起盘回默认（今天）
   const [pick, setPick] = useState<PickState>(initPick);
@@ -275,34 +258,16 @@ export function useZwds(input: BirthInput) {
   }, [astrolabe, birthLunarYear]);
 
   /** 当前流年所落的大限序号；-1 = 童限 */
-  const activeDecadeIdx = useMemo(() => {
-    if (!decades.length) return -1;
-    const age = pick.year - birthLunarYear + 1;
-    if (age < decades[0].range[0]) return -1;
-    const i = decades.findIndex((d) => age >= d.range[0] && age <= d.range[1]);
-    return i >= 0 ? i : decades.length - 1;
-  }, [decades, pick.year, birthLunarYear]);
+  const activeDecadeIdx = useMemo(
+    () => calcActiveDecadeIdx(pick.year, decades, birthLunarYear),
+    [decades, pick.year, birthLunarYear]
+  );
 
   /** 当前大限（或童限）内的流年列表 */
-  const years = useMemo<CellYear[]>(() => {
-    let start: number | undefined;
-    let end: number | undefined;
-    if (activeDecadeIdx === -1) {
-      if (!childhood) return [];
-      start = childhood.startYear;
-      end = childhood.endYear;
-    } else {
-      const d = decades[activeDecadeIdx];
-      if (!d) return [];
-      start = d.startYear;
-      end = d.endYear;
-    }
-    const list: CellYear[] = [];
-    for (let y = start; y <= end; y++) {
-      list.push({ year: y, gz: yearGanZhi(y), age: y - birthLunarYear + 1 });
-    }
-    return list;
-  }, [activeDecadeIdx, decades, childhood, birthLunarYear]);
+  const years = useMemo<CellYear[]>(
+    () => buildYears(activeDecadeIdx, decades, childhood, birthLunarYear),
+    [activeDecadeIdx, decades, childhood, birthLunarYear]
+  );
 
   /** 当年闰月（0=无）；拨盘的闰月选择仅当与当年闰月吻合时生效 */
   const yearLeapMonth = useMemo(() => leapMonthOf(pick.year), [pick.year]);
@@ -315,42 +280,21 @@ export function useZwds(input: BirthInput) {
   const clampedDay = Math.min(pick.day, monthDays);
 
   /** 流月（五虎遁干支；有闰月时插入闰月位，闰月无独立月建、沿用本月干支） */
-  const months = useMemo<CellMonth[]>(() => {
-    const list: CellMonth[] = LUNAR_MONTHS.map((label, i) => ({
-      month: i + 1,
-      leap: false,
-      label,
-      gz: monthGanZhi(pick.year, i + 1),
-    }));
-    if (yearLeapMonth > 0) {
-      list.splice(yearLeapMonth, 0, {
-        month: yearLeapMonth,
-        leap: true,
-        label: `闰${LUNAR_MONTHS[yearLeapMonth - 1]}`,
-        gz: monthGanZhi(pick.year, yearLeapMonth),
-      });
-    }
-    return list;
-  }, [pick.year, yearLeapMonth]);
+  const months = useMemo<CellMonth[]>(
+    () => buildMonths(pick.year, yearLeapMonth),
+    [pick.year, yearLeapMonth]
+  );
 
   /** 流日（含日柱干支） */
-  const days = useMemo<CellDay[]>(() => {
-    const list: CellDay[] = [];
-    for (let d = 1; d <= monthDays; d++) {
-      const solar = lunarToSolarStr(pick.year, pick.month, d, effLeap);
-      list.push({ day: d, label: LUNAR_DAYS[d - 1], gz: solar ? dayGanZhi(solar) : "" });
-    }
-    return list;
-  }, [pick.year, pick.month, monthDays, effLeap]);
+  const days = useMemo<CellDay[]>(
+    () => buildDays(pick.year, pick.month, monthDays, effLeap),
+    [pick.year, pick.month, monthDays, effLeap]
+  );
 
   /** 流时（五鼠遁干支） */
   const hours = useMemo<CellHour[]>(() => {
     const dayStem = days[clampedDay - 1]?.gz.charAt(0) ?? "";
-    return BRANCHES.map((b, i) => ({
-      hour: i,
-      label: `${b}时`,
-      gz: dayStem ? hourGanZhi(dayStem, i) : "",
-    }));
+    return buildHours(dayStem);
   }, [days, clampedDay]);
 
   /** 拨盘目标（公历） */
