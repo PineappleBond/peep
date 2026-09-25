@@ -159,67 +159,79 @@ export async function ZiWei(
   scope?: ScopeName,
   time?: Date | number | string
 ): Promise<ZiWeiResult> {
-  // 跳转到 / 页面（紫微斗数）
-  if (_navigate) {
-    _navigate("/");
-  } else {
-    // 降级：直接跳转（会刷新页面）
-    window.location.href = "/";
+  // 输入校验
+  if (!Number.isFinite(personId) || personId <= 0) {
+    throw new Error(`personId 无效：${personId}，需为正整数`);
   }
-
-  // 等待 ZiweiPage 的回调注册完成
-  await waitForCallbacks("ziwei");
-  await waitForPageLoad();
-
-  if (!_selectPerson || !_getZwds || !_getPerson) {
-    throw new Error("调试 API 未初始化，请确认 App 已加载");
+  if (scope && !["decadal", "yearly", "monthly", "daily", "hourly"].includes(scope)) {
+    throw new Error(`scope 无效：${scope}，需为 decadal/yearly/monthly/daily/hourly 之一`);
   }
-
-  // 1. 切换人物（操控 UI）
-  await _selectPerson(personId);
-
-  // 等待 astrolabe 重新计算 + useEffect 重置 pick 完成
-  await new Promise((r) => setTimeout(r, 100));
-
-  const z = _getZwds();
-  if (!z) {
-    throw new Error("排盘数据未就绪");
-  }
-
-  // 2. 设置时间（在 useEffect 重置之后）
-  if (time) {
-    const date = parseDate(time);
-    if (isNaN(date.getTime())) {
-      throw new Error(`无法解析时间：${time}`);
+  try {
+    // 跳转到 / 页面（紫微斗数）
+    if (_navigate) {
+      _navigate("/");
+    } else {
+      // 降级：直接跳转（会刷新页面）
+      window.location.href = "/";
     }
-    setHoroscopeTime(z, date);
+
+    // 等待 ZiweiPage 的回调注册完成
+    await waitForCallbacks("ziwei");
+    await waitForPageLoad();
+
+    if (!_selectPerson || !_getZwds || !_getPerson) {
+      throw new Error("调试 API 未初始化，请确认 App 已加载");
+    }
+
+    // 1. 切换人物（操控 UI）
+    await _selectPerson(personId);
+
+    // 等待 astrolabe 重新计算 + useEffect 重置 pick 完成
+    await new Promise((r) => setTimeout(r, 100));
+
+    const z = _getZwds();
+    if (!z) {
+      throw new Error("排盘数据未就绪");
+    }
+
+    // 2. 设置时间（在 useEffect 重置之后）
+    if (time) {
+      const date = parseDate(time);
+      if (isNaN(date.getTime())) {
+        throw new Error(`无法解析时间：${time}`);
+      }
+      setHoroscopeTime(z, date);
+    }
+
+    // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
+    if (scope) {
+      z.actions.showScope(scope);
+    }
+
+    // 4. 等待所有状态更新完成（双 rAF 确保渲染完成）
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    // 5. 获取数据
+    const person = _getPerson();
+    const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
+    const hbar = hbarBase
+      ? { ...hbarBase, visible: { ...z.visible } }
+      : null;
+
+    let chart: ScopeChartData | null = null;
+    if (scope && z.astrolabe && z.horoscope) {
+      chart = getChartDataForScope({
+        astrolabe: z.astrolabe,
+        horoscope: z.horoscope,
+        scope,
+      });
+    }
+
+    return { person, hbar, chart };
+  } catch (err) {
+    console.error("[debugApi] ZiWei 执行失败", err);
+    throw err instanceof Error ? err : new Error(`ZiWei 执行失败：${String(err)}`);
   }
-
-  // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
-  if (scope) {
-    z.actions.showScope(scope);
-  }
-
-  // 4. 等待所有状态更新完成（双 rAF 确保渲染完成）
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  // 5. 获取数据
-  const person = _getPerson();
-  const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
-  const hbar = hbarBase
-    ? { ...hbarBase, visible: { ...z.visible } }
-    : null;
-
-  let chart: ScopeChartData | null = null;
-  if (scope && z.astrolabe && z.horoscope) {
-    chart = getChartDataForScope({
-      astrolabe: z.astrolabe,
-      horoscope: z.horoscope,
-      scope,
-    });
-  }
-
-  return { person, hbar, chart };
 }
 
 /** 解析时间：支持 Date/数字/字符串（含 "2024-06-15 12" 这种简写） */
@@ -281,44 +293,49 @@ export async function DaLiuRenCreate(params: {
   background?: string;
   tags?: string[];
 }): Promise<LiurenRecord> {
-  // 1. 跳转到 /liuren 页面
-  if (_navigate) {
-    _navigate("/liuren");
-  } else {
-    // 降级：直接跳转（会刷新页面）
-    window.location.href = "/liuren";
+  try {
+    // 1. 跳转到 /liuren 页面
+    if (_navigate) {
+      _navigate("/liuren");
+    } else {
+      // 降级：直接跳转（会刷新页面）
+      window.location.href = "/liuren";
+    }
+
+    // 等待 DaLiuRenPage 的回调注册完成
+    await waitForCallbacks("daliuren");
+    await waitForPageLoad();
+
+    if (!_selectPerson || !_openCreateDialog || !_fillCreateForm || !_submitCreateForm) {
+      throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+    }
+
+    // 2. 选择人物
+    await _selectPerson(params.personId);
+    await waitForStateUpdate();
+
+    // 3. 填写表单（在打开 Dialog 之前设置初始数据）
+    _fillCreateForm({
+      question: params.question,
+      note: params.note || "",
+      background: params.background || "",
+      tags: params.tags || [],
+    });
+    await waitForFormFill();
+
+    // 4. 打开新建 Dialog（Dialog 打开时会读取已设置的初始数据）
+    _openCreateDialog();
+    await waitForDialogOpen();
+
+    // 5. 提交表单
+    const record = await _submitCreateForm();
+    await waitForSaveComplete();
+
+    return record;
+  } catch (err) {
+    console.error("[debugApi] DaLiuRenCreate 执行失败", err);
+    throw err instanceof Error ? err : new Error(`DaLiuRenCreate 执行失败：${String(err)}`);
   }
-
-  // 等待 DaLiuRenPage 的回调注册完成
-  await waitForCallbacks("daliuren");
-  await waitForPageLoad();
-
-  if (!_selectPerson || !_openCreateDialog || !_fillCreateForm || !_submitCreateForm) {
-    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
-  }
-
-  // 2. 选择人物
-  await _selectPerson(params.personId);
-  await waitForStateUpdate();
-
-  // 3. 填写表单（在打开 Dialog 之前设置初始数据）
-  _fillCreateForm({
-    question: params.question,
-    note: params.note || "",
-    background: params.background || "",
-    tags: params.tags || [],
-  });
-  await waitForFormFill();
-
-  // 4. 打开新建 Dialog（Dialog 打开时会读取已设置的初始数据）
-  _openCreateDialog();
-  await waitForDialogOpen();
-
-  // 5. 提交表单
-  const record = await _submitCreateForm();
-  await waitForSaveComplete();
-
-  return record;
 }
 
 /**
@@ -332,46 +349,51 @@ export async function DaLiuRenList(params: {
   page?: number;
   pageSize?: number;
 }): Promise<{ records: LiurenRecord[]; total: number }> {
-  // 1. 跳转到 /liuren 页面
-  if (_navigate) {
-    _navigate("/liuren");
-  } else {
-    // 降级：直接跳转（会刷新页面）
-    window.location.href = "/liuren";
-  }
+  try {
+    // 1. 跳转到 /liuren 页面
+    if (_navigate) {
+      _navigate("/liuren");
+    } else {
+      // 降级：直接跳转（会刷新页面）
+      window.location.href = "/liuren";
+    }
 
-  // 等待 DaLiuRenPage 的回调注册完成
-  await waitForCallbacks("daliuren");
-  await waitForPageLoad();
+    // 等待 DaLiuRenPage 的回调注册完成
+    await waitForCallbacks("daliuren");
+    await waitForPageLoad();
 
-  if (!_selectPerson || !_getDaLiuRenList) {
-    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
-  }
+    if (!_selectPerson || !_getDaLiuRenList) {
+      throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+    }
 
-  // 2. 选择人物
-  await _selectPerson(params.personId);
-  await waitForStateUpdate();
+    // 2. 选择人物
+    await _selectPerson(params.personId);
+    await waitForStateUpdate();
 
-  // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
-  if (_setListFilters && (params.searchText || params.tags || params.page)) {
-    _setListFilters({
+    // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
+    if (_setListFilters && (params.searchText || params.tags || params.page)) {
+      _setListFilters({
+        searchText: params.searchText,
+        tags: params.tags,
+        page: params.page,
+      });
+      await waitForStateUpdate();
+    }
+
+    // 4. 获取列表
+    const filters: LiurenListFilters = {
       searchText: params.searchText,
       tags: params.tags,
       page: params.page,
-    });
-    await waitForStateUpdate();
+      pageSize: params.pageSize,
+    };
+    const result = await _getDaLiuRenList(filters);
+
+    return { records: result.records, total: result.total };
+  } catch (err) {
+    console.error("[debugApi] DaLiuRenList 执行失败", err);
+    throw err instanceof Error ? err : new Error(`DaLiuRenList 执行失败：${String(err)}`);
   }
-
-  // 4. 获取列表
-  const filters: LiurenListFilters = {
-    searchText: params.searchText,
-    tags: params.tags,
-    page: params.page,
-    pageSize: params.pageSize,
-  };
-  const result = await _getDaLiuRenList(filters);
-
-  return { records: result.records, total: result.total };
 }
 
 /**
@@ -382,37 +404,42 @@ export async function DaLiuRenView(params: {
   personId: number;
   recordId: number;
 }): Promise<LiurenRecord> {
-  // 1. 跳转到 /liuren 页面
-  if (_navigate) {
-    _navigate("/liuren");
-  } else {
-    // 降级：直接跳转（会刷新页面）
-    window.location.href = "/liuren";
+  try {
+    // 1. 跳转到 /liuren 页面
+    if (_navigate) {
+      _navigate("/liuren");
+    } else {
+      // 降级：直接跳转（会刷新页面）
+      window.location.href = "/liuren";
+    }
+
+    // 等待 DaLiuRenPage 的回调注册完成
+    await waitForCallbacks("daliuren");
+    await waitForPageLoad();
+
+    if (!_selectPerson || !_selectRecord || !_getSelectedRecord) {
+      throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+    }
+
+    // 2. 选择人物
+    await _selectPerson(params.personId);
+    await waitForStateUpdate();
+
+    // 3. 点击某条记录（selectRecord 直接返回记录数据）
+    const record = await _selectRecord(params.recordId);
+    await waitForStateUpdate();
+
+    // 4. 获取详情（优先使用 selectRecord 返回值，回退到 getSelectedRecord）
+    const selectedRecord = record ?? _getSelectedRecord();
+    if (!selectedRecord) {
+      throw new Error(`记录 ${params.recordId} 未找到或加载失败`);
+    }
+
+    return selectedRecord;
+  } catch (err) {
+    console.error("[debugApi] DaLiuRenView 执行失败", err);
+    throw err instanceof Error ? err : new Error(`DaLiuRenView 执行失败：${String(err)}`);
   }
-
-  // 等待 DaLiuRenPage 的回调注册完成
-  await waitForCallbacks("daliuren");
-  await waitForPageLoad();
-
-  if (!_selectPerson || !_selectRecord || !_getSelectedRecord) {
-    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
-  }
-
-  // 2. 选择人物
-  await _selectPerson(params.personId);
-  await waitForStateUpdate();
-
-  // 3. 点击某条记录（selectRecord 直接返回记录数据）
-  const record = await _selectRecord(params.recordId);
-  await waitForStateUpdate();
-
-  // 4. 获取详情（优先使用 selectRecord 返回值，回退到 getSelectedRecord）
-  const selectedRecord = record ?? _getSelectedRecord();
-  if (!selectedRecord) {
-    throw new Error(`记录 ${params.recordId} 未找到或加载失败`);
-  }
-
-  return selectedRecord;
 }
 
 /**
@@ -426,45 +453,50 @@ export async function WikiList(params: {
   page?: number;
   pageSize?: number;
 }): Promise<{ docs: WikiDocument[]; total: number }> {
-  // 1. 跳转到 /wiki 页面
-  if (_navigate) {
-    _navigate("/wiki");
-  } else {
-    window.location.href = "/wiki";
-  }
+  try {
+    // 1. 跳转到 /wiki 页面
+    if (_navigate) {
+      _navigate("/wiki");
+    } else {
+      window.location.href = "/wiki";
+    }
 
-  // 等待 WikiPage 的回调注册完成
-  await waitForCallbacks("wiki");
-  await waitForPageLoad();
+    // 等待 WikiPage 的回调注册完成
+    await waitForCallbacks("wiki");
+    await waitForPageLoad();
 
-  if (!_selectPerson || !_getWikiList) {
-    throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
-  }
+    if (!_selectPerson || !_getWikiList) {
+      throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
+    }
 
-  // 2. 选择人物
-  await _selectPerson(params.personId);
-  await waitForStateUpdate();
+    // 2. 选择人物
+    await _selectPerson(params.personId);
+    await waitForStateUpdate();
 
-  // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
-  if (_setWikiListFilters && (params.searchText || params.tags || params.page)) {
-    _setWikiListFilters({
+    // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
+    if (_setWikiListFilters && (params.searchText || params.tags || params.page)) {
+      _setWikiListFilters({
+        searchText: params.searchText,
+        tags: params.tags,
+        page: params.page,
+      });
+      await waitForStateUpdate();
+    }
+
+    // 4. 获取列表
+    const filters: WikiListFilters = {
       searchText: params.searchText,
       tags: params.tags,
       page: params.page,
-    });
-    await waitForStateUpdate();
+      pageSize: params.pageSize,
+    };
+    const result = await _getWikiList(filters);
+
+    return { docs: result.docs, total: result.total };
+  } catch (err) {
+    console.error("[debugApi] WikiList 执行失败", err);
+    throw err instanceof Error ? err : new Error(`WikiList 执行失败：${String(err)}`);
   }
-
-  // 4. 获取列表
-  const filters: WikiListFilters = {
-    searchText: params.searchText,
-    tags: params.tags,
-    page: params.page,
-    pageSize: params.pageSize,
-  };
-  const result = await _getWikiList(filters);
-
-  return { docs: result.docs, total: result.total };
 }
 
 /**
@@ -478,44 +510,49 @@ export async function WikiCreate(params: {
   tags?: string[];
   linkTargetIds?: number[];
 }): Promise<WikiDocument> {
-  // 1. 跳转到 /wiki 页面
-  if (_navigate) {
-    _navigate("/wiki");
-  } else {
-    window.location.href = "/wiki";
+  try {
+    // 1. 跳转到 /wiki 页面
+    if (_navigate) {
+      _navigate("/wiki");
+    } else {
+      window.location.href = "/wiki";
+    }
+
+    // 等待 WikiPage 的回调注册完成
+    await waitForCallbacks("wiki");
+    await waitForPageLoad();
+
+    if (!_selectPerson || !_openWikiEditor || !_saveWikiDoc) {
+      throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
+    }
+
+    // 2. 选择人物
+    await _selectPerson(params.personId);
+    await waitForStateUpdate();
+
+    // 3. 打开编辑器
+    _openWikiEditor();
+    await waitForDialogOpen();
+
+    // 4. 构造文档并保存
+    const now = Date.now();
+    const doc: WikiDocument = {
+      personId: params.personId,
+      title: params.title,
+      content: params.content,
+      tags: params.tags || [],
+      savedAt: now,
+      updatedAt: now,
+    };
+
+    const saved = await _saveWikiDoc(doc, params.linkTargetIds || []);
+    await waitForSaveComplete();
+
+    return saved;
+  } catch (err) {
+    console.error("[debugApi] WikiCreate 执行失败", err);
+    throw err instanceof Error ? err : new Error(`WikiCreate 执行失败：${String(err)}`);
   }
-
-  // 等待 WikiPage 的回调注册完成
-  await waitForCallbacks("wiki");
-  await waitForPageLoad();
-
-  if (!_selectPerson || !_openWikiEditor || !_saveWikiDoc) {
-    throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
-  }
-
-  // 2. 选择人物
-  await _selectPerson(params.personId);
-  await waitForStateUpdate();
-
-  // 3. 打开编辑器
-  _openWikiEditor();
-  await waitForDialogOpen();
-
-  // 4. 构造文档并保存
-  const now = Date.now();
-  const doc: WikiDocument = {
-    personId: params.personId,
-    title: params.title,
-    content: params.content,
-    tags: params.tags || [],
-    savedAt: now,
-    updatedAt: now,
-  };
-
-  const saved = await _saveWikiDoc(doc, params.linkTargetIds || []);
-  await waitForSaveComplete();
-
-  return saved;
 }
 
 /**
@@ -526,38 +563,43 @@ export async function WikiView(params: {
   personId: number;
   docId: number;
 }): Promise<WikiDocument & { linkTargetIds: number[] }> {
-  // 1. 跳转到 /wiki 页面
-  if (_navigate) {
-    _navigate("/wiki");
-  } else {
-    window.location.href = "/wiki";
+  try {
+    // 1. 跳转到 /wiki 页面
+    if (_navigate) {
+      _navigate("/wiki");
+    } else {
+      window.location.href = "/wiki";
+    }
+
+    // 等待 WikiPage 的回调注册完成
+    await waitForCallbacks("wiki");
+    await waitForPageLoad();
+
+    if (!_selectPerson || !_selectWikiDoc || !_getSelectedWikiDoc) {
+      throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
+    }
+
+    // 2. 选择人物
+    await _selectPerson(params.personId);
+    await waitForStateUpdate();
+
+    // 3. 打开指定文档（selectWikiDoc 直接返回文档数据）
+    const doc = await _selectWikiDoc(params.docId);
+    await waitForStateUpdate();
+
+    // 4. 获取详情（优先使用 selectWikiDoc 返回值，回退到 getSelectedWikiDoc）
+    const selectedDoc = doc ?? _getSelectedWikiDoc();
+    if (!selectedDoc) {
+      throw new Error(`文档 ${params.docId} 未找到或加载失败`);
+    }
+
+    // 5. 查询正向链接目标 ID，附加到返回结果
+    const linkTargetIds = selectedDoc.id ? await getWikiLinks(selectedDoc.id) : [];
+    return { ...selectedDoc, linkTargetIds };
+  } catch (err) {
+    console.error("[debugApi] WikiView 执行失败", err);
+    throw err instanceof Error ? err : new Error(`WikiView 执行失败：${String(err)}`);
   }
-
-  // 等待 WikiPage 的回调注册完成
-  await waitForCallbacks("wiki");
-  await waitForPageLoad();
-
-  if (!_selectPerson || !_selectWikiDoc || !_getSelectedWikiDoc) {
-    throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
-  }
-
-  // 2. 选择人物
-  await _selectPerson(params.personId);
-  await waitForStateUpdate();
-
-  // 3. 打开指定文档（selectWikiDoc 直接返回文档数据）
-  const doc = await _selectWikiDoc(params.docId);
-  await waitForStateUpdate();
-
-  // 4. 获取详情（优先使用 selectWikiDoc 返回值，回退到 getSelectedWikiDoc）
-  const selectedDoc = doc ?? _getSelectedWikiDoc();
-  if (!selectedDoc) {
-    throw new Error(`文档 ${params.docId} 未找到或加载失败`);
-  }
-
-  // 5. 查询正向链接目标 ID，附加到返回结果
-  const linkTargetIds = selectedDoc.id ? await getWikiLinks(selectedDoc.id) : [];
-  return { ...selectedDoc, linkTargetIds };
 }
 
 /** 辅助函数：等待页面加载 */
