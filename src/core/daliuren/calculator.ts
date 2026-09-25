@@ -394,7 +394,12 @@ export function calculateDaLiuRen(
     fourPillars.dayStem,
     fourPillars.hourBranch,
     boards.heaven,
-    boards.earth
+    boards.earth,
+    year,
+    month,
+    day,
+    hour,
+    minute
   );
 
   // 旺相休囚死（按天盘每个地支判断）
