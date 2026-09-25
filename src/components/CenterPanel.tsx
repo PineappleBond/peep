@@ -8,14 +8,10 @@ export function CenterPanel({
   z,
   flyMode = false,
   onToggleFly,
-  selfMode = false,
-  onToggleSelf,
 }: {
   z: Zwds;
   flyMode?: boolean;
   onToggleFly?: () => void;
-  selfMode?: boolean;
-  onToggleSelf?: () => void;
 }) {
   const a = z.astrolabe;
   if (!a) return <div className="center" style={{ gridArea: "c" }} />;
@@ -153,15 +149,12 @@ export function CenterPanel({
             飞
           </button>
         )}
-        {onToggleSelf && (
-          <button
-            className={`db db-self ${selfMode ? "on" : ""}`}
-            onClick={onToggleSelf}
-            title="自化模式：显示运限离心（向外放射）与向心（指向本宫）自化箭头，颜色区分运限级别"
-          >
-            化
-          </button>
-        )}
+        <button
+          className="db db-self on"
+          title="自化模式：显示运限离心（向外放射）与向心（指向本宫）自化箭头，颜色区分运限级别"
+        >
+          化
+        </button>
       </div>
     </div>
   );
