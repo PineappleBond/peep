@@ -4,7 +4,8 @@
  * 旬遁：按日柱所在旬的旬首天干（恒为甲），在天盘上依次遁出十干。
  * 日遁（五子元遁）：按日干决定子时起何干，顺推十二时辰的天干。
  */
-import { TIAN_GAN, DI_ZHI, STEM_ELEMENT, BRANCH_ELEMENT, XUN_HEAD } from "./constants";
+import { TIAN_GAN, DI_ZHI, XUN_HEAD } from "./constants";
+import { sexagenaryIndex } from "./utils";
 
 /**
  * 五子元遁：日干 → 子时天干
@@ -76,9 +77,8 @@ export function calculateXunDun(
 ): Map<number, string> {
   // 计算日柱在六甲中的旬首地支
   // 六旬：甲子(0)、甲戌(10)、甲申(8)、甲午(6)、甲辰(4)、甲寅(2)
-  // 日柱六十甲子序号 = (6 * stem - 5 * branch + 60) % 60
-  const sexagenaryIndex = ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
-  const xunIdx = Math.floor(sexagenaryIndex / 10); // 第几旬（0-5）
+  const sexIdx = sexagenaryIndex(dayStem, dayBranch);
+  const xunIdx = Math.floor(sexIdx / 10); // 第几旬（0-5）
   const xunHeadBranch = XUN_HEAD[xunIdx];
 
   // 旬遁：从旬首地支在地盘的位置开始，沿天盘遁出十干
@@ -114,8 +114,8 @@ export function getXunInfo(dayStem: number, dayBranch: number): {
   xunHead: number;
   xunName: string;
 } {
-  const sexagenaryIndex = ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
-  const xunIdx = Math.floor(sexagenaryIndex / 10);
+  const sexIdx = sexagenaryIndex(dayStem, dayBranch);
+  const xunIdx = Math.floor(sexIdx / 10);
   const xunHead = XUN_HEAD[xunIdx];
   return { xunHead, xunName: `甲${DI_ZHI[xunHead]}旬` };
 }

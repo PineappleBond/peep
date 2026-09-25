@@ -9,16 +9,26 @@
 
 import {
   DI_ZHI,
-  BRANCH_ELEMENT,
   STEM_ELEMENT,
-  TIAN_JIANG,
   LIU_CHONG,
-  LIU_HE_PAIRS,
   SAN_HE_TRIPLES,
   XUN_HEAD,
-  STEM_LODGING,
+  DAY_VIRTUES,
+  DAY_ORIGIN,
 } from "./constants";
 import type { DaLiuRenResult } from "./types";
+import {
+  elemB,
+  keOf,
+  shengOf,
+  sexagenaryIndex,
+  stemLodgingBranch,
+  isFuyin,
+  isFanyin,
+  inFourLessons,
+  getGeneralRidingBranch,
+  findGeneralPosition,
+} from "./utils";
 
 // ─── 课经接口 ─────────────────────────────────────────
 
@@ -45,36 +55,8 @@ export interface KeJingMatch {
 }
 
 // ─── 辅助函数 ─────────────────────────────────────────
-
-/** 取五行（地支） */
-function elemB(b: number): number {
-  return BRANCH_ELEMENT[b];
-}
-
-/** 五行 A 克 B */
-function keOf(a: number): number {
-  return (a + 2) % 5;
-}
-
-/** 五行 A 生 B */
-function shengOf(a: number): number {
-  return (a + 1) % 5;
-}
-
-/** 天地盘是否伏吟（重合） */
-function isFuyin(r: DaLiuRenResult): boolean {
-  return r.heavenBoard[0] === 0;
-}
-
-/** 天地盘是否返吟（对冲） */
-function isFanyin(r: DaLiuRenResult): boolean {
-  return r.heavenBoard[0] === 6;
-}
-
-/** 天盘某支是否在四课出现 */
-function inFourLessons(branch: number, r: DaLiuRenResult): boolean {
-  return r.fourLessons.some((l) => l.upper === branch);
-}
+// elemB, keOf, shengOf, isFuyin, isFanyin, inFourLessons,
+// getGeneralRidingBranch, findGeneralPosition 已从 utils.ts 导入
 
 /** 天盘某支是否在三传中（保留为工具函数） */
 function inSanChuan(branch: number, r: DaLiuRenResult): boolean {
@@ -109,14 +91,7 @@ function sanChuanSanHe(r: DaLiuRenResult): boolean {
   );
 }
 
-/** 找某天将所在地盘宫位（-1 表示不存在） */
-function findGeneralPosition(
-  generalName: string,
-  r: DaLiuRenResult
-): number {
-  const g = r.twelveGenerals.find((g) => g.name === generalName);
-  return g ? g.position : -1;
-}
+// findGeneralPosition, getGeneralRidingBranch 已从 utils.ts 导入
 
 /** 天将某是否在天盘某支（按天将落宫的天盘支判断） */
 function generalOnBranch(
@@ -127,22 +102,6 @@ function generalOnBranch(
   const g = r.twelveGenerals.find((g) => g.name === generalName);
   if (!g) return false;
   return r.heavenBoard[g.position] === branch;
-}
-
-/**
- * 获取天盘某支所乘天将编号（-1 表示未找到）
- * PHP: generalRidingBranch($branch)
- * 先找天盘支在地盘的宫位，再查该宫的天将
- */
-function getGeneralRidingBranch(
-  branch: number,
-  r: DaLiuRenResult
-): number {
-  // 天盘支 branch 在地盘的宫位
-  const ground = r.heavenBoard.indexOf(branch);
-  if (ground === -1) return -1;
-  const g = r.twelveGenerals.find((g) => g.position === ground);
-  return g ? g.general : -1;
 }
 
 /**
@@ -162,10 +121,7 @@ function travelHorse(branch: number): number {
   }
 }
 
-/** 日干寄宫所在支 */
-function stemLodgingBranch(stem: number): number {
-  return STEM_LODGING[stem];
-}
+// stemLodgingBranch 已从 utils.ts 导入
 
 /**
  * 计算六十甲子日序号所在的旬索引（0-5）
@@ -206,14 +162,24 @@ const AUSPICIOUS_GENERALS = new Set([0, 3, 5, 8, 10, 11]);
 /** 六凶将编号 */
 const INauspicious_GENERALS = new Set([1, 2, 4, 6, 7, 9]);
 
-/** 旬奇表：六旬依次取 丑、丑、子、子、亥、亥 */
+/**
+ * 旬奇表（索引 0-5 对应六甲旬）
+ *
+ * 甲子旬→丑(1)、甲戌旬→丑(1)、甲申旬→子(0)、甲午旬→子(0)、甲辰旬→亥(11)、甲寅旬→亥(11)
+ * 出处：《烟波钓叟赋》"六旬妙处有奇仪"。
+ */
 const XUN_WONDERS = [1, 1, 0, 0, 11, 11];
 
-/** 日奇表：甲→午(6)、乙→巳(5)、丙→辰(4)、丁→卯(3)、戊→寅(2)、己→丑(1)、庚→未(7)、辛→申(8)、壬→酉(9)、癸→戌(10) */
+/**
+ * 日奇表（索引对应 TIAN_GAN）
+ *
+ * 甲→午(6)、乙→巳(5)、丙→辰(4)、丁→卯(3)、戊→寅(2)、
+ * 己→丑(1)、庚→未(7)、辛→申(8)、壬→酉(9)、癸→戌(10)
+ * 出处：《奇门遁甲》日奇贵人起法。
+ */
 const DAY_WONDERS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10];
 
-/** 日德表：甲→寅(2)、乙→申(8)、丙→巳(5)、丁→亥(11)、戊→巳(5)、己→寅(2)、庚→申(8)、辛→巳(5)、壬→亥(11)、癸→巳(5) */
-const DAY_VIRTUES = [2, 8, 5, 11, 5, 2, 8, 5, 11, 5];
+// DAY_VIRTUES 已从 constants.ts 导入
 
 /** 支仪表（六仪课用）：子→午、丑→巳、寅→辰、卯→卯(3)、辰→寅、巳→丑、午→未、未→申、申→酉、酉→戌、戌→亥、亥→子 */
 const BRANCH_INSTRUMENTS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10, 11, 0];
@@ -337,7 +303,7 @@ const rules: KeJingRule[] = [
       // 计算日干支序号
       const dayStem = r.fourPillars.dayStem;
       const dayBranch = r.fourPillars.dayBranch;
-      const dayIndex = ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
+      const dayIndex = sexagenaryIndex(dayStem, dayBranch);
       const xunIdx = dayXunIndex(dayIndex);
       const xunWonder = XUN_WONDERS[xunIdx];
       const dayWonder = DAY_WONDERS[dayStem];
@@ -445,7 +411,7 @@ const rules: KeJingRule[] = [
     check: (r) => {
       const dayStem = r.fourPillars.dayStem;
       const dayBranch = r.fourPillars.dayBranch;
-      const dayIndex = ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
+      const dayIndex = sexagenaryIndex(dayStem, dayBranch);
       const xunInstrument = xunHeadBranch(dayIndex);
       const { initial, middle, final } = r.threeTransmissions;
       return (
@@ -491,8 +457,8 @@ const rules: KeJingRule[] = [
       const ground = r.heavenBoard.indexOf(initial);
       if (ground === -1) return false;
       // 上下相生（天盘初传五行与地盘宫位五行相生）
-      const upperElem = BRANCH_ELEMENT[initial];
-      const lowerElem = BRANCH_ELEMENT[ground];
+      const upperElem = elemB(initial);
+      const lowerElem = elemB(ground);
       const generatingDirection =
         shengOf(upperElem) === lowerElem
           ? "upper_generates_lower"
@@ -562,7 +528,7 @@ const rules: KeJingRule[] = [
       // 日财：日干所克之五行对应的地支（简化：看年/月支五行是否被日干所克）
       const dayElem = STEM_ELEMENT[dayStem];
       const dayWealthElem = keOf(dayElem); // 日干所克的五行
-      const isDayWealth = (b: number) => BRANCH_ELEMENT[b] === dayWealthElem;
+      const isDayWealth = (b: number) => elemB(b) === dayWealthElem;
       const yearInTrans = transmissions.includes(yearBranch);
       const monthInTrans = transmissions.includes(monthBranch);
       const yearQualifies =
@@ -622,7 +588,7 @@ const rules: KeJingRule[] = [
       const dayBranch = r.fourPillars.dayBranch;
       const todayStemLodge = stemLodgingBranch(dayStem);
       // 昨日干支
-      const dayIndex = ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
+      const dayIndex = sexagenaryIndex(dayStem, dayBranch);
       const yesterdayIndex = (dayIndex + 59) % 60;
       const yesterdayStem = yesterdayIndex % 10;
       const yesterdayBranch = yesterdayIndex % 12;
@@ -715,8 +681,7 @@ const rules: KeJingRule[] = [
       if (ganShang === undefined || zhiShang === undefined) return false;
       // 干上神生支上神
       const generates = shengOf(elemB(ganShang)) === elemB(zhiShang);
-      // 初传为日干长生位
-      const DAY_ORIGIN = [11, 11, 2, 2, 8, 8, 5, 5, 8, 8];
+      // 初传为日干长生位（DAY_ORIGIN 已从 constants.ts 导入）
       const origin = DAY_ORIGIN[dayStem];
       const initial = r.threeTransmissions.initial;
       return generates && initial === origin;

@@ -3,7 +3,7 @@
  *
  * 检测一组地支之间的刑、冲、破、害、合关系。
  */
-import { DI_ZHI } from "./constants";
+import { DI_ZHI, LIU_HAI_PAIRS, LIU_HE_PAIRS } from "./constants";
 
 // ─── 关系表 ────────────────────────────────────────────
 
@@ -36,25 +36,7 @@ const LIU_PO_PAIRS: [number, number][] = [
   [10, 7], // 戌未
 ];
 
-/** 六害对 */
-const LIU_HAI_PAIRS: [number, number][] = [
-  [0, 7], // 子未
-  [1, 6], // 丑午
-  [2, 5], // 寅巳
-  [3, 4], // 卯辰
-  [8, 11], // 申亥
-  [9, 10], // 酉戌
-];
-
-/** 六合对 */
-const LIU_HE_PAIRS: [number, number][] = [
-  [0, 1], // 子丑
-  [2, 11], // 寅亥
-  [3, 10], // 卯戌
-  [4, 9], // 辰酉
-  [5, 8], // 巳申
-  [6, 7], // 午未
-];
+// LIU_HAI_PAIRS, LIU_HE_PAIRS 已从 constants.ts 导入
 
 // ─── 辅助 ────────────────────────────────────────────
 
@@ -66,7 +48,7 @@ export interface BranchRelation {
 
 /** 检查两个地支是否在某个对中 */
 function pairMatch(
-  pairs: [number, number][],
+  pairs: readonly (readonly [number, number])[],
   a: number,
   b: number
 ): boolean {

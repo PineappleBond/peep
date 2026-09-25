@@ -9,6 +9,8 @@
  * 行年地支 = 以生年为起点，按性别顺逆行至当前年的地支
  */
 
+import { JIAZI_OFFSET } from "./constants";
+
 /** 命宫行年信息 */
 export interface FateInfo {
   /** 命宫地支（即生年地支） */
@@ -40,12 +42,12 @@ export function calculateFate(
   const age = currentYear - birthYear + 1;
 
   // 计算生年和当前年的六十甲子序号（简化：以立春分界，此处用公历年近似）
-  // 年干 = (year - 4) % 10，年支 = (year - 4) % 12
-  // 甲子年如 1984 = (1984-4)%60 = 0
-  const birthYearStem = ((birthYear - 4) % 10 + 10) % 10;
-  const birthYearBranch = ((birthYear - 4) % 12 + 12) % 12;
-  const currentYearStem = ((currentYear - 4) % 10 + 10) % 10;
-  const currentYearBranch = ((currentYear - 4) % 12 + 12) % 12;
+  // 甲子年如 1984 = (1984 - JIAZI_OFFSET) % 60 = 0
+  // JIAZI_OFFSET = 4（公元 4 年为甲子年）
+  const birthYearStem = ((birthYear - JIAZI_OFFSET) % 10 + 10) % 10;
+  const birthYearBranch = ((birthYear - JIAZI_OFFSET) % 12 + 12) % 12;
+  const currentYearStem = ((currentYear - JIAZI_OFFSET) % 10 + 10) % 10;
+  const currentYearBranch = ((currentYear - JIAZI_OFFSET) % 12 + 12) % 12;
 
   // 六十甲子序号
   const birthYearIndex = ((6 * birthYearStem - 5 * birthYearBranch) % 60 + 60) % 60;

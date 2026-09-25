@@ -8,8 +8,6 @@
  */
 import {
   DI_ZHI,
-  STEM_ELEMENT,
-  BRANCH_ELEMENT,
   STEM_YIN_YANG,
   BRANCH_YIN_YANG,
   STEM_LODGING,
@@ -17,6 +15,7 @@ import {
   LIU_CHONG,
 } from "./constants";
 import type { FourLesson, ThreeTransmissionsResult } from "./types";
+import { keOf, elemB, elemS } from "./utils";
 
 // ─── 常量 ────────────────────────────────────────────
 
@@ -29,36 +28,21 @@ const SELF_XING = new Set([4, 6, 9, 11]);
 
 // ─── 辅助函数 ─────────────────────────────────────────
 
-/** 取地支五行 */
-function branchElem(b: number): number {
-  return BRANCH_ELEMENT[b];
-}
-
-/** 取天干五行 */
-function stemElem(s: number): number {
-  return STEM_ELEMENT[s];
-}
-
 /**
  * 获取四课某课的"下"五行
  *
  * 第一课的下为日干（用天干五行），其余课的下为地支（用地支五行）。
- * 这与 PHP 参考实现一致：getShengke(wuxingDi[sike[1]], wuxingTian[rigan]) 用于第一课。
  */
 function lessonLowerElement(lesson: FourLesson, dayStem: number): number {
-  return lesson.lowerType === "stem" ? stemElem(dayStem) : branchElem(lesson.lower);
+  return lesson.lowerType === "stem" ? elemS(dayStem) : elemB(lesson.lower);
 }
 
 /** 上课五行（始终为地支） */
 function lessonUpperElement(lesson: FourLesson): number {
-  return branchElem(lesson.upper);
+  return elemB(lesson.upper);
 }
 
-/** 五行 A 克 B */
-function keOf(a: number): number {
-  // 木(0)→土(2)、火(1)→金(3)、土(2)→水(4)、金(3)→木(0)、水(4)→火(1)
-  return (a + 2) % 5;
-}
+// keOf 已从 utils.ts 导入
 
 /** 上克下：上课五行克下课五行 */
 function isShangKeXia(lesson: FourLesson, dayStem: number): boolean {
@@ -102,23 +86,23 @@ function calcShehaiDepth(
 
   for (const pos of path) {
     // 检查地盤本支
-    const posElem = branchElem(pos);
+    const posElem = elemB(pos);
     if (isZei) {
       // 地盘克上神
-      if (keOf(posElem) === branchElem(upper)) depth++;
+      if (keOf(posElem) === elemB(upper)) depth++;
     } else {
       // 上神克地盘
-      if (keOf(branchElem(upper)) === posElem) depth++;
+      if (keOf(elemB(upper)) === posElem) depth++;
     }
 
     // 检查寄宫天干：该地盘位寄了哪些天干
     for (let s = 0; s < 10; s++) {
       if (STEM_LODGING[s] !== pos) continue;
-      const sElem = stemElem(s);
+      const sElem = elemS(s);
       if (isZei) {
-        if (keOf(sElem) === branchElem(upper)) depth++;
+        if (keOf(sElem) === elemB(upper)) depth++;
       } else {
-        if (keOf(branchElem(upper)) === sElem) depth++;
+        if (keOf(elemB(upper)) === sElem) depth++;
       }
     }
   }
@@ -535,7 +519,7 @@ function tryYaoke(
   heavenBoard: number[],
   trace: string[]
 ): ThreeTransmissionsResult | null {
-  const dayElem = stemElem(dayStem);
+  const dayElem = elemS(dayStem);
   const yaokeShangKeXia: number[] = []; // 四课上神克日干
   const yaokeXiaZeiShang: number[] = []; // 日干克四课上神
 
@@ -636,11 +620,13 @@ function handleBiezhe(
 
   if (isYang) {
     // 阳日取干合上神：日干+5=合干（mod 10），取合干寄宫上的天盘支
+    // 五合：甲己合、乙庚合、丙辛合、丁壬合、戊癸合（相差 5 位）
     const heStem = (dayStem + 5) % 10;
     initial = heavenBoard[STEM_LODGING[heStem]];
     trace.push(`别责：阳日取干合(${DI_ZHI[STEM_LODGING[heStem]]})上神${DI_ZHI[initial]}`);
   } else {
-    // 阴日取支合前一位（三合局前一位）：日支+4 mod 12
+    // 阴日取支合前一位（三合局长生位的对冲）
+    // 支合即三合局前三位：日支+4 mod 12（如申(8)+4=子(0)→三合局长生）
     initial = (dayBranch + 4) % 12;
     trace.push(`别责：阴日取支合${DI_ZHI[initial]}`);
   }

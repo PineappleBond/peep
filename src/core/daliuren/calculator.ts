@@ -35,17 +35,17 @@ import { getMonthJianChu } from "./jianchu";
 import { getBoardNaYin } from "./nayin";
 import { calculateFate } from "./fate";
 import type { FateInfo } from "./fate";
+import { sexagenaryIndex } from "./utils";
 
 // ─── 内部辅助 ────────────────────────────────────────────
 
 /**
  * 由天干索引与地支索引计算六十甲子序号（0-59）。
  *
- * 六十甲子中，天干与地支满足：n ≡ stem (mod 10)，n ≡ branch (mod 12)。
- * 由 CRT 可得：n = (6 * stem - 5 * branch + 60) % 60。
+ * 委托给 utils.ts 中的 sexagenaryIndex。保留此导出名以兼容外部调用。
  */
 export function calculateSexagenaryIndex(stem: number, branch: number): number {
-  return ((6 * stem - 5 * branch) % 60 + 60) % 60;
+  return sexagenaryIndex(stem, branch);
 }
 
 /**
@@ -131,7 +131,7 @@ export function calculateMonthGeneral(solar: Solar): MonthGeneral {
   };
 
   /** Solar 对象转毫秒时间戳 */
-  const solarToMs = (s: any): number =>
+  const solarToMs = (s: Solar): number =>
     new Date(
       s.getYear(),
       s.getMonth() - 1,

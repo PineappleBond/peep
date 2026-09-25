@@ -14,14 +14,24 @@
 
 import {
   DI_ZHI,
-  STEM_LODGING,
   XUN_HEAD,
   NOBLEMAN_TABLE,
-  BRANCH_ELEMENT,
-  STEM_ELEMENT,
   SAN_HE_TRIPLES,
+  DAY_VIRTUES,
+  DAY_ORIGIN,
+  DAY_LU,
 } from "./constants";
 import type { DaLiuRenResult } from "./types";
+import {
+  elemB,
+  shengOf,
+  stemLodgingBranch,
+  sexagenaryIndex,
+  getGeneralRidingBranch,
+  findGeneralPosition,
+  inFourLessons,
+  isFuyin,
+} from "./utils";
 
 // ─── 类型定义 ────────────────────────────────────────────
 
@@ -46,29 +56,14 @@ export interface BiFaMatch {
 }
 
 // ─── 辅助函数 ────────────────────────────────────────────
-
-/** 取五行（地支） */
-function elemB(b: number): number {
-  return BRANCH_ELEMENT[b];
-}
-
-/** 五行 A 生 B */
-function shengOf(a: number): number {
-  return (a + 1) % 5;
-}
-
-/** 日干寄宫所在支 */
-function stemLodgingBranch(stem: number): number {
-  return STEM_LODGING[stem];
-}
+// elemB, shengOf, stemLodgingBranch, getGeneralRidingBranch,
+// findGeneralPosition, inFourLessons, isFuyin, sexagenaryIndex 已从 utils.ts 导入
 
 /**
- * 计算六十甲子日序号（0-59）
+ * 计算六十甲子日序号（0-59），调用共享的 sexagenaryIndex
  */
 function daySexagenaryIndex(r: DaLiuRenResult): number {
-  const dayStem = r.fourPillars.dayStem;
-  const dayBranch = r.fourPillars.dayBranch;
-  return ((6 * dayStem - 5 * dayBranch) % 60 + 60) % 60;
+  return sexagenaryIndex(r.fourPillars.dayStem, r.fourPillars.dayBranch);
 }
 
 /** 获取旬首地支 */
@@ -78,7 +73,11 @@ function xunHeadBranch(r: DaLiuRenResult): number {
   return XUN_HEAD[xunIdx];
 }
 
-/** 获取旬尾地支（旬首 + 9） */
+/**
+ * 获取旬尾地支（旬首 + 9）
+ *
+ * 一旬十日，旬首起甲、旬尾至癸，癸所在支 = 旬首 + 9（mod 12）。
+ */
 function xunTailBranch(r: DaLiuRenResult): number {
   return (xunHeadBranch(r) + 9) % 12;
 }
@@ -94,24 +93,7 @@ function heavenBranchGround(branch: number, r: DaLiuRenResult): number {
   return r.heavenBoard.indexOf(branch);
 }
 
-/** 找某天将所在地盘宫位（-1 表示不存在） */
-function findGeneralPosition(generalName: string, r: DaLiuRenResult): number {
-  const g = r.twelveGenerals.find((g) => g.name === generalName);
-  return g ? g.position : -1;
-}
-
-/**
- * 获取天盘某支所乘天将编号（-1 表示未找到）
- */
-function getGeneralRidingBranch(
-  branch: number,
-  r: DaLiuRenResult
-): number {
-  const ground = r.heavenBoard.indexOf(branch);
-  if (ground === -1) return -1;
-  const g = r.twelveGenerals.find((g) => g.position === ground);
-  return g ? g.general : -1;
-}
+// findGeneralPosition, getGeneralRidingBranch 已从 utils.ts 导入
 
 /** 判断三传是否为三合局，返回五行（-1 表示不合局） */
 function sanChuanSanHeElement(r: DaLiuRenResult): number {
@@ -132,15 +114,7 @@ function flanks(a: number, b: number, target: number): boolean {
   return (a === front && b === back) || (a === back && b === front);
 }
 
-/** 天盘某支是否在四课出现 */
-function inFourLessons(branch: number, r: DaLiuRenResult): boolean {
-  return r.fourLessons.some((l) => l.upper === branch);
-}
-
-/** 天地盘是否伏吟 */
-function isFuyin(r: DaLiuRenResult): boolean {
-  return r.heavenBoard[0] === 0;
-}
+// inFourLessons, isFuyin 已从 utils.ts 导入
 
 // ─── 毕法规则列表 ─────────────────────────────────────────
 
@@ -183,8 +157,7 @@ const rules: BiFaRule[] = [
         ((initial === dayNoble && final === nightNoble) ||
           (initial === nightNoble && final === dayNoble));
       if (liangGui) return true;
-      // 干支拱日禄（伏吟）
-      const DAY_LU = [2, 3, 5, 6, 5, 6, 8, 9, 11, 0];
+      // 干支拱日禄（伏吟）（DAY_LU 已从 constants.ts 导入）
       const lu = DAY_LU[dayStem];
       if (isFuyin(r) && flanks(lodging, dayBranch, lu)) return true;
       // 干支拱昼贵/夜贵（伏吟）
@@ -264,8 +237,7 @@ const rules: BiFaRule[] = [
       // 辰戌旬首临干年命
       if ((xunHead === 4 || xunHead === 10) && ganShang === xunHead)
         return true;
-      // 德入天门：日德加临地盘亥宫
-      const DAY_VIRTUES = [2, 8, 5, 11, 5, 2, 8, 5, 11, 5];
+      // 德入天门：日德加临地盘亥宫（DAY_VIRTUES 已从 constants.ts 导入）
       const dayVirtue = DAY_VIRTUES[dayStem];
       if (r.heavenBoard[11] === dayVirtue && r.threeTransmissions.initial === dayVirtue)
         return true;
@@ -309,8 +281,7 @@ const rules: BiFaRule[] = [
           return true;
         }
       }
-      // 恩主举荐·长生作贵人：当前贵人的天盘支 = 日干长生位
-      const DAY_ORIGIN = [11, 11, 2, 2, 8, 8, 5, 5, 8, 8];
+      // 恩主举荐·长生作贵人：当前贵人的天盘支 = 日干长生位（DAY_ORIGIN 已从 constants.ts 导入）
       const origin = DAY_ORIGIN[dayStem];
       const [dayNoble] = NOBLEMAN_TABLE[dayStem];
       if (dayNoble === origin) return true;
