@@ -1,7 +1,7 @@
 # 自化可视化功能设计方案
 
 **日期**：2026-09-25  
-**版本**：v3（经第 2 轮架构师 Review 修订）  
+**版本**：v4（经第 3 轮架构师 Review 修订）  
 **状态**：设计中
 
 ---
@@ -58,12 +58,16 @@ type ChartDataForScopeParams = {
   astrolabe: Astrolabe;       // 已缓存的本命盘
   horoscope: Horoscope;       // 已缓存的运限对象
   scope: Scope;               // "decadal" | "yearly" | "monthly" | "daily" | "hourly"
+  chartIndex?: ChartIndex;    // 可选：外部缓存的索引（避免重复构建）
 };
 // Scope 类型沿用 utils.ts 现有定义，不含 "natal"
 // 本命自化由现有 analysis.flyMatrix 提供，不走此函数
 ```
 
-> **注意**：参数中不再包含 `analysis`。运限自化计算只需要 `astrolabe` + `horoscope`，`chartIndex` 由函数内部通过 `buildChartIndex(astrolabe)` 获取（该操作轻量且结果可被 `useMemo` 缓存）。
+> **注意**：
+> - 参数中不再包含 `analysis`。运限自化计算只需要 `astrolabe` + `horoscope`。
+> - `chartIndex` 可选：若外部已缓存（如 `useMemo`），传入避免重复构建；否则函数内部通过 `buildChartIndex(astrolabe)` 获取。
+> - `horoscope` 在童限期间仍可能为有效对象（iztro 不返回 null），调用方需自行过滤 `decadal` scope（见 3.2.5 节）。
 
 **返回值**：
 
@@ -97,9 +101,10 @@ type ScopeChartData = {
 
 ```text
 getChartDataForScope(params):
+  if (!horoscope) return { scope, palaceSelfMarks: [], selfLinks: [] }
   palaceIdx = horoscope[scope].index     // 运限命宫在本命盘的宫位索引
   stem = horoscope[scope].heavenlyStem   // 运限天干
-  chartIndex = buildChartIndex(astrolabe)
+  chartIndex = params.chartIndex ?? buildChartIndex(astrolabe)
 
   // 1. 计算运限命宫的离心 + 向心自化
   rawMarks = getSelfMarksForScope(palaceIdx, stem, astrolabe, chartIndex)
@@ -133,12 +138,19 @@ getChartDataForScope(params):
 **使用方式**：
 
 ```typescript
-// 在 Chart 组件或 hook 中
+// 在 Chart 组件中
+const chartIndex = useMemo(() => buildChartIndex(z.astrolabe), [z.astrolabe]);
+
 const scopeResults = useMemo(() => {
-  return SCOPES.filter(s => z.visible[s]).map(s =>
-    getChartDataForScope({ astrolabe: z.astrolabe, horoscope: z.horoscope, scope: s })
+  if (!z.horoscope) return [];
+  const effectiveScopes = SCOPES.filter(s => {
+    if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
+    return z.visible[s];
+  });
+  return effectiveScopes.map(s =>
+    getChartDataForScope({ astrolabe: z.astrolabe, horoscope: z.horoscope, scope: s, chartIndex })
   );
-}, [z.astrolabe, z.horoscope, z.visible]);
+}, [z.astrolabe, z.horoscope, z.visible, z.activeDecadeIdx, chartIndex]);
 // 合并所有 scope 的结果，按 scope 用不同颜色渲染
 ```
 
@@ -163,19 +175,65 @@ const scopeResults = useMemo(() => {
 
 ### 2.5 数据流完整路径
 
+**传递策略：prop 下传**（scopeResults 是纯 UI 派生数据，不污染核心 hook）
+
 ```text
-getChartDataForScope() → ScopeChartData
-  ↓ palaceSelfMarks
+Chart.tsx
+  ↓ useMemo 计算 scopeResults（5 个 scope 的 getChartDataForScope 结果）
+  ↓ 按 palaceIndex 预过滤为 perPalaceSelfMarks: Record<number, selfScopeMarks[]>
+  ↓ 通过新 prop 传给 PalaceCard
 PalaceCard（props 新增 selfScopeMarks）
-  ↓ 传递给
+  ↓ 按 starName 过滤，传给 StarCell
 StarCell（props 新增 selfScopeMarks）
   ↓ 渲染
 .mut-scope-self 标记（点线，运限色）
 
-  ↓ selfLinks
 Chart.tsx SVG 层
+  ↓ 从 scopeResults 合并所有 selfLinks
   ↓ 计算坐标 + 渲染
 离心星芒 / 向心虚线箭头
+```
+
+**Chart.tsx 中的预过滤逻辑**：
+
+```typescript
+// 将 scopeResults 按 palaceIndex 分组，方便 PalaceCard 查找
+const perPalaceSelfMarks = useMemo(() => {
+  const map: Record<number, Array<{ scope: Scope; char: MutagenChar; direction: "outward" | "inward" }>> = {};
+  for (const r of scopeResults) {
+    for (const pm of r.palaceSelfMarks) {
+      for (const sm of pm.starMarks) {
+        for (const m of sm.marks) {
+          const key = `${pm.palaceIndex}:${sm.starName}`;
+          if (!map[key]) map[key] = [];
+          map[key].push({ scope: r.scope, char: m.char, direction: m.direction });
+        }
+      }
+    }
+  }
+  return map;
+}, [scopeResults]);
+
+// 传给 PalaceCard
+<PalaceCard
+  palace={p}
+  z={z}
+  focus={focus}
+  onFocus={handleFocus}
+  onDetail={setDetailIdx}
+  selfScopeMarks={/* 从 perPalaceSelfMarks 中按 p.index 过滤 */}
+/>
+```
+
+**PalaceCard 新增 props**：
+
+```typescript
+// Palace.tsx
+interface PalaceCardProps {
+  // ...existing
+  selfScopeMarks?: Record<string, Array<{ scope: Scope; char: MutagenChar; direction: "outward" | "inward" }>>;
+  // key = starName, value = 该星的运限自化标记列表
+}
 ```
 
 **StarCell 新增 props**：
@@ -189,8 +247,9 @@ selfScopeMarks?: Array<{
 }>;
 ```
 
-StarCell 现有三种标记：本命四化（`.mut-natal`）、运限四化（`.mut-scope`）、本命自化（`.mut-self`）。
-新增第四种：运限自化（`.mut-scope-self`），按 scope 用运限色。
+> **注意**：`majorStars` 和 `minorStars` 的 StarCell 均需传入 `selfScopeMarks`（两者都可能包含被自化的星曜）。
+>
+> **direction 在 StarCell 层的处理**：离心/向心在星曜旁标记的外观相同（同为 `.mut-scope-self` 点线框），但通过 `title` tooltip 区分：`title="离心·大限禄"` vs `title="向心·大限禄"`。direction 数据在 selfLinks（SVG 层）中用于确定箭头方向。
 
 ### 2.6 职责分离原则
 
@@ -326,14 +385,23 @@ function getSelfMarksForScope(
 - 同一宫位多标签时，沿连线法线方向错开排列
 - 标签避让：非 focus 区域的自化不画跨宫箭头（仅显示星曜旁小标记），减少视觉杂乱
 
-**颜色规范**：
+**颜色规范（已有 CSS 变量，无需新增）**：
+
+现有 `index.css` 已定义 `--c-decadal` 到 `--c-hourly`，以及 `.mut-decadal` 到 `.mut-hourly` 类。
+只需新增 `.mut-scope-self` 的 `border-style: dotted` 覆盖：
 
 ```css
---c-decadal: #2ee6c8;   /* 大运 = 青绿 */
---c-yearly:  #5ba0ff;   /* 流年 = 宝蓝 */
---c-monthly: #ffa14e;   /* 流月 = 橙 */
---c-daily:   #c78bff;   /* 流日 = 紫 */
---c-hourly:  #ff77b7;   /* 流时 = 粉 */
+/* 新增：运限自化 = 点线边框 + 运限色（复用现有 --c-{scope} 变量） */
+.mut-scope-self {
+  background: transparent;
+  border: 1px dotted;
+  line-height: 12px;
+}
+.mut-scope-self.mut-decadal { border-color: var(--c-decadal); color: var(--c-decadal); }
+.mut-scope-self.mut-yearly  { border-color: var(--c-yearly);  color: var(--c-yearly);  }
+.mut-scope-self.mut-monthly { border-color: var(--c-monthly); color: var(--c-monthly); }
+.mut-scope-self.mut-daily   { border-color: var(--c-daily);   color: var(--c-daily);   }
+.mut-scope-self.mut-hourly  { border-color: var(--c-hourly);  color: var(--c-hourly);  }
 ```
 
 ### 4.2 SVG 层级策略
@@ -345,6 +413,20 @@ SVG 渲染顺序（从底到顶）：
 3. 自化箭头（顶层，自化模式时显示）
 
 箭头使用 `marker-end` 三角形 + 不同 `stroke-dasharray` 区分离心（实线星芒）/向心（虚线箭头），与飞宫线的实线视觉上可区分。
+
+**SVG `<marker>` 定义**：
+
+```xml
+<defs>
+  <!-- 向心箭头：fill=context-stroke 动态继承连线颜色 -->
+  <marker id="arrow-self" viewBox="0 0 10 10" refX="9" refY="5"
+          markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
+  </marker>
+</defs>
+```
+
+> `fill="context-stroke"` 使箭头颜色自动继承所在 `<line>` 的 `stroke` 颜色（运限色），无需为每个 scope 定义独立 marker。
 
 ### 4.3 宫位卡片标记
 
@@ -368,24 +450,18 @@ SVG 渲染顺序（从底到顶）：
 <b class="mut mut-scope-self mut-yearly" data-m="科">科</b>
 ```
 
-**样式**：
-
-```css
-.mut-scope-self {
-  background: transparent;
-  border: 1px dotted;
-  line-height: 12px;
-}
-.mut-scope-self.mut-decadal {
-  border-color: var(--c-decadal);
-  color: var(--c-decadal);
-}
-/* yearly/monthly/daily/hourly 类推 */
-```
+**样式**：见 4.1 节"颜色规范"（已统一定义）。
 
 ### 4.4 模式交互规则
 
 自化模式与飞宫模式**正交设计**，可同时开启，互不干扰：
+
+**状态管理**（在 `Chart.tsx` 中）：
+
+```typescript
+const [selfMode, setSelfMode] = useState(false);
+// 类比现有 flyMode：const [flyMode, setFlyMode] = useState(false);
+```
 
 | 组合           | 三方四正线   | 飞宫连线   | 自化箭头   |
 | -------------- | ------------ | ---------- | ---------- |
@@ -394,10 +470,39 @@ SVG 渲染顺序（从底到顶）：
 | 仅自化模式     | ✅ 显示      | ❌         | ✅ 显示    |
 | 两者都开       | ❌ 隐藏      | ✅ 显示    | ✅ 显示    |
 
-**开关位置**：自化模式 toggle 按钮放在 `CenterPanel` 的 `depth-row` 中，飞宫按钮右侧，样式为 `.db.db-self`。
-小屏幕（`<640px`）时 `depth-row` 允许 `flex-wrap: wrap`，自化按钮折行到第二行。
+**开关位置**：自化模式 toggle 按钮放在 `CenterPanel` 的 `depth-row` 中，飞宫按钮右侧，样式为 `.db.db-self`。通过 `onToggleSelf` 回调传给 `CenterPanel`。
 
-### 4.5 性能策略
+小屏幕（`<640px`）添加 flex-wrap：
+
+```css
+@media (max-width: 640px) {
+  .depth-row { flex-wrap: wrap; }
+}
+```
+
+### 4.5 PalaceDetail 运限自化展示
+
+在 `PalaceDetail.tsx` 中新增"运限自化" section（与现有"宫干四化" section 并列）：
+
+```html
+<section>
+  <h4>运限自化</h4>
+  {visibleScopes.map(s => (
+    <p key={s.scope}>
+      <span className={`scope-tag scope-${s.scope}`}>{scopeLabel(s.scope)}</span>
+      离心：{s.outward.length ? s.outward.join("、") : "无"}
+      {" / "}
+      向心：{s.inward.length ? s.inward.join("、") : "无"}
+    </p>
+  ))}
+</section>
+```
+
+- 显示所有 `visible[s] === true` 的 scope
+- 离心/向心并列展示
+- `scopeLabel`：decadal→"大运"、yearly→"流年"、monthly→"流月"、daily→"流日"、hourly→"流时"
+
+### 4.6 性能策略
 
 **箭头数量估算**：
 
@@ -434,12 +539,13 @@ SVG 渲染顺序（从底到顶）：
 
 ### 阶段三：UI 渲染
 
-1. 在 `CenterPanel` 添加"自化模式"开关（正交于飞宫模式，`.db.db-self`）
-2. 修改 `Palace.tsx`：从 `scopeResults` 提取 `selfScopeMarks` 传给 `StarCell`
-3. 修改 `StarCell.tsx`：渲染运限自化标记（`.mut-scope-self`，点线，运限色）
-4. 修改 `Chart.tsx`：SVG 层绘制离心星芒 / 向心虚线箭头（含视口裁剪）
-5. 修改 `PalaceDetail.tsx`：详情面板展示运限自化信息
-6. 添加 CSS 样式（`.mut-scope-self[data-scope]`、SVG 箭头、`<marker>` 定义）
+1. 在 `CenterPanel` 添加"自化模式"开关（正交于飞宫模式，`.db.db-self`，`onToggleSelf` 回调）
+2. 修改 `Chart.tsx`：计算 `scopeResults` + `perPalaceSelfMarks`，通过 prop 传给 PalaceCard
+3. 修改 `Palace.tsx`：接收 `selfScopeMarks` prop，按 starName 过滤传给 StarCell（`majorStars` 和 `minorStars` 均需传入）
+4. 修改 `StarCell.tsx`：渲染运限自化标记（`.mut-scope-self.mut-{scope}`，点线，运限色），tooltip 区分离心/向心
+5. 修改 `Chart.tsx` SVG 层：绘制离心星芒 / 向心虚线箭头（含 `<marker>` 定义，视口裁剪）
+6. 修改 `PalaceDetail.tsx`：新增"运限自化" section（见 4.5 节）
+7. 添加 CSS 样式（`.mut-scope-self.mut-{scope}`、SVG marker、flex-wrap 媒体查询）
 
 ### 阶段四：集成测试
 
@@ -628,6 +734,25 @@ test("闰月流月自化：闰五月与五月共用月建干支", () => {
 | 18 | `horoscopeBarData` 性能隐患 | 删除（见 #4） |
 | 19 | 离心 selfLink 的 fromIndex === toIndex 语义不清 | 新增 `isSelfLoop` 字段，SVG 渲染为星芒 |
 | 20 | "480 条箭头"估算有误 | 修正为 40 条，删除退化逻辑 |
+
+### v3 → v4 修订（第 3 轮架构师 Review）
+
+| # | 问题 | 修订 |
+| --- | --- | --- |
+| 1 | CSS 类名矛盾（`data-scope` vs `mut-{scope}`） | 统一为 `.mut-scope-self.mut-{scope}` |
+| 2 | 伪代码缺少 horoscope null 守卫 | 入口添加 `if (!horoscope) return empty` |
+| 3 | scopeResults 传递路径断裂（关键） | 补充完整 prop 下传方案 + perPalaceSelfMarks 预过滤逻辑 |
+| 4 | PalaceDetail 修改方案缺失 | 补充 4.5 节完整 section 结构草案 |
+| 5 | SVG marker 规格缺失 | 补充 `<marker>` 定义（`context-stroke` 动态继承颜色） |
+| 6 | 童限处理调用点不明确 | 明确为调用方过滤（`effectiveScopes` 中排除） |
+| 7 | `buildChartIndex` 重复构建 | 参数新增可选 `chartIndex`，由调用方缓存 |
+| 8 | 自化模式状态变量名缺失 | 补充 `selfMode` + `setSelfMode` + `onToggleSelf` |
+| 9 | 颜色变量重复定义 | 标注"已有，无需新增"，删除冗余 CSS 变量 |
+| 10 | `selfScopeMarks` 中 direction 在 StarCell 层无消费 | 通过 title tooltip 区分离心/向心 |
+| 11 | majorStars/minorStars 均需传入 selfScopeMarks | 明确标注两组 StarCell 都需传入 |
+| 12 | `scanHoroscopePatterns` 只支持 3 个 scope | 说明"参数风格类似，不同调用点使用" |
+| 13 | flex-wrap 缺具体 CSS | 补充 `@media (max-width: 640px)` 规则 |
+| 14 | stem 参数类型未对齐 iztro | 保持 `string`，注释中说明 cast 需求 |
 
 ---
 
