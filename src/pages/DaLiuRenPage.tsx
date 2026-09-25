@@ -14,7 +14,7 @@ import type { LiurenRecord, Person } from "../core/personDb";
 import { getDefaultPerson } from "../core/personDb";
 import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
 import { globalEvents } from "../core/events";
-import { registerDebugApi } from "../core/debugApi";
+import { registerDaLiuRenCallbacks } from "../core/debugApi";
 
 export function DaLiuRenPage() {
   const [person, setPerson] = useState<Person | null>(null);
@@ -60,7 +60,7 @@ export function DaLiuRenPage() {
 
   // 注册大六壬调试 API 回调
   useEffect(() => {
-    registerDebugApi({
+    registerDaLiuRenCallbacks({
       getDaLiuRenList: async (filters: LiurenListFilters) => {
         if (!person?.id) {
           throw new Error("人物未选择");

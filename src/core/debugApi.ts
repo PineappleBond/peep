@@ -36,6 +36,15 @@ let _submitCreateForm: (() => Promise<LiurenRecord>) | null = null;
 let _selectRecord: ((recordId: number) => Promise<void>) | null = null;
 let _getSelectedRecord: (() => LiurenRecord | null) | null = null;
 
+/** 回调注册状态追踪 */
+let _callbacksReady: {
+  ziwei: boolean;
+  daliuren: boolean;
+} = {
+  ziwei: false,
+  daliuren: false,
+};
+
 /** 注册 React 回调（App.tsx 初始化时调用） */
 export function registerDebugApi(opts: {
   selectPerson?: (personId: number) => Promise<void>;
@@ -61,6 +70,43 @@ export function registerDebugApi(opts: {
   if (opts.getSelectedRecord) _getSelectedRecord = opts.getSelectedRecord;
 }
 
+/** 注册紫微斗数页面回调（ZiweiPage.tsx 调用） */
+export function registerZiWeiCallbacks(opts: {
+  getZwds: () => Zwds | null;
+}) {
+  _getZwds = opts.getZwds;
+  _callbacksReady.ziwei = true;
+}
+
+/** 注册大六壬页面回调（DaLiuRenPage.tsx 调用） */
+export function registerDaLiuRenCallbacks(opts: {
+  getDaLiuRenList: (filters: LiurenListFilters) => Promise<LiurenListResult>;
+  openCreateDialog: () => void;
+  fillCreateForm: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
+  submitCreateForm: () => Promise<LiurenRecord>;
+  selectRecord: (recordId: number) => Promise<void>;
+  getSelectedRecord: () => LiurenRecord | null;
+}) {
+  _getDaLiuRenList = opts.getDaLiuRenList;
+  _openCreateDialog = opts.openCreateDialog;
+  _fillCreateForm = opts.fillCreateForm;
+  _submitCreateForm = opts.submitCreateForm;
+  _selectRecord = opts.selectRecord;
+  _getSelectedRecord = opts.getSelectedRecord;
+  _callbacksReady.daliuren = true;
+}
+
+/** 等待页面回调注册完成 */
+async function waitForCallbacks(page: "ziwei" | "daliuren", timeout = 3000): Promise<void> {
+  const start = Date.now();
+  while (!_callbacksReady[page]) {
+    if (Date.now() - start > timeout) {
+      throw new Error(`${page} 页面的调试 API 回调注册超时（${timeout}ms）`);
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+
 /**
  * 核心调试接口：切换人物 + 运限级别 + 时间，同时操控 UI 并返回数据
  *
@@ -79,10 +125,6 @@ export async function ZiWei(
   scope?: ScopeName,
   time?: Date | number | string
 ): Promise<ZiWeiResult> {
-  if (!_selectPerson || !_getZwds || !_getPerson) {
-    throw new Error("调试 API 未初始化，请确认 App 已加载");
-  }
-
   // 跳转到 / 页面（紫微斗数）
   if (_navigate) {
     _navigate("/");
@@ -90,7 +132,14 @@ export async function ZiWei(
     // 降级：直接跳转（会刷新页面）
     window.location.href = "/";
   }
+
+  // 等待 ZiweiPage 的回调注册完成
+  await waitForCallbacks("ziwei");
   await waitForPageLoad();
+
+  if (!_selectPerson || !_getZwds || !_getPerson) {
+    throw new Error("调试 API 未初始化，请确认 App 已加载");
+  }
 
   // 1. 切换人物（操控 UI）
   await _selectPerson(personId);
@@ -198,10 +247,6 @@ export async function DaLiuRenCreate(params: {
   background?: string;
   tags?: string[];
 }): Promise<LiurenRecord> {
-  if (!_selectPerson || !_openCreateDialog || !_fillCreateForm || !_submitCreateForm) {
-    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
-  }
-
   // 1. 跳转到 /liuren 页面
   if (_navigate) {
     _navigate("/liuren");
@@ -209,7 +254,14 @@ export async function DaLiuRenCreate(params: {
     // 降级：直接跳转（会刷新页面）
     window.location.href = "/liuren";
   }
+
+  // 等待 DaLiuRenPage 的回调注册完成
+  await waitForCallbacks("daliuren");
   await waitForPageLoad();
+
+  if (!_selectPerson || !_openCreateDialog || !_fillCreateForm || !_submitCreateForm) {
+    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+  }
 
   // 2. 选择人物
   await _selectPerson(params.personId);
@@ -246,10 +298,6 @@ export async function DaLiuRenList(params: {
   page?: number;
   pageSize?: number;
 }): Promise<{ records: LiurenRecord[]; total: number }> {
-  if (!_selectPerson || !_getDaLiuRenList) {
-    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
-  }
-
   // 1. 跳转到 /liuren 页面
   if (_navigate) {
     _navigate("/liuren");
@@ -257,7 +305,14 @@ export async function DaLiuRenList(params: {
     // 降级：直接跳转（会刷新页面）
     window.location.href = "/liuren";
   }
+
+  // 等待 DaLiuRenPage 的回调注册完成
+  await waitForCallbacks("daliuren");
   await waitForPageLoad();
+
+  if (!_selectPerson || !_getDaLiuRenList) {
+    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+  }
 
   // 2. 选择人物
   await _selectPerson(params.personId);
@@ -283,10 +338,6 @@ export async function DaLiuRenView(params: {
   personId: number;
   recordId: number;
 }): Promise<LiurenRecord> {
-  if (!_selectPerson || !_selectRecord || !_getSelectedRecord) {
-    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
-  }
-
   // 1. 跳转到 /liuren 页面
   if (_navigate) {
     _navigate("/liuren");
@@ -294,7 +345,14 @@ export async function DaLiuRenView(params: {
     // 降级：直接跳转（会刷新页面）
     window.location.href = "/liuren";
   }
+
+  // 等待 DaLiuRenPage 的回调注册完成
+  await waitForCallbacks("daliuren");
   await waitForPageLoad();
+
+  if (!_selectPerson || !_selectRecord || !_getSelectedRecord) {
+    throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+  }
 
   // 2. 选择人物
   await _selectPerson(params.personId);

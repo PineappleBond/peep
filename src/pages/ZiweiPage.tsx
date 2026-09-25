@@ -8,7 +8,7 @@ import { Chart } from "../components/Chart";
 import { HoroscopeBar } from "../components/HoroscopeBar";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { globalEvents } from "../core/events";
-import { registerDebugApi } from "../core/debugApi";
+import { registerZiWeiCallbacks } from "../core/debugApi";
 import type { Person } from "../core/personDb";
 
 export function ZiweiPage() {
@@ -33,7 +33,7 @@ export function ZiweiPage() {
 
   // 注册调试 API - getZwds
   useEffect(() => {
-    registerDebugApi({
+    registerZiWeiCallbacks({
       getZwds: () => zRef.current,
     });
   }, []);
