@@ -26,6 +26,7 @@ export type ZiWeiResult = {
 let _selectPerson: ((personId: number) => Promise<void>) | null = null;
 let _getZwds: (() => Zwds | null) | null = null;
 let _getPerson: (() => Person | null) | null = null;
+let _navigate: ((path: string) => void) | null = null;
 
 /** 大六壬 React 回调注册：从 DaLiuRenPage.tsx 注入 */
 let _getDaLiuRenList: ((filters: LiurenListFilters) => Promise<LiurenListResult>) | null = null;
@@ -40,6 +41,7 @@ export function registerDebugApi(opts: {
   selectPerson?: (personId: number) => Promise<void>;
   getZwds?: () => Zwds | null;
   getPerson?: () => Person | null;
+  navigate?: (path: string) => void;
   getDaLiuRenList?: (filters: LiurenListFilters) => Promise<LiurenListResult>;
   openCreateDialog?: () => void;
   fillCreateForm?: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
@@ -50,6 +52,7 @@ export function registerDebugApi(opts: {
   if (opts.selectPerson) _selectPerson = opts.selectPerson;
   if (opts.getZwds) _getZwds = opts.getZwds;
   if (opts.getPerson) _getPerson = opts.getPerson;
+  if (opts.navigate) _navigate = opts.navigate;
   if (opts.getDaLiuRenList) _getDaLiuRenList = opts.getDaLiuRenList;
   if (opts.openCreateDialog) _openCreateDialog = opts.openCreateDialog;
   if (opts.fillCreateForm) _fillCreateForm = opts.fillCreateForm;
@@ -81,7 +84,12 @@ export async function ZiWei(
   }
 
   // 跳转到 / 页面（紫微斗数）
-  window.location.hash = "#/";
+  if (_navigate) {
+    _navigate("/");
+  } else {
+    // 降级：直接跳转（会刷新页面）
+    window.location.href = "/";
+  }
   await waitForPageLoad();
 
   // 1. 切换人物（操控 UI）
@@ -195,7 +203,12 @@ export async function DaLiuRenCreate(params: {
   }
 
   // 1. 跳转到 /liuren 页面
-  window.location.hash = "#/liuren";
+  if (_navigate) {
+    _navigate("/liuren");
+  } else {
+    // 降级：直接跳转（会刷新页面）
+    window.location.href = "/liuren";
+  }
   await waitForPageLoad();
 
   // 2. 选择人物
@@ -238,7 +251,12 @@ export async function DaLiuRenList(params: {
   }
 
   // 1. 跳转到 /liuren 页面
-  window.location.hash = "#/liuren";
+  if (_navigate) {
+    _navigate("/liuren");
+  } else {
+    // 降级：直接跳转（会刷新页面）
+    window.location.href = "/liuren";
+  }
   await waitForPageLoad();
 
   // 2. 选择人物
@@ -270,7 +288,12 @@ export async function DaLiuRenView(params: {
   }
 
   // 1. 跳转到 /liuren 页面
-  window.location.hash = "#/liuren";
+  if (_navigate) {
+    _navigate("/liuren");
+  } else {
+    // 降级：直接跳转（会刷新页面）
+    window.location.href = "/liuren";
+  }
   await waitForPageLoad();
 
   // 2. 选择人物

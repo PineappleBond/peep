@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "./Header";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
@@ -16,6 +17,7 @@ type LayoutProps = {
 };
 
 export function Layout({ children }: LayoutProps) {
+  const navigate = useNavigate();
   const [currentPersonId, setCurrentPersonId] = useState<number | null>(null);
   const currentPersonRef = useRef<Person | null>(null);
 
@@ -53,8 +55,11 @@ export function Layout({ children }: LayoutProps) {
         }
       },
       getPerson: () => currentPersonRef.current,
+      navigate: (path: string) => {
+        navigate(path);
+      },
     });
-  }, []);
+  }, [navigate]);
 
   const handleSelectPerson = (person: Person) => {
     if (person.id) {
