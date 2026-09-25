@@ -43,12 +43,19 @@ const DEFAULT_PERSON: Omit<Person, "id"> = {
   isDefault: true,
 };
 
-/** 确保默认人物存在（首次调用时自动种子） */
-async function ensureDefault(): Promise<Person> {
-  const existing = await db.persons.filter((p) => p.isDefault).first();
-  if (existing) return existing;
-  const id = await db.persons.add(DEFAULT_PERSON);
-  return { ...DEFAULT_PERSON, id };
+/** 确保默认人物存在（首次调用时自动种子，Promise 缓存防并发重复插入） */
+let defaultPromise: Promise<Person> | null = null;
+
+function ensureDefault(): Promise<Person> {
+  if (!defaultPromise) {
+    defaultPromise = (async () => {
+      const existing = await db.persons.filter((p) => p.isDefault).first();
+      if (existing) return existing;
+      const id = await db.persons.add(DEFAULT_PERSON);
+      return { ...DEFAULT_PERSON, id };
+    })();
+  }
+  return defaultPromise;
 }
 
 /** 获取全部人物列表 */
