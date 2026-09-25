@@ -29,6 +29,11 @@
   --m-ke: #fbbf24;
   --m-ji: #e35bd8;
 
+  /* 语义色 */
+  --danger: #f87171;
+  --danger-soft: #ff7777;
+  --rose: #ff4d6d;
+
   --font-body: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
     "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
   --font-display: "KaiTi", "STKaiti", "DFKai-SB", "BiauKai", var(--font-body);
@@ -123,7 +128,7 @@ body {
   font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: 0.4em;
-  background: linear-gradient(120deg, #f3c96b, #fff2cf 45%, #f3c96b 75%);
+  background: linear-gradient(120deg, var(--gold), #fff2cf 45%, var(--gold) 75%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -200,7 +205,7 @@ body {
   height: 38px;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(217, 228, 255, 0.03);
   color: var(--dim);
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -366,7 +371,7 @@ body {
   padding: 8px 26px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #1f8ea8, #55d7ff);
+  background: linear-gradient(135deg, #1f8ea8, var(--cyan));
   color: #04222e;
   font-weight: 700;
   font-size: 0.85rem;
@@ -452,8 +457,8 @@ body {
 }
 
 .sdot-src {
-  fill: #ffffff;
-  filter: drop-shadow(0 0 4px #55d7ff);
+  fill: var(--text);
+  filter: drop-shadow(0 0 4px var(--cyan));
 }
 
 /* ── 飞宫四化连线（禄绿 权蓝 科金 忌紫） ── */
@@ -882,7 +887,7 @@ body {
   font-family: var(--font-display);
   font-size: 1.55rem;
   letter-spacing: 0.35em;
-  background: linear-gradient(120deg, #f3c96b, #fff3d1 50%, #f3c96b);
+  background: linear-gradient(120deg, var(--gold), #fff3d1 50%, var(--gold));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -993,7 +998,7 @@ body {
   height: 30px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(217, 228, 255, 0.03);
   color: var(--dim);
   font-size: 13px;
   font-family: inherit;
@@ -1016,7 +1021,7 @@ body {
   box-shadow: 0 0 10px rgba(85, 215, 255, 0.35);
 }
 
-.db-natal.on { background: #d9e4ff; color: #0a1020; border-color: transparent; box-shadow: 0 0 12px rgba(217, 228, 255, 0.5); }
+.db-natal.on { background: var(--text); color: #0a1020; border-color: transparent; box-shadow: 0 0 12px rgba(217, 228, 255, 0.5); }
 .db-decadal.on { background: var(--c-decadal); color: #04211b; border-color: transparent; box-shadow: 0 0 13px rgba(46, 230, 200, 0.6); }
 .db-yearly.on { background: var(--c-yearly); color: #071429; border-color: transparent; box-shadow: 0 0 13px rgba(91, 160, 255, 0.6); }
 .db-monthly.on { background: var(--c-monthly); color: #2a1503; border-color: transparent; box-shadow: 0 0 13px rgba(255, 161, 78, 0.6); }
@@ -1061,7 +1066,7 @@ body {
   width: 48px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(217, 228, 255, 0.02);
   color: var(--faint);
   font-size: 12px;
   font-family: inherit;
@@ -1218,7 +1223,7 @@ body {
 }
 
 .kline-tab.on {
-  color: #eaf3ff;
+  color: var(--text);
   border-color: rgba(85, 215, 255, 0.6);
   background: rgba(85, 215, 255, 0.14);
   box-shadow: 0 0 12px rgba(85, 215, 255, 0.32);
@@ -1586,7 +1591,7 @@ body {
   border: 1px solid var(--line);
 }
 
-.pd-role-self { color: #fff; border-color: rgba(255, 255, 255, 0.5); }
+.pd-role-self { color: var(--text); border-color: rgba(217, 228, 255, 0.5); }
 .pd-role-opp { color: var(--gold); border-color: rgba(243, 201, 107, 0.5); }
 .pd-role-trine { color: var(--cyan); border-color: rgba(85, 215, 255, 0.4); }
 
@@ -1646,7 +1651,7 @@ body {
   line-height: 1.6;
   color: var(--dim);
   border-left: 2px solid var(--faint);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(217, 228, 255, 0.02);
   border-radius: 0 6px 6px 0;
 }
 .pd-chain i {
@@ -1845,7 +1850,7 @@ body {
   line-height: 1.3;
 }
 
-.syn-great .syn-card-score { color: #ff4d6d; text-shadow: 0 0 16px rgba(255, 77, 109, 0.5); }
+.syn-great .syn-card-score { color: var(--rose); text-shadow: 0 0 16px rgba(255, 77, 109, 0.5); }
 .syn-good .syn-card-score { color: var(--gold); text-shadow: 0 0 14px rgba(243, 201, 107, 0.45); }
 .syn-mid .syn-card-score { color: var(--cyan); }
 .syn-hard .syn-card-score { color: var(--dim); }
@@ -1853,7 +1858,7 @@ body {
 .syn-bar {
   height: 5px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(217, 228, 255, 0.07);
   overflow: hidden;
   margin: 6px 0 4px;
 }
@@ -1862,7 +1867,7 @@ body {
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, #1f8ea8, #55d7ff, #f3c96b);
+  background: linear-gradient(90deg, #1f8ea8, var(--cyan), var(--gold));
 }
 
 .syn-card-tier {
@@ -2135,7 +2140,7 @@ body {
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(217, 228, 255, 0.03);
   color: var(--dim);
   font-size: 0.75rem;
   font-family: inherit;
@@ -2356,7 +2361,7 @@ body {
 .dp-table td i { font-style: normal; color: var(--faint); font-size: 0.68rem; }
 .dp-years { color: var(--dim); }
 .dp-mut { color: var(--dim); }
-.dp-hi { color: #ff4d6d; }
+.dp-hi { color: var(--rose); }
 .dp-lo { color: var(--m-lu); }
 .dp-mark { font-size: 0.72rem; }
 
@@ -2647,7 +2652,7 @@ body {
   font-family: var(--font-display);
   font-size: 1.15rem;
   letter-spacing: 3px;
-  background: linear-gradient(120deg, #f3c96b, #fff3d1 50%, #f3c96b);
+  background: linear-gradient(120deg, var(--gold), #fff3d1 50%, var(--gold));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -2862,7 +2867,7 @@ body {
   height: 32px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(217, 228, 255, 0.03);
   color: var(--dim);
   font-size: 14px;
   cursor: pointer;
@@ -3272,7 +3277,7 @@ body {
 .liuren-tag-filter:hover {
   border-color: var(--line-strong);
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(217, 228, 255, 0.02);
 }
 
 .liuren-tag-filter.active {
@@ -3295,7 +3300,7 @@ body {
   gap: 4px;
   min-height: 120px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  scrollbar-color: rgba(96, 165, 250, 0.15) transparent;
 }
 
 .liuren-list-items::-webkit-scrollbar {
@@ -3307,12 +3312,12 @@ body {
 }
 
 .liuren-list-items::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(96, 165, 250, 0.15);
   border-radius: 2px;
 }
 
 .liuren-list-items::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(96, 165, 250, 0.25);
 }
 
 .liuren-list-empty {
@@ -3390,7 +3395,7 @@ body {
 }
 
 .liuren-list-item:hover .liuren-list-item-question {
-  color: var(--fg);
+  color: var(--cyan);
 }
 
 .liuren-list-item.active .liuren-list-item-question {
@@ -3454,8 +3459,8 @@ body {
 }
 
 .liuren-action-delete:hover {
-  border-color: #f87171;
-  color: #f87171;
+  border-color: var(--danger);
+  color: var(--danger);
   background: rgba(248, 113, 113, 0.14);
   box-shadow: 0 0 6px rgba(248, 113, 113, 0.2);
 }
@@ -3852,11 +3857,11 @@ body {
 }
 
 .liuren-shensha-label.ji {
-  color: #34d399;
+  color: var(--m-lu);
 }
 
 .liuren-shensha-label.xiong {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .liuren-shensha-list {
@@ -3878,13 +3883,13 @@ body {
 }
 
 .liuren-shensha-item.ji {
-  color: #34d399;
+  color: var(--m-lu);
   background: rgba(52, 211, 153, 0.08);
   border: 1px solid rgba(52, 211, 153, 0.2);
 }
 
 .liuren-shensha-item.xiong {
-  color: #f87171;
+  color: var(--danger);
   background: rgba(248, 113, 113, 0.08);
   border: 1px solid rgba(248, 113, 113, 0.2);
 }
@@ -4046,7 +4051,7 @@ body {
   font-family: var(--font-display);
   font-size: 1.6rem;
   letter-spacing: 0.3em;
-  background: linear-gradient(120deg, #f3c96b, #fff2cf 45%, #f3c96b 75%);
+  background: linear-gradient(120deg, var(--gold), #fff2cf 45%, var(--gold) 75%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -4082,7 +4087,7 @@ body {
   background: rgba(227, 91, 91, 0.10);
   border: 1px solid rgba(227, 91, 91, 0.35);
   border-radius: 8px;
-  color: #f77;
+  color: var(--danger);
   font-size: 0.85rem;
   letter-spacing: 0.03em;
   line-height: 1.5;
@@ -4517,7 +4522,7 @@ body {
   background: rgba(227, 91, 91, 0.10);
   border: 1px solid rgba(227, 91, 91, 0.35);
   border-radius: 8px;
-  color: #f77;
+  color: var(--danger);
   font-size: 0.85rem;
   letter-spacing: 0.03em;
   position: relative;
@@ -4657,7 +4662,7 @@ body {
 
 .wiki-tag-remove:hover {
   opacity: 1;
-  color: #f77;
+  color: var(--danger);
 }
 
 .wiki-tag-input {
@@ -4830,7 +4835,7 @@ body {
 
 .wiki-link-remove:hover {
   opacity: 1;
-  color: #f77;
+  color: var(--danger);
 }
 
 /* ── 底部按钮 ── */
@@ -4997,7 +5002,7 @@ body {
 .wiki-tag-filter:hover {
   border-color: var(--line-strong);
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(217, 228, 255, 0.02);
 }
 
 .wiki-tag-filter.active {
@@ -5025,12 +5030,12 @@ body {
 }
 
 .wiki-list-items::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(96, 165, 250, 0.15);
   border-radius: 2px;
 }
 
 .wiki-list-items::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(96, 165, 250, 0.25);
 }
 
 .wiki-list-empty {
@@ -5102,7 +5107,7 @@ body {
 }
 
 .wiki-list-item:hover .wiki-list-item-title {
-  color: var(--fg);
+  color: var(--cyan);
 }
 
 .wiki-list-item.active .wiki-list-item-title {
@@ -5192,8 +5197,8 @@ body {
 }
 
 .wiki-action-delete:hover {
-  border-color: #f87171;
-  color: #f87171;
+  border-color: var(--danger);
+  color: var(--danger);
   background: rgba(248, 113, 113, 0.14);
   box-shadow: 0 0 6px rgba(248, 113, 113, 0.2);
 }
