@@ -46,24 +46,29 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
 
     async function loadRelated() {
       if (!doc?.id) return;
-      const docId = doc.id;
-      const [forwardIds, backIds] = await Promise.all([
-        getWikiLinks(docId),
-        getWikiBacklinks(docId),
-      ]);
-      // 合并去重
-      const idSet = new Set<number>([...forwardIds, ...backIds]);
-      // 过滤掉自身
-      idSet.delete(docId);
-      // 批量查询标题
-      const docs = await Promise.all(
-        Array.from(idSet).map((id) => getWikiDoc(id))
-      );
-      if (cancelled) return;
-      const items: RelatedDoc[] = docs
-        .filter((d): d is WikiDocument => !!d && d.id != null)
-        .map((d) => ({ id: d.id!, title: d.title }));
-      setRelatedDocs(items);
+      try {
+        const docId = doc.id;
+        const [forwardIds, backIds] = await Promise.all([
+          getWikiLinks(docId),
+          getWikiBacklinks(docId),
+        ]);
+        // 合并去重
+        const idSet = new Set<number>([...forwardIds, ...backIds]);
+        // 过滤掉自身
+        idSet.delete(docId);
+        // 批量查询标题
+        const docs = await Promise.all(
+          Array.from(idSet).map((id) => getWikiDoc(id))
+        );
+        if (cancelled) return;
+        const items: RelatedDoc[] = docs
+          .filter((d): d is WikiDocument => !!d && d.id != null)
+          .map((d) => ({ id: d.id!, title: d.title }));
+        setRelatedDocs(items);
+      } catch (err) {
+        console.error("[WikiReader] 加载关联文档失败", err);
+        if (!cancelled) setRelatedDocs([]);
+      }
     }
 
     loadRelated();
