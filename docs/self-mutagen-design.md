@@ -1,7 +1,7 @@
 # 自化可视化功能设计方案
 
 **日期**：2026-09-25  
-**版本**：v5（经第 5 轮架构师 Review 修订）  
+**版本**：v7（经第 7 轮架构师 Review 修订）  
 **状态**：设计中
 
 ---
@@ -549,7 +549,7 @@ const [selfMode, setSelfMode] = useState(false);
 4. 修改 `StarCell.tsx`：渲染运限自化标记（`.mut-scope-self.mut-{scope}`，点线，运限色），tooltip 区分离心/向心
 5. 修改 `Chart.tsx` SVG 层：绘制离心星芒 / 向心虚线箭头（含 `<marker>` 定义，视口裁剪）
 6. 修改 `PalaceDetail.tsx`：新增"运限自化" section（见 4.5 节）
-7. 添加 CSS 样式（`.mut-scope-self.mut-{scope}`、SVG marker、flex-wrap 媒体查询）
+7. 添加 CSS 样式（`.mut-scope-self` 点线边框、SVG `<marker>` 定义）
 
 ### 阶段四：集成测试
 
@@ -755,8 +755,20 @@ test("闰月流月自化：闰五月与五月共用月建干支", () => {
 | 10 | `selfScopeMarks` 中 direction 在 StarCell 层无消费 | 通过 title tooltip 区分离心/向心 |
 | 11 | majorStars/minorStars 均需传入 selfScopeMarks | 明确标注两组 StarCell 都需传入 |
 | 12 | `scanHoroscopePatterns` 只支持 3 个 scope | 说明"参数风格类似，不同调用点使用" |
-| 13 | flex-wrap 缺具体 CSS | 补充 `@media (max-width: 640px)` 规则 |
+| 13 | flex-wrap 缺具体 CSS | 已确认 `.depth-row` 有 unconditional flex-wrap，无需额外媒体查询 |
 | 14 | stem 参数类型未对齐 iztro | 保持 `string`，注释中说明 cast 需求 |
+
+### v4 → v5 修订（第 5 轮 Review）
+
+赋值覆盖 Bug 修复、CSS 冗余规则删除、PalaceDetail 数据来源明确。
+
+### v5 → v6 修订（第 6 轮 Review，评分 9.5/10）
+
+4 个 trivial 修复：flex-wrap 媒体查询冗余删除、testFixtures 导入修正、palace.stars 拆分、stem 类型注释补充。
+
+### v6 → v7 修订（第 7 轮 Review，评分 9.8/10）
+
+实现步骤措辞矛盾修复（删除"flex-wrap 媒体查询"残留），版本号同步。
 
 ---
 
