@@ -415,11 +415,12 @@ function handleFanyin(
   const l1Upper = fourLessons[0].upper;
   const l3Upper = fourLessons[2].upper;
 
-  // 无亲格检测：辛未、辛丑、丁丑（丁未/己未已排除）
+  // 无亲格检测：辛未、辛丑、丁丑、己丑（丁未/己未已排除）
   const isWuqin =
-    (dayStem === 7 && dayBranch === 7) ||
-    (dayStem === 7 && dayBranch === 1) ||
-    (dayStem === 3 && dayBranch === 1);
+    (dayStem === 7 && dayBranch === 7) || // 辛未
+    (dayStem === 7 && dayBranch === 1) || // 辛丑
+    (dayStem === 3 && dayBranch === 1) || // 丁丑
+    (dayStem === 5 && dayBranch === 1); // 己丑
 
   if (isWuqin) {
     let initial: number;
@@ -639,9 +640,9 @@ function handleBiezhe(
     initial = heavenBoard[STEM_LODGING[heStem]];
     trace.push(`别责：阳日取干合(${DI_ZHI[STEM_LODGING[heStem]]})上神${DI_ZHI[initial]}`);
   } else {
-    // 阴日取支冲前一位（三合）：日支+4=冲位（mod 12），此处实为支前三合
+    // 阴日取支合前一位（三合局前一位）：日支+4 mod 12
     initial = (dayBranch + 4) % 12;
-    trace.push(`别责：阴日取支冲${DI_ZHI[initial]}`);
+    trace.push(`别责：阴日取支合${DI_ZHI[initial]}`);
   }
 
   // 中末传均取干上神
