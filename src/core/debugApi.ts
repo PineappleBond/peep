@@ -5,11 +5,12 @@
 import { getChartDataForScope, type ScopeChartData } from "./analysis";
 import type { Scope } from "./utils";
 import type { Zwds } from "./useZwds";
-import type { Person, LiurenRecord } from "./personDb";
+import type { Person, LiurenRecord, WikiDocument } from "./personDb";
 import { buildHbarData, type HbarData } from "./hbar";
 import { calculateDaLiuRen } from "./daliuren/calculator";
 import type { DaLiuRenResult } from "./daliuren/types";
 import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
+import type { WikiListFilters, WikiListResult } from "./wikiDb";
 
 /** 运限级别 */
 export type ScopeName = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
@@ -37,13 +38,23 @@ let _submitCreateForm: (() => Promise<LiurenRecord>) | null = null;
 let _selectRecord: ((recordId: number) => Promise<LiurenRecord | null>) | null = null;
 let _getSelectedRecord: (() => LiurenRecord | null) | null = null;
 
+/** Wiki React 回调注册：从 WikiPage.tsx 注入 */
+let _getWikiList: ((filters: WikiListFilters) => Promise<WikiListResult>) | null = null;
+let _setWikiListFilters: ((filters: { searchText?: string; tags?: string[]; page?: number }) => void) | null = null;
+let _openWikiEditor: (() => void) | null = null;
+let _saveWikiDoc: ((doc: WikiDocument, linkTargetIds: number[]) => Promise<WikiDocument>) | null = null;
+let _selectWikiDoc: ((docId: number) => Promise<WikiDocument | null>) | null = null;
+let _getSelectedWikiDoc: (() => WikiDocument | null) | null = null;
+
 /** 回调注册状态追踪 */
 let _callbacksReady: {
   ziwei: boolean;
   daliuren: boolean;
+  wiki: boolean;
 } = {
   ziwei: false,
   daliuren: false,
+  wiki: false,
 };
 
 /** 注册 React 回调（App.tsx 初始化时调用） */
@@ -101,8 +112,26 @@ export function registerDaLiuRenCallbacks(opts: {
   _callbacksReady.daliuren = true;
 }
 
+/** 注册 Wiki 页面回调（WikiPage.tsx 调用） */
+export function registerWikiCallbacks(opts: {
+  getWikiList: (filters: WikiListFilters) => Promise<WikiListResult>;
+  setWikiListFilters?: (filters: { searchText?: string; tags?: string[]; page?: number }) => void;
+  openWikiEditor: () => void;
+  saveWikiDoc: (doc: WikiDocument, linkTargetIds: number[]) => Promise<WikiDocument>;
+  selectWikiDoc: (docId: number) => Promise<WikiDocument | null>;
+  getSelectedWikiDoc: () => WikiDocument | null;
+}) {
+  _getWikiList = opts.getWikiList;
+  if (opts.setWikiListFilters) _setWikiListFilters = opts.setWikiListFilters;
+  _openWikiEditor = opts.openWikiEditor;
+  _saveWikiDoc = opts.saveWikiDoc;
+  _selectWikiDoc = opts.selectWikiDoc;
+  _getSelectedWikiDoc = opts.getSelectedWikiDoc;
+  _callbacksReady.wiki = true;
+}
+
 /** 等待页面回调注册完成 */
-async function waitForCallbacks(page: "ziwei" | "daliuren", timeout = 3000): Promise<void> {
+async function waitForCallbacks(page: "ziwei" | "daliuren" | "wiki", timeout = 3000): Promise<void> {
   const start = Date.now();
   while (!_callbacksReady[page]) {
     if (Date.now() - start > timeout) {
@@ -386,6 +415,149 @@ export async function DaLiuRenView(params: {
   return selectedRecord;
 }
 
+/**
+ * Wiki 文档列表调试接口
+ * 跳转到 /wiki 页面，选择人物，设置过滤条件，返回列表
+ */
+export async function WikiList(params: {
+  personId: number;
+  searchText?: string;
+  tags?: string[];
+  page?: number;
+  pageSize?: number;
+}): Promise<{ docs: WikiDocument[]; total: number }> {
+  // 1. 跳转到 /wiki 页面
+  if (_navigate) {
+    _navigate("/wiki");
+  } else {
+    window.location.href = "/wiki";
+  }
+
+  // 等待 WikiPage 的回调注册完成
+  await waitForCallbacks("wiki");
+  await waitForPageLoad();
+
+  if (!_selectPerson || !_getWikiList) {
+    throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
+  }
+
+  // 2. 选择人物
+  await _selectPerson(params.personId);
+  await waitForStateUpdate();
+
+  // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
+  if (_setWikiListFilters && (params.searchText || params.tags || params.page)) {
+    _setWikiListFilters({
+      searchText: params.searchText,
+      tags: params.tags,
+      page: params.page,
+    });
+    await waitForStateUpdate();
+  }
+
+  // 4. 获取列表
+  const filters: WikiListFilters = {
+    searchText: params.searchText,
+    tags: params.tags,
+    page: params.page,
+    pageSize: params.pageSize,
+  };
+  const result = await _getWikiList(filters);
+
+  return { docs: result.docs, total: result.total };
+}
+
+/**
+ * Wiki 文档创建调试接口
+ * 跳转到 /wiki 页面，选择人物，打开编辑器，保存文档
+ */
+export async function WikiCreate(params: {
+  personId: number;
+  title: string;
+  content: string;
+  tags?: string[];
+  linkTargetIds?: number[];
+}): Promise<WikiDocument> {
+  // 1. 跳转到 /wiki 页面
+  if (_navigate) {
+    _navigate("/wiki");
+  } else {
+    window.location.href = "/wiki";
+  }
+
+  // 等待 WikiPage 的回调注册完成
+  await waitForCallbacks("wiki");
+  await waitForPageLoad();
+
+  if (!_selectPerson || !_openWikiEditor || !_saveWikiDoc) {
+    throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
+  }
+
+  // 2. 选择人物
+  await _selectPerson(params.personId);
+  await waitForStateUpdate();
+
+  // 3. 打开编辑器
+  _openWikiEditor();
+  await waitForDialogOpen();
+
+  // 4. 构造文档并保存
+  const now = Date.now();
+  const doc: WikiDocument = {
+    personId: params.personId,
+    title: params.title,
+    content: params.content,
+    tags: params.tags || [],
+    savedAt: now,
+    updatedAt: now,
+  };
+
+  const saved = await _saveWikiDoc(doc, params.linkTargetIds || []);
+  await waitForSaveComplete();
+
+  return saved;
+}
+
+/**
+ * Wiki 文档详情调试接口
+ * 跳转到 /wiki 页面，选择人物，打开指定文档，返回详情
+ */
+export async function WikiView(params: {
+  personId: number;
+  docId: number;
+}): Promise<WikiDocument> {
+  // 1. 跳转到 /wiki 页面
+  if (_navigate) {
+    _navigate("/wiki");
+  } else {
+    window.location.href = "/wiki";
+  }
+
+  // 等待 WikiPage 的回调注册完成
+  await waitForCallbacks("wiki");
+  await waitForPageLoad();
+
+  if (!_selectPerson || !_selectWikiDoc || !_getSelectedWikiDoc) {
+    throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
+  }
+
+  // 2. 选择人物
+  await _selectPerson(params.personId);
+  await waitForStateUpdate();
+
+  // 3. 打开指定文档（selectWikiDoc 直接返回文档数据）
+  const doc = await _selectWikiDoc(params.docId);
+  await waitForStateUpdate();
+
+  // 4. 获取详情（优先使用 selectWikiDoc 返回值，回退到 getSelectedWikiDoc）
+  const selectedDoc = doc ?? _getSelectedWikiDoc();
+  if (!selectedDoc) {
+    throw new Error(`文档 ${params.docId} 未找到或加载失败`);
+  }
+
+  return selectedDoc;
+}
+
 /** 辅助函数：等待页面加载 */
 function waitForPageLoad(): Promise<void> {
   return new Promise((r) => setTimeout(r, 200));
@@ -422,6 +594,9 @@ export function initDebugApi() {
     DaLiuRenCreate,
     DaLiuRenList,
     DaLiuRenView,
+    WikiCreate,
+    WikiList,
+    WikiView,
     getChartDataForScope,
   };
 }
