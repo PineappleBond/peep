@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef } from "react";
 import type { WikiDocument } from "../../core/personDb";
-import { listWikiDocs } from "../../core/wikiDb";
+import { listWikiDocs, getWikiLinks, getWikiDoc } from "../../core/wikiDb";
 
 export interface WikiEditorProps {
   /** 文档数据，undefined 表示新建模式 */
@@ -33,6 +33,8 @@ export function WikiEditor({
   const [linkTargetIds, setLinkTargetIds] = useState<number[]>([]);
   const [linkSearchText, setLinkSearchText] = useState("");
   const [linkSearchResults, setLinkSearchResults] = useState<WikiDocument[]>([]);
+  /** 已关联文档的标题映射（id -> title） */
+  const [linkTargetTitles, setLinkTargetTitles] = useState<Record<number, string>>({});
 
   // UI 状态
   const [saving, setSaving] = useState(false);
@@ -44,18 +46,31 @@ export function WikiEditor({
   const tagInputRef = useRef<HTMLInputElement>(null);
   const linkSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 初始化：编辑模式加载数据，新建模式清空
+  // 初始化：编辑模式加载数据（含已关联文档及标题），新建模式清空
   useEffect(() => {
     if (doc) {
       setTitle(doc.title);
       setContent(doc.content);
       setTags(doc.tags);
-      // TODO: 加载已关联的文档 ID（需要从外部传入或通过 getWikiLinks 获取）
+      // 加载已关联的文档 ID 及其标题
+      (async () => {
+        if (doc.id == null) return;
+        const targetIds = await getWikiLinks(doc.id);
+        setLinkTargetIds(targetIds);
+        // 批量查询标题
+        const docs = await Promise.all(targetIds.map((id) => getWikiDoc(id)));
+        const titles: Record<number, string> = {};
+        docs.forEach((d, i) => {
+          if (d) titles[targetIds[i]] = d.title;
+        });
+        setLinkTargetTitles(titles);
+      })();
     } else {
       setTitle("");
       setContent("");
       setTags([]);
       setLinkTargetIds([]);
+      setLinkTargetTitles({});
     }
   }, [doc]);
 
@@ -134,9 +149,14 @@ export function WikiEditor({
   };
 
   // 添加关联文档
-  const addLinkTarget = (targetId: number) => {
+  const addLinkTarget = async (targetId: number) => {
     if (!linkTargetIds.includes(targetId)) {
       setLinkTargetIds([...linkTargetIds, targetId]);
+      // 查询标题并缓存
+      const targetDoc = await getWikiDoc(targetId);
+      if (targetDoc) {
+        setLinkTargetTitles((prev) => ({ ...prev, [targetId]: targetDoc.title }));
+      }
     }
     setLinkSearchText("");
     setLinkSearchResults([]);
@@ -302,7 +322,7 @@ export function WikiEditor({
             <div className="wiki-link-selected">
               {linkTargetIds.map((id) => (
                 <div key={id} className="wiki-link-selected-item">
-                  <span>文档 #{id}</span>
+                  <span>{linkTargetTitles[id] || `文档 #${id}`}</span>
                   <button
                     type="button"
                     className="wiki-link-remove"
