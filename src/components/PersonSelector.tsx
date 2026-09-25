@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 import type { Person } from "../core/personDb";
 import {
   listPersons,
-  addPerson,
-  updatePerson,
+  savePerson,
   deletePerson,
   getDefaultPerson,
 } from "../core/personDb";
@@ -55,15 +54,9 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
     }
   };
 
-  const handleSave = async (input: BirthInput) => {
-    if (editingPerson?.id) {
-      await updatePerson(editingPerson.id, input);
-      const updated = { ...input, id: editingPerson.id, savedAt: Date.now(), isDefault: editingPerson.isDefault };
-      onSelect(updated as Person);
-    } else {
-      const newPerson = await addPerson(input);
-      onSelect(newPerson);
-    }
+  const handleSave = async (input: BirthInput, isDefault: boolean) => {
+    const saved = await savePerson(editingPerson?.id, input, isDefault);
+    onSelect(saved);
     await loadPersons();
   };
 

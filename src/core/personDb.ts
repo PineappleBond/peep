@@ -76,19 +76,31 @@ export async function getPerson(id: number): Promise<Person | undefined> {
   return db.persons.get(id);
 }
 
-/** 新增人物 */
-export async function addPerson(input: BirthInput): Promise<Person> {
-  const id = await db.persons.add({
-    ...input,
-    savedAt: Date.now(),
-    isDefault: false,
+/**
+ * 保存人物（新增或更新），isDefault 切换在事务内原子完成：
+ * 设为默认时先清除其他默认标记，再写入当前记录。
+ */
+export async function savePerson(
+  id: number | undefined,
+  input: BirthInput,
+  isDefault: boolean
+): Promise<Person> {
+  return db.transaction("rw", db.persons, async () => {
+    if (isDefault) {
+      // 事务内清除所有现有默认标记
+      const currentDefaults = await db.persons.filter((p) => p.isDefault).toArray();
+      for (const d of currentDefaults) {
+        if (d.id != null && d.id !== id) await db.persons.update(d.id, { isDefault: false });
+      }
+    }
+    const now = Date.now();
+    if (id != null) {
+      await db.persons.update(id, { ...input, savedAt: now, isDefault });
+      return { ...input, id, savedAt: now, isDefault };
+    }
+    const newId = await db.persons.add({ ...input, savedAt: now, isDefault });
+    return { ...input, id: newId, savedAt: now, isDefault };
   });
-  return { ...input, id, savedAt: Date.now(), isDefault: false };
-}
-
-/** 更新人物 */
-export async function updatePerson(id: number, input: BirthInput): Promise<void> {
-  await db.persons.update(id, { ...input, savedAt: Date.now() });
 }
 
 /** 删除人物（默认人物不可删除） */

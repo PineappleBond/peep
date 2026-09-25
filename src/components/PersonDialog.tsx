@@ -31,9 +31,9 @@ import { Dialog } from "./Dialog";
 type PersonDialogProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (input: BirthInput) => void;
-  /** 编辑模式传入现有数据，新增模式传 undefined */
-  initialData?: BirthInput;
+  onSave: (input: BirthInput, isDefault: boolean) => void;
+  /** 编辑模式传入现有数据（含 isDefault），新增模式传 undefined */
+  initialData?: import("../core/personDb").Person;
   /** 弹窗标题 */
   title?: string;
 };
@@ -46,10 +46,12 @@ export function PersonDialog({
   title = initialData ? "编辑人物" : "新增人物",
 }: PersonDialogProps) {
   const [draft, setDraft] = useState<BirthInput>(initialData || DEFAULT_BIRTH_INPUT);
+  const [isDefault, setIsDefault] = useState(initialData?.isDefault ?? false);
 
   useEffect(() => {
     if (open) {
       setDraft(initialData || DEFAULT_BIRTH_INPUT);
+      setIsDefault(initialData?.isDefault ?? false);
     }
   }, [open, initialData]);
 
@@ -161,7 +163,7 @@ export function PersonDialog({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    onSave(draft);
+    onSave(draft, isDefault);
     onClose();
   };
 
@@ -497,6 +499,15 @@ export function PersonDialog({
             )}
           </div>
         )}
+
+        <label className="ck" title="设为默认人物，应用启动时自动起盘">
+          <input
+            type="checkbox"
+            checked={isDefault}
+            onChange={(e) => setIsDefault(e.target.checked)}
+          />
+          设为默认人物
+        </label>
 
         <div className="dlg-foot">
           <button type="button" className="btn-cancel" onClick={onClose}>
