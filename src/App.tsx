@@ -3,11 +3,7 @@ import { DEFAULT_BIRTH_INPUT, useZwds, BirthInput } from "./core/useZwds";
 import { InputPanel } from "./components/InputPanel";
 import { Chart } from "./components/Chart";
 import { HoroscopeBar } from "./components/HoroscopeBar";
-import { LifeKline } from "./components/LifeKline";
-import { DecadePlan } from "./components/DecadePlan";
-import { PatternPanel } from "./components/PatternPanel";
 import { SynastryPanel } from "./components/SynastryPanel";
-import { ExportPanel } from "./components/ExportPanel";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const STORAGE_KEY = "zwds-input-v2";
@@ -84,14 +80,6 @@ export default function App() {
           >
             合盘
           </button>
-          <button
-            type="button"
-            disabled={!z.astrolabe}
-            onClick={() => document.getElementById("ai-export")?.scrollIntoView({ behavior: "smooth" })}
-            title="跳到页面底部的 AI 导出面板：复制给 AI / 导出 TOON / 导出 MD（含预览与文件大小）"
-          >
-            AI 导出 ↓
-          </button>
         </div>
       </header>
 
@@ -101,11 +89,7 @@ export default function App() {
         <ErrorBoundary>
           <Chart z={z} genId={genId} />
           <HoroscopeBar z={z} />
-          <PatternPanel z={z} />
-          <LifeKline z={z} />
-          <DecadePlan z={z} />
           {showSyn && <SynastryPanel z={z} />}
-          <ExportPanel z={z} />
         </ErrorBoundary>
       ) : (
         <div className="err-box">
