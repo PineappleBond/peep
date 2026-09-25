@@ -6,6 +6,13 @@ import { PalaceCard } from "./Palace";
 import { CenterPanel } from "./CenterPanel";
 import { PalaceDetail } from "./PalaceDetail";
 
+// 调试接口：暴露到 window.peep 供控制台测试
+if (typeof window !== "undefined") {
+  (window as any).peep = {
+    getChartDataForScope,
+  };
+}
+
 /** 自动聚焦优先级：最深的已显示运限层的命宫 → 本命命宫 */
 const FOCUS_ORDER: Scope[] = ["hourly", "daily", "monthly", "yearly", "decadal"];
 
