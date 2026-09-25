@@ -399,6 +399,10 @@ export function useZwds(input: BirthInput) {
     toggleScope(s: Scope) {
       setVisible((v) => ({ ...v, [s]: !v[s] }));
     },
+    /** 只显示指定 scope，其他全部关闭 */
+    showScope(s: Scope) {
+      setVisible({ decadal: false, yearly: false, monthly: false, daily: false, hourly: false, [s]: true });
+    },
     showNatal() {
       setVisible({ decadal: false, yearly: false, monthly: false, daily: false, hourly: false });
     },

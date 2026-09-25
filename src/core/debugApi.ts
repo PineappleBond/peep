@@ -61,18 +61,18 @@ export async function ZiWei(
     throw new Error("排盘数据未就绪");
   }
 
-  // 2. 设置运限级别（操控 UI）
+  // 2. 设置运限级别（操控 UI：只显示目标 scope，其他全部关闭）
   if (scope) {
-    // 确保目标 scope 可见
-    if (!z.visible[scope]) {
-      z.actions.toggleScope(scope);
-    }
+    z.actions.showScope(scope);
 
     // 设置时间
     if (time) {
       const date = typeof time === "string" || typeof time === "number" ? new Date(time) : time;
-      await setHoroscopeTime(z, date);
+      setHoroscopeTime(z, date);
     }
+
+    // 等待 React 状态更新完成
+    await new Promise((r) => requestAnimationFrame(r));
   }
 
   // 3. 获取数据
@@ -96,7 +96,7 @@ export async function ZiWei(
 }
 
 /** 设置运限时间：根据 Date 设置年月日时 */
-async function setHoroscopeTime(z: Zwds, date: Date): Promise<void> {
+function setHoroscopeTime(z: Zwds, date: Date): void {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
