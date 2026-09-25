@@ -49,8 +49,15 @@ let defaultPromise: Promise<Person> | null = null;
 function ensureDefault(): Promise<Person> {
   if (!defaultPromise) {
     defaultPromise = (async () => {
-      const existing = await db.persons.filter((p) => p.isDefault).first();
-      if (existing) return existing;
+      const defaults = await db.persons.filter((p) => p.isDefault).toArray();
+      if (defaults.length > 1) {
+        // 去重：保留最早的一条（id 最小），删除其余
+        defaults.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+        const [keep, ...dupes] = defaults;
+        await db.persons.bulkDelete(dupes.map((d) => d.id!));
+        return keep;
+      }
+      if (defaults.length === 1) return defaults[0];
       const id = await db.persons.add(DEFAULT_PERSON);
       return { ...DEFAULT_PERSON, id };
     })();
