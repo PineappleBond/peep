@@ -24,6 +24,11 @@ import type {
 } from "./types";
 import { calculateThreeTransmissions } from "./sanchuan";
 import { calculateTwelveGenerals } from "./tianjiang";
+import { getAllWangXiang } from "./wangshuai";
+import { getAllLiuQin } from "./liuqin";
+import { calculateXunDun, calculateRiDun } from "./dungan";
+import { calculateShenSha } from "./shensha";
+import { findBranchRelations } from "./relations";
 
 // ─── 内部辅助 ────────────────────────────────────────────
 
@@ -210,11 +215,11 @@ export function calculateXunKong(dayStem: number, dayBranch: number): XunKong {
 // ─── 主入口 ────────────────────────────────────────────
 
 /**
- * 大六壬排盘（阶段二）
+ * 大六壬排盘（阶段三）
  *
  * @param dateStr 公历日期（YYYY-MM-DD 或 YYYY/MM/DD）
  * @param timeStr 时间（HH:mm 或 HH:mm:ss）
- * @returns 完整盘面数据（四柱、月将、天地盘、四课、旬空、三传、天将）
+ * @returns 完整盘面数据（四柱、月将、天地盘、四课、旬空、三传、天将、旺衰、六亲、遁干、神煞、刑冲破害）
  */
 export function calculateDaLiuRen(
   dateStr: string,
@@ -271,6 +276,45 @@ export function calculateDaLiuRen(
     boards.earth
   );
 
+  // 旺相休囚死（按天盘每个地支判断）
+  const wangXiang = getAllWangXiang(fourPillars.monthBranch);
+
+  // 六亲（按天盘每个地支判断）
+  const liuQin = getAllLiuQin(fourPillars.dayStem);
+
+  // 旬遁
+  const xunDunMap = calculateXunDun(
+    fourPillars.dayStem,
+    fourPillars.dayBranch,
+    boards.heaven
+  );
+  const xunDun: Record<number, string> = {};
+  xunDunMap.forEach((v, k) => {
+    xunDun[k] = v;
+  });
+
+  // 日遁（五子元遁）
+  const riDun = calculateRiDun(fourPillars.dayStem);
+
+  // 神煞
+  const shenSha = calculateShenSha(
+    fourPillars.yearBranch,
+    fourPillars.monthBranch,
+    fourPillars.dayStem,
+    fourPillars.dayBranch,
+    fourPillars.hourBranch
+  );
+
+  // 刑冲破害（四课 + 三传的所有地支）
+  const allBranches = [
+    ...fourLessons.map((l) => l.upper),
+    ...fourLessons.map((l) => l.lower),
+    threeTransmissions.initial,
+    threeTransmissions.middle,
+    threeTransmissions.final,
+  ];
+  const relations = findBranchRelations(allBranches);
+
   // 格式化时间
   const pad = (n: number) => String(n).padStart(2, "0");
   const calculationTime = `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)}`;
@@ -291,6 +335,12 @@ export function calculateDaLiuRen(
     xunKong,
     threeTransmissions,
     twelveGenerals,
+    wangXiang,
+    liuQin,
+    xunDun,
+    riDun,
+    shenSha,
+    relations,
     calculationTrace,
   };
 }

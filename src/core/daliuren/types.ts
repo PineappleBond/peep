@@ -113,7 +113,10 @@ export interface XunKong {
   void2: number;
 }
 
-/** 大六壬最终返回结构（阶段二：含三传和天将） */
+import type { ShenSha } from "./shensha";
+import type { BranchRelation } from "./relations";
+
+/** 大六壬最终返回结构（阶段三：含旺衰、六亲、遁干、神煞、刑冲破害） */
 export interface DaLiuRenResult {
   /** 起课时间字符串（YYYY-MM-DD HH:mm:ss） */
   calculationTime: string;
@@ -133,6 +136,18 @@ export interface DaLiuRenResult {
   threeTransmissions: ThreeTransmissionsResult;
   /** 十二天将（按地盘子至亥排列） */
   twelveGenerals: TwelveGeneral[];
+  /** 旺相休囚死（每个天盘地支的状态） */
+  wangXiang: Record<number, "旺" | "相" | "休" | "囚" | "死">;
+  /** 六亲（每个天盘地支的六亲关系） */
+  liuQin: Record<number, "父母" | "兄弟" | "子孙" | "妻财" | "官鬼">;
+  /** 遁干（旬遁结果，地盘宫位 → 遁干） */
+  xunDun: Record<number, string>;
+  /** 日遁（五子元遁，12 个时辰的天干） */
+  riDun: string[];
+  /** 神煞列表 */
+  shenSha: ShenSha[];
+  /** 刑冲破害关系 */
+  relations: BranchRelation[];
   /** 计算追踪记录 */
   calculationTrace: string[];
 }
