@@ -85,6 +85,24 @@ export interface ThreeTransmissions {
   final: number;
 }
 
+/** 三传完整结果（含取法名称和追踪） */
+export interface ThreeTransmissionsResult extends ThreeTransmissions {
+  /** 九宗门取法名称（如"元首""重审""涉害见机"等） */
+  method: string;
+  /** 计算追踪（每步推导记录） */
+  trace: string[];
+}
+
+/** 十二天将之一（地盘某宫位所乘天将） */
+export interface TwelveGeneral {
+  /** 地盘宫位地支索引（0-11） */
+  position: number;
+  /** 天将编号（0-11，对应 TIAN_JIANG 常量） */
+  general: number;
+  /** 天将名称（如"贵人""螣蛇"等） */
+  name: string;
+}
+
 /** 旬空（两旬空） */
 export interface XunKong {
   /** 旬首地支索引（如甲子旬为子） */
@@ -95,7 +113,7 @@ export interface XunKong {
   void2: number;
 }
 
-/** 大六壬最终返回结构（阶段一：基础数据） */
+/** 大六壬最终返回结构（阶段二：含三传和天将） */
 export interface DaLiuRenResult {
   /** 起课时间字符串（YYYY-MM-DD HH:mm:ss） */
   calculationTime: string;
@@ -111,4 +129,10 @@ export interface DaLiuRenResult {
   fourLessons: FourLesson[];
   /** 旬空 */
   xunKong: XunKong;
+  /** 三传（含取法名称和追踪） */
+  threeTransmissions: ThreeTransmissionsResult;
+  /** 十二天将（按地盘子至亥排列） */
+  twelveGenerals: TwelveGeneral[];
+  /** 计算追踪记录 */
+  calculationTrace: string[];
 }

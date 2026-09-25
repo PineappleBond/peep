@@ -1,8 +1,7 @@
 /**
  * 大六壬核心计算器
  *
- * 阶段一：实现基础排盘结构（四柱、月将、天地盘、四课、旬空）。
- * 三传（九宗门）和天将（昼夜顺逆）留待后续阶段。
+ * 阶段二：在阶段一基础上增加九宗门三传和十二天将。
  */
 import { Solar } from "lunar-typescript";
 import {
@@ -23,6 +22,8 @@ import type {
   MonthGeneral,
   XunKong,
 } from "./types";
+import { calculateThreeTransmissions } from "./sanchuan";
+import { calculateTwelveGenerals } from "./tianjiang";
 
 // ─── 内部辅助 ────────────────────────────────────────────
 
@@ -209,11 +210,11 @@ export function calculateXunKong(dayStem: number, dayBranch: number): XunKong {
 // ─── 主入口 ────────────────────────────────────────────
 
 /**
- * 大六壬排盘（阶段一）
+ * 大六壬排盘（阶段二）
  *
  * @param dateStr 公历日期（YYYY-MM-DD 或 YYYY/MM/DD）
  * @param timeStr 时间（HH:mm 或 HH:mm:ss）
- * @returns 基础盘面数据（四柱、月将、天地盘、四课、旬空）
+ * @returns 完整盘面数据（四柱、月将、天地盘、四课、旬空、三传、天将）
  */
 export function calculateDaLiuRen(
   dateStr: string,
@@ -254,9 +255,31 @@ export function calculateDaLiuRen(
     fourPillars.dayBranch
   );
 
+  // 三传（九宗门）
+  const threeTransmissions = calculateThreeTransmissions(
+    fourLessons,
+    fourPillars.dayStem,
+    fourPillars.dayBranch,
+    boards.heaven
+  );
+
+  // 十二天将
+  const twelveGenerals = calculateTwelveGenerals(
+    fourPillars.dayStem,
+    fourPillars.hourBranch,
+    boards.heaven,
+    boards.earth
+  );
+
   // 格式化时间
   const pad = (n: number) => String(n).padStart(2, "0");
   const calculationTime = `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)}`;
+
+  // 合并追踪记录
+  const calculationTrace = [
+    ...threeTransmissions.trace,
+    `天将: ${twelveGenerals.map((g) => g.name).join(",")}`,
+  ];
 
   return {
     calculationTime,
@@ -266,5 +289,8 @@ export function calculateDaLiuRen(
     heavenBoard: boards.heaven,
     fourLessons,
     xunKong,
+    threeTransmissions,
+    twelveGenerals,
+    calculationTrace,
   };
 }
