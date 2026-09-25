@@ -471,23 +471,29 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(243, 201, 107, 0.5);
   background: rgba(9, 14, 30, 0.9);
-  color: var(--cyan);
+  color: var(--gold);
   font-size: 11px;
   font-family: inherit;
   cursor: pointer;
-  transition: 0.18s;
+  transition: 0.18s ease;
 }
 
 .p-detail-btn:hover {
-  background: rgba(85, 215, 255, 0.18);
-  box-shadow: 0 0 8px rgba(85, 215, 255, 0.4);
+  background: rgba(243, 201, 107, 0.15);
+  box-shadow: 0 0 8px rgba(243, 201, 107, 0.4);
+}
+
+.p-detail-btn:focus-visible {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 10px rgba(243, 201, 107, 0.5);
 }
 
 .palace:hover {
   border-color: rgba(125, 211, 252, 0.5);
-  box-shadow: 0 0 14px rgba(85, 215, 255, 0.18), inset 0 0 18px rgba(85, 215, 255, 0.05);
+  box-shadow: 0 0 14px rgba(85, 215, 255, 0.18), inset 0 0 18px rgba(85, 215, 255, 0.05), inset 0 0 8px rgba(85, 215, 255, 0.03);
 }
 
 .palace.is-focus {
@@ -950,6 +956,16 @@ body {
   color: var(--text);
 }
 
+.db:active {
+  transform: scale(0.92);
+}
+
+.db:focus-visible {
+  outline: none;
+  border-color: var(--line-strong);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.35);
+}
+
 .db-natal.on { background: #d9e4ff; color: #0a1020; border-color: transparent; box-shadow: 0 0 12px rgba(217, 228, 255, 0.5); }
 .db-decadal.on { background: var(--c-decadal); color: #04211b; border-color: transparent; box-shadow: 0 0 13px rgba(46, 230, 200, 0.6); }
 .db-yearly.on { background: var(--c-yearly); color: #071429; border-color: transparent; box-shadow: 0 0 13px rgba(91, 160, 255, 0.6); }
@@ -975,6 +991,7 @@ body {
   border-radius: 14px;
   background: rgba(7, 11, 24, 0.86);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(96, 165, 250, 0.22);
   box-shadow:
     0 8px 34px rgba(0, 0, 0, 0.55),
@@ -1008,6 +1025,8 @@ body {
 .hrow-monthly .hlabel.on { color: var(--c-monthly); border-color: rgba(255, 161, 78, 0.6); box-shadow: 0 0 11px rgba(255, 161, 78, 0.3); text-shadow: 0 0 7px rgba(255, 161, 78, 0.8); }
 .hrow-daily .hlabel.on { color: var(--c-daily); border-color: rgba(199, 139, 255, 0.6); box-shadow: 0 0 11px rgba(199, 139, 255, 0.3); text-shadow: 0 0 7px rgba(199, 139, 255, 0.8); }
 .hrow-hourly .hlabel.on { color: var(--c-hourly); border-color: rgba(255, 119, 183, 0.6); box-shadow: 0 0 11px rgba(255, 119, 183, 0.3); text-shadow: 0 0 7px rgba(255, 119, 183, 0.8); }
+
+.hlabel:focus-visible { border-color: var(--line-strong); box-shadow: 0 0 10px rgba(85, 215, 255, 0.3); outline: none; }
 
 .hcells {
   display: flex;
@@ -1065,6 +1084,14 @@ body {
   box-shadow: 0 0 10px rgba(85, 215, 255, 0.18);
   transform: translateY(-1px);
 }
+
+.hrow-decadal .hcell:hover { border-color: rgba(46, 230, 200, 0.5); box-shadow: 0 0 10px rgba(46, 230, 200, 0.25); }
+.hrow-yearly .hcell:hover { border-color: rgba(91, 160, 255, 0.5); box-shadow: 0 0 10px rgba(91, 160, 255, 0.25); }
+.hrow-monthly .hcell:hover { border-color: rgba(255, 161, 78, 0.5); box-shadow: 0 0 10px rgba(255, 161, 78, 0.25); }
+.hrow-daily .hcell:hover { border-color: rgba(199, 139, 255, 0.5); box-shadow: 0 0 10px rgba(199, 139, 255, 0.25); }
+.hrow-hourly .hcell:hover { border-color: rgba(255, 119, 183, 0.5); box-shadow: 0 0 10px rgba(255, 119, 183, 0.25); }
+
+.hcell:focus-visible { outline: none; border-color: var(--line-strong); box-shadow: 0 0 12px rgba(85, 215, 255, 0.4); }
 
 .hcell.on-decadal { border-color: var(--c-decadal); background: rgba(46, 230, 200, 0.14); box-shadow: 0 0 14px rgba(46, 230, 200, 0.38); }
 .hcell.on-decadal i, .hcell.on-decadal b { color: #d9fff7; }
@@ -1387,6 +1414,13 @@ body {
   padding: 20px;
   background: rgba(3, 6, 14, 0.72);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: pd-fadein 0.2s ease-out;
+}
+
+@keyframes pd-fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .pd-panel {
@@ -1399,6 +1433,12 @@ body {
   border: 1px solid var(--line-strong);
   box-shadow: 0 0 40px rgba(85, 215, 255, 0.15), 0 18px 50px rgba(0, 0, 0, 0.6);
   font-size: 0.8rem;
+  animation: pd-slidein 0.25s ease-out;
+}
+
+@keyframes pd-slidein {
+  from { transform: translateY(10px) scale(0.97); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 .pd-head {
@@ -1432,9 +1472,11 @@ body {
   color: var(--dim);
   cursor: pointer;
   font-family: inherit;
+  transition: 0.2s ease;
 }
 
 .pd-close:hover { color: var(--text); border-color: var(--line-strong); }
+.pd-close:focus-visible { border-color: var(--line-strong); box-shadow: 0 0 10px rgba(85, 215, 255, 0.3); outline: none; }
 
 .pd-panel section { margin-bottom: 12px; }
 
@@ -1877,6 +1919,13 @@ body {
   .syn-card-score { font-size: 1.6rem; }
   .syn-dir { width: 38px; font-size: 0.62rem; }
   .kline-month-canvas { overflow-x: auto; }
+}
+
+@media (max-width: 760px) {
+  .pd-overlay { padding: 10px; }
+  .pd-panel { max-height: 92vh; padding: 10px; border-radius: 10px; }
+  .pd-head { padding-bottom: 6px; margin-bottom: 8px; }
+  .pd-panel section { margin-bottom: 10px; }
 }
 
 /* ── 格局·古籍语料面板 ── */
