@@ -67,12 +67,15 @@ export async function ZiWei(
 
     // 设置时间
     if (time) {
-      const date = typeof time === "string" || typeof time === "number" ? new Date(time) : time;
+      const date = parseDate(time);
+      if (isNaN(date.getTime())) {
+        throw new Error(`无法解析时间：${time}`);
+      }
       setHoroscopeTime(z, date);
     }
 
-    // 等待 React 状态更新完成
-    await new Promise((r) => requestAnimationFrame(r));
+    // 等待 React 状态更新完成（两个 rAF 确保渲染完成）
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   }
 
   // 3. 获取数据
@@ -93,6 +96,23 @@ export async function ZiWei(
   }
 
   return { person, hbar, chart };
+}
+
+/** 解析时间：支持 Date/数字/字符串（含 "2024-06-15 12" 这种简写） */
+function parseDate(time: Date | number | string): Date {
+  if (time instanceof Date) return time;
+  if (typeof time === "number") return new Date(time);
+  // 字符串：尝试补全时间部分
+  let str = time.trim();
+  // "2024-06-15 12" → "2024-06-15 12:00:00"
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{1,2}$/.test(str)) {
+    str += ":00:00";
+  }
+  // "2024-06-15" → "2024-06-15 00:00:00"
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    str += " 00:00:00";
+  }
+  return new Date(str);
 }
 
 /** 设置运限时间：根据 Date 设置年月日时 */
