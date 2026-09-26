@@ -20,8 +20,10 @@ import type { Astrolabe } from "./useZwds";
 
 /* ─────────────── 类型定义 ─────────────── */
 
+/** 运限拨盘选择状态：当前选中的年月日时+闰月标志 */
 export type PickState = { year: number; month: number; day: number; hour: number; leap: boolean };
 
+/** 大限信息：所在宫位、起止年份、干支、虚岁范围 */
 export type DecadeInfo = {
   palaceIndex: number;
   range: [number, number];
@@ -31,19 +33,28 @@ export type DecadeInfo = {
   endYear: number;
 };
 
+/** 童限信息：起运前的时间段（出生至大限开始前） */
 export type Childhood = {
   startYear: number;
   endYear: number;
   label: string;
 };
 
+/** 拨盘流年单元格数据：年份/干支/虚岁 */
 export type CellYear = { year: number; gz: string; age: number };
+/** 拨盘流月单元格：月份/闰月标志/月名/干支 */
 export type CellMonth = { month: number; leap: boolean; label: string; gz: string };
+/** 拨盘流日单元格：日号/日期标签/干支 */
 export type CellDay = { day: number; label: string; gz: string };
+/** 拨盘流时单元格：时辰索引/时辰名/干支 */
 export type CellHour = { hour: number; label: string; gz: string };
 
 /* ─────────────── hbar 完整数据 ─────────────── */
 
+/**
+ * 运限拨盘完整数据：大限列表、童限、流年/流月/流日/流时单元格，
+ * 以及当前各级激活索引。
+ */
 export type HbarData = {
   decades: DecadeInfo[];
   childhood: Childhood | null;

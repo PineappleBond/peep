@@ -6,6 +6,10 @@ import Dexie, { type Table } from "dexie";
 import { DEFAULT_BIRTH_INPUT, type BirthInput } from "./useZwds";
 import type { DaLiuRenResult } from "./daliuren/types";
 
+/**
+ * 人物档案类型：扩展 BirthInput，附加主键 id、保存时间戳、默认标志。
+ * 主键 id 为数字自增。
+ */
 export type Person = {
   id?: number;
   /** 保存时间戳 */
@@ -14,7 +18,10 @@ export type Person = {
   isDefault: boolean;
 } & BirthInput;
 
-/** 大六壬起课记录 */
+/**
+ * 大六壬起课记录：关联人物、起课时间、占事问题、标签、完整卦象数据。
+ * 存储在 IndexedDB 的 liurenRecords 表中。
+ */
 export interface LiurenRecord {
   id?: number;
   /** 关联人物 ID */
@@ -35,7 +42,7 @@ export interface LiurenRecord {
   savedAt: number;
 }
 
-/** Wiki 文档 */
+/** Wiki 文档：关联人物、标题、Markdown 内容、标签、时间戳 */
 export interface WikiDocument {
   id?: number;
   /** 关联人物 ID */
@@ -52,7 +59,7 @@ export interface WikiDocument {
   updatedAt: number;
 }
 
-/** Wiki 链接关系 */
+/** Wiki 文档间链接关系：源文档→目标文档 */
 export interface WikiLink {
   id?: number;
   /** 源文档 ID */
@@ -61,6 +68,10 @@ export interface WikiLink {
   targetDocId: number;
 }
 
+/**
+ * 紫微斗数应用数据库（Dexie 封装 IndexedDB）。
+ * 三版本迁移：v1 人物 → v2 + 大六壬记录 → v3 + Wiki 文档与链接。
+ */
 class PeepDatabase extends Dexie {
   persons!: Table<Person, number>;
   liurenRecords!: Table<LiurenRecord, number>;
@@ -85,6 +96,7 @@ class PeepDatabase extends Dexie {
   }
 }
 
+/** Dexie 数据库实例：管理人物/大六壬记录/Wiki 文档/链接关系四张表 */
 export const db = new PeepDatabase();
 
 /** 清理旧版数据库（peep-persons → peep） */
