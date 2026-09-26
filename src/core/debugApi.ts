@@ -21,12 +21,6 @@ import { LRUCache, registerCache, getAllCacheStats, clearAllCaches } from "./cac
 import { buildChartIndex } from "./chartIndex";
 
 /**
- * 运限级别（已统一使用 utils/Scope，此处为向后兼容保留别名）。
- * @deprecated 请使用 `Scope`
- */
-export type ScopeName = Scope;
-
-/**
  * computeZiWeiData 返回数据：hbar 运限拨盘 + chart 运限盘面
  */
 export type ZiWeiComputedData = {
@@ -36,13 +30,10 @@ export type ZiWeiComputedData = {
   chart: ScopeChartData | null;
 };
 
-/** ZiWei 返回数据 */
+/** ZiWei 返回数据：人物 + 计算数据（hbar/chart） */
 export type ZiWeiResult = {
   person: Person | null;
-  /** 运限拨盘完整数据（含大运/流年/流月/流日/流时列表）；拨盘计算失败时为 null */
-  hbar: (HbarData & { visible: Record<Scope, boolean> }) | null;
-  chart: ScopeChartData | null;
-};
+} & ZiWeiComputedData;
 
 /** ZiWei 接口选项 */
 export type ZiWeiOptions = {
@@ -188,6 +179,14 @@ const LEVEL_STYLES: Record<LogLevel, string> = {
   error: "color:#f44336",
 };
 
+/** 日志级别到 console 方法的映射 */
+const LOG_METHODS: Record<LogLevel, keyof Console> = {
+  debug: "debug",
+  info: "log",
+  warn: "warn",
+  error: "error",
+};
+
 /**
  * 核心日志函数——仅在 import.meta.env.DEV 下输出。
  * 生产构建会被 tree-shaken 掉，零运行时开销。
@@ -198,23 +197,15 @@ function log(level: LogLevel, category: string, message: string, data?: unknown)
 
   const ts = new Date().toLocaleTimeString();
   const prefix = `[peep ${ts}][${category}]`;
-  const method = level === "debug" ? "debug" : level === "info" ? "log" : level;
+  const method = LOG_METHODS[level];
 
   // 带 CSS 样式的 console 输出（浏览器支持 %c 占位符）
-  if (data !== undefined) {
-    (console as unknown as Record<string, (...a: unknown[]) => void>)[method](
-      `%c${prefix}%c ${message}`,
-      LEVEL_STYLES[level],
-      "",
-      data,
-    );
-  } else {
-    (console as unknown as Record<string, (...a: unknown[]) => void>)[method](
-      `%c${prefix}%c ${message}`,
-      LEVEL_STYLES[level],
-      "",
-    );
-  }
+  const args =
+    data !== undefined
+      ? [`%c${prefix}%c ${message}`, LEVEL_STYLES[level], "", data]
+      : [`%c${prefix}%c ${message}`, LEVEL_STYLES[level], ""];
+  // eslint-disable-next-line no-console
+  (console[method] as (...a: unknown[]) => void)(...args);
 }
 
 /**
@@ -272,36 +263,20 @@ const _callbacksReady: {
   wiki: false,
 };
 
-/** 注册 React 回调（App.tsx 初始化时调用） */
+/**
+ * 注册 React 回调（Layout.tsx 初始化时调用）
+ *
+ * 仅注册全局共享回调（人物选择/导航等）。
+ * 各页面的专属回调（大六壬/Wiki）由 registerDaLiuRenCallbacks / registerWikiCallbacks 各自注册。
+ */
 export function registerDebugApi(opts: {
   selectPerson?: (personId: number) => Promise<void>;
-  getZwds?: () => Zwds | null;
   getPerson?: () => Person | null;
   navigate?: (path: string) => void;
-  getDaLiuRenList?: (filters: LiurenListFilters) => Promise<LiurenListResult>;
-  setListFilters?: (filters: { searchText?: string; tags?: string[]; page?: number }) => void;
-  openCreateDialog?: () => void;
-  fillCreateForm?: (data: {
-    question: string;
-    note?: string;
-    background?: string;
-    tags?: string[];
-  }) => void;
-  submitCreateForm?: () => Promise<LiurenRecord>;
-  selectRecord?: (recordId: number) => Promise<LiurenRecord | null>;
-  getSelectedRecord?: () => LiurenRecord | null;
 }) {
   if (opts.selectPerson) _selectPerson = opts.selectPerson;
-  if (opts.getZwds) _getZwds = opts.getZwds;
   if (opts.getPerson) _getPerson = opts.getPerson;
   if (opts.navigate) _navigate = opts.navigate;
-  if (opts.getDaLiuRenList) _getDaLiuRenList = opts.getDaLiuRenList;
-  if (opts.setListFilters) _setListFilters = opts.setListFilters;
-  if (opts.openCreateDialog) _openCreateDialog = opts.openCreateDialog;
-  if (opts.fillCreateForm) _fillCreateForm = opts.fillCreateForm;
-  if (opts.submitCreateForm) _submitCreateForm = opts.submitCreateForm;
-  if (opts.selectRecord) _selectRecord = opts.selectRecord;
-  if (opts.getSelectedRecord) _getSelectedRecord = opts.getSelectedRecord;
 }
 
 /** 注册紫微斗数页面回调（ZiweiPage.tsx 调用） */
@@ -1019,85 +994,57 @@ function computeAstrolabe(person: Person) {
  */
 export function computeScopeData(person: Person, solarDate: Date | string): HbarData | null {
   const stop = timer("computeScopeData");
-  const maxRetries = 2;
-  let lastError: unknown = null;
+  try {
+    // 本命盘计算（computeAstrolabe 失败时抛 ComputeScopeError）
+    const astrolabe = computeAstrolabe(person);
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      // 本命盘计算（computeAstrolabe 失败时抛 ComputeScopeError）
-      const astrolabe = computeAstrolabe(person);
-
-      // 日期解析：使用 parseDate 确保多格式支持，失败时抛 ParseDateError
-      const d = parseDate(solarDate);
-      if (isNaN(d.getTime())) {
-        throw new ParseDateError(solarDate, ["Date.parse"], "解析结果为 Invalid Date");
-      }
-
-      const birthLunarYear = astrolabe.rawDates.lunarDate.lunarYear;
-      // hbar 流月/流日按阳历排列，所以 pick 直接用阳历值
-      const pick = {
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate(),
-        hour: Math.floor((d.getHours() + 1) / 2) % 12,
-        leap: false,
-      };
-
-      // 确保 pick.year 不早于出生农历年
-      if (pick.year < birthLunarYear) {
-        pick.year = birthLunarYear;
-      }
-
-      const result = buildHbarData(astrolabe, birthLunarYear, pick);
-      log("info", "computeScopeData", "计算成功", {
-        personId: person.id,
-        personName: person.name,
-        birthLunarYear,
-        pick,
-        hasResult: !!result,
-        attempt: attempt + 1,
-      });
-      stop();
-      return result;
-    } catch (err) {
-      lastError = err;
-
-      // 自定义错误（ComputeScopeError / ParseDateError）：不重试，直接抛出
-      if (err instanceof ZiWeiError) {
-        log("error", "computeScopeData", "计算失败（不重试）", {
-          personId: person.id,
-          attempt: attempt + 1,
-        });
-        stop();
-        throw err;
-      }
-
-      // 其他意外错误：记录并重试（可能是临时性引擎异常）
-      log("warn", "computeScopeData", `计算出现意外错误，第 ${attempt + 1} 次尝试`, {
-        personId: person.id,
-        error: err instanceof Error ? err.message : String(err),
-      });
-
-      if (attempt < maxRetries) {
-        // 短暂延迟后重试
-        const delayMs = 10 * (attempt + 1);
-        const waitUntil = Date.now() + delayMs;
-        while (Date.now() < waitUntil) {
-          /* busy wait (同步函数无法用 setTimeout) */
-        }
-      }
+    // 日期解析：使用 parseDate 确保多格式支持，失败时抛 ParseDateError
+    const d = parseDate(solarDate);
+    if (isNaN(d.getTime())) {
+      throw new ParseDateError(solarDate, ["Date.parse"], "解析结果为 Invalid Date");
     }
-  }
 
-  // 所有重试均失败
-  stop();
-  throw new ComputeScopeError(`运限计算重试 ${maxRetries} 次后仍失败`, {
-    personId: person.id,
-    personName: person.name,
-    solarDate: String(solarDate),
-    suggestion: "请检查人物数据完整性和日期格式。如问题持续，请排查 iztro 引擎版本",
-    cause: lastError,
-  });
+    const birthLunarYear = astrolabe.rawDates.lunarDate.lunarYear;
+    // hbar 流月/流日按阳历排列，所以 pick 直接用阳历值
+    const pick = {
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+      hour: Math.floor((d.getHours() + 1) / 2) % 12,
+      leap: false,
+    };
+
+    // 确保 pick.year 不早于出生农历年
+    if (pick.year < birthLunarYear) {
+      pick.year = birthLunarYear;
+    }
+
+    const result = buildHbarData(astrolabe, birthLunarYear, pick);
+    log("info", "computeScopeData", "计算成功", {
+      personId: person.id,
+      personName: person.name,
+      birthLunarYear,
+      pick,
+      hasResult: !!result,
+    });
+    stop();
+    return result;
+  } catch (err) {
+    // 自定义错误（ComputeScopeError / ParseDateError）直接抛出
+    if (err instanceof ZiWeiError) {
+      stop();
+      throw err;
+    }
+    // 意外错误：包装为 ComputeScopeError
+    stop();
+    throw new ComputeScopeError("运限计算失败", {
+      personId: person.id,
+      personName: person.name,
+      solarDate: String(solarDate),
+      suggestion: "请检查人物数据完整性和日期格式。如问题持续，请排查 iztro 引擎版本",
+      cause: err,
+    });
+  }
 }
 
 /**

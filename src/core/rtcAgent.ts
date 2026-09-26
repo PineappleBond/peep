@@ -280,33 +280,6 @@ const getScopeDataFunction = {
   },
 };
 
-const daliurenCalcFunction = {
-  name: "DaLiuRen",
-  description: "按指定公历时间起大六壬课，返回天地盘、四课、三传、神将等完整课式。仅计算不落库。",
-  zodSchema: z.object({
-    date: withMeta(z.string(), { example: "2024-06-15" }).describe("公历日期，格式 YYYY-MM-DD"),
-    time: withMeta(z.string(), { example: "14:30" }).describe("时间，格式 HH:mm 或 HH:mm:ss"),
-    fateInput: z
-      .object({
-        birthYear: withMeta(z.number().int(), { example: 1990 }).describe("命主生年（公历）"),
-        gender: withMeta(z.enum(["男", "女"]), { example: "男" }).describe("命主性别"),
-      })
-      .optional()
-      .describe("命主信息，用于起贵人神将；占事无关命主可省略"),
-  }),
-  handler: (args: {
-    date: string;
-    time: string;
-    fateInput?: { birthYear: number; gender: "男" | "女" };
-  }) => peepOrThrow().DaLiuRen(args.date, args.time, args.fateInput),
-  returns: {
-    schema: {
-      type: "object" as const,
-      description: "大六壬课式",
-    },
-  },
-};
-
 const daliurenCreateFunction = {
   name: "DaLiuRenCreate",
   description: "为命主起一课大六壬并以当前时间落库保存，返回带 id 的起课记录。",
@@ -472,12 +445,7 @@ const FUNCTION_GROUPS = [
   {
     name: "daliuren",
     description: "大六壬起课与占卜",
-    functions: [
-      // daliurenCalcFunction, // 禁用
-      daliurenCreateFunction,
-      daliurenListFunction,
-      daliurenViewFunction,
-    ],
+    functions: [daliurenCreateFunction, daliurenListFunction, daliurenViewFunction],
   },
   {
     name: "wiki",
@@ -556,11 +524,6 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
   };
 
   _agent = createRtcAgent(config);
-  return _agent;
-}
-
-/** 获取当前 RTC Agent 实例（未创建时返回 null） */
-export function getPeepRtcAgent(): RtcAgentWithLifecycle | null {
   return _agent;
 }
 

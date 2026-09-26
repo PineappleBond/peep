@@ -380,16 +380,3 @@ export function clearHbarCaches(): void {
   buildDaysCache.clear();
   dayGanZhiCache.clear();
 }
-
-/**
- * 获取 hbar 缓存统计信息（命中率/大小/淘汰数）。
- * 开发环境用于性能监控，生产环境返回空对象。
- */
-export function getHbarCacheStats(): Record<string, import("./cache").CacheStats> {
-  return {
-    solar2lunar: solar2lunarCache.getStats(),
-    buildMonths: buildMonthsCache.getStats(),
-    buildDays: buildDaysCache.getStats(),
-    dayGanZhi: dayGanZhiCache.getStats(),
-  };
-}
