@@ -43,6 +43,37 @@ initPerformanceMonitoring();
 // 包含去重、批量上报、敏感信息过滤
 initErrorTracking();
 
+// ── 开发环境启动信息（仅在 DEV 模式输出，帮助快速定位环境问题） ─────────
+if (import.meta.env.DEV) {
+  const startTime = performance.now();
+
+  // 在控制台输出环境信息——便于快速识别版本/端口/时间
+  // eslint-disable-next-line no-console
+  console.log(
+    `%c[紫微斗数排盘] 开发模式启动%c\n` +
+      `版本: ${__PEEP_VERSION__}  构建: ${__PEEP_BUILD_TIME__}\n` +
+      `模式: ${import.meta.env.MODE}  Base: ${import.meta.env.BASE_URL}`,
+    "color:#2196f3;font-weight:bold;font-size:14px",
+    "color:#888;font-size:11px",
+  );
+
+  // 在 load 事件后打印启动耗时
+  window.addEventListener(
+    "load",
+    () => {
+      const elapsed = performance.now() - startTime;
+      // eslint-disable-next-line no-console
+      console.log(
+        `%c[peep] 页面加载完成，耗时 ${elapsed.toFixed(0)}ms%c\n` +
+          `提示: 输入 peep.version() 查看调试 API | peep.setLogLevel("debug") 开启详细日志`,
+        "color:#4caf50;font-weight:bold",
+        "color:#888",
+      );
+    },
+    { once: true },
+  );
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <I18nProvider>

@@ -69,6 +69,15 @@ declare global {
       clearCaches: () => void;
       /** 重置全部调试 API 状态（测试 teardown / HMR cleanup 用） */
       resetDebugApi: typeof resetDebugApi;
+      /** 查看环境信息（版本/模式/Base URL/回调状态/内存等） */
+      env: () => void;
+      /** 健康检查：验证核心功能（回调/IndexedDB/引擎/缓存）是否正常 */
+      health: () => Promise<{
+        ok: boolean;
+        checks: Record<string, { status: "ok" | "warn" | "fail"; message: string }>;
+      }>;
+      /** 控制台快速帮助：显示常用命令和示例 */
+      help: () => void;
     };
   }
 

@@ -104,17 +104,15 @@ function formatResult(label: string, r: TimingResult, iterations: number): strin
 
 /** 输出性能报告（用 console.log 便于 CI 抓取） */
 function printReport(title: string, results: [string, TimingResult, number][]) {
-   
   console.log(`\n${"=".repeat(60)}`);
-   
+
   console.log(`性能报告：${title}`);
-   
+
   console.log("=".repeat(60));
   for (const [label, r, iters] of results) {
-     
     console.log(formatResult(label, r, iters));
   }
-   
+
   console.log("=".repeat(60));
 }
 
@@ -387,7 +385,7 @@ describe("性能基准：缓存命中 vs 未命中", () => {
     results.push(["buildHbarData 热启动", rHot, BENCH_ITERS]);
 
     // 热启动应比冷启动快
-     
+
     console.log(`\n  缓存加速比: ${(rCold.avg / Math.max(rHot.avg, 0.001)).toFixed(1)}x`);
   });
 });
@@ -546,7 +544,6 @@ describe("性能基准：calculateDaLiuRen（大六壬排盘）", () => {
 
     // 如果缓存生效，热路径应远快于冷路径
     if (rCold.avg > 0.01) {
-       
       console.log(
         `\n  DaLiuRen 缓存加速比: ${(rCold.avg / Math.max(rHot.avg, 0.001)).toFixed(1)}x`,
       );
@@ -583,11 +580,10 @@ describe("性能基准：综合摘要", () => {
     clearAllCaches();
     clearHbarCaches();
 
-     
     console.log("\n" + "═".repeat(60));
-     
+
     console.log("综合性能摘要");
-     
+
     console.log("═".repeat(60));
 
     // 1. 本命盘（冷启动）
@@ -595,21 +591,21 @@ describe("性能基准：综合摘要", () => {
     const t0 = performance.now();
     computeScopeData(person, "2026-05-15");
     const t1 = performance.now();
-     
+
     console.log(`  本命盘+运限（冷启动）: ${(t1 - t0).toFixed(2)}ms`);
 
     // 2. 本命盘+运限（热缓存）
     const t2 = performance.now();
     computeScopeData(person, "2026-05-15");
     const t3 = performance.now();
-     
+
     console.log(`  本命盘+运限（热缓存）: ${(t3 - t2).toFixed(3)}ms`);
 
     // 3. 切换日期
     const t4 = performance.now();
     computeScopeData(person, "2026-09-27");
     const t5 = performance.now();
-     
+
     console.log(`  切换日期（部分缓存命中）: ${(t5 - t4).toFixed(3)}ms`);
 
     // 4. 解析日期格式对比
@@ -619,21 +615,20 @@ describe("性能基准：综合摘要", () => {
       ["YYYY-MM-DD", "2026-05-15"],
       ["ISO 8601", "2026-05-15T12:00:00Z"],
     ];
-     
+
     console.log("\n  parseDate 各格式耗时:");
     for (const [label, input] of parseTests) {
       const a = performance.now();
       parseDate(input);
       const b = performance.now();
-       
+
       console.log(`    ${label}: ${(b - a).toFixed(4)}ms`);
     }
 
     // 5. 缓存统计
-     
+
     console.log("\n  各缓存当前状态已通过 getAllCacheStats 获取");
 
-     
     console.log("═".repeat(60));
 
     // 基本正确性断言

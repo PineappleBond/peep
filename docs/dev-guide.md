@@ -70,14 +70,18 @@ npm run quality   # typecheck + lint + format:check
 
 ### 分项命令
 
-| 命令                   | 作用                            | 何时使用         |
-| ---------------------- | ------------------------------- | ---------------- |
-| `npm run typecheck`    | 仅跑 `tsc --noEmit`，不生成产物 | 快速确认类型无错 |
-| `npm run lint`         | ESLint 全量（warn 不算失败）    | 提交前自检       |
-| `npm run lint:fix`     | ESLint 自动修复可修项           | 处理批量 warning |
-| `npm run format`       | Prettier 格式化 src/            | 统一风格         |
-| `npm run format:check` | 检查是否都格式化过              | CI/CD 使用       |
-| `npm test`             | vitest 跑全部单测               | 任何改动后必跑   |
+| 命令                   | 作用                                | 何时使用           |
+| ---------------------- | ----------------------------------- | ------------------ |
+| `npm run dev`          | 启动开发服务器（端口 5199）         | 日常开发           |
+| `npm run dev:debug`    | 启动开发服务器（Vite debug 模式）   | 排查 Vite 问题     |
+| `npm run typecheck`    | 仅跑 `tsc --noEmit`，不生成产物     | 快速确认类型无错   |
+| `npm run lint`         | ESLint 全量（warn 不算失败）        | 提交前自检         |
+| `npm run lint:fix`     | ESLint 自动修复可修项               | 处理批量 warning   |
+| `npm run format`       | Prettier 格式化 src/                | 统一风格           |
+| `npm run format:check` | 检查是否都格式化过                  | CI/CD 使用         |
+| `npm test`             | vitest 跑全部单测                   | 任何改动后必跑     |
+| `npm run test:watch`   | vitest watch 模式（改代码自动重跑） | 开发时持续测试     |
+| `npm run test:ui`      | vitest UI 模式（可视化测试界面）    | 可视化查看测试结果 |
 
 ### 提交时自动检查
 
@@ -119,6 +123,15 @@ npm run quality   # typecheck + lint + format:check
 // 查看版本 + 可用方法
 peep.version();
 
+// 新手友好帮助（含可运行代码示例）
+peep.help();
+
+// 查看运行环境（版本/模式/内存/回调状态等）
+peep.env();
+
+// 健康检查（验证核心功能是否正常）
+await peep.health();
+
 // 切到人物 1 的大限，指定时间
 await peep.ZiWei(1, "decadal", "2024-06-15");
 
@@ -129,6 +142,14 @@ await peep.DaLiuRenCreate({
   tags: ["面试"],
 });
 ```
+
+### 新增调试工具（v0.1.0+）
+
+| 方法            | 作用                                  | 使用场景             |
+| --------------- | ------------------------------------- | -------------------- |
+| `peep.help()`   | 控制台显示常用命令和示例              | 忘记 API 时快速查阅  |
+| `peep.env()`    | 查看环境信息（版本/模式/回调/内存等） | 排查"代码没生效"问题 |
+| `peep.health()` | 健康检查（回调/IndexedDB/引擎/缓存）  | 排查"排盘失败"问题   |
 
 ### 结构化日志
 
@@ -155,6 +176,27 @@ peep.setLogLevel("debug");
 ```
 
 排查慢调用时，把 logLevel 切到 `debug` 即可看到。
+
+### 错误边界（ErrorBoundary）
+
+开发环境下，渲染异常会显示更详细的错误信息：
+
+- 错误消息和类型
+- 组件栈（可展开）
+- 发生时间
+- "复制错误"按钮（一键复制到剪贴板）
+- 控制台结构化输出（带颜色标记，便于搜索）
+
+生产环境保持通用错误提示，不泄露内部信息。
+
+### 开发模式启动横幅
+
+应用启动时（DEV 模式）会在控制台输出：
+
+- 版本号和构建时间
+- 运行模式和 Base URL
+- 页面加载完成后的启动耗时
+- 调试 API 提示（`peep.version()` / `peep.setLogLevel("debug")`）
 
 ### React DevTools
 

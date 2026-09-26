@@ -114,6 +114,8 @@ export default defineConfig({
       ),
     },
   },
+  // 开发环境保留终端历史，方便回看日志；仅 NODE_ENV=production 时清屏
+  clearScreen: process.env.NODE_ENV !== "development",
   server: {
     // 开发端口 5199；strictPort=true 保证端口冲突时立即报错退出，
     // 避免悄悄切换到其它端口导致外部脚本/调试 API 调用错位。
@@ -127,6 +129,11 @@ export default defineConfig({
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "DENY",
       "Referrer-Policy": "strict-origin-when-cross-origin",
+    },
+    // 预热常用文件：首次访问时秒开，避免按需编译的初次延迟
+    // 注意：只预热入口直接依赖的小文件，避免拖慢启动
+    warmup: {
+      clientFiles: ["./index.html", "./src/main.tsx"],
     },
     // 文件监听排除：node_modules / dist / .git / 测试产物。
     // 减少无用 inotify 事件，降低 CPU 占用，HMR 更稳定。
@@ -260,6 +267,13 @@ export default defineConfig({
     exclude: ["node_modules", "e2e"],
     // 失败时保留完整控制台输出，便于排查
     passWithNoTests: true,
+    // 开发环境友好的默认配置
+    //  reporters 可通过命令行覆盖：vitest --reporter=verbose
+    reporters: process.env.CI ? ["default", "github-actions"] : ["default"],
+    // 单次运行超过 30 秒给出提示（CI 环境下更长）
+    slowTestThreshold: process.env.CI ? 10000 : 5000,
+    // 测试失败时自动打印相关代码上下文（开发体验提升）
+    printConsoleTrace: false,
   },
   // 开发环境通过 define 暴露少量只读元信息，方便调试（如 window.__PEEP_DEBUG__）。
   // 生产构建会被 tree-shaken 掉，不增加产物体积。

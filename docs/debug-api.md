@@ -8,17 +8,32 @@
 
 `window.peep` 提供以下方法：
 
-| 方法 | 说明 | 页面 |
-| ---- | ---- | ---- |
-| `ZiWei(personId, scope?, time?)` | 紫微斗数排盘 + 运限操控 | / |
-| `DaLiuRen(date, time, fateInput?)` | 大六壬排盘（纯计算） | 任意 |
-| `DaLiuRenCreate(params)` | 大六壬起课（创建记录） | /liuren |
-| `DaLiuRenList(params)` | 大六壬起课列表查询 | /liuren |
-| `DaLiuRenView(params)` | 大六壬起课详情查看 | /liuren |
-| `WikiCreate(params)` | Wiki 文档创建 | /wiki |
-| `WikiList(params)` | Wiki 文档列表查询 | /wiki |
-| `WikiView(params)` | Wiki 文档详情查看 | /wiki |
-| `getChartDataForScope(params)` | 获取指定运限级别的盘面数据 | / |
+### 调试辅助工具
+
+| 方法                 | 说明                                                         |
+| -------------------- | ------------------------------------------------------------ |
+| `version()`          | 打印版本信息、构建时间、可用 API 列表                        |
+| `help()`             | 控制台显示常用命令和可运行示例（新手友好）                   |
+| `env()`              | 查看运行环境：版本/模式/Base URL/回调状态/内存/IndexedDB     |
+| `health()`           | 健康检查：验证回调注册/IndexedDB/iztro 引擎/缓存系统是否正常 |
+| `setLogLevel(level)` | 动态调整日志级别（debug/info/warn/error）                    |
+| `getCacheStats()`    | 获取缓存统计（命中率/大小/淘汰数）                           |
+| `clearCaches()`      | 清空全部缓存（调试用）                                       |
+| `resetDebugApi()`    | 重置全部调试 API 状态（测试 teardown / HMR cleanup 用）      |
+
+### 业务 API
+
+| 方法                               | 说明                       | 页面    |
+| ---------------------------------- | -------------------------- | ------- |
+| `ZiWei(personId, scope?, time?)`   | 紫微斗数排盘 + 运限操控    | /       |
+| `DaLiuRen(date, time, fateInput?)` | 大六壬排盘（纯计算）       | 任意    |
+| `DaLiuRenCreate(params)`           | 大六壬起课（创建记录）     | /liuren |
+| `DaLiuRenList(params)`             | 大六壬起课列表查询         | /liuren |
+| `DaLiuRenView(params)`             | 大六壬起课详情查看         | /liuren |
+| `WikiCreate(params)`               | Wiki 文档创建              | /wiki   |
+| `WikiList(params)`                 | Wiki 文档列表查询          | /wiki   |
+| `WikiView(params)`                 | Wiki 文档详情查看          | /wiki   |
+| `getChartDataForScope(params)`     | 获取指定运限级别的盘面数据 | /       |
 
 ## 类型定义
 
@@ -38,9 +53,9 @@ type Scope = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
 
 ```typescript
 type Person = {
-  id?: number;           // 主键，自增
-  savedAt: number;       // 保存时间戳
-  isDefault: boolean;    // 是否系统默认人物
+  id?: number; // 主键，自增
+  savedAt: number; // 保存时间戳
+  isDefault: boolean; // 是否系统默认人物
 } & BirthInput;
 ```
 
@@ -50,9 +65,9 @@ type Person = {
 
 ```typescript
 type ZiWeiResult = {
-  person: Person | null;                    // 当前人物档案
-  hbar: (HbarData & { visible: Record<Scope, boolean> }) | null;  // 运限拨盘数据
-  chart: ScopeChartData | null;             // 指定运限级别的盘面分析数据
+  person: Person | null; // 当前人物档案
+  hbar: (HbarData & { visible: Record<Scope, boolean> }) | null; // 运限拨盘数据
+  chart: ScopeChartData | null; // 指定运限级别的盘面分析数据
 };
 ```
 
@@ -66,17 +81,17 @@ type ZiWeiResult = {
 function ZiWei(
   personId: number,
   scope?: Scope,
-  time?: Date | number | string
-): Promise<ZiWeiResult>
+  time?: Date | number | string,
+): Promise<ZiWeiResult>;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `personId` | `number` | 是 | 人物 ID（正整数） |
-| `scope` | `Scope` | 否 | 运限级别，不传则显示全部 |
-| `time` | `Date \| number \| string` | 否 | 运限时间。支持 Date 对象、时间戳、或字符串（如 `"2024-06-15"` 或 `"2024-06-15 12:00:00"`） |
+| 参数       | 类型                       | 必填 | 说明                                                                                       |
+| ---------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------ |
+| `personId` | `number`                   | 是   | 人物 ID（正整数）                                                                          |
+| `scope`    | `Scope`                    | 否   | 运限级别，不传则显示全部                                                                   |
+| `time`     | `Date \| number \| string` | 否   | 运限时间。支持 Date 对象、时间戳、或字符串（如 `"2024-06-15"` 或 `"2024-06-15 12:00:00"`） |
 
 **返回值**：`Promise<ZiWeiResult>`
 
@@ -94,12 +109,12 @@ function ZiWei(
 ```javascript
 // 查看人物 1 的本命盘
 const result = await window.peep.ZiWei(1);
-console.log(result.person.name);  // 姓名
+console.log(result.person.name); // 姓名
 console.log(result.hbar.visible); // 各运限级别可见状态
 
 // 查看人物 1 的流年命盘，设定时间为 2024 年 6 月 15 日
 const yearly = await window.peep.ZiWei(1, "yearly", "2024-06-15");
-console.log(yearly.chart);  // 流年盘面分析数据
+console.log(yearly.chart); // 流年盘面分析数据
 
 // 查看大限
 const decadal = await window.peep.ZiWei(1, "decadal");
@@ -120,17 +135,17 @@ const decadal = await window.peep.ZiWei(1, "decadal");
 function DaLiuRen(
   date: string,
   time: string,
-  fateInput?: { birthYear: number; gender: "男" | "女" }
-): DaLiuRenResult
+  fateInput?: { birthYear: number; gender: "男" | "女" },
+): DaLiuRenResult;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `date` | `string` | 是 | 公历日期，格式 `YYYY-MM-DD` |
-| `time` | `string` | 是 | 时间，格式 `HH:mm` 或 `HH:mm:ss` |
-| `fateInput` | `object` | 否 | 可选的生年与性别信息 |
+| 参数        | 类型     | 必填 | 说明                             |
+| ----------- | -------- | ---- | -------------------------------- |
+| `date`      | `string` | 是   | 公历日期，格式 `YYYY-MM-DD`      |
+| `time`      | `string` | 是   | 时间，格式 `HH:mm` 或 `HH:mm:ss` |
+| `fateInput` | `object` | 否   | 可选的生年与性别信息             |
 
 **返回值**：`DaLiuRenResult` — 完整的大六壬卦象数据（三传四课、神煞、六亲等）
 
@@ -144,7 +159,7 @@ console.log(result);
 // 带生年信息
 const result2 = window.peep.DaLiuRen("2024-06-15", "14:30", {
   birthYear: 1990,
-  gender: "男"
+  gender: "男",
 });
 ```
 
@@ -164,18 +179,18 @@ function DaLiuRenCreate(params: {
   note?: string;
   background?: string;
   tags?: string[];
-}): Promise<LiurenRecord>
+}): Promise<LiurenRecord>;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `personId` | `number` | 是 | 关联人物 ID |
-| `question` | `string` | 是 | 占事问题 |
-| `note` | `string` | 否 | 备注 |
-| `background` | `string` | 否 | 背景信息 |
-| `tags` | `string[]` | 否 | 标签数组 |
+| 参数         | 类型       | 必填 | 说明        |
+| ------------ | ---------- | ---- | ----------- |
+| `personId`   | `number`   | 是   | 关联人物 ID |
+| `question`   | `string`   | 是   | 占事问题    |
+| `note`       | `string`   | 否   | 备注        |
+| `background` | `string`   | 否   | 背景信息    |
+| `tags`       | `string[]` | 否   | 标签数组    |
 
 **返回值**：`Promise<LiurenRecord>` — 创建成功的起课记录
 
@@ -195,10 +210,10 @@ const record = await window.peep.DaLiuRenCreate({
   question: "近期事业运势如何？",
   note: "测试起课",
   background: "目前在公司工作三年，考虑是否跳槽",
-  tags: ["事业", "流年"]
+  tags: ["事业", "流年"],
 });
-console.log(record.id);          // 新记录 ID
-console.log(record.result);      // 完整卦象数据
+console.log(record.id); // 新记录 ID
+console.log(record.result); // 完整卦象数据
 ```
 
 ---
@@ -212,18 +227,18 @@ function DaLiuRenList(params: {
   tags?: string[];
   page?: number;
   pageSize?: number;
-}): Promise<{ records: LiurenRecord[]; total: number }>
+}): Promise<{ records: LiurenRecord[]; total: number }>;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `personId` | `number` | 是 | 关联人物 ID |
-| `searchText` | `string` | 否 | 搜索文本（匹配问题/备注/背景） |
-| `tags` | `string[]` | 否 | 标签过滤（多值匹配） |
-| `page` | `number` | 否 | 页码（从 1 开始） |
-| `pageSize` | `number` | 否 | 每页条数 |
+| 参数         | 类型       | 必填 | 说明                           |
+| ------------ | ---------- | ---- | ------------------------------ |
+| `personId`   | `number`   | 是   | 关联人物 ID                    |
+| `searchText` | `string`   | 否   | 搜索文本（匹配问题/备注/背景） |
+| `tags`       | `string[]` | 否   | 标签过滤（多值匹配）           |
+| `page`       | `number`   | 否   | 页码（从 1 开始）              |
+| `pageSize`   | `number`   | 否   | 每页条数                       |
 
 **返回值**：
 
@@ -247,7 +262,7 @@ const result = await window.peep.DaLiuRenList({
   searchText: "事业",
   tags: ["流年"],
   page: 1,
-  pageSize: 10
+  pageSize: 10,
 });
 ```
 
@@ -256,18 +271,15 @@ const result = await window.peep.DaLiuRenList({
 ### DaLiuRenView — 大六壬起课详情
 
 ```typescript
-function DaLiuRenView(params: {
-  personId: number;
-  recordId: number;
-}): Promise<LiurenRecord>
+function DaLiuRenView(params: { personId: number; recordId: number }): Promise<LiurenRecord>;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `personId` | `number` | 是 | 关联人物 ID |
-| `recordId` | `number` | 是 | 起课记录 ID |
+| 参数       | 类型     | 必填 | 说明        |
+| ---------- | -------- | ---- | ----------- |
+| `personId` | `number` | 是   | 关联人物 ID |
+| `recordId` | `number` | 是   | 起课记录 ID |
 
 **返回值**：`Promise<LiurenRecord>` — 完整的起课记录详情
 
@@ -276,10 +288,10 @@ function DaLiuRenView(params: {
 ```javascript
 const record = await window.peep.DaLiuRenView({
   personId: 1,
-  recordId: 42
+  recordId: 42,
 });
-console.log(record.question);    // 占事问题
-console.log(record.result);      // 完整卦象数据
+console.log(record.question); // 占事问题
+console.log(record.result); // 完整卦象数据
 ```
 
 ---
@@ -293,18 +305,18 @@ function WikiCreate(params: {
   content: string;
   tags?: string[];
   linkTargetIds?: number[];
-}): Promise<WikiDocument>
+}): Promise<WikiDocument>;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `personId` | `number` | 是 | 关联人物 ID |
-| `title` | `string` | 是 | 文档标题 |
-| `content` | `string` | 是 | 文档内容（Markdown 格式） |
-| `tags` | `string[]` | 否 | 标签数组 |
-| `linkTargetIds` | `number[]` | 否 | 链接目标文档 ID 列表 |
+| 参数            | 类型       | 必填 | 说明                      |
+| --------------- | ---------- | ---- | ------------------------- |
+| `personId`      | `number`   | 是   | 关联人物 ID               |
+| `title`         | `string`   | 是   | 文档标题                  |
+| `content`       | `string`   | 是   | 文档内容（Markdown 格式） |
+| `tags`          | `string[]` | 否   | 标签数组                  |
+| `linkTargetIds` | `number[]` | 否   | 链接目标文档 ID 列表      |
 
 **返回值**：`Promise<WikiDocument>` — 创建成功的文档
 
@@ -316,9 +328,9 @@ const doc = await window.peep.WikiCreate({
   title: "紫微十四主星笔记",
   content: "# 紫微星\n\n紫微为帝星，主尊贵……",
   tags: ["主星", "笔记"],
-  linkTargetIds: [5, 12]  // 链接到文档 5 和 12
+  linkTargetIds: [5, 12], // 链接到文档 5 和 12
 });
-console.log(doc.id);  // 新文档 ID
+console.log(doc.id); // 新文档 ID
 ```
 
 ---
@@ -332,18 +344,18 @@ function WikiList(params: {
   tags?: string[];
   page?: number;
   pageSize?: number;
-}): Promise<{ docs: WikiDocument[]; total: number }>
+}): Promise<{ docs: WikiDocument[]; total: number }>;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `personId` | `number` | 是 | 关联人物 ID |
-| `searchText` | `string` | 否 | 搜索文本（匹配标题/内容） |
-| `tags` | `string[]` | 否 | 标签过滤 |
-| `page` | `number` | 否 | 页码（从 1 开始） |
-| `pageSize` | `number` | 否 | 每页条数 |
+| 参数         | 类型       | 必填 | 说明                      |
+| ------------ | ---------- | ---- | ------------------------- |
+| `personId`   | `number`   | 是   | 关联人物 ID               |
+| `searchText` | `string`   | 否   | 搜索文本（匹配标题/内容） |
+| `tags`       | `string[]` | 否   | 标签过滤                  |
+| `page`       | `number`   | 否   | 页码（从 1 开始）         |
+| `pageSize`   | `number`   | 否   | 每页条数                  |
 
 **返回值**：
 
@@ -360,7 +372,7 @@ function WikiList(params: {
 const { docs, total } = await window.peep.WikiList({
   personId: 1,
   searchText: "主星",
-  page: 1
+  page: 1,
 });
 ```
 
@@ -372,15 +384,15 @@ const { docs, total } = await window.peep.WikiList({
 function WikiView(params: {
   personId: number;
   docId: number;
-}): Promise<WikiDocument & { linkTargetIds: number[] }>
+}): Promise<WikiDocument & { linkTargetIds: number[] }>;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `personId` | `number` | 是 | 关联人物 ID |
-| `docId` | `number` | 是 | 文档 ID |
+| 参数       | 类型     | 必填 | 说明        |
+| ---------- | -------- | ---- | ----------- |
+| `personId` | `number` | 是   | 关联人物 ID |
+| `docId`    | `number` | 是   | 文档 ID     |
 
 **返回值**：`Promise<WikiDocument & { linkTargetIds: number[] }>` — 文档详情，附带链接目标 ID 列表
 
@@ -389,11 +401,11 @@ function WikiView(params: {
 ```javascript
 const doc = await window.peep.WikiView({
   personId: 1,
-  docId: 42
+  docId: 42,
 });
-console.log(doc.title);          // 标题
-console.log(doc.content);        // Markdown 内容
-console.log(doc.linkTargetIds);  // 链接的文档 ID 列表
+console.log(doc.title); // 标题
+console.log(doc.content); // Markdown 内容
+console.log(doc.linkTargetIds); // 链接的文档 ID 列表
 ```
 
 ---
@@ -405,16 +417,16 @@ function getChartDataForScope(params: {
   astrolabe: Astrolabe;
   horoscope: Horoscope;
   scope: Scope;
-}): ScopeChartData
+}): ScopeChartData;
 ```
 
 **参数**：
 
-| 参数 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| `astrolabe` | `Astrolabe` | 是 | iztro 本命盘对象 |
-| `horoscope` | `Horoscope` | 是 | iztro 运限对象 |
-| `scope` | `Scope` | 是 | 运限级别 |
+| 参数        | 类型        | 必填 | 说明             |
+| ----------- | ----------- | ---- | ---------------- |
+| `astrolabe` | `Astrolabe` | 是   | iztro 本命盘对象 |
+| `horoscope` | `Horoscope` | 是   | iztro 运限对象   |
+| `scope`     | `Scope`     | 是   | 运限级别         |
 
 **返回值**：`ScopeChartData` — 指定运限级别的盘面分析数据
 
@@ -482,7 +494,7 @@ for (const q of ["事业", "财运", "感情"]) {
   await window.peep.DaLiuRenCreate({
     personId: 1,
     question: `${q}运势如何？`,
-    tags: [q]
+    tags: [q],
   });
 }
 

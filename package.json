@@ -6,10 +6,13 @@
   "description": "紫微斗数排盘 — 文墨天机风格 Web 盘面，iztro 算法引擎 + 自研霓虹 UI",
   "scripts": {
     "dev": "vite",
+    "dev:debug": "DEBUG=1 vite --debug",
     "build": "tsc && vite build",
     "build:analyze": "ANALYZE=1 npm run build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
