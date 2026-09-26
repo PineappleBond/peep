@@ -69,7 +69,7 @@ export function Header({
 
   return (
     <header className="top">
-      <h1>紫微斗数</h1>
+      <h1>窥见人生</h1>
       <nav className="top-nav" aria-label={t("nav.mainNav")} data-guide="nav">
         <NavLink
           to="/"
