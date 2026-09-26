@@ -1198,21 +1198,25 @@ registerCache("computeAstrolabe", astrolabeCache);
 /**
  * 生成人物的排盘指纹：由所有影响排盘结果的字段组成。
  * 字段变更时指纹改变，缓存自动失效。
+ *
+ * 使用 JSON 序列化代替 join("|")，避免字段值包含分隔符时产生碰撞。
+ * 注意：新增影响排盘的 Person/BirthInput 字段时，须同步更新此处的字段列表。
  */
 function makeAstrolabeFingerprint(person: Person): string {
   // 影响排盘结果的全部字段：历法/日期/时辰/性别/闰月/算法/年界/四化表/日界/盘型
-  return [
-    person.calendar,
-    person.date,
-    person.timeIndex,
-    person.gender,
-    person.isLeapMonth ? "1" : "0",
-    person.algorithm,
-    person.yearDivide,
-    person.mutagenTable,
-    person.dayDivide,
-    person.astroType,
-  ].join("|");
+  // 使用对象而非数组，JSON 序列化后字段名参与指纹，进一步降低碰撞概率
+  return JSON.stringify({
+    calendar: person.calendar,
+    date: person.date,
+    timeIndex: person.timeIndex,
+    gender: person.gender,
+    isLeapMonth: person.isLeapMonth ? 1 : 0,
+    algorithm: person.algorithm,
+    yearDivide: person.yearDivide,
+    mutagenTable: person.mutagenTable,
+    dayDivide: person.dayDivide,
+    astroType: person.astroType,
+  });
 }
 
 function computeAstrolabe(person: Person) {
@@ -1591,15 +1595,17 @@ export async function DaLiuRenCreate(
       }
 
       // 计算排盘结果（有自定义时间则用之，否则用当前时间）
+      // 复用 parseDate 统一解析，支持更多时间格式（ISO 8601、时间戳等）
       let calcResult: DaLiuRenResult;
       let calculationTime: string;
       if (params.calculationTime) {
-        // 解析自定义时间：期望格式 "YYYY-MM-DD HH:mm:ss"
-        const parts = params.calculationTime.split(" ");
-        const date = parts[0];
-        const time = parts[1] ?? "00:00:00";
+        // 复用 parseDate 解析自定义时间（支持 ISO 8601、YYYY-MM-DD HH:mm:ss、时间戳等）
+        const parsed = parseDate(params.calculationTime);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const date = `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
+        const time = `${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
         calcResult = computeDaLiuRenData(date, time);
-        calculationTime = params.calculationTime;
+        calculationTime = `${date} ${time}`;
       } else {
         const now = new Date();
         const pad = (n: number) => String(n).padStart(2, "0");
@@ -2271,10 +2277,12 @@ async function waitForPageLoad(): Promise<void> {
 /**
  * 辅助函数：等待状态更新。
  * 改进：双 rAF 确保 React 渲染完成，再轮询验证 pick 稳定（最多 300ms）。
+ * 要求 pick 连续 3 次采样相同才认为已稳定，避免振荡场景误判。
  */
 async function waitForStateUpdate(): Promise<void> {
-  // 双 rAF 确保 React commit 阶段完成
-  await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+  // 双 rAF 确保 React commit 阶段完成（使用 nextFrame 兼容非浏览器环境）
+  await nextFrame();
+  await nextFrame();
 
   // 轮询验证 pick 稳定（如果在 ZiWei 上下文中）
   if (!_getZwds) return;
@@ -2283,22 +2291,35 @@ async function waitForStateUpdate(): Promise<void> {
 
   const start = Date.now();
   let lastPick = JSON.stringify(z.pick);
+  let stableCount = 0;
+  const requiredStable = 3; // 连续 3 次采样相同才认为已稳定（防止振荡误判）
   const maxWait = 300;
   while (Date.now() - start < maxWait) {
     await new Promise(r => setTimeout(r, 20));
     const currentPick = JSON.stringify(z.pick);
     if (currentPick === lastPick) {
-      // pick 连续两次采样相同，认为已稳定
-      return;
+      stableCount++;
+      if (stableCount >= requiredStable) {
+        // pick 连续 N 次采样相同，认为已稳定
+        return;
+      }
+    } else {
+      lastPick = currentPick;
+      stableCount = 0; // 重置计数
     }
-    lastPick = currentPick;
   }
   log("warn", "wait", "状态更新等待超时", { maxWait });
 }
 
-/** 等待下一帧（确保 useEffect commit 阶段执行完成） */
+/** 等待下一帧（确保 useEffect commit 阶段执行完成）
+ *  兼容非浏览器环境（SSR/Node.js）：requestAnimationFrame 不可用时降级为 setTimeout(16ms)
+ */
 function nextFrame(): Promise<void> {
-  return new Promise(r => requestAnimationFrame(_ts => r()));
+  if (typeof requestAnimationFrame !== "undefined") {
+    return new Promise(r => requestAnimationFrame(_ts => r()));
+  }
+  // 降级：约 60fps（1000ms / 60 ≈ 16ms）
+  return new Promise(r => setTimeout(r, 16));
 }
 
 /**
