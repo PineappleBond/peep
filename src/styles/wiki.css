@@ -145,6 +145,88 @@
     padding: 5px 12px;
     font-size: var(--text-sm);
   }
+
+  /* Wiki 阅读器触摸优化 */
+  .wiki-reader {
+    padding: 16px 14px;
+  }
+
+  .wiki-reader-title {
+    font-size: 1.35rem;
+  }
+
+  /* 编辑器触摸优化 */
+  .wiki-editor {
+    padding: 16px 14px;
+  }
+
+  .wiki-editor-textarea {
+    min-height: 280px;
+    font-size: 0.82rem;
+  }
+}
+
+/* ── Wiki 响应式：≤480px 超小屏 ── */
+@media (max-width: 480px) {
+  .wiki-page {
+    padding: 8px 6px;
+  }
+
+  .wiki-title {
+    font-size: 0.95rem;
+  }
+
+  .wiki-reader {
+    padding: 12px 10px;
+    border-radius: 10px;
+    min-height: auto;
+  }
+
+  .wiki-reader-title {
+    font-size: 1.2rem;
+  }
+
+  .wiki-reader-content {
+    font-size: 0.88rem;
+    line-height: 1.7;
+  }
+
+  /* 首字下沉在超小屏减小 */
+  .wiki-reader-content > p:first-of-type::first-letter {
+    font-size: 2em;
+  }
+
+  /* 代码块自适应 */
+  .wiki-reader-content pre {
+    padding: 10px 12px;
+    font-size: 0.78rem;
+  }
+
+  .wiki-editor {
+    padding: 12px 10px;
+    border-radius: 10px;
+  }
+
+  .wiki-editor-title {
+    font-size: 1.1rem;
+  }
+
+  .wiki-editor-textarea {
+    min-height: 220px;
+    font-size: 0.8rem;
+    padding: 10px 12px;
+  }
+
+  /* 导出按钮触摸区域 */
+  .wiki-export-btn {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .wiki-edit-btn {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
 }
 
 /* ========================================

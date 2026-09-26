@@ -742,6 +742,31 @@
   }
 }
 
+/* ≤480px：弹窗近似全屏 */
+@media (max-width: 480px) {
+  .dlg-panel {
+    width: 100vw !important;
+    max-height: 100vh;
+    border-radius: var(--radius-lg);
+  }
+  .dlg-head {
+    padding: 14px 12px 10px;
+    /* 顶部安全区 */
+    padding-top: calc(14px + var(--sat));
+  }
+  .dlg-foot {
+    /* 底部安全区 */
+    padding-bottom: calc(12px + var(--sab));
+  }
+  .dlg-buttons {
+    flex-direction: column-reverse;
+  }
+  .dlg-buttons button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
 /* 移动端列表项操作按钮始终可见（触摸设备无 hover） */
 @media (hover: none) and (pointer: coarse) {
   .record-list-item-actions {
@@ -1444,6 +1469,64 @@
   .person-btn:hover,
   .record-new-btn:hover,
   .top-actions button:hover {
+    transform: none;
+  }
+  /* 宫位卡片触摸反馈 */
+  .palace:active {
+    transform: scale(0.98);
+    transition-duration: 0.08s;
+  }
+  /* 运限单元格触摸反馈 */
+  .hcell:active {
+    transform: scale(0.95);
+    transition-duration: 0.08s;
+  }
+  .hcell:hover {
+    transform: none;
+  }
+  /* 按钮触摸反馈 */
+  .btn-go:active,
+  .btn-cancel:active,
+  .btn-save:active,
+  .btn-danger:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+  }
+  .btn-go:hover,
+  .btn-cancel:hover,
+  .btn-save:hover,
+  .btn-danger:hover {
+    transform: none;
+  }
+  /* 列表项触摸反馈 */
+  .record-list-item:active {
+    background: color-mix(in srgb, var(--cyan) 8%, transparent);
+  }
+  .record-list-item:hover {
+    transform: none;
+  }
+  /* K线宫位标签触摸反馈 */
+  .kline-tab:active {
+    transform: scale(0.95);
+    transition-duration: 0.08s;
+  }
+  .kline-tab:hover {
+    transform: none;
+  }
+  /* 导出按钮触摸反馈 */
+  .export-actions button:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+  }
+  .export-actions button:hover {
+    transform: none;
+  }
+  /* 分页按钮触摸反馈 */
+  .record-list-pagination button:active:not(:disabled) {
+    transform: scale(0.92);
+    transition-duration: 0.08s;
+  }
+  .record-list-pagination button:hover:not(:disabled) {
     transform: none;
   }
 }

@@ -2123,17 +2123,34 @@
   .pd-panel section {
     margin-bottom: 10px;
   }
-  /* 宫位详情按钮触摸区域 ≥ 28px */
+  /* 宫位详情按钮触摸区域 ≥ 44px */
   .p-detail-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 13px;
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
   }
   /* 弹层关闭按钮触摸区域 ≥ 44px */
   .pd-close {
     width: 44px;
     height: 44px;
     font-size: 16px;
+  }
+}
+
+/* ≤480px：宫位详情弹层近似全屏 */
+@media (max-width: 480px) {
+  .pd-overlay {
+    padding: 0;
+    background: rgba(3, 6, 14, 0.85);
+  }
+  .pd-panel {
+    width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: var(--space-md);
+    /* 安全区域内边距 */
+    padding-top: calc(var(--space-md) + var(--sat));
+    padding-bottom: calc(var(--space-md) + var(--sab));
   }
 }
 
@@ -2736,5 +2753,147 @@
   /* 竖排必须退回块级：flex 竖排按最宽子项定行宽，月K定宽画布会把整页撑出横向滚动 */
   .kline-panels {
     display: block;
+  }
+}
+
+/* ── 紫微页面超小屏补充：≤480px ── */
+@media (max-width: 480px) {
+  .input-panel {
+    padding: 8px;
+    gap: 6px 10px;
+    border-radius: 10px;
+  }
+
+  .fld > span {
+    font-size: 0.7rem;
+  }
+
+  .input-panel input,
+  .input-panel select {
+    font-size: var(--text-xs);
+    padding: 8px 6px;
+    min-height: 40px;
+  }
+
+  .seg button {
+    padding: 8px 10px;
+    font-size: var(--text-xs);
+    min-height: 40px;
+  }
+
+  .btn-go {
+    padding: 10px 20px;
+    font-size: 0.8rem;
+    letter-spacing: 0.25em;
+    min-height: 44px;
+  }
+
+  /* 星盘外层容器增加安全区 */
+  .chart-outer {
+    padding: 2px 0 8px;
+  }
+
+  /* 运限拨盘标签缩小 */
+  .hbar {
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+
+  .hlabel {
+    width: 36px;
+    font-size: 10px;
+    min-height: 36px;
+  }
+
+  .hcell {
+    min-width: 48px;
+    padding: 4px 4px;
+  }
+
+  .hcell b {
+    font-size: 11px;
+  }
+
+  .hcell i {
+    font-size: 8px;
+  }
+
+  /* K线区域 */
+  .kline {
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .kline-title {
+    font-size: 13px;
+  }
+
+  .kline-tab {
+    padding: 6px 8px;
+    font-size: 10px;
+    min-height: 36px;
+  }
+
+  /* 格局面板 */
+  .pat {
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .pat-card {
+    padding: 8px 10px;
+  }
+
+  /* 十年规划 */
+  .dp {
+    padding: 8px 8px;
+    border-radius: 10px;
+  }
+
+  /* 合盘 */
+  .syn {
+    padding: 10px 8px;
+    border-radius: 10px;
+  }
+
+  .syn-card {
+    flex-basis: 100%;
+    padding: 10px;
+  }
+
+  .syn-person {
+    flex-basis: 100%;
+  }
+
+  .syn-foot button {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  /* 导出面板 */
+  .export {
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .export-actions button {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  /* 生时校正面板 */
+  .rf-panel {
+    padding: 12px 8px;
+    border-radius: 10px;
+  }
+
+  .rf-chip {
+    min-height: 36px;
+    padding: 6px 10px;
+  }
+
+  .rf-use {
+    min-height: 40px;
+    padding: 8px 12px;
   }
 }

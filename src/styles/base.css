@@ -357,6 +357,38 @@ body {
   padding-right: var(--sar);
 }
 
+/* 触摸设备：增大主要触摸目标 */
+@media (hover: none) and (pointer: coarse) {
+  /* 主要操作按钮保证足够触摸区域 */
+  .btn-go,
+  .btn-cancel,
+  .btn-save,
+  .btn-danger,
+  .btn-primary,
+  .record-new-btn {
+    min-height: 44px;
+    padding: 10px 18px;
+  }
+  /* 导航图标按钮 */
+  .nav-icon,
+  .person-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* 横向滚动优化：显示滚动指示 */
+.chart-outer,
+.hcells,
+.kline-scroll,
+.rf-table-wrap,
+.dp-wrap,
+.syn-year-wrap,
+.kline-month-canvas {
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ── 公共工具类（消除跨模块重复样式） ── */
 
 /** 毛玻璃面板（多个容器共用） */
