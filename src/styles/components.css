@@ -216,7 +216,7 @@
     0 0 60px color-mix(in srgb, var(--cyan) 14%, transparent),
     0 24px 64px rgba(0, 0, 0, 0.72),
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 0 24px rgba(10, 18, 40, 0.55);
+    inset 0 0 24px color-mix(in srgb, var(--glass-bg-deep) 55%, transparent);
   animation: dlg-slidein 0.22s ease-out;
 }
 
@@ -1259,7 +1259,7 @@
   backdrop-filter: blur(var(--blur-md));
   -webkit-backdrop-filter: blur(var(--blur-md));
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.5),
+    var(--shadow-lg),
     0 0 20px color-mix(in srgb, var(--cyan) 8%, transparent);
   color: var(--text);
   font-size: 0.82rem;
@@ -1279,7 +1279,7 @@
 .toast-success {
   border-left-color: var(--m-lu);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.5),
+    var(--shadow-lg),
     0 0 16px color-mix(in srgb, var(--m-lu) 12%, transparent);
 }
 .toast-success .toast-icon {
@@ -1290,7 +1290,7 @@
 .toast-error {
   border-left-color: var(--danger);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.5),
+    var(--shadow-lg),
     0 0 16px color-mix(in srgb, var(--danger) 12%, transparent);
 }
 .toast-error .toast-icon {
@@ -1301,7 +1301,7 @@
 .toast-warn {
   border-left-color: var(--m-ke);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.5),
+    var(--shadow-lg),
     0 0 16px color-mix(in srgb, var(--m-ke) 12%, transparent);
 }
 .toast-warn .toast-icon {
@@ -1312,7 +1312,7 @@
 .toast-info {
   border-left-color: var(--cyan);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.5),
+    var(--shadow-lg),
     0 0 16px color-mix(in srgb, var(--cyan) 12%, transparent);
 }
 .toast-info .toast-icon {
