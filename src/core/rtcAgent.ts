@@ -273,23 +273,10 @@ const ziweiFunction = {
   }),
   handler: async (args: Record<string, unknown>) => {
     const parsedArgs = args as unknown as { personId?: number; scope?: Scope; time?: string };
-    // 超时控制：UI 同步接口可能因渲染阻塞而卡住，25s 超时（留 5s 缓冲给上层 30s 超时）
-    const TIMEOUT_MS = 25_000;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(
-        () =>
-          reject(
-            new Error(
-              `ZiWei 调用超时（${TIMEOUT_MS}ms）：UI 同步阻塞，请改用 GetScopeData 纯计算接口`,
-            ),
-          ),
-        TIMEOUT_MS,
-      );
+    // RTC Agent 场景不需要操控 UI，直接走纯计算路径
+    return peepOrThrow().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time, {
+      skipUI: true,
     });
-    return Promise.race([
-      peepOrThrow().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time),
-      timeoutPromise,
-    ]);
   },
   returns: {
     schema: {
@@ -376,7 +363,7 @@ const daliurenCreateFunction = {
       background?: string;
       tags?: string[];
     };
-    return peepOrThrow().DaLiuRenCreate(parsedArgs);
+    return peepOrThrow().DaLiuRenCreate(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {
@@ -418,7 +405,7 @@ const daliurenListFunction = {
       page?: number;
       pageSize?: number;
     };
-    return peepOrThrow().DaLiuRenList(parsedArgs);
+    return peepOrThrow().DaLiuRenList(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {
@@ -451,7 +438,7 @@ const daliurenViewFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = args as unknown as { personId?: number; recordId: number };
-    return peepOrThrow().DaLiuRenView(parsedArgs);
+    return peepOrThrow().DaLiuRenView(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {
@@ -493,7 +480,7 @@ const wikiListFunction = {
       page?: number;
       pageSize?: number;
     };
-    return peepOrThrow().WikiList(parsedArgs);
+    return peepOrThrow().WikiList(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {
@@ -538,7 +525,7 @@ const wikiCreateFunction = {
       tags?: string[];
       linkTargetIds?: number[];
     };
-    return peepOrThrow().WikiCreate(parsedArgs);
+    return peepOrThrow().WikiCreate(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: { type: "object" as const, description: "保存后的文档对象，包含分配的 id" },
@@ -565,7 +552,7 @@ const wikiViewFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = args as unknown as { personId?: number; docId: number };
-    return peepOrThrow().WikiView(parsedArgs);
+    return peepOrThrow().WikiView(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {

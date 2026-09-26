@@ -107,28 +107,20 @@ export type WikiViewResult = WikiDocument & {
 /* ============================================================
  * 自定义错误类——带上下文信息、错误链、恢复建议。
  * 生产环境通过 import.meta.env.DEV 控制是否输出敏感细节。
+ *
+ * 基类 BaseDebugError 封装 fullMessage 拼接、captureStackTrace 等共享逻辑；
+ * ZiWeiError / DaLiuRenError / WikiError 只需指定 name，不再重复构造函数样板。
  * ============================================================ */
 
 /**
- * 紫微斗数基础错误类：所有 debugApi 自定义错误的基类。
- * 包含上下文信息（输入参数、中间状态）和恢复建议。
+ * 调试 API 错误的私有基类：封装 fullMessage 拼接 + captureStackTrace 等共享逻辑。
+ * ZiWeiError / DaLiuRenError / WikiError 共享此类，避免构造函数重复。
  *
- * @example
- * ```typescript
- * try {
- *   await window.peep.ZiWei(1, "yearly");
- * } catch (err) {
- *   if (err instanceof ZiWeiError) {
- *     console.error("来源:", err.source);
- *     console.error("上下文:", err.context);
- *     console.error("建议:", err.suggestion);
- *     console.error("原始错误:", err.cause);
- *   }
- * }
- * ```
+ * 注：source/context/suggestion/cause 在基类统一初始化，
+ * 子类只需 `this.name = "XxxError"` 一行即可。
  */
-export class ZiWeiError extends Error {
-  /** 错误来源标签（如 "ZiWei"、"computeScopeData"） */
+class BaseDebugError extends Error {
+  /** 错误来源标签（如 "ZiWei"、"DaLiuRenCreate"） */
   public readonly source: string;
   /** 上下文信息：输入参数、中间状态等（仅 DEV 环境包含完整数据） */
   public readonly context: Record<string, unknown>;
@@ -152,7 +144,6 @@ export class ZiWeiError extends Error {
         ? `${message}\n  来源: ${source}\n  上下文: ${JSON.stringify(options.context, null, 2)}${options?.suggestion ? `\n  建议: ${options.suggestion}` : ""}`
         : message;
     super(fullMessage);
-    this.name = "ZiWeiError";
     this.source = source;
     this.context = options?.context ?? {};
     this.suggestion = options?.suggestion;
@@ -166,6 +157,39 @@ export class ZiWeiError extends Error {
     if (typeof ErrCtor.captureStackTrace === "function") {
       ErrCtor.captureStackTrace(this, new.target as never);
     }
+  }
+}
+
+/**
+ * 紫微斗数基础错误类：所有 debugApi 紫微相关错误的基类。
+ * 包含上下文信息（输入参数、中间状态）和恢复建议。
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await window.peep.ZiWei(1, "yearly");
+ * } catch (err) {
+ *   if (err instanceof ZiWeiError) {
+ *     console.error("来源:", err.source);
+ *     console.error("上下文:", err.context);
+ *     console.error("建议:", err.suggestion);
+ *     console.error("原始错误:", err.cause);
+ *   }
+ * }
+ * ```
+ */
+export class ZiWeiError extends BaseDebugError {
+  constructor(
+    message: string,
+    source: string,
+    options?: {
+      context?: Record<string, unknown>;
+      suggestion?: string;
+      cause?: unknown;
+    },
+  ) {
+    super(message, source, options);
+    this.name = "ZiWeiError";
   }
 }
 
@@ -235,16 +259,7 @@ export class ComputeScopeError extends ZiWeiError {
  * 大六壬错误类：DaLiuRen 系列调试接口的专用错误。
  * 包含上下文信息（输入参数、回调状态）和恢复建议。
  */
-export class DaLiuRenError extends Error {
-  /** 错误来源标签（如 "DaLiuRen"、"DaLiuRenCreate"） */
-  public readonly source: string;
-  /** 上下文信息：输入参数、中间状态等（仅 DEV 环境包含完整数据） */
-  public readonly context: Record<string, unknown>;
-  /** 恢复建议（对开发者友好的调试提示） */
-  public readonly suggestion?: string;
-  /** 原始错误（错误链） */
-  public readonly cause?: unknown;
-
+export class DaLiuRenError extends BaseDebugError {
   constructor(
     message: string,
     source: string,
@@ -254,26 +269,8 @@ export class DaLiuRenError extends Error {
       cause?: unknown;
     },
   ) {
-    // 开发环境：消息包含完整上下文；生产环境：仅包含概要消息
-    const fullMessage =
-      import.meta.env.DEV && options?.context
-        ? `${message}\n  来源: ${source}\n  上下文: ${JSON.stringify(options.context, null, 2)}${options?.suggestion ? `\n  建议: ${options.suggestion}` : ""}`
-        : message;
-    super(fullMessage);
+    super(message, source, options);
     this.name = "DaLiuRenError";
-    this.source = source;
-    this.context = options?.context ?? {};
-    this.suggestion = options?.suggestion;
-    this.cause = options?.cause;
-    // 确保堆栈追踪可用（V8 引擎）
-    // captureStackTrace 是 Node.js/V8 特有的 API，标准 TypeScript 类型定义中未包含
-    // 使用 never 类型避免严格的构造函数签名检查
-    const ErrCtor = Error as unknown as {
-      captureStackTrace?: (target: object, ctor?: never) => void;
-    };
-    if (typeof ErrCtor.captureStackTrace === "function") {
-      ErrCtor.captureStackTrace(this, new.target as never);
-    }
   }
 }
 
@@ -281,16 +278,7 @@ export class DaLiuRenError extends Error {
  * Wiki 错误类：Wiki 系列调试接口的专用错误。
  * 包含上下文信息（输入参数、数据库操作状态）和恢复建议。
  */
-export class WikiError extends Error {
-  /** 错误来源标签（如 "WikiCreate"、"WikiList"） */
-  public readonly source: string;
-  /** 上下文信息：输入参数、中间状态等（仅 DEV 环境包含完整数据） */
-  public readonly context: Record<string, unknown>;
-  /** 恢复建议（对开发者友好的调试提示） */
-  public readonly suggestion?: string;
-  /** 原始错误（错误链） */
-  public readonly cause?: unknown;
-
+export class WikiError extends BaseDebugError {
   constructor(
     message: string,
     source: string,
@@ -300,26 +288,8 @@ export class WikiError extends Error {
       cause?: unknown;
     },
   ) {
-    // 开发环境：消息包含完整上下文；生产环境：仅包含概要消息
-    const fullMessage =
-      import.meta.env.DEV && options?.context
-        ? `${message}\n  来源: ${source}\n  上下文: ${JSON.stringify(options.context, null, 2)}${options?.suggestion ? `\n  建议: ${options.suggestion}` : ""}`
-        : message;
-    super(fullMessage);
+    super(message, source, options);
     this.name = "WikiError";
-    this.source = source;
-    this.context = options?.context ?? {};
-    this.suggestion = options?.suggestion;
-    this.cause = options?.cause;
-    // 确保堆栈追踪可用（V8 引擎）
-    // captureStackTrace 是 Node.js/V8 特有的 API，标准 TypeScript 类型定义中未包含
-    // 使用 never 类型避免严格的构造函数签名检查
-    const ErrCtor = Error as unknown as {
-      captureStackTrace?: (target: object, ctor?: never) => void;
-    };
-    if (typeof ErrCtor.captureStackTrace === "function") {
-      ErrCtor.captureStackTrace(this, new.target as never);
-    }
   }
 }
 
@@ -562,7 +532,7 @@ export async function PersonList(): Promise<Person[]> {
     return persons;
   } catch (err) {
     log("error", "PersonList", "查询失败", err);
-    throw wrapDebugError("PersonList", err);
+    throw wrapError("PersonList", err, ZiWeiError);
   }
 }
 
@@ -601,7 +571,7 @@ export async function PersonGet(personId?: number): Promise<Person> {
     return person;
   } catch (err) {
     log("error", "PersonGet", "查询失败", err);
-    throw wrapDebugError("PersonGet", err);
+    throw wrapError("PersonGet", err, ZiWeiError);
   }
 }
 
@@ -628,7 +598,7 @@ export async function PersonCreate(input: BirthInput, isDefault?: boolean): Prom
     return person;
   } catch (err) {
     log("error", "PersonCreate", "创建失败", err);
-    throw wrapDebugError("PersonCreate", err);
+    throw wrapError("PersonCreate", err, ZiWeiError);
   }
 }
 
@@ -661,7 +631,7 @@ export async function PersonUpdate(
     return person;
   } catch (err) {
     log("error", "PersonUpdate", "更新失败", err);
-    throw wrapDebugError("PersonUpdate", err);
+    throw wrapError("PersonUpdate", err, ZiWeiError);
   }
 }
 
@@ -684,7 +654,7 @@ export async function PersonDelete(personId: number): Promise<void> {
     stop();
   } catch (err) {
     log("error", "PersonDelete", "删除失败", err);
-    throw wrapDebugError("PersonDelete", err);
+    throw wrapError("PersonDelete", err, ZiWeiError);
   }
 }
 
@@ -918,7 +888,7 @@ export async function ZiWei(
           attempt: attempt + 1,
         });
         stop();
-        throw wrapDebugError("ZiWei", err);
+        throw wrapError("ZiWei", err, ZiWeiError);
       }
 
       // 超时/临时性错误：记录并重试
@@ -934,7 +904,7 @@ export async function ZiWei(
       // 其他错误：不重试
       log("error", "ZiWei", "执行失败", err);
       stop();
-      throw wrapDebugError("ZiWei", err);
+      throw wrapError("ZiWei", err, ZiWeiError);
     }
   }
 
@@ -1368,7 +1338,7 @@ export async function GetScopeData(
     return result;
   } catch (err) {
     log("error", "GetScopeData", "计算失败", err);
-    throw wrapDebugError("GetScopeData", err);
+    throw wrapError("GetScopeData", err, ZiWeiError);
   }
 }
 
@@ -1630,7 +1600,7 @@ export async function DaLiuRenCreate(
     }
     log("error", "DaLiuRenCreate", "执行失败", err);
     stop();
-    throw wrapDaLiuRenError("DaLiuRenCreate", err);
+    throw wrapError("DaLiuRenCreate", err, DaLiuRenError);
   }
 }
 
@@ -1726,7 +1696,7 @@ export async function DaLiuRenList(
     }
     log("error", "DaLiuRenList", "执行失败", err);
     stop();
-    throw wrapDaLiuRenError("DaLiuRenList", err);
+    throw wrapError("DaLiuRenList", err, DaLiuRenError);
   }
 }
 
@@ -1824,7 +1794,7 @@ export async function DaLiuRenView(
     }
     log("error", "DaLiuRenView", "执行失败", err);
     stop();
-    throw wrapDaLiuRenError("DaLiuRenView", err);
+    throw wrapError("DaLiuRenView", err, DaLiuRenError);
   }
 }
 
@@ -1927,7 +1897,7 @@ export async function WikiList(
     }
     log("error", "WikiList", "执行失败", err);
     stop();
-    throw wrapWikiError("WikiList", err);
+    throw wrapError("WikiList", err, WikiError);
   }
 }
 
@@ -2056,7 +2026,7 @@ export async function WikiCreate(
     }
     log("error", "WikiCreate", "执行失败", err);
     stop();
-    throw wrapWikiError("WikiCreate", err);
+    throw wrapError("WikiCreate", err, WikiError);
   }
 }
 
@@ -2181,7 +2151,7 @@ export async function WikiView(
     }
     log("error", "WikiView", "执行失败", err);
     stop();
-    throw wrapWikiError("WikiView", err);
+    throw wrapError("WikiView", err, WikiError);
   }
 }
 
@@ -2393,30 +2363,39 @@ async function selectPersonAndWait(personId: number): Promise<void> {
 }
 
 /**
- * 错误包装：保证调试 API 抛出的错误始终是 Error 实例，
+ * 泛型错误包装：保证调试 API 抛出的错误始终是 Error 实例，
  * 且消息包含来源标签、上下文信息和堆栈追踪。
  *
- * 对于自定义错误类（ZiWeiError 及其子类），直接返回（不重复包装）。
+ * 对于 BaseDebugError 子类（ZiWeiError / DaLiuRenError / WikiError），直接返回（不重复包装）。
  * 对于原生 Error，附加来源标签。
- * 对于非 Error 值，包装为 ZiWeiError 并保留原始值作为 cause。
+ * 对于非 Error 值，包装为指定的错误类并保留原始值作为 cause。
+ *
+ * @template T 错误类类型，必须继承 BaseDebugError
+ * @param label 来源标签（如 "ZiWei"、"DaLiuRenCreate"）
+ * @param err 原始错误
+ * @param ErrorClass 用于包装非 Error 值的错误类构造函数
  */
-function wrapDebugError(label: string, err: unknown): Error {
-  // 已经是自定义错误，直接返回
-  if (err instanceof ZiWeiError) {
+function wrapError<T extends BaseDebugError>(
+  label: string,
+  err: unknown,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ErrorClass: new (message: string, source: string, options?: any) => T,
+): Error {
+  // 已经是 BaseDebugError 子类（ZiWeiError / DaLiuRenError / WikiError 等），直接返回
+  if (err instanceof BaseDebugError) {
     return err;
   }
 
   // 原生 Error：附加来源标签，保留原始堆栈
   if (err instanceof Error) {
-    // 在消息前加上来源标签（如果还没有）
     if (!err.message.startsWith(`[${label}]`)) {
       err.message = `[${label}] ${err.message}`;
     }
     return err;
   }
 
-  // 非 Error 值（string、number、object 等）：包装为 ZiWeiError
-  return new ZiWeiError(`${label} 执行失败：${String(err)}`, label, {
+  // 非 Error 值（string、number、object 等）：包装为指定错误类
+  return new ErrorClass(`${label} 执行失败：${String(err)}`, label, {
     context: { rawError: typeof err === "object" ? JSON.stringify(err) : String(err) },
     suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
     cause: err,
@@ -2522,62 +2501,6 @@ async function waitForDocSaved(docId: number | undefined, timeout = 2000): Promi
   }
   // 超时不抛错——文档可能已通过回调成功保存但 DB 查询有延迟
   log("warn", "wait", "文档保存等待超时，继续执行", { docId, timeout });
-}
-
-/**
- * DaLiuRen 错误包装：保证调试 API 抛出的错误始终是 Error 实例，
- * 且消息包含来源标签。对于 DaLiuRenError 直接返回。
- */
-function wrapDaLiuRenError(label: string, err: unknown): Error {
-  // DaLiuRenError 直接返回
-  if (err instanceof DaLiuRenError) {
-    return err;
-  }
-  // ZiWeiError 也直接返回（兼容）
-  if (err instanceof ZiWeiError) {
-    return err;
-  }
-  // 原生 Error：附加来源标签
-  if (err instanceof Error) {
-    if (!err.message.startsWith(`[${label}]`)) {
-      err.message = `[${label}] ${err.message}`;
-    }
-    return err;
-  }
-  // 非 Error 值：包装为 DaLiuRenError
-  return new DaLiuRenError(`${label} 执行失败：${String(err)}`, label, {
-    context: { rawError: typeof err === "object" ? JSON.stringify(err) : String(err) },
-    suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
-    cause: err,
-  });
-}
-
-/**
- * Wiki 错误包装：保证调试 API 抛出的错误始终是 Error 实例，
- * 且消息包含来源标签。对于 WikiError 直接返回。
- */
-function wrapWikiError(label: string, err: unknown): Error {
-  // WikiError 直接返回
-  if (err instanceof WikiError) {
-    return err;
-  }
-  // ZiWeiError 也直接返回（兼容）
-  if (err instanceof ZiWeiError) {
-    return err;
-  }
-  // 原生 Error：附加来源标签
-  if (err instanceof Error) {
-    if (!err.message.startsWith(`[${label}]`)) {
-      err.message = `[${label}] ${err.message}`;
-    }
-    return err;
-  }
-  // 非 Error 值：包装为 WikiError
-  return new WikiError(`${label} 执行失败：${String(err)}`, label, {
-    context: { rawError: typeof err === "object" ? JSON.stringify(err) : String(err) },
-    suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
-    cause: err,
-  });
 }
 
 /* ============================================================
