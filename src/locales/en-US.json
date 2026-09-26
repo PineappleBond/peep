@@ -401,5 +401,17 @@
   "export.hint.kline": "Note: Life K-line quantitative data is not included (K-line is for chart display only).",
   "export.hint.daily": "Note: Daily/hourly fortune are not exported by default; you can enable them manually.",
   "export.hint.xiaoxian": "Note: Xiao Xian (Minor Fortune) is an auxiliary year system; do not confuse with annual fortune.",
-  "export.hint.zayao": "Note: Minor stars are annotated with weight (Medium = can be used in interpretation, Low = reference only)."
+  "export.hint.zayao": "Note: Minor stars are annotated with weight (Medium = can be used in interpretation, Low = reference only).",
+
+  "import.title": "Import Data",
+  "import.dropzone": "Click or drag files here",
+  "import.dropzoneHint": "Supports JSON backup files and CSV data files",
+  "import.start": "Start Import",
+  "import.success": "Import successful",
+  "import.partialSuccess": "Partial import successful",
+  "import.failed": "Import failed, please retry",
+  "import.complete": "Import Complete",
+  "import.retry": "Retry",
+  "import.warning": "Note: Importing will not overwrite existing data. Records with duplicate IDs will be automatically assigned new IDs.",
+  "common.close": "Close"
 }

@@ -18,6 +18,8 @@ type HeaderProps = {
   currentPersonId: number | null;
   /** 选择人物回调 */
   onSelectPerson: (person: Person) => void;
+  /** 打开导入对话框 */
+  onOpenImport?: () => void;
 };
 
 /** 根据路由获取标题键名 */
@@ -34,7 +36,7 @@ function getSubtitleKeyByPath(pathname: string): string {
   return "header.ziwei.subtitle";
 }
 
-export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
+export function Header({ currentPersonId, onSelectPerson, onOpenImport }: HeaderProps) {
   const location = useLocation();
   const { t, locale, setLocale } = useI18n();
   const titleKey = getTitleKeyByPath(location.pathname);
@@ -117,6 +119,16 @@ export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
         >
           {locale === "zh-CN" ? "EN" : "中"}
         </button>
+        {onOpenImport && (
+          <button
+            className="import-toggle"
+            onClick={onOpenImport}
+            title={t("import.title")}
+            aria-label={t("import.title")}
+          >
+            📥
+          </button>
+        )}
         <PersonSelector currentId={currentPersonId} onSelect={onSelectPerson} />
       </div>
     </header>

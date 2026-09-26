@@ -401,5 +401,17 @@
   "export.hint.kline": "注：导出不含人生K线量化数据（K线仅供盘面展示）。",
   "export.hint.daily": "注：流日/流时默认不随导出，可手动勾选附加。",
   "export.hint.xiaoxian": "注：小限为辅助年系统，请勿与流年混同使用。",
-  "export.hint.zayao": "注：杂耀标注权重（中=可参与断事，低=仅叠加参考）。"
+  "export.hint.zayao": "注：杂耀标注权重（中=可参与断事，低=仅叠加参考）。",
+
+  "import.title": "导入数据",
+  "import.dropzone": "点击或拖拽文件到此处",
+  "import.dropzoneHint": "支持 JSON 备份文件和 CSV 数据文件",
+  "import.start": "开始导入",
+  "import.success": "导入成功",
+  "import.partialSuccess": "部分数据导入成功",
+  "import.failed": "导入失败，请重试",
+  "import.complete": "导入完成",
+  "import.retry": "重试",
+  "import.warning": "注意：导入操作不会覆盖现有数据，相同 ID 的记录会自动生成新 ID。",
+  "common.close": "关闭"
 }

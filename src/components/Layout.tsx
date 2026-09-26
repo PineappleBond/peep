@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "./Header";
 import { ToastHost } from "./ToastHost";
 import { ShortcutHelp } from "./ShortcutHelp";
+import { ImportDialog } from "./ImportDialog";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
@@ -24,6 +25,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const { t } = useI18n();
   const [currentPersonId, setCurrentPersonId] = useState<number | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const currentPersonRef = useRef<Person | null>(null);
 
   // 初始化：加载默认人物
@@ -75,6 +77,12 @@ export function Layout({ children }: LayoutProps) {
     currentPersonRef.current = person;
     // 通知页面组件人物已变更
     globalEvents.emit("person.changed", person);
+  }, []);
+
+  // 导入成功回调：刷新当前页面数据
+  const handleImportSuccess = useCallback(() => {
+    // 重新加载当前人物数据
+    globalEvents.emit("person.changed", currentPersonRef.current!);
   }, []);
 
   // 注册调试 API 回调
@@ -132,7 +140,11 @@ export function Layout({ children }: LayoutProps) {
         {t("nav.skipNav")}
       </a>
       <div className="bg-fx" aria-hidden="true" />
-      <Header currentPersonId={currentPersonId} onSelectPerson={handleSelectPerson} />
+      <Header
+        currentPersonId={currentPersonId}
+        onSelectPerson={handleSelectPerson}
+        onOpenImport={() => setImportOpen(true)}
+      />
       <main id="main-content">{children}</main>
       <footer className="foot">
         {t("layout.engine")}{" "}
@@ -150,6 +162,12 @@ export function Layout({ children }: LayoutProps) {
       <ToastHost />
       {/* 快捷键帮助弹窗 */}
       <ShortcutHelp />
+      {/* 数据导入对话框 */}
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImportSuccess={handleImportSuccess}
+      />
     </div>
   );
 }
