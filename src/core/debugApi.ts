@@ -707,7 +707,11 @@ async function navigateToPage(path: string, page: "ziwei" | "daliuren" | "wiki")
   if (_navigate) {
     _navigate(path);
   } else {
-    window.location.href = path;
+    // 降级：react-router 未就绪时直接跳转。需要拼上 Vite 的 base 前缀（如 /peep/），
+    // 否则 GitHub Pages 子路径部署时会导航到错误位置。
+    const base = import.meta.env.BASE_URL; // Vite 注入，结尾带斜杠（如 "/peep/"）
+    const normalizedPath = path.replace(/^\//, ""); // 去首斜杠，避免拼出 "/peep//liuren"
+    window.location.href = `${base}${normalizedPath}`;
   }
   await waitForCallbacks(page);
   await waitForPageLoad();
