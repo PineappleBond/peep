@@ -1,4 +1,4 @@
-import { useEffect, useMemo, memo } from "react";
+import { useEffect, useMemo, useRef, memo } from "react";
 import { SCOPES, SCOPE_META, type Scope } from "../core/utils";
 import { getSelfMarksForScope, buildChartIndex } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
@@ -16,6 +16,10 @@ export const PalaceDetail = memo(function PalaceDetail({
   const a = z.astrolabe;
   const an = z.analysis;
 
+  /* 生成稳定的标题 id，供 aria-labelledby 引用 */
+  const titleId = `pd-title-${index}`;
+  const panelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -23,6 +27,49 @@ export const PalaceDetail = memo(function PalaceDetail({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  /* 焦点陷阱：Tab / Shift+Tab 在弹层内循环 */
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const focusableSelector =
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(focusableSelector)
+      ).filter((el) => el.offsetParent !== null); // 仅可见元素
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    panel.addEventListener("keydown", onKey);
+    return () => panel.removeEventListener("keydown", onKey);
+  }, []);
+
+  /* 打开时自动聚焦弹层内第一个可聚焦元素 */
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const focusableSelector =
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const first = panel.querySelector<HTMLElement>(focusableSelector);
+    first?.focus();
+  }, []);
 
   /* 运限自化：按 visible scope 计算 —— 移到条件 return 之前以满足 hooks 规则 */
   const scopeSelfMarks = useMemo(() => {
@@ -59,10 +106,20 @@ export const PalaceDetail = memo(function PalaceDetail({
   });
 
   return (
-    <div className="pd-overlay" onClick={onClose}>
-      <div className="pd-panel" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="pd-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      onClick={onClose}
+    >
+      <div
+        className="pd-panel"
+        ref={panelRef}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="pd-head">
-          <b>
+          <b id={titleId} tabIndex={-1}>
             {palace.name}
             <i className="pd-gz">
               {palace.heavenlyStem}
@@ -71,7 +128,12 @@ export const PalaceDetail = memo(function PalaceDetail({
             {palace.isBodyPalace && <em className="p-body">身宫</em>}
             {palace.isOriginalPalace && <em className="p-origin">来因</em>}
           </b>
-          <button className="pd-close" onClick={onClose} title="关闭（Esc）">
+          <button
+            className="pd-close"
+            onClick={onClose}
+            title="关闭（Esc）"
+            aria-label="关闭"
+          >
             ✕
           </button>
         </div>
