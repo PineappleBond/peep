@@ -15,11 +15,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
     // 调用 debugApi.DaLiuRen
     const result = await page.evaluate(async () => {
-      // @ts-ignore - window.peep 是动态注入的
+      // @ts-expect-error - window.peep 是动态注入的
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册，算法尚未搬运");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -54,7 +54,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const results = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
@@ -71,7 +71,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
       return Promise.all(
         testCases.map(({ date, time }) =>
-          // @ts-ignore
+          // @ts-expect-error
           window.peep.DaLiuRen(date, time)
         )
       );
@@ -106,15 +106,15 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const [dayResult, nightResult] = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
       // 昼占：午时（11:00-13:00）
-      // @ts-ignore
+      // @ts-expect-error
       const day = await window.peep.DaLiuRen("2024-06-15", "12:00");
       // 夜占：酉时（17:00-19:00），错开时辰使天盘偏移不同
-      // @ts-ignore
+      // @ts-expect-error
       const night = await window.peep.DaLiuRen("2024-06-15", "18:00");
       return [day, night];
     });
@@ -132,15 +132,15 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
       // 春分前（应为戌将）
-      // @ts-ignore
+      // @ts-expect-error
       const before = await window.peep.DaLiuRen("2024-03-19", "12:00");
       // 春分后（应为酉将）
-      // @ts-ignore
+      // @ts-expect-error
       const after = await window.peep.DaLiuRen("2024-03-21", "12:00");
 
       return { before, after };
@@ -161,11 +161,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -189,11 +189,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -225,11 +225,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -265,11 +265,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -341,11 +341,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -376,11 +376,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -415,7 +415,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
       ];
       return Promise.all(
         testCases.map(({ date, time }) =>
-          // @ts-ignore
+          // @ts-expect-error
           window.peep.DaLiuRen(date, time)
         )
       );
@@ -437,11 +437,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -480,11 +480,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -520,12 +520,12 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
       // 1984 年是甲子年，男命，起课 2024 年
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00", {
         birthYear: 1984,
         gender: "男",
@@ -547,7 +547,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
     // 不传 fateInput 时 fate 应为 undefined
     const resultNoFate = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
     expect(resultNoFate.fate).toBeUndefined();
@@ -562,7 +562,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 无效日期（2024年没有2月30日）
     const result1 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.DaLiuRen("2024-02-30", "12:00");
         return { error: null };
       } catch (e: any) {
@@ -574,7 +574,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 无效月份
     const result2 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.DaLiuRen("2024-13-15", "12:00");
         return { error: null };
       } catch (e: any) {
@@ -586,7 +586,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 空字符串
     const result3 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.DaLiuRen("", "12:00");
         return { error: null };
       } catch (e: any) {
@@ -603,7 +603,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 无效小时
     const result1 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.DaLiuRen("2024-06-15", "25:00");
         return { error: null };
       } catch (e: any) {
@@ -615,7 +615,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 无效分钟
     const result2 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.DaLiuRen("2024-06-15", "12:61");
         return { error: null };
       } catch (e: any) {
@@ -627,7 +627,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 空时间
     const result3 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.DaLiuRen("2024-06-15", "");
         return { error: null };
       } catch (e: any) {
@@ -644,7 +644,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 生年晚于当前年
     const result1 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.DaLiuRen("2024-06-15", "12:00", {
           birthYear: 2025,
           gender: "男",
@@ -659,7 +659,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 无效性别
     const result2 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.DaLiuRen("2024-06-15", "12:00", {
           birthYear: 1984,
           gender: "未知",
@@ -677,15 +677,15 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const results = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
       // 2024-06-15 23:00（晚子时）
-      // @ts-ignore
+      // @ts-expect-error
       const late = await window.peep.DaLiuRen("2024-06-15", "23:30");
       // 2024-06-16 00:00（早子时，次日凌晨）
-      // @ts-ignore
+      // @ts-expect-error
       const early = await window.peep.DaLiuRen("2024-06-16", "00:00");
 
       return { late, early };
@@ -709,12 +709,12 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     // 找一个能产生伏吟盘面的日期：月将加时，月将=时支时 offset=0，天地盘重合
     // 需要查节气表确定某天月将，再选该月将对应时辰
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
       // 2024年春分后月将为戌(10)，选戌时(19:00-21:00)，月将=时支=10，天地盘重合
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-04-01", "20:00");
     });
 
@@ -736,12 +736,12 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
       // 2024年春分后月将为戌(10)，选辰时(7:00-9:00)辰=4，戌对冲辰 → offset=6 → 返吟
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-04-01", "08:00");
     });
 
@@ -762,15 +762,15 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
     // 2023年有闰二月，验证闰二月期间的月将正常
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
       // 2023年闰二月（公历3月22日-4月19日），春分后月将为戌
-      // @ts-ignore
+      // @ts-expect-error
       const r1 = await window.peep.DaLiuRen("2023-04-01", "12:00");
       // 2023年正常二月（公历3月1日-3月21日），春分前月将为亥
-      // @ts-ignore
+      // @ts-expect-error
       const r2 = await window.peep.DaLiuRen("2023-03-15", "12:00");
 
       return { leap: r1, normal: r2 };
@@ -787,7 +787,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
     // 八专日：干支同位（甲寅、乙卯、丙午、丁未、戊午、己未、庚申、辛酉、壬子、癸亥等）
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
@@ -801,7 +801,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
       const results = await Promise.all(
         dates.map(({ date, time }) =>
-          // @ts-ignore
+          // @ts-expect-error
           window.peep.DaLiuRen(date, time)
         )
       );
@@ -829,15 +829,15 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
       // 2023年大雪约12月7日，冬至约12月22日
       // 大雪后冬至前→月将=寅(2)；冬至后→月将=子(0)
-      // @ts-ignore
+      // @ts-expect-error
       const before = await window.peep.DaLiuRen("2023-12-15", "12:00");
-      // @ts-ignore
+      // @ts-expect-error
       const after = await window.peep.DaLiuRen("2023-12-25", "12:00");
 
       return { before, after };
@@ -855,11 +855,11 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.DaLiuRen) {
         throw new Error("window.peep.DaLiuRen 未注册");
       }
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.DaLiuRen("2024-06-15", "12:00");
     });
 
@@ -899,7 +899,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
       ];
       return Promise.all(
         testCases.map(({ date, time }) =>
-          // @ts-ignore
+          // @ts-expect-error
           window.peep.DaLiuRen(date, time)
         )
       );

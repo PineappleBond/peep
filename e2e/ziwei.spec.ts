@@ -13,11 +13,11 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
 
     // 先确认调试 API 已注册
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.ZiWei) {
         throw new Error("window.peep.ZiWei 未注册");
       }
-      // @ts-ignore - 查询默认人物
+      // @ts-expect-error - 查询默认人物
       return await window.peep.ZiWei(1);
     });
 
@@ -51,7 +51,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
     const scopes = ["decadal", "yearly", "monthly", "daily", "hourly"] as const;
     for (const scope of scopes) {
       const result = await page.evaluate(async (s) => {
-        // @ts-ignore
+        // @ts-expect-error
         return await window.peep.ZiWei(1, s);
       }, scope);
 
@@ -69,7 +69,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.ZiWei(1, "yearly", "2030-06-15");
     });
 
@@ -85,7 +85,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
     // personId = 0 应报错
     const result1 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.ZiWei(0);
         return { error: null };
       } catch (e: any) {
@@ -97,7 +97,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
     // personId 负数
     const result2 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.ZiWei(-1);
         return { error: null };
       } catch (e: any) {
@@ -109,7 +109,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
     // personId NaN
     const result3 = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.ZiWei(NaN);
         return { error: null };
       } catch (e: any) {
@@ -125,7 +125,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
 
     const result = await page.evaluate(async () => {
       try {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.ZiWei(1, "invalid_scope");
         return { error: null };
       } catch (e: any) {
@@ -143,7 +143,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
 
     // 调用 ZiWei（应自动跳转到 /）
     await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       await window.peep.ZiWei(1);
     });
 

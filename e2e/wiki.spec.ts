@@ -20,9 +20,9 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     const title = uid("创建测试");
     const result = await page.evaluate(async (t) => {
-      // @ts-ignore - window.peep 是动态注入的
+      // @ts-expect-error - window.peep 是动态注入的
       if (!window.peep?.WikiCreate) throw new Error("window.peep.WikiCreate 未注册");
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiCreate({
         personId: 1,
         title: t,
@@ -51,7 +51,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 先创建
     const created = await page.evaluate(async (t) => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiCreate({
         personId: 1,
         title: t,
@@ -64,9 +64,9 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 再查看
     const viewed = await page.evaluate(async (docId) => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.WikiView) throw new Error("window.peep.WikiView 未注册");
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiView({ personId: 1, docId });
     }, created.id);
 
@@ -86,7 +86,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 先创建
     const created = await page.evaluate(async (t) => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiCreate({
         personId: 1,
         title: t,
@@ -96,9 +96,9 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 查询列表
     const listResult = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       if (!window.peep?.WikiList) throw new Error("window.peep.WikiList 未注册");
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiList({ personId: 1 });
     });
 
@@ -123,7 +123,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 创建带特殊关键词的文档
     await page.evaluate(async (t) => {
-      // @ts-ignore
+      // @ts-expect-error
       await window.peep.WikiCreate({
         personId: 1,
         title: t,
@@ -133,7 +133,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 按标题搜索
     const result = await page.evaluate(async (keyword) => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiList({ personId: 1, searchText: keyword });
     }, uniqueKeyword);
 
@@ -152,7 +152,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 创建内容中包含唯一标识的文档
     await page.evaluate(async (c) => {
-      // @ts-ignore
+      // @ts-expect-error
       await window.peep.WikiCreate({
         personId: 1,
         title: "内容搜索测试",
@@ -162,7 +162,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 按内容关键词搜索
     const result = await page.evaluate(async (keyword) => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiList({ personId: 1, searchText: keyword });
     }, uniqueContent);
 
@@ -179,7 +179,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 创建带特定标签的文档
     await page.evaluate(async (tag) => {
-      // @ts-ignore
+      // @ts-expect-error
       await window.peep.WikiCreate({
         personId: 1,
         title: "标签筛选测试文档",
@@ -190,7 +190,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 按标签筛选
     const result = await page.evaluate(async (tag) => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiList({ personId: 1, tags: [tag] });
     }, uniqueTag);
 
@@ -209,7 +209,7 @@ test.describe("Wiki 知识库 debugApi", () => {
     const prefix = uid("分页");
     await page.evaluate(async (p) => {
       for (let i = 0; i < 5; i++) {
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.WikiCreate({
           personId: 1,
           title: `${p}_${i}`,
@@ -220,7 +220,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 第一页，每页 2 条
     const page1 = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiList({ personId: 1, page: 1, pageSize: 2 });
     });
 
@@ -229,7 +229,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 第二页
     const page2 = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiList({ personId: 1, page: 2, pageSize: 2 });
     });
 
@@ -250,7 +250,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 创建第一篇文档
     const doc1 = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiCreate({
         personId: 1,
         title: "链接目标文档",
@@ -262,7 +262,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 创建第二篇文档，关联第一篇
     const doc2 = await page.evaluate(async (targetId) => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiCreate({
         personId: 1,
         title: "链接源文档",
@@ -276,7 +276,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 查看第二篇文档，验证 linkTargetIds 包含第一篇
     const viewed = await page.evaluate(async (docId) => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiView({ personId: 1, docId });
     }, doc2.id);
 
@@ -309,7 +309,7 @@ test.describe("Wiki 知识库 debugApi", () => {
     // 调用 WikiCreate（会自动跳转到 /wiki）
     const title = uid("路由跳转测试");
     await page.evaluate(async (t) => {
-      // @ts-ignore
+      // @ts-expect-error
       await window.peep.WikiCreate({
         personId: 1,
         title: t,
@@ -338,21 +338,21 @@ test.describe("Wiki 知识库 debugApi", () => {
     // 模拟 API 未注册的场景：临时移除 window.peep
     const result = await page.evaluate(async () => {
       // 保存原始 peep
-      // @ts-ignore
+      // @ts-expect-error
       const original = window.peep;
-      // @ts-ignore
+      // @ts-expect-error
       window.peep = undefined;
 
       try {
         // 尝试调用 WikiCreate
-        // @ts-ignore
+        // @ts-expect-error
         await window.peep.WikiCreate({ personId: 1, title: "test", content: "test" });
         return { error: null };
       } catch (e: any) {
         return { error: e.message };
       } finally {
         // 恢复
-        // @ts-ignore
+        // @ts-expect-error
         window.peep = original;
       }
     });
@@ -370,7 +370,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     const title = uid("人物关联测试");
     const result = await page.evaluate(async (t) => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiCreate({
         personId: 1,
         title: t,
@@ -390,7 +390,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 创建 personId=1 的文档
     await page.evaluate(async (t) => {
-      // @ts-ignore
+      // @ts-expect-error
       await window.peep.WikiCreate({
         personId: 1,
         title: t,
@@ -400,7 +400,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
     // 查询 personId=1 的列表
     const result1 = await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error
       return await window.peep.WikiList({ personId: 1 });
     });
 
