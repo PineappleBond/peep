@@ -43,10 +43,17 @@ import {
 // 重新导出 hbar 类型供外部使用
 export type { PickState, DecadeInfo, Childhood, CellYear, CellMonth, CellDay, CellHour };
 
+/** iztro 本命盘对象类型（由 astro.bySolar 返回） */
 export type Astrolabe = ReturnType<typeof astro.bySolar>;
+/** iztro 运限数据对象类型（由 astrolabe.horoscope 返回） */
 export type Horoscope = ReturnType<Astrolabe["horoscope"]>;
+/** 单个宫位数据（十二宫之一） */
 export type PalaceData = Astrolabe["palaces"][number];
 
+/**
+ * 排盘输入参数：包含生辰信息、流派选择、真太阳时设置等全部起盘配置。
+ * 所有字段都有默认值（见 DEFAULT_BIRTH_INPUT），旧存档缺字段时由此补齐。
+ */
 export type BirthInput = {
   name: string;
   gender: "男" | "女";
@@ -109,6 +116,7 @@ export const DEFAULT_BIRTH_INPUT: BirthInput = {
   residence: "",
 };
 
+/** 真太阳时校正详情：钟表时间 vs 真太阳时、经度差/均时差校正量 */
 export type TrueSolarInfo = {
   clockDate: string;
   clockTime: string;
@@ -124,6 +132,7 @@ export type TrueSolarInfo = {
   place: string;
 };
 
+/** 各运限级别的可见状态（大限/流年/流月/流日/流时） */
 export type ScopeVisible = Record<Scope, boolean>;
 
 function initPick(): PickState {
@@ -144,6 +153,10 @@ const DEFAULT_VISIBLE: ScopeVisible = {
   hourly: false,
 };
 
+/**
+ * 实际排盘参数（经真太阳时校正后）。
+ * 当未启用真太阳时时 trueSolar 为 null，直接按原始输入排盘。
+ */
 export type EffectiveBirth = {
   calendar: "solar" | "lunar";
   dateStr: string;
@@ -193,6 +206,18 @@ export function effectiveBirth(input: BirthInput): EffectiveBirth {
   };
 }
 
+/**
+ * 排盘主 Hook：管理紫微斗数排盘的全部状态与计算。
+ *
+ * @param input - 排盘输入参数（生辰/流派/真太阳时等）
+ * @returns 排盘结果对象，包含本命盘、运限数据、拨盘状态、操作函数等
+ *
+ * 职责：
+ * 1. 调用 iztro 引擎计算本命盘（Astrolabe）
+ * 2. 管理运限拨盘状态（大限/流年/流月/流日/流时）
+ * 3. 计算运限数据（Horoscope）
+ * 4. 提供结构分析、K线等衍生数据
+ */
 export function useZwds(input: BirthInput) {
   /** 真太阳时校正后的实际排盘参数 */
   const effective = useMemo(() => effectiveBirth(input), [input]);

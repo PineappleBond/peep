@@ -12,6 +12,7 @@ import {
 } from "lunar-lite";
 import { LunarMonth, LunarYear } from "lunar-typescript";
 
+/** 格式化 Date 为 YYYY-M-D 字符串 */
 export function fmtSolar(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
@@ -50,6 +51,11 @@ export function lunarToSolarStr(
   }
 }
 
+/**
+ * 获取当前时刻的农历日期（年月日+时辰+闰月标志）。
+ * 时辰按 2 小时一个时辰计算（0=子时, 1=丑时, ...11=亥时）。
+ * 异常时回退到公历 1月1日。
+ */
 export function todayLunar(): {
   year: number;
   month: number;

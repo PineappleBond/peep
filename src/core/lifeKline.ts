@@ -158,6 +158,7 @@ const DOMAIN_META: Record<string, { label: string; priority: number }> = {
   父母: { label: "父母·长辈", priority: 11 },
 };
 
+/** K线单年数据：开高低收、进出动能、年度形态、引动因子 */
 export type KlineYear = {
   year: number;
   age: number;
@@ -184,8 +185,13 @@ export type KlineYear = {
   factors: string[];
 };
 
+/** 大限段均值（用于盘面背景线） */
 export type KlineDecadeAvg = { label: string; startYear: number; endYear: number; avg: number };
 
+/**
+ * 单域 K 线数据：某宫（如命宫/官禄/财帛）的完整逐年 K 线，
+ * 含基调评分、三方四正构成、大限段均值。
+ */
 export type KlineDomain = {
   key: string;
   palaceName: string;
@@ -202,8 +208,13 @@ export type KlineDomain = {
   decadeAvg: KlineDecadeAvg[];
 };
 
+/** 大限分段区间（标签+起止年份），用于盘面大限段标签渲染 */
 export type KlineBand = { label: string; startYear: number; endYear: number };
 
+/**
+ * 人生K线完整数据：十二域各自一条 K 线 + 大限分段 + 末龄。
+ * 为 buildLifeKline 的输出类型。
+ */
 export type LifeKlineData = {
   note: string;
   domains: KlineDomain[];
@@ -247,6 +258,18 @@ function palaceStarScore(a: Astrolabe, idx: number): { s: number; badNames: stri
  */
 export { buildDecades as decadesOfChart } from "./hbar";
 
+/**
+ * 构建人生K线数据：为十二宫各生成一条逐年 K 线。
+ *
+ * @param astrolabe - 本命盘对象（为 null 时返回 null）
+ * @param decades - 大限信息数组（由 hbar.buildDecades 提供）
+ * @param birthLunarYear - 出生农历年（用于计算虚岁）
+ * @returns 十二域 K 线数据，或 null（参数无效时）
+ *
+ * 方法论：每域独立评分（本宫x1.0+对宫x0.6+三合x0.4），
+ * 区分"进"（禄权科·六合）与"出"（忌·冲·自化漏）两股动能，
+ * 逐年叠加流年四化、流曜、小限、叠象等引动。
+ */
 export function buildLifeKline(
   astrolabe: Astrolabe | null,
   decades: DecadeInfo[],
@@ -610,6 +633,7 @@ export function buildLifeKline(
 
 /* ─────────────── 月K线（某域某年逐月细化） ─────────────── */
 
+/** 月K线单月数据：月序/闰月标志/干支/开高低收/进出动能/形态/引动因子 */
 export type KlineMonth = {
   month: number;
   leap: boolean;
@@ -629,6 +653,7 @@ export type KlineMonth = {
   factors: string[];
 };
 
+/** 月K线完整数据：某域某年逐月 K 线（闰年含闰月位） */
 export type MonthlyKline = {
   year: number;
   ganZhi: string;

@@ -27,6 +27,7 @@ export * from "./chartIndex";
 
 /* ─────────────── 一、空宫借星 ─────────────── */
 
+/** 空宫借星信息：本宫无主星时从对宫借入的星耀 */
 export type BorrowedInfo = {
   palaceIndex: number;
   palaceName: string;
@@ -36,6 +37,12 @@ export type BorrowedInfo = {
   oppositeName: string;
 };
 
+/**
+ * 获取全部空宫的借星信息。
+ * @param a - 本命盘对象
+ * @param ix - 共享索引（可选，默认新建）
+ * @returns 空宫列表，每项含借入的对宫主星
+ */
 export function getBorrowedStars(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): BorrowedInfo[] {
   const out: BorrowedInfo[] = [];
   for (const p of a.palaces) {
@@ -54,6 +61,7 @@ export function getBorrowedStars(a: Astrolabe, ix: ChartIndex = buildChartIndex(
 
 /* ─────────────── 二、三方四正快照 ─────────────── */
 
+/** 三方四正中的一个席位（本宫/对宫/三合/三合） */
 export type SanfangSeat = {
   role: (typeof SEAT_ROLES)[number];
   palaceName: string;
@@ -61,6 +69,10 @@ export type SanfangSeat = {
   majors: string;
 };
 
+/**
+ * 三方四正快照：某宫的完整三方四正信息汇总，
+ * 含本宫/对宫/三合主星、会吉会煞、生年四化会入、空宫借星。
+ */
 export type SanfangSnapshot = {
   palaceIndex: number;
   palaceName: string;
@@ -76,6 +88,12 @@ export type SanfangSnapshot = {
   borrowed: string | null;
 };
 
+/**
+ * 生成十二宫各宫的三方四正快照。
+ * @param a - 本命盘对象
+ * @param ix - 共享索引（可选，默认新建）
+ * @returns 十二宫的三方四正快照数组
+ */
 export function getSanfangSnapshots(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): SanfangSnapshot[] {
   return a.palaces.map((p) => {
     const idxs = sanfangIdx(p.index);
@@ -129,6 +147,7 @@ export function getSanfangSnapshots(a: Astrolabe, ix: ChartIndex = buildChartInd
 
 /* ─────────────── 三、飞宫四化全矩阵 ─────────────── */
 
+/** 飞宫四化中的一条飞入记录：某宫干四化的某化落入何宫 */
 export type FlyEntry = {
   mutagen: (typeof MUTAGEN_CHARS)[number];
   star: string;
@@ -141,6 +160,7 @@ export type FlyEntry = {
   isOpposite: boolean;
 };
 
+/** 单宫的飞宫四化汇总：宫干四化飞入列表 + 离心自化 + 向心自化 */
 export type PalaceFly = {
   palaceIndex: number;
   palaceName: string;
@@ -153,6 +173,7 @@ export type PalaceFly = {
   selfInward: string[];
 };
 
+/** 飞宫四化全矩阵：十二宫各宫的宫干四化互飞 + 语句化描述 */
 export type FlyMatrix = {
   palaces: PalaceFly[];
   /** 语句化：每宫一句「X宫(干)：禄入A、权入B、科入C、忌入D」 */
@@ -160,6 +181,12 @@ export type FlyMatrix = {
   note: string;
 };
 
+/**
+ * 生成十二宫飞宫四化全矩阵：每宫的宫干四化飞向何宫，含离心/向心自化标注。
+ * @param a - 本命盘对象
+ * @param ix - 共享索引（可选，默认新建）
+ * @returns 飞宫矩阵，含结构化的飞入列表和语句化描述
+ */
 export function getFlyMatrix(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): FlyMatrix {
   const rawFlies = (P: number): FlyEntry[] => {
     const p = a.palaces[P];
@@ -210,6 +237,7 @@ export function getFlyMatrix(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)):
 
 /* ─────────────── 四、夹宫关系 ─────────────── */
 
+/** 夹宫关系：某宫被左右两宫特定星耀组合夹制的情况 */
 export type JiaGong = {
   palaceIndex: number;
   palaceName: string;
@@ -229,6 +257,12 @@ const JIA_PAIRS: { kind: string; s1: string; s2: string; good: boolean; note: st
   { kind: "空劫夹", s1: "地空", s2: "地劫", good: false, note: "空劫相夹，财福易漏" },
 ];
 
+/**
+ * 检测十二宫的夹宫关系（左右/昌曲/魁钺/日月/羊陀/火铃/空劫/禄忌夹）。
+ * @param a - 本命盘对象
+ * @param ix - 共享索引（可选，默认新建）
+ * @returns 命中的夹宫关系列表
+ */
 export function getJiaGong(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): JiaGong[] {
   const out: JiaGong[] = [];
   for (const p of a.palaces) {
@@ -269,6 +303,7 @@ export function getJiaGong(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): J
 
 /* ─────────────── 五、四化传导链（禄忌两转三转） ─────────────── */
 
+/** 四化传导链中的一个步骤：某宫干四化某星飞入何宫 */
 export type ChainStep = {
   fromIndex: number;
   fromName: string;
@@ -284,6 +319,7 @@ export type ChainStep = {
   luJiTogether: boolean;
 };
 
+/** 一条四化传导链：从某宫起飞的禄或忌，经两转三转的完整路径 */
 export type MutagenChain = {
   kind: "禄" | "忌";
   headIndex: number;
@@ -295,6 +331,7 @@ export type MutagenChain = {
   text: string;
 };
 
+/** 四化传导链汇总：全部禄链与忌链 */
 export type MutagenChains = {
   ji: MutagenChain[];
   lu: MutagenChain[];
@@ -355,6 +392,13 @@ function traceOne(a: Astrolabe, ix: ChartIndex, head: number, kind: "禄" | "忌
   return { kind, headIndex: head, headName: a.palaces[head].name, steps, end, text };
 }
 
+/**
+ * 追踪十二宫的四化传导链（禄链+忌链，两转三转）。
+ * 每条链从某宫起飞，沿宫干四化逐级传导，遇自化/回头/成环即止。
+ * @param a - 本命盘对象
+ * @param ix - 共享索引（可选，默认新建）
+ * @returns 全部禄链与忌链的汇总
+ */
 export function traceMutagenChains(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): MutagenChains {
   return {
     ji: a.palaces.map((p) => traceOne(a, ix, p.index, "忌")),
@@ -365,6 +409,10 @@ export function traceMutagenChains(a: Astrolabe, ix: ChartIndex = buildChartInde
 
 /* ─────────────── 汇总入口 ─────────────── */
 
+/**
+ * 结构分析层聚合结果：一次 analyzeChart 调用的全部输出，
+ * 含格局检测、三方快照、飞宫矩阵、四化传导链、夹宫、借星。
+ */
 export type ChartAnalysis = {
   note: string;
   patterns: Pattern[];
@@ -424,7 +472,10 @@ export function getSelfMarksForScope(
   return { outward, inward };
 }
 
-/** 运限 Chart 完整数据（单 scope） */
+/**
+ * 指定运限级别的完整盘面数据：十二宫星耀+运限标签+四化+飞宫+自化连线。
+ * 供调试 API 和盘面渲染使用。
+ */
 export type ScopeChartData = {
   scope: Scope;
   /** 12 宫完整数据 */
@@ -481,6 +532,7 @@ export type ScopeChartData = {
   }>;
 };
 
+/** getChartDataForScope 的输入参数 */
 export type ChartDataForScopeParams = {
   astrolabe: Astrolabe;
   /** Horoscope 类型从 iztro 导入较复杂，此处用 unknown + 安全访问器 */
@@ -659,6 +711,12 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
   return { scope, palaces, flyMatrix, selfLinks };
 }
 
+/**
+ * 结构分析层聚合入口：一次调用产出全部分析结果。
+ * 整盘只建一次共享索引，六个分析函数复用。
+ * @param a - 本命盘对象
+ * @returns 完整分析结果（格局/三方/飞宫/传导链/夹宫/借星）
+ */
 export function analyzeChart(a: Astrolabe): ChartAnalysis {
   const ix = buildChartIndex(a); // 整盘建一次索引，六个分析共享
   return {

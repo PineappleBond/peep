@@ -19,6 +19,9 @@ import {
 
 /* ─────────────── 五、格局检测 ─────────────── */
 
+/**
+ * 本命格局检测结果：格局名称、吉凶类别、判断依据、含义、古籍出处、瑕疵说明。
+ */
 export type Pattern = {
   name: string;
   kind: "吉" | "凶" | "注意";
@@ -29,6 +32,12 @@ export type Pattern = {
   flaw?: string;
 };
 
+/**
+ * 检测本命格局（~45 个经典格局），含成格瑕疵判定与古籍赋文出处。
+ * @param a - 本命盘对象
+ * @param ix - 共享索引（可选，默认新建）
+ * @returns 命中的格局列表
+ */
 export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): Pattern[] {
   const S = ix.soulIdx;
   if (S < 0) return [];
@@ -757,6 +766,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
 
 /* ─────────────── 运限格局扫描（大限/流年/流月层） ─────────────── */
 
+/** 运限格局检测结果：所属运限级别、格局名称、吉凶、依据、含义 */
 export type HoroPattern = {
   scope: "decadal" | "yearly" | "monthly";
   name: string;
@@ -930,7 +940,13 @@ export function detectHoroscopePatterns(
 }
 
 
-/** 当前大限+流年+流月三 scope 一次扫描（共享索引）：导出与盘面格局面板共用入口 */
+/**
+ * 当前大限+流年+流月三 scope 一次扫描（共享索引）。
+ * 导出与盘面格局面板共用入口。
+ * @param a - 本命盘对象
+ * @param h - 三个运限级别的命宫索引与干支
+ * @returns 各级别的运限格局列表
+ */
 export function scanHoroscopePatterns(
   a: Astrolabe,
   h: {

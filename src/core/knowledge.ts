@@ -93,6 +93,7 @@ export const STAR_MUTAGEN_MD = `## 附录C：十四主星·星情与四化要诀
 `;
 
 /** 主题推理指引条目 */
+/** 主题知识指引：特定议题（如考运/财运/婚恋）的 AI 推理辅助 */
 export type TopicGuide = { key: string; label: string; md: string };
 
 /**

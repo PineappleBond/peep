@@ -1,13 +1,17 @@
 /** 干支 / 宫名 / 运限通用工具 */
 
+/** 天干（十天干） */
 export const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
+/** 地支（十二地支） */
 export const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"] as const;
 
+/** 农历月份名称（正月至腊月） */
 export const LUNAR_MONTHS = [
   "正月", "二月", "三月", "四月", "五月", "六月",
   "七月", "八月", "九月", "十月", "冬月", "腊月",
 ] as const;
 
+/** 农历日期名称（初一至三十） */
 export const LUNAR_DAYS = [
   "初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十",
   "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十",
@@ -31,7 +35,9 @@ export const TIME_OPTIONS = [
   { index: 12, label: "晚子时", range: "23:00~00:00" },
 ] as const;
 
+/** 数学取模（结果始终为非负数，处理 JS 负数取模的坑） */
 export const mod = (n: number, m: number) => ((n % m) + m) % m;
+/** 十二宫索引修正（mod 12） */
 export const fixIndex = (n: number) => mod(n, 12);
 
 /** 对宫索引：本宫 +6（十二宫循环） */
@@ -125,10 +131,12 @@ export function abbrPalace(name: string | undefined): string {
   return PALACE_ABBR[name] ?? name.charAt(0);
 }
 
-/** 运限层级 */
+/** 运限层级：大限/流年/流月/流日/流时 */
 export type Scope = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
+/** 全部运限层级（有序数组） */
 export const SCOPES: Scope[] = ["decadal", "yearly", "monthly", "daily", "hourly"];
 
+/** 运限层级元数据：显示标签、前缀、行标签 */
 export const SCOPE_META: Record<Scope, { label: string; prefix: string; rowLabel: string }> = {
   decadal: { label: "限", prefix: "大", rowLabel: "大限" },
   yearly: { label: "年", prefix: "年", rowLabel: "流年" },
@@ -137,10 +145,12 @@ export const SCOPE_META: Record<Scope, { label: string; prefix: string; rowLabel
   hourly: { label: "时", prefix: "时", rowLabel: "流时" },
 };
 
+/** 四化字符（按序：禄/权/科/忌） */
 export const MUTAGEN_CHARS = ["禄", "权", "科", "忌"] as const;
+/** 四化字符类型 */
 export type MutagenChar = (typeof MUTAGEN_CHARS)[number];
 
-// 运限自化标记（StarCell / PalaceCard / PalaceDetail 共用）
+/** 运限自化标记：某运限层级的离心/向心自化信息 */
 export type ScopeSelfMark = {
   scope: Scope;
   char: MutagenChar;
@@ -191,8 +201,10 @@ export const MUTAGEN_TABLES: Record<"default" | "zhongzhou", Record<string, stri
   },
 };
 
+/** 四化表标识：通行版 / 中州派 */
 export type MutagenTableKey = keyof typeof MUTAGEN_TABLES;
 
+/** 四化表显示标签 */
 export const MUTAGEN_TABLE_LABEL: Record<MutagenTableKey, string> = {
   default: "通行四化（庚阳武阴同·壬梁紫左武）",
   zhongzhou: "中州派四化（庚阳武府同·壬梁紫府武，天府化科）",

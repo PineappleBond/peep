@@ -6,9 +6,15 @@ import { util } from "iztro";
 import type { Astrolabe } from "./useZwds";
 import { MUTAGEN_CHARS, fixIndex } from "./utils";
 
+/** 六吉星+禄马（用于三方四正会照判断） */
 export const AUSPICIOUS_MINORS = ["左辅", "右弼", "天魁", "天钺", "文昌", "文曲", "禄存", "天马"];
+/** 六煞星（用于三方四正会煞判断） */
 export const SHA_STARS = ["擎羊", "陀罗", "火星", "铃星", "地空", "地劫"];
 
+/**
+ * 盘面共享索引：星名→宫位映射、亮度、生年四化等。
+ * 整盘只建一次，向下传参复用给 analysis / patterns / lifeKline 等模块。
+ */
 export type ChartIndex = {
   a: Astrolabe;
   soulIdx: number;
@@ -22,11 +28,21 @@ export type ChartIndex = {
   yearBranch: string;
 };
 
+/**
+ * 获取某宫全部星耀名称（主星+辅星+杂耀）。
+ * @param a - 本命盘对象
+ * @param i - 宫位索引（自动 mod 12）
+ */
 export function starNamesAt(a: Astrolabe, i: number): string[] {
   const p = a.palaces[fixIndex(i)];
   return [...p.majorStars, ...p.minorStars, ...p.adjectiveStars].map((s) => s.name as string);
 }
 
+/**
+ * 构建盘面共享索引：遍历全部宫位建立星名→宫位映射、亮度表、生年四化。
+ * @param a - 本命盘对象
+ * @returns 共享索引，供后续分析函数使用
+ */
 export function buildChartIndex(a: Astrolabe): ChartIndex {
   const pos = new Map<string, number>();
   const bright = new Map<string, string>();

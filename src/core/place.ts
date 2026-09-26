@@ -83,6 +83,7 @@ export function listTimezones(): string[] {
   return Object.keys(TZ_LONGITUDE);
 }
 
+/** 出生地输入参数：中国模式取省市区，海外模式取 IANA 时区名 */
 export type BirthPlaceInput = {
   placeMode: "china" | "overseas";
   timezone: string;
@@ -91,6 +92,7 @@ export type BirthPlaceInput = {
   district: string;
 };
 
+/** 出生地解析结果：经度、钟表基准偏移、展示标签 */
 export type ResolvedPlace = {
   longitude: number;
   /** 钟表基准偏移（分钟）：中国=480；海外=该时区在出生时刻的实际 UTC 偏移 */
