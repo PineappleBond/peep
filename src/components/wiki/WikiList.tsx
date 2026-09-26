@@ -10,6 +10,7 @@ import {
   type WikiListFilters,
 } from "../../core/wikiDb";
 import { formatRelativeTime } from "../../core/utils";
+import { useI18n } from "../../core/i18n";
 
 /** WikiList 暴露给父组件的命令式接口 */
 export interface WikiListHandle {
@@ -36,6 +37,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   onDeleteClick,
   refreshKey = 0,
 }, ref) {
+  const { t } = useI18n();
   const [docs, setDocs] = useState<WikiDocument[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -121,7 +123,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
       {/* 顶部操作区 */}
       <div className="record-list-header">
         <button className="record-new-btn" onClick={onNewClick}>
-          + 新建文档
+          + {t("wiki.createDoc")}
         </button>
       </div>
 
@@ -130,10 +132,10 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
         <input
           type="text"
           className="record-search-input"
-          placeholder="搜索标题、内容..."
+          placeholder={t("wiki.search")}
           value={searchText}
           onChange={(e) => handleSearchChange(e.target.value)}
-          aria-label="搜索文档"
+          aria-label={t("wiki.searchAria")}
         />
       </div>
 
@@ -157,8 +159,8 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
         {docs.length === 0 ? (
           <div className="record-list-empty wiki-empty">
             {searchText || selectedTags.length > 0
-              ? "未找到匹配的文档"
-              : "暂无文档"}
+              ? t("wiki.noMatch")
+              : t("wiki.noDocs")}
           </div>
         ) : (
           docs.map((doc) => (
@@ -182,7 +184,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
                   {formatRelativeTime(doc.updatedAt)}
                 </div>
                 <div className="record-list-item-text">
-                  {doc.title || "（无标题）"}
+                  {doc.title || t("wiki.noTitle")}
                 </div>
                 {personName && (
                   <div className="record-list-item-person">{personName}</div>
@@ -209,8 +211,8 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
                     e.stopPropagation();
                     onEditClick(doc);
                   }}
-                  title="编辑"
-                  aria-label="编辑"
+                  title={t("common.edit")}
+                  aria-label={t("common.edit")}
                 >
                   ✎
                 </button>
@@ -220,8 +222,8 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
                     e.stopPropagation();
                     onDeleteClick(doc);
                   }}
-                  title="删除"
-                  aria-label="删除"
+                  title={t("common.delete")}
+                  aria-label={t("common.delete")}
                 >
                   🗑
                 </button>
@@ -237,7 +239,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            aria-label="上一页"
+            aria-label={t("common.prev")}
           >
             &lt;
           </button>
@@ -247,7 +249,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
-            aria-label="下一页"
+            aria-label={t("common.next")}
           >
             &gt;
           </button>

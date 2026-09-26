@@ -9,6 +9,7 @@ import type { WikiDocument } from "../../core/personDb";
 import { getWikiLinks, getWikiBacklinks, getWikiDoc } from "../../core/wikiDb";
 import { renderMarkdown } from "../../core/markdown";
 import { formatDateTime } from "../../core/utils";
+import { useI18n } from "../../core/i18n";
 
 interface WikiReaderProps {
   doc: WikiDocument | null;
@@ -24,6 +25,7 @@ interface RelatedDoc {
 }
 
 export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiReaderProps) {
+  const { t } = useI18n();
   const [relatedDocs, setRelatedDocs] = useState<RelatedDoc[]>([]);
 
   // 加载关联文档（正向链接 + 反向链接）
@@ -70,7 +72,7 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
     return (
       <div className="wiki-reader wiki-reader-empty">
         <div className="wiki-empty-hint">
-          请选择左侧文档查看，或点击【新建文档】开始撰写
+          {t("wiki.readerEmpty")}
         </div>
       </div>
     );
@@ -83,7 +85,7 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
       {/* 文档头部 */}
       <div className="wiki-reader-header">
         <div className="wiki-reader-header-main">
-          <h1 className="wiki-reader-title">{doc.title || "（无标题）"}</h1>
+          <h1 className="wiki-reader-title">{doc.title || t("wiki.noTitle")}</h1>
           <div className="wiki-reader-meta">
             <span className="wiki-meta-person">{personName}</span>
             <span className="wiki-meta-time">{formatDateTime(doc.updatedAt)}</span>
@@ -97,7 +99,7 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
           </div>
         </div>
         <button className="wiki-edit-btn" onClick={onEditClick}>
-          编辑
+          {t("common.edit")}
         </button>
       </div>
 
@@ -111,7 +113,7 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
       {/* 关联文档面板 */}
       {relatedDocs.length > 0 && (
         <div className="wiki-related-panel">
-          <h3 className="wiki-related-title">关联文档</h3>
+          <h3 className="wiki-related-title">{t("wiki.relatedDocs")}</h3>
           <ul className="wiki-related-list">
             {relatedDocs.map((rd) => (
               <li key={rd.id} className="wiki-related-item">
@@ -120,7 +122,7 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
                   className="wiki-related-link"
                   onClick={() => onDocClick(rd.id)}
                 >
-                  {rd.title || "（无标题）"}
+                  {rd.title || t("wiki.noTitle")}
                 </button>
               </li>
             ))}

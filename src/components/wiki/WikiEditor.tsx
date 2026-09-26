@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import type { WikiDocument } from "../../core/personDb";
 import { listWikiDocs, getWikiLinks, getWikiDoc } from "../../core/wikiDb";
 import { TagInput } from "../daliuren/TagInput";
+import { useI18n } from "../../core/i18n";
 
 export interface WikiEditorProps {
   /** 文档数据，undefined 表示新建模式 */
@@ -27,6 +28,7 @@ export function WikiEditor({
   onSave,
   onCancel,
 }: WikiEditorProps) {
+  const { t } = useI18n();
   // 表单状态
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -140,7 +142,7 @@ export function WikiEditor({
   // 保存
   const handleSave = async () => {
     if (!title.trim()) {
-      setError("标题不能为空");
+      setError(t("wiki.editor.titleRequired"));
       return;
     }
 
@@ -162,7 +164,7 @@ export function WikiEditor({
       await onSave(wikiDoc, linkTargetIds);
       onCancel();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "保存失败，请重试");
+      setError(e instanceof Error ? e.message : t("common.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -185,10 +187,10 @@ export function WikiEditor({
           className="wiki-editor-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="文档标题"
+          placeholder={t("wiki.editor.docTitlePlaceholder")}
           maxLength={200}
           autoFocus
-          aria-label="文档标题"
+          aria-label={t("wiki.editor.docTitle")}
         />
       </div>
 
@@ -198,16 +200,16 @@ export function WikiEditor({
           className="wiki-editor-textarea"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="使用 Markdown 格式撰写..."
+          placeholder={t("wiki.editor.contentPlaceholder")}
           rows={20}
           maxLength={100000}
-          aria-label="文档正文"
+          aria-label={t("wiki.editor.docContent")}
         />
       </div>
 
       {/* 标签输入 */}
       <div className="wiki-editor-field">
-        <label>标签</label>
+        <label>{t("wiki.editor.tags")}</label>
         <TagInput
           value={tags}
           onChange={setTags}
@@ -218,7 +220,7 @@ export function WikiEditor({
 
       {/* 关联文档选择 */}
       <div className="wiki-editor-field">
-        <label>关联文档</label>
+        <label>{t("wiki.editor.relatedDocs")}</label>
         <div className="wiki-editor-link-section">
           {/* 搜索框 */}
           <input
@@ -226,8 +228,8 @@ export function WikiEditor({
             className="wiki-editor-link-search"
             value={linkSearchText}
             onChange={(e) => setLinkSearchText(e.target.value)}
-            placeholder="搜索其他文档..."
-            aria-label="搜索关联文档"
+            placeholder={t("wiki.editor.searchRelated")}
+            aria-label={t("wiki.editor.searchRelatedAria")}
           />
 
           {/* 搜索结果列表 */}
@@ -261,12 +263,12 @@ export function WikiEditor({
             <div className="wiki-link-selected">
               {linkTargetIds.map((id) => (
                 <div key={id} className="wiki-link-selected-item">
-                  <span>{linkTargetTitles[id] || `文档 #${id}`}</span>
+                  <span>{linkTargetTitles[id] || t("wiki.editor.docRef", { id })}</span>
                   <button
                     type="button"
                     className="wiki-link-remove"
                     onClick={() => removeLinkTarget(id)}
-                    aria-label="移除关联"
+                    aria-label={t("wiki.editor.removeRelation")}
                   >
                     ×
                   </button>
@@ -284,14 +286,14 @@ export function WikiEditor({
           onClick={handleCancel}
           disabled={saving}
         >
-          取消
+          {t("wiki.editor.cancel")}
         </button>
         <button
           className="btn-primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "保存中..." : "保存"}
+          {saving ? t("wiki.editor.saving") : t("wiki.editor.save")}
         </button>
       </div>
     </div>
