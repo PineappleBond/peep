@@ -70,7 +70,12 @@ npm run preview
 
 # 运行测试（vitest：干支/农历闰月/K线引擎/结构分析 27+ 项）
 npm test
+
+# 代码质量综合检查（类型检查 + ESLint + Prettier）
+npm run quality
 ```
+
+更多开发相关命令（`typecheck` / `lint` / `format`）和贡献流程见 [开发者指南](docs/dev-guide.md)。
 
 ### 浏览器支持
 
@@ -81,18 +86,18 @@ npm test
 
 ## 技术栈
 
-| 类别 | 技术 | 说明 |
-| ---- | ---- | ---- |
-| 构建工具 | Vite 8 | 极速 HMR 开发体验 |
-| 前端框架 | React 18 | 函数组件 + Hooks |
-| 类型系统 | TypeScript 5.6 | 严格模式 |
-| 算法引擎 | [iztro](https://github.com/SylarLong/iztro) 2.x | 星耀安放、四化、运限计算 |
-| 历法计算 | lunar-lite + lunar-typescript | 农历⇄公历、闰月、日柱干支 |
-| 数据存储 | Dexie.js (IndexedDB) | 人物档案/大六壬记录/Wiki 文档 |
-| 序列化 | TOON | 紧凑数据格式，较 JSON 省约 70% token |
-| 路由 | react-router-dom v7 | 三页面路由（紫微/大六壬/Wiki） |
-| 测试 | Vitest + Playwright | 单元测试 + E2E 测试 |
-| 样式 | 原生 CSS | 无 UI 框架，集中在 src/styles/ |
+| 类别     | 技术                                            | 说明                                 |
+| -------- | ----------------------------------------------- | ------------------------------------ |
+| 构建工具 | Vite 8                                          | 极速 HMR 开发体验                    |
+| 前端框架 | React 18                                        | 函数组件 + Hooks                     |
+| 类型系统 | TypeScript 5.6                                  | 严格模式                             |
+| 算法引擎 | [iztro](https://github.com/SylarLong/iztro) 2.x | 星耀安放、四化、运限计算             |
+| 历法计算 | lunar-lite + lunar-typescript                   | 农历⇄公历、闰月、日柱干支            |
+| 数据存储 | Dexie.js (IndexedDB)                            | 人物档案/大六壬记录/Wiki 文档        |
+| 序列化   | TOON                                            | 紧凑数据格式，较 JSON 省约 70% token |
+| 路由     | react-router-dom v7                             | 三页面路由（紫微/大六壬/Wiki）       |
+| 测试     | Vitest + Playwright                             | 单元测试 + E2E 测试                  |
+| 样式     | 原生 CSS                                        | 无 UI 框架，集中在 src/styles/       |
 
 ## 项目结构
 
@@ -101,6 +106,7 @@ peep-v2/
 ├── docs/
 │   ├── kb/                  # 公版赋文库：二十篇紫微古籍原文（L3 知识层）
 │   ├── debug-api.md         # 调试 API（window.peep）使用文档
+│   ├── dev-guide.md         # 开发者指南（代码规范/调试技巧/FAQ）
 │   ├── architecture.md      # 架构说明文档
 │   └── superpowers/specs/   # 设计规格文档
 ├── src/
@@ -235,13 +241,13 @@ peep-v2/
 
 提交信息格式：`类别：概述——细节`
 
-| 类别 | 含义 |
-| ---- | ---- |
-| 功能 | 新功能 |
-| 修 | Bug 修复 |
-| 文档 | 文档变更 |
+| 类别 | 含义                   |
+| ---- | ---------------------- |
+| 功能 | 新功能                 |
+| 修   | Bug 修复               |
+| 文档 | 文档变更               |
 | 重构 | 代码重构（不影响功能） |
-| 测试 | 测试相关 |
+| 测试 | 测试相关               |
 
 示例：`修：调试 API 跨页面调用时序——添加回调注册等待机制`
 
