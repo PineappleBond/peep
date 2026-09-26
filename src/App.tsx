@@ -21,6 +21,9 @@ const DaLiuRenPage = lazy(() =>
 );
 const WikiPage = lazy(() => import("./pages/WikiPage").then(m => ({ default: m.WikiPage })));
 const VizPage = lazy(() => import("./pages/VizPage").then(m => ({ default: m.VizPage })));
+const InsightsPage = lazy(() =>
+  import("./pages/InsightsPage").then(m => ({ default: m.InsightsPage })),
+);
 
 // 初始化调试 API
 initDebugApi();
@@ -86,6 +89,7 @@ function App() {
               <Route path="/liuren" element={<DaLiuRenPage />} />
               <Route path="/wiki" element={<WikiPage />} />
               <Route path="/viz" element={<VizPage />} />
+              <Route path="/insights" element={<InsightsPage />} />
               {/* 插件路由：插件启用后自动注入 */}
               {pluginsReady && <PluginRoutes />}
               {/* 兜底：未知路径重定向到首页 */}
