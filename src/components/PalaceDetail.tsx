@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, memo } from "react";
-import { SCOPES, SCOPE_META, type Scope } from "../core/utils";
+import { SCOPES, SCOPE_META } from "../core/utils";
 import { getSelfMarksForScope, buildChartIndex } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 import { useI18n } from "../core/i18n";
@@ -41,7 +41,7 @@ export const PalaceDetail = memo(function PalaceDetail({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
       const focusable = Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector)).filter(
-        el => el.offsetParent !== null
+        el => el.offsetParent !== null,
       ); // 仅可见元素
       if (focusable.length === 0) return;
       const first = focusable[0];

@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useI18n } from "../core/i18n";
-import type { Person, WikiDocument } from "../core/personDb";
+import type { WikiDocument } from "../core/personDb";
 import {
   saveWikiDoc,
   deleteWikiDoc,
@@ -213,7 +213,7 @@ export function WikiPage() {
           .join("\n");
 
       for (const [tag, list] of Array.from(tagMap.entries()).sort((a, b) =>
-        a[0].localeCompare(b[0])
+        a[0].localeCompare(b[0]),
       )) {
         md += `## ${tag}\n\n${renderDocs(list)}\n\n`;
       }

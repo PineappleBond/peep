@@ -26,7 +26,7 @@ export function DaLiuRenPage() {
   } = useRefreshKey();
 
   // 默认人物加载 + 切换监听（切换后清空选中、刷新列表）
-  const { person, initError } = useDefaultPerson((newPerson: Person) => {
+  const { person, initError } = useDefaultPerson((_newPerson: Person) => {
     setSelectedRecord(null);
     refreshList();
   });

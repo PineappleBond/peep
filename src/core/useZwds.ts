@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
 import type { MutagenTableKey, Scope } from "./utils";
-import { BRANCHES, MUTAGEN_TABLES, applyTrueSolar } from "./utils";
+import { MUTAGEN_TABLES, applyTrueSolar } from "./utils";
 import {
   daysInLunarMonth,
   fmtSolar,
@@ -179,7 +179,7 @@ export function effectiveBirth(input: BirthInput): EffectiveBirth {
     solarStr,
     input.exactTime,
     resolved.longitude,
-    resolved.clockOffsetMinutes
+    resolved.clockOffsetMinutes,
   );
   if (!adj) return base;
   return {
@@ -259,13 +259,13 @@ export function useZwds(input: BirthInput) {
   /** 十二大限，按起限年龄升序 */
   const decades = useMemo<DecadeInfo[]>(
     () => (astrolabe ? buildDecades(astrolabe, birthLunarYear) : []),
-    [astrolabe, birthLunarYear]
+    [astrolabe, birthLunarYear],
   );
 
   /** 童限（出生 ~ 起运前一年） */
   const childhood = useMemo(
     () => buildChildhood(decades, birthLunarYear),
-    [decades, birthLunarYear]
+    [decades, birthLunarYear],
   );
 
   // 拨盘导航不持久化：命盘由存储的起盘参数直接渲染，拨盘位置每次刷新/起盘回默认（今天）
@@ -280,13 +280,13 @@ export function useZwds(input: BirthInput) {
   /** 当前流年所落的大限序号；-1 = 童限 */
   const activeDecadeIdx = useMemo(
     () => calcActiveDecadeIdx(pick.year, decades, birthLunarYear),
-    [decades, pick.year, birthLunarYear]
+    [decades, pick.year, birthLunarYear],
   );
 
   /** 当前大限（或童限）内的流年列表 */
   const years = useMemo<CellYear[]>(
     () => buildYears(activeDecadeIdx, decades, childhood, birthLunarYear),
-    [activeDecadeIdx, decades, childhood, birthLunarYear]
+    [activeDecadeIdx, decades, childhood, birthLunarYear],
   );
 
   /** 当年闰月（0=无）；拨盘的闰月选择仅当与当年闰月吻合时生效 */
@@ -295,20 +295,20 @@ export function useZwds(input: BirthInput) {
 
   const monthDays = useMemo(
     () => daysInLunarMonth(pick.year, pick.month, effLeap),
-    [pick.year, pick.month, effLeap]
+    [pick.year, pick.month, effLeap],
   );
   const clampedDay = Math.min(pick.day, monthDays);
 
   /** 流月（五虎遁干支；有闰月时插入闰月位，闰月无独立月建、沿用本月干支） */
   const months = useMemo<CellMonth[]>(
     () => buildMonths(pick.year, yearLeapMonth),
-    [pick.year, yearLeapMonth]
+    [pick.year, yearLeapMonth],
   );
 
   /** 流日（含日柱干支） */
   const days = useMemo<CellDay[]>(
     () => buildDays(pick.year, pick.month, monthDays, effLeap),
-    [pick.year, pick.month, monthDays, effLeap]
+    [pick.year, pick.month, monthDays, effLeap],
   );
 
   /** 流时（五鼠遁干支） */
@@ -320,7 +320,7 @@ export function useZwds(input: BirthInput) {
   /** 拨盘目标（公历） */
   const targetSolar = useMemo(
     () => lunarToSolarStr(pick.year, pick.month, clampedDay, effLeap) ?? fmtSolar(new Date()),
-    [pick.year, pick.month, clampedDay, effLeap]
+    [pick.year, pick.month, clampedDay, effLeap],
   );
 
   const horoscope = useMemo<Horoscope | null>(() => {
@@ -382,13 +382,13 @@ export function useZwds(input: BirthInput) {
   /** 本命命宫索引 */
   const soulPalaceIndex = useMemo(
     () => astrolabe?.palaces.findIndex(p => p.name === "命宫") ?? -1,
-    [astrolabe]
+    [astrolabe],
   );
 
   /** 人生K线（确定性量化，随盘重算） */
   const lifeKline = useMemo(
     () => buildLifeKline(astrolabe, decades, birthLunarYear),
-    [astrolabe, decades, birthLunarYear]
+    [astrolabe, decades, birthLunarYear],
   );
 
   /** 结构分析（格局/飞宫/三方四正快照/夹宫/借星）：盘面弹层与 AI 导出共用 */

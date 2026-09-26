@@ -13,8 +13,8 @@ export default {
   semi: true,
   // 双引号——与项目现有风格一致
   singleQuote: false,
-  // 尾随逗号（ES5 允许范围）——减少 git diff
-  trailingComma: "es5",
+  // 尾随逗号（all）——与项目统一规范对齐，减少 git diff
+  trailingComma: "all",
   // 对象字面量括号空格：{ foo: bar }
   bracketSpacing: true,
   // JSX 括号不换行：<div foo="bar" />

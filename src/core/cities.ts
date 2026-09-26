@@ -4651,7 +4651,7 @@ export const PROVINCES: ProvinceData[] = [
 export function findLongitude(
   provinceName: string,
   cityName: string,
-  districtName: string
+  districtName: string,
 ): number | undefined {
   const province = PROVINCES.find(p => p.name === provinceName);
   const city = province?.cities.find(ct => ct.name === cityName);
@@ -4660,7 +4660,7 @@ export function findLongitude(
 }
 
 export function getCityByName(
-  name: string
+  name: string,
 ): { name: string; province: string; longitude: number } | undefined {
   for (const p of PROVINCES) {
     for (const ct of p.cities) {
@@ -4689,7 +4689,7 @@ export const ALL_DISTRICT_NAMES: string[] = [
 
 /** 扁平化城市经度列表（兼容旧接口） */
 export const CITY_LNG: [string, number][] = PROVINCES.flatMap(p =>
-  p.cities.map(ct => [ct.name, ct.districts[0].longitude] as [string, number])
+  p.cities.map(ct => [ct.name, ct.districts[0].longitude] as [string, number]),
 );
 
 /** 获取某省的所有城市名 */
@@ -4707,7 +4707,7 @@ export function getDistrictNamesOfCity(provinceName: string, cityName: string): 
 export function getLongitude(
   provinceName: string,
   cityName: string,
-  districtName: string
+  districtName: string,
 ): number | undefined {
   const prov = PROVINCES.find(p => p.name === provinceName);
   const city = prov?.cities.find(c => c.name === cityName);
@@ -4719,7 +4719,7 @@ export function getLongitude(
 export function applyTrueSolarTime(
   hour: number,
   minute: number,
-  longitude: number
+  longitude: number,
 ): { hour: number; minute: number; offsetMin: number } {
   const offsetMin = Math.round((longitude - 120) * 4);
   let totalMin = hour * 60 + minute + offsetMin;
@@ -4728,7 +4728,7 @@ export function applyTrueSolarTime(
 }
 
 /** 根据小时+分钟判断时辰索引（iztro 0~12） */
-export function hourToBirthTimeIndex(h: number, m: number): number {
+export function hourToBirthTimeIndex(h: number, _m: number): number {
   if (h === 23) return 12; // 23:00~23:59 = 晚子时
   if (h === 0) return 0; // 00:00~00:59 = 早子时
   return Math.floor((h + 1) / 2);

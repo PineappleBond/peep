@@ -8,7 +8,7 @@
  */
 import { util } from "iztro";
 import type { Astrolabe } from "./useZwds";
-import { MUTAGEN_CHARS, fixIndex, type MutagenChar, type ScopeSelfMark, type Scope } from "./utils";
+import { MUTAGEN_CHARS, fixIndex, type MutagenChar, type Scope } from "./utils";
 import {
   AUSPICIOUS_MINORS,
   SEAT_ROLES,
@@ -19,7 +19,7 @@ import {
   starTxt,
   type ChartIndex,
 } from "./chartIndex";
-import { detectHoroscopePatterns, detectPatterns, type Pattern } from "./patterns";
+import { detectPatterns, type Pattern } from "./patterns";
 
 /* 对外保持单一门面：格局与索引原语经此再导出 */
 export * from "./patterns";
@@ -45,7 +45,7 @@ export type BorrowedInfo = {
  */
 export function getBorrowedStars(
   a: Astrolabe,
-  ix: ChartIndex = buildChartIndex(a)
+  ix: ChartIndex = buildChartIndex(a),
 ): BorrowedInfo[] {
   const out: BorrowedInfo[] = [];
   for (const p of a.palaces) {
@@ -99,7 +99,7 @@ export type SanfangSnapshot = {
  */
 export function getSanfangSnapshots(
   a: Astrolabe,
-  ix: ChartIndex = buildChartIndex(a)
+  ix: ChartIndex = buildChartIndex(a),
 ): SanfangSnapshot[] {
   return a.palaces.map(p => {
     const idxs = sanfangIdx(p.index);
@@ -230,7 +230,7 @@ export function getFlyMatrix(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)):
     const parts = pf.flies.map(f =>
       f.isSelf
         ? `化${f.mutagen}=${f.star}→本宫（自化${f.mutagen}·离心）`
-        : `化${f.mutagen}=${f.star}→${f.toName}`
+        : `化${f.mutagen}=${f.star}→${f.toName}`,
     );
     return `${pf.palaceName}(${pf.stem}${pf.branch})：${parts.join("，")}`;
   });
@@ -399,7 +399,7 @@ function traceOne(a: Astrolabe, ix: ChartIndex, head: number, kind: "禄" | "忌
         s =>
           `${s.fromName}(${s.stem})${s.star}${kind}入${s.isSelf ? "本宫" : s.toName}${
             s.luJiTogether ? "（禄忌同途）" : ""
-          }`
+          }`,
       )
       .join(" → ") + `【${end === "自化" ? `自化${kind}` : end}】`;
   return { kind, headIndex: head, headName: a.palaces[head].name, steps, end, text };
@@ -414,7 +414,7 @@ function traceOne(a: Astrolabe, ix: ChartIndex, head: number, kind: "禄" | "忌
  */
 export function traceMutagenChains(
   a: Astrolabe,
-  ix: ChartIndex = buildChartIndex(a)
+  ix: ChartIndex = buildChartIndex(a),
 ): MutagenChains {
   return {
     ji: a.palaces.map(p => traceOne(a, ix, p.index, "忌")),
@@ -453,7 +453,7 @@ export function getSelfMarksForScope(
   palaceIdx: number,
   stem: string,
   a: Astrolabe,
-  ix: ChartIndex = buildChartIndex(a)
+  ix: ChartIndex = buildChartIndex(a),
 ): {
   outward: Array<{ star: string; char: MutagenChar }>;
   inward: Array<{ star: string; char: MutagenChar }>;

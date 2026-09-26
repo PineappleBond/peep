@@ -4,7 +4,6 @@
 import { describe, expect, it } from "vitest";
 import { astro } from "iztro";
 import {
-  buildDecades,
   buildChildhood,
   calcActiveDecadeIdx,
   buildYears,
