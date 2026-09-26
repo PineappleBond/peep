@@ -3,7 +3,7 @@
  *
  * 功能：
  * - 颜色选择器（HEX 输入 + 原生 color picker）
- * - 预设主题快速切换
+ * - 预设主题快速切换（根据当前亮暗模式自动选择变体）
  * - 实时预览（修改立即应用到 :root CSS 变量）
  * - 重置为默认
  * - 导出/导入主题 JSON
@@ -20,7 +20,9 @@ import {
   clearCustomTheme,
   importTheme,
   themeFromPreset,
+  getPresetColors,
   type CustomTheme,
+  type PresetTheme,
   type ThemeColors,
 } from "../core/themeEditor";
 
@@ -38,7 +40,7 @@ function colorToHex(value: string): string {
   if (/^#[0-9a-fA-F]{3}$/.test(value)) {
     return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`;
   }
-  // rgba 格式：提取前三个值转为 hex
+  // rgba 配置：提取前三个值转为 hex
   const rgbaMatch = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (rgbaMatch) {
     const r = parseInt(rgbaMatch[1]).toString(16).padStart(2, "0");
@@ -99,13 +101,13 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
     setIsDirty(true);
   }, []);
 
-  /** 应用预设主题 */
-  const applyPreset = useCallback((preset: CustomTheme) => {
-    const cloned = themeFromPreset(preset);
-    setColors(cloned.colors);
-    setThemeName(cloned.name);
+  /** 应用预设主题：根据当前亮暗模式自动选择对应变体 */
+  const applyPreset = useCallback((preset: PresetTheme) => {
+    const variantColors = getPresetColors(preset);
+    setColors(variantColors);
+    setThemeName(preset.name);
     // 实时预览
-    for (const [key, value] of Object.entries(cloned.colors)) {
+    for (const [key, value] of Object.entries(variantColors)) {
       document.documentElement.style.setProperty(`--${key}`, value);
     }
     setIsDirty(true);
@@ -227,22 +229,25 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
         <div className="te-section">
           <label className="te-label">{t("themeEditor.presets")}</label>
           <div className="te-presets">
-            {PRESET_THEMES.map(preset => (
-              <button
-                key={preset.name}
-                className="te-preset"
-                onClick={() => applyPreset(preset)}
-                title={preset.name}
-              >
-                <div className="te-preset-swatch">
-                  <span style={{ background: preset.colors.bg }} />
-                  <span style={{ background: preset.colors.gold }} />
-                  <span style={{ background: preset.colors.cyan }} />
-                  <span style={{ background: preset.colors.text }} />
-                </div>
-                <span className="te-preset-name">{preset.name}</span>
-              </button>
-            ))}
+            {PRESET_THEMES.map(preset => {
+              const previewColors = getPresetColors(preset);
+              return (
+                <button
+                  key={preset.name}
+                  className="te-preset"
+                  onClick={() => applyPreset(preset)}
+                  title={preset.name}
+                >
+                  <div className="te-preset-swatch">
+                    <span style={{ background: previewColors.bg }} />
+                    <span style={{ background: previewColors.gold }} />
+                    <span style={{ background: previewColors.cyan }} />
+                    <span style={{ background: previewColors.text }} />
+                  </div>
+                  <span className="te-preset-name">{preset.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

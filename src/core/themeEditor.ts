@@ -42,6 +42,16 @@ export interface CustomTheme {
   colors: ThemeColors;
 }
 
+/** 预设主题结构：每个主题提供亮色/暗色两套变体 */
+export interface PresetTheme {
+  /** 主题名称 */
+  name: string;
+  /** 亮色模式变体 */
+  light: ThemeColors;
+  /** 暗色模式变体 */
+  dark: ThemeColors;
+}
+
 const STORAGE_KEY = "custom-theme";
 
 /** 默认可编辑的颜色键（在编辑器中显示） */
@@ -60,11 +70,30 @@ export const EDITABLE_COLOR_KEYS: { key: keyof ThemeColors; label: string }[] = 
   { key: "rose", label: "themeEditor.color.rose" },
 ];
 
-/** 预设主题列表 */
-export const PRESET_THEMES: CustomTheme[] = [
+/**
+ * 预设主题列表（每个主题提供 light/dark 两套变体）
+ *
+ * 亮色变体确保对比度 ≥ 4.5:1（WCAG AA），文字用深色、背景用浅色。
+ * 暗色变体保持原有霓虹风格。
+ */
+export const PRESET_THEMES: PresetTheme[] = [
   {
     name: "玄空霓虹",
-    colors: {
+    light: {
+      bg: "#eef2f9",
+      panel: "rgba(255, 255, 255, 0.92)",
+      line: "rgba(37, 99, 235, 0.22)",
+      "line-strong": "rgba(37, 99, 235, 0.55)",
+      text: "#0f172a",
+      dim: "#334155",
+      faint: "#64748b",
+      gold: "#92400e",
+      "gold-deep": "#78350f",
+      cyan: "#0c4a6e",
+      danger: "#b91c1c",
+      rose: "#9d174d",
+    },
+    dark: {
       bg: "#04060d",
       panel: "rgba(13, 20, 40, 0.72)",
       line: "rgba(96, 165, 250, 0.14)",
@@ -81,31 +110,59 @@ export const PRESET_THEMES: CustomTheme[] = [
   },
   {
     name: "宣纸素白",
-    colors: {
-      bg: "#f5f7fa",
-      panel: "rgba(255, 255, 255, 0.85)",
-      line: "rgba(0, 0, 0, 0.1)",
-      "line-strong": "rgba(0, 0, 0, 0.25)",
-      text: "#1a202c",
-      dim: "#4a5568",
-      faint: "#a0aec0",
-      gold: "#b7791f",
-      "gold-deep": "#975a16",
-      cyan: "#2b6cb0",
-      danger: "#c53030",
-      rose: "#d53f8c",
+    light: {
+      bg: "#faf8f3",
+      panel: "rgba(255, 253, 248, 0.95)",
+      line: "rgba(120, 100, 60, 0.15)",
+      "line-strong": "rgba(120, 100, 60, 0.35)",
+      text: "#1a1612",
+      dim: "#44403c",
+      faint: "#78716c",
+      gold: "#854d0e",
+      "gold-deep": "#713f12",
+      cyan: "#164e63",
+      danger: "#991b1b",
+      rose: "#9f1239",
+    },
+    dark: {
+      bg: "#faf8f3",
+      panel: "rgba(255, 253, 248, 0.95)",
+      line: "rgba(120, 100, 60, 0.15)",
+      "line-strong": "rgba(120, 100, 60, 0.35)",
+      text: "#1a1612",
+      dim: "#44403c",
+      faint: "#78716c",
+      gold: "#854d0e",
+      "gold-deep": "#713f12",
+      cyan: "#164e63",
+      danger: "#991b1b",
+      rose: "#9f1239",
     },
   },
   {
     name: "墨夜高对比",
-    colors: {
+    light: {
+      bg: "#ffffff",
+      panel: "rgba(255, 255, 255, 0.98)",
+      line: "rgba(0, 0, 0, 0.18)",
+      "line-strong": "rgba(0, 0, 0, 0.5)",
+      text: "#000000",
+      dim: "#1f1f1f",
+      faint: "#525252",
+      gold: "#854d0e",
+      "gold-deep": "#713f12",
+      cyan: "#0e7490",
+      danger: "#991b1b",
+      rose: "#9f1239",
+    },
+    dark: {
       bg: "#000000",
       panel: "rgba(20, 20, 20, 0.95)",
       line: "rgba(255, 255, 255, 0.2)",
       "line-strong": "rgba(255, 255, 255, 0.5)",
       text: "#ffffff",
-      dim: "#cccccc",
-      faint: "#999999",
+      dim: "#e5e5e5",
+      faint: "#a3a3a3",
       gold: "#ffd700",
       "gold-deep": "#e6ac00",
       cyan: "#00ffff",
@@ -115,7 +172,21 @@ export const PRESET_THEMES: CustomTheme[] = [
   },
   {
     name: "护眼暖秋",
-    colors: {
+    light: {
+      bg: "#f5f0e6",
+      panel: "rgba(255, 250, 240, 0.95)",
+      line: "rgba(146, 108, 46, 0.18)",
+      "line-strong": "rgba(146, 108, 46, 0.45)",
+      text: "#1c1508",
+      dim: "#3d3522",
+      faint: "#6b5d45",
+      gold: "#854d0e",
+      "gold-deep": "#713f12",
+      cyan: "#155e4e",
+      danger: "#9a2a1e",
+      rose: "#8b1a4a",
+    },
+    dark: {
       bg: "#1a1510",
       panel: "rgba(40, 30, 20, 0.8)",
       line: "rgba(200, 160, 100, 0.15)",
@@ -131,6 +202,21 @@ export const PRESET_THEMES: CustomTheme[] = [
     },
   },
 ];
+
+/** 判断当前是否为暗色模式 */
+export function isDarkMode(): boolean {
+  const root = document.documentElement;
+  const dataTheme = root.getAttribute("data-theme");
+  if (dataTheme === "dark") return true;
+  if (dataTheme === "light") return false;
+  // system 模式：检查系统偏好
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+/** 根据当前主题模式获取预设的颜色变体 */
+export function getPresetColors(preset: PresetTheme): ThemeColors {
+  return isDarkMode() ? preset.dark : preset.light;
+}
 
 /** 获取当前保存的自定义主题（若无则返回 null） */
 export function getCustomTheme(): CustomTheme | null {
@@ -194,11 +280,11 @@ export function importTheme(json: string): CustomTheme {
   return theme;
 }
 
-/** 从预设主题创建自定义主题（复制一份） */
-export function themeFromPreset(preset: CustomTheme): CustomTheme {
+/** 从预设主题创建自定义主题（复制当前模式对应变体） */
+export function themeFromPreset(preset: PresetTheme): CustomTheme {
   return {
     name: preset.name,
-    colors: { ...preset.colors },
+    colors: { ...getPresetColors(preset) },
   };
 }
 

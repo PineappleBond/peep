@@ -15,21 +15,21 @@
 
 ## 技术栈
 
-| 层级 | 技术选型 | 选型理由 |
-| ---- | -------- | -------- |
-| 构建 | Vite 8 | 极速 HMR，ESM 原生 |
-| 框架 | React 18 | 函数组件 + Hooks |
-| 类型 | TypeScript 5.6（strict） | 类型安全 |
-| 算法 | iztro 2.x | 成熟的紫微斗数 JS 引擎 |
-| 历法 | lunar-lite + lunar-typescript | 农历/闰月/干支（lunar-lite 部分 API 损坏，月天数走 lunar-typescript 兜底） |
-| 存储 | Dexie.js (IndexedDB) | 结构化本地存储，支持索引查询 |
-| 序列化 | TOON | 紧凑格式，AI 导出省 token |
-| 路由 | react-router-dom v7 | 多页面 SPA |
-| 测试 | Vitest + Playwright | 单元 + E2E |
+| 层级   | 技术选型                      | 选型理由                                                                   |
+| ------ | ----------------------------- | -------------------------------------------------------------------------- |
+| 构建   | Vite 8                        | 极速 HMR，ESM 原生                                                         |
+| 框架   | React 18                      | 函数组件 + Hooks                                                           |
+| 类型   | TypeScript 5.6（strict）      | 类型安全                                                                   |
+| 算法   | iztro 2.x                     | 成熟的紫微斗数 JS 引擎                                                     |
+| 历法   | lunar-lite + lunar-typescript | 农历/闰月/干支（lunar-lite 部分 API 损坏，月天数走 lunar-typescript 兜底） |
+| 存储   | Dexie.js (IndexedDB)          | 结构化本地存储，支持索引查询                                               |
+| 序列化 | TOON                          | 紧凑格式，AI 导出省 token                                                  |
+| 路由   | react-router-dom v7           | 多页面 SPA                                                                 |
+| 测试   | Vitest + Playwright           | 单元 + E2E                                                                 |
 
 ## 三层架构
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────┐
 │                      页面层 (pages/)                          │
 │   ZiweiPage    │    DaLiuRenPage    │    WikiPage            │
@@ -65,20 +65,36 @@
 │  │ knowledge   — L1 推理规则速查                           │     │
 │  └─────────────────────────────────────────────────────┘      │
 │                                                              │
+│  ┌─ 导出与扩展 ───────────────────────────────────────┐      │
+│  │ exportData  — AI 导出（TOON/MD/JSON）+ 口径约定       │     │
+│  │ decadePlan  — 十年规划表计算                           │     │
+│  │ synastry    — 合盘（双人相性分析）                      │     │
+│  │ rectify     — 生时校正助手                             │     │
+│  └─────────────────────────────────────────────────────┘      │
+│                                                              │
 │  ┌─ 数据层 ───────────────────────────────────────────┐      │
 │  │ personDb    — 人物库 + Dexie 数据库实例                │     │
 │  │ daliurenDb  — 大六壬起课 CRUD                          │     │
 │  │ wikiDb      — Wiki 文档 CRUD + 链接关系                │     │
 │  │ dbUtils     — 分页/过滤/搜索通用工具                    │     │
 │  │ tagCache    — 标签缓存                                 │     │
+│  │ migrations  — 数据库迁移脚本                           │     │
 │  └─────────────────────────────────────────────────────┘      │
 │                                                              │
 │  ┌─ 基础设施 ─────────────────────────────────────────┐      │
-│  │ debugApi    — window.peep 调试接口                    │     │
-│  │ events      — 跨组件事件总线                          │     │
-│  │ markdown    — 安全 Markdown 渲染器                     │     │
-│  │ usePageInit — 页面初始化 Hook                          │     │
-│  │ daliuren/   — 大六壬算法引擎（22 个模块）               │     │
+│  │ debugApi     — window.peep 调试接口                   │     │
+│  │ events       — 跨组件事件总线                         │     │
+│  │ markdown     — 安全 Markdown 渲染器                    │     │
+│  │ usePageInit  — 页面初始化 Hook                         │     │
+│  │ globalSearch — 全局搜索核心（模糊/拼音/正则）           │     │
+│  │ shortcuts    — 键盘快捷键注册系统                       │     │
+│  │ guide        — 用户引导流程定义                         │     │
+│  │ theme        — 主题管理（亮/暗/跟随系统）               │     │
+│  │ toast        — 全局 Toast 通知                         │     │
+│  │ sync         — 多设备同步（导出/导入+加密）             │     │
+│  │ pluginSystem — 插件系统核心                             │     │
+│  │ i18n         — 国际化支持                               │     │
+│  │ daliuren/    — 大六壬算法引擎（22 个模块）               │     │
 │  └─────────────────────────────────────────────────────┘      │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -87,7 +103,7 @@
 
 ### 紫微斗数排盘流程
 
-```
+```text
 用户输入生辰
     │
     ▼
@@ -126,7 +142,7 @@ useZwds Hook
 
 ### AI 导出流程
 
-```
+```text
 用户点击"复制给 AI"
     │
     ▼
@@ -151,7 +167,7 @@ TOON 序列化（或 Markdown）
 
 ### 大六壬排盘流程
 
-```
+```text
 用户输入占事信息
     │
     ▼
@@ -180,6 +196,7 @@ DaLiuRenResult（完整卦象）
 **输入**：`BirthInput`（姓名/性别/日期/时辰/流派/真太阳时等）
 
 **输出**：`Zwds` 对象，包含：
+
 - `astrolabe` — iztro 本命盘
 - `horoscope` — 运限数据
 - `visible` — 各运限级别可见状态
@@ -187,6 +204,7 @@ DaLiuRenResult（完整卦象）
 - `actions` — 状态修改方法
 
 **关键决策**：
+
 - 流派切换时自动设置四化表（iztro 全局配置，粘性——undefined 不清除残留）
 - 拨盘状态通过 `PickState` 管理（年月日时+闰月标志）
 - `DEFAULT_BIRTH_INPUT` 作为旧存档的字段补齐兜底
@@ -196,6 +214,7 @@ DaLiuRenResult（完整卦象）
 **职责**：把斗数推理中"机械且 AI 最易出错"的中间步骤确定性算好。
 
 **核心函数**：
+
 - `getSanfangSnapshots()` — 十二宫各一行三方四正汇总
 - `getFlyMatrix()` — 十二宫宫干四化互飞（12x4 矩阵）
 - `getJiaGong()` — 夹宫关系（左右/昌曲/魁钺/日月/羊陀等八类）
@@ -205,6 +224,7 @@ DaLiuRenResult（完整卦象）
 - `getChartDataForScope()` — 按运限级别提取盘面数据
 
 **设计原则**：
+
 - 全部只读本命盘（Astrolabe），不依赖运限状态
 - 各函数接受可选共享索引（`ChartIndex`），整盘建一次向下传
 - 格局检测（`patterns.ts`）和索引原语（`chartIndex.ts`）拆为独立模块，由 analysis 聚合再导出
@@ -214,12 +234,14 @@ DaLiuRenResult（完整卦象）
 **职责**：为十二宫各生成一条 0-100 评分 K 线。
 
 **方法论**（三合派口径）：
+
 - 每域独立评分（本宫x1.0 + 对宫x0.6 + 三合x0.4）
 - 区分"进"与"出"两股动能
 - 逐年叠加：大限四化 + 流年四化 + 流曜 + 小限 + 叠象
 - 月K线下钻（闰年 13 根含闰月位）
 
 **关键决策**：
+
 - K线量化数据仅盘面展示，不随 AI 导出（避免自定分值被 AI 误引）
 - 忌按专用落位权重：入本宫x1.0 / 落对宫=冲x0.9 / 三合x0.4
 - 双忌叠加非线性放大 35%
@@ -232,16 +254,86 @@ DaLiuRenResult（完整卦象）
 
 **运限格局**：以当前大限/流年命宫三方为中心，扫描八类运限格局。
 
+### exportData.ts — AI 导出
+
+**职责**：统一处理紫微斗数、大六壬、知识库三类数据的导出。
+
+**支持格式**：
+
+- **Markdown（MD）**：可读性最佳，适合 AI 输入或阅读
+- **TOON**：紧凑格式，较 JSON 省约 70% token
+- **JSON**：结构化备份，可再导入
+
+**口径约定**（与 CLAUDE.md 一致）：
+
+- AI 导出不携带人生K线量化数据（含月K线、十年规划表的均值/高光/低谷列）
+- 流日/流时默认不随导出（择日/择时场景由 UI 勾选附加）
+- 小限保留导出但带口径备注（辅助年系统，勿与流年混同）
+- 杂耀带 weight 权重档（中=可参与断事，低=仅叠加参考，名单见 `ADJ_MID_WEIGHT`）
+
+### globalSearch.ts — 全局搜索
+
+**职责**：为命令面板提供搜索能力。
+
+**匹配能力**：
+
+- 模糊匹配（大小写不敏感 + 中文字符子串）
+- 拼音匹配（全拼 / 首字母，缓存转换结果）
+- 正则匹配（`/pattern/flags` 语法）
+
+**搜索语法**：
+
+- `type:person|liuren|wiki|action` 限制类型
+- `tag:xxx` 限制标签（多次出现取交集）
+- `after:YYYY-MM-DD` / `before:YYYY-MM-DD` 限制时间
+- `-keyword` 排除关键词
+
+### sync.ts — 多设备同步
+
+**职责**：实现跨设备数据迁移（方案 C：导出/导入 + 端到端加密）。
+
+**设计思路**：
+
+- 将 IndexedDB 全部数据（人物、六壬、Wiki）打包为 JSON 快照
+- 可选用密码派生 AES-GCM 密钥加密（PBKDF2-SHA256）
+- 生成可分享的同步链接（URL 哈希携带密文，纯客户端，不上传服务器）
+- 在另一设备打开链接即可还原数据（覆盖或合并）
+
+**安全约定**：
+
+- 密码不传输、不存储；仅作为密钥派生材料
+- 每次加密使用随机 salt + iv，相同密码不同密文
+- 无密码模式下为明文 Base64（便于调试，不推荐用于敏感数据）
+
+### shortcuts.ts — 全局快捷键
+
+**职责**：注册/管理模式的全局键盘快捷键系统。
+
+**设计**：
+
+- 组件挂载时注册、卸载时自动注销
+- 后注册的快捷键优先匹配（页面快捷键优先于全局快捷键）
+- 输入框（input/textarea/select/contenteditable）中的按键不触发
+- 无修饰键的定义自动允许 Shift（因 Shift 只改变字符大小写/符号）
+
+**API**：
+
+- `registerShortcut(def)` — 注册单个快捷键，返回注销函数
+- `registerShortcuts(defs)` — 批量注册
+- `getRegisteredShortcuts()` — 获取所有已注册快捷键（帮助弹窗用）
+
 ### personDb.ts — 数据层
 
 **职责**：Dexie.js 封装 IndexedDB，管理三种实体。
 
 **数据库版本**：
+
 - v1：人物库
 - v2：+ 大六壬起课记录
 - v3：+ Wiki 文档 + Wiki 链接关系
 
 **索引设计**：
+
 - `persons`: `++id, savedAt, isDefault`
 - `liurenRecords`: `++id, personId, savedAt, calculationTime, *tags`
 - `wikiDocs`: `++id, personId, savedAt, updatedAt, *tags`
@@ -251,7 +343,7 @@ DaLiuRenResult（完整卦象）
 
 样式文件按职责拆分，全部原生 CSS（无预处理器/UI 框架）：
 
-```
+```text
 src/styles/
 ├── base.css         # CSS 变量、重置、全局排版
 ├── layout.css       # 页面布局（Header/主区域/底部面板）
@@ -265,7 +357,7 @@ src/styles/
 
 ## 路由与页面加载
 
-```
+```text
 /          → ZiweiPage     （直接加载，首屏关键路径）
 /liuren    → DaLiuRenPage  （React.lazy 懒加载）
 /wiki      → WikiPage      （React.lazy 懒加载）
@@ -278,7 +370,7 @@ src/styles/
 
 开发环境下 `window.peep` 暴露调试 API（详见 [debug-api.md](debug-api.md)）：
 
-```
+```text
 App.tsx (initDebugApi)
     │
     ├─→ ZiweiPage (registerZiWeiCallbacks)
@@ -290,7 +382,7 @@ App.tsx (initDebugApi)
 
 ## 知识体系（三层）
 
-```
+```text
 L1 推理规则速查    knowledge.ts      结构化 checklist，随导出附给 AI
 L2 格局赋文        patterns.ts       格局检测命中时附带古籍出处
 L3 公版赋文库      docs/kb/          二十篇紫微古籍繁体原文

@@ -13,7 +13,7 @@
 
 ## 项目结构
 
-```
+```text
 peep-v2/
 ├── src/
 │   ├── core/            # 纯逻辑层——可直接单元测试
@@ -22,20 +22,35 @@ peep-v2/
 │   │   ├── lifeKline.ts       人生 K 线引擎
 │   │   ├── hbar.ts            运限拨盘数据
 │   │   ├── debugApi.ts        window.peep 调试接口
-│   │   ├── exportData.ts      AI 导出（TOON/MD）
+│   │   ├── exportData.ts      AI 导出（TOON/MD/JSON）
 │   │   ├── knowledge.ts       知识库（格局/星情/赋文）
 │   │   ├── decadePlan.ts      十年规划表
 │   │   ├── synastry.ts        合盘
 │   │   ├── rectify.ts         生时校正
+│   │   ├── globalSearch.ts    全局搜索核心（模糊/拼音/正则）
+│   │   ├── shortcuts.ts       全局键盘快捷键
+│   │   ├── guide.ts           用户引导流程
+│   │   ├── sync.ts            多设备同步（加密导出/导入）
+│   │   ├── theme.ts           主题管理（亮/暗/跟随系统）
+│   │   ├── toast.ts           全局 Toast 通知
+│   │   ├── i18n.tsx           国际化支持
+│   │   ├── pluginSystem.ts    插件系统核心
 │   │   ├── daliuren/          大六壬子模块
 │   │   ├── personDb.ts        Dexie 人物档案库
 │   │   ├── wikiDb.ts          Dexie Wiki 库
 │   │   └── *.test.ts          配套单测
 │   ├── components/      # UI 组件（无状态优先）
+│   │   ├── CommandPalette.tsx 命令面板（Ctrl+K 全局搜索）
+│   │   ├── ShortcutHelp.tsx   快捷键帮助弹窗
+│   │   ├── GuideOverlay.tsx   用户引导覆盖层
+│   │   ├── DevDashboard.tsx   开发者性能仪表板
+│   │   ├── SyncDialog.tsx     多设备同步对话框
+│   │   ├── ThemeEditor.tsx    主题颜色编辑器
+│   │   └── ToastHost.tsx      Toast 通知容器
 │   ├── pages/           # 路由页（紫微/大六壬/Wiki）
 │   ├── App.tsx          # 路由根
 │   ├── main.tsx         # 入口 + 全局错误兜底
-│   └── index.css        # 全局样式（深空霓虹主题）
+│   └── index.css        # 全局样式入口（@import src/styles/）
 ├── docs/                # 文档（架构/调试 API/赋文库）
 ├── e2e/                 # Playwright 端到端测试
 ├── eslint.config.js     # ESLint 9 flat config
@@ -135,7 +150,7 @@ peep.setLogLevel("debug");
 
 调试 API 内置 `timer()` 工具——每个方法调用结束自动打印耗时：
 
-```
+```text
 [peep 10:30:45][ZiWei] 耗时 23.4ms
 ```
 
@@ -179,7 +194,7 @@ npm run build
 
 ### 测试速度
 
-31 个测试文件、1439 个测试用例，单次约 25 秒。跑单项：
+33 个测试文件、1474 个测试用例，单次约 29 秒。跑单项：
 
 ```bash
 # 只跑某个测试文件
@@ -272,7 +287,7 @@ git add .
 
 ### 提交信息示例
 
-```
+```text
 功能：开发体验——Vite 配置优化 + 调试 API 结构化日志
 修：大六壬调试 API UI 状态同步
 文档：补充 debug-api.md 的 Wiki 部分
