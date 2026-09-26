@@ -30,6 +30,8 @@ declare module "@rtc-agent/component" {
 
   export interface RtcAgentConfig {
     appLabel?: string;
+    /** 最小化气泡内的 SVG/HTML 图标 */
+    bubbleIcon?: string;
     theme?: "light" | "dark" | "system";
     lang?: string;
     databaseName?: string;

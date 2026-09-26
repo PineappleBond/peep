@@ -17,6 +17,11 @@ import type { Locale } from "./i18n";
 import type { Scope } from "./utils";
 
 /* ============================================================
+ * Logo：窥字 SVG（用于 RTC Agent 最小化气泡图标）
+ * ============================================================ */
+const BUBBLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs><circle cx="50" cy="50" r="48" fill="url(#g)" opacity="0.1"/><text x="50" y="50" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="60" font-weight="600" text-anchor="middle" dominant-baseline="central" fill="url(#g)">窥</text></svg>`;
+
+/* ============================================================
  * Persona：专业命理 AI 助手提示词
  * ============================================================ */
 
@@ -371,6 +376,7 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
 
   const config: RtcAgentConfig = {
     appLabel: "窥见人生 · 命理 AI 助手",
+    bubbleIcon: BUBBLE_ICON,
     // 主题初始值取 peep-v2 当前偏好；后续通过 syncTheme 同步
     theme: getTheme(),
     // 语言初始值从 HTML lang 推断（peep-v2 在 <html lang="zh-CN"> 设置了）；
