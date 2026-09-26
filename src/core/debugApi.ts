@@ -718,7 +718,10 @@ async function navigateToPage(path: string, page: "ziwei" | "daliuren" | "wiki")
  * 消除多个调试 API 函数共用的 _selectPerson + waitForStateUpdate 样板。
  */
 async function selectPersonAndWait(personId: number): Promise<void> {
-  await _selectPerson!(personId);
+  if (!_selectPerson) {
+    throw new Error("调试 API 未初始化：selectPerson 回调未注册");
+  }
+  await _selectPerson(personId);
   await waitForStateUpdate();
 }
 

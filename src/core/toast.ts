@@ -40,6 +40,8 @@ let cachedSnapshot: ToastItem[] = [];
 const listeners = new Set<Listener>();
 /** id 生成器 */
 let idSeq = 0;
+/** 自动关闭定时器映射（id → timer），用于 dismiss all 时统一清理 */
+const autoTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
 /** 默认显示时长（毫秒） */
 const DEFAULT_DURATION = 3000;
@@ -67,6 +69,13 @@ function remove(id: number) {
   if (!item) return;
   if (item.dismissing) return; // 已经在离场中
 
+  // 清除该 toast 的自动关闭定时器
+  const timer = autoTimers.get(id);
+  if (timer) {
+    clearTimeout(timer);
+    autoTimers.delete(id);
+  }
+
   /* 标记为离场状态（触发 CSS 离场动画） */
   items = items.map(it => (it.id === id ? { ...it, dismissing: true } : it));
   emit();
@@ -74,6 +83,7 @@ function remove(id: number) {
   /* 动画结束后真正移除 */
   setTimeout(() => {
     items = items.filter(it => it.id !== id);
+    autoTimers.delete(id); // 确保清理
     emit();
   }, DISMISS_DURATION);
 }
@@ -92,9 +102,10 @@ function add(type: ToastItem["type"], message: string, duration?: number): numbe
   // 新消息插入到队尾（视觉上位于顶部，通过 flex-direction: column-reverse 实现）
   items.push(item);
   emit();
-  // 自动关闭
+  // 自动关闭（记录定时器，便于 dismiss all 时统一清理）
   if (dur > 0) {
-    setTimeout(() => remove(id), dur);
+    const timer = setTimeout(() => remove(id), dur);
+    autoTimers.set(id, timer);
   }
   return id;
 }
@@ -121,6 +132,10 @@ export const toast = {
   /** 关闭指定 Toast；不传 id 则关闭全部 */
   dismiss: (id?: number) => {
     if (id === undefined) {
+      /* 清理所有自动关闭定时器，避免孤立定时器干扰后续新增的 Toast */
+      for (const timer of autoTimers.values()) clearTimeout(timer);
+      autoTimers.clear();
+
       /* 批量离场：先标记所有，动画结束后统一移除 */
       items = items.map(it => ({ ...it, dismissing: true }));
       emit();

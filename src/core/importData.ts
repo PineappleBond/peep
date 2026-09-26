@@ -8,7 +8,7 @@
  * - 数据验证与错误处理
  * - 导入统计返回
  */
-import { db } from "./personDb";
+import { db, getDefaultPerson } from "./personDb";
 import type { Person, LiurenRecord, WikiDocument } from "./personDb";
 import type { BirthInput } from "./useZwds";
 import type { DaLiuRenResult } from "./daliuren/types";
@@ -99,6 +99,10 @@ export async function importFromJson(
     onProgress?.(20, "验证数据...");
     await validateBackupData(data);
 
+    // 获取默认人物 ID（用于关联导入的记录）
+    const defaultPerson = await getDefaultPerson();
+    const defaultPersonId = defaultPerson.id ?? 1;
+
     onProgress?.(30, "导入人物...");
     // 导入人物数据
     if (data.person) {
@@ -140,7 +144,7 @@ export async function importFromJson(
       for (const record of data.liuren) {
         try {
           const liurenData: Omit<LiurenRecord, "id"> = {
-            personId: 1, // 默认关联到第一个用户
+            personId: defaultPersonId,
             calculationTime: record.calculationTime,
             question: record.question,
             note: record.note,
@@ -163,7 +167,7 @@ export async function importFromJson(
       for (const doc of data.wiki) {
         try {
           const wikiData: Omit<WikiDocument, "id"> = {
-            personId: 1, // 默认关联到第一个用户
+            personId: defaultPersonId,
             title: doc.title,
             content: doc.content,
             tags: doc.tags,
@@ -240,6 +244,10 @@ export async function importFromCsv(
   const headers = parseCsvLine(lines[0]);
   const rows = lines.slice(1);
 
+  // 获取默认人物 ID（用于关联导入的记录）
+  const defaultPerson = await getDefaultPerson();
+  const defaultPersonId = defaultPerson.id ?? 1;
+
   onProgress?.(10, `解析 CSV（${rows.length} 行）...`);
 
   let importedCount = 0;
@@ -249,7 +257,7 @@ export async function importFromCsv(
     for (let i = 0; i < rows.length; i++) {
       try {
         const values = parseCsvLine(rows[i]);
-        const record = mapCsvToLiuren(headers, values);
+        const record = mapCsvToLiuren(headers, values, defaultPersonId);
         await db.liurenRecords.add(record);
         importedCount++;
         onProgress?.(10 + (i / rows.length) * 80, `导入第 ${i + 1}/${rows.length} 条...`);
@@ -262,7 +270,7 @@ export async function importFromCsv(
     for (let i = 0; i < rows.length; i++) {
       try {
         const values = parseCsvLine(rows[i]);
-        const doc = mapCsvToWiki(headers, values);
+        const doc = mapCsvToWiki(headers, values, defaultPersonId);
         await db.wikiDocs.add(doc);
         importedCount++;
         onProgress?.(10 + (i / rows.length) * 80, `导入第 ${i + 1}/${rows.length} 篇...`);
@@ -309,14 +317,18 @@ function parseCsvLine(line: string): string[] {
 /**
  * CSV 行映射为大六壬记录
  */
-function mapCsvToLiuren(headers: string[], values: string[]): Omit<LiurenRecord, "id"> {
+function mapCsvToLiuren(
+  headers: string[],
+  values: string[],
+  personId: number,
+): Omit<LiurenRecord, "id"> {
   const map: Record<string, string> = {};
   headers.forEach((h, i) => {
     map[h] = values[i] || "";
   });
 
   return {
-    personId: 1,
+    personId,
     calculationTime: map["起课时间"] || "",
     question: map["占事"] || "",
     note: map["备注"] || "",
@@ -330,14 +342,18 @@ function mapCsvToLiuren(headers: string[], values: string[]): Omit<LiurenRecord,
 /**
  * CSV 行映射为 Wiki 文档
  */
-function mapCsvToWiki(headers: string[], values: string[]): Omit<WikiDocument, "id"> {
+function mapCsvToWiki(
+  headers: string[],
+  values: string[],
+  personId: number,
+): Omit<WikiDocument, "id"> {
   const map: Record<string, string> = {};
   headers.forEach((h, i) => {
     map[h] = values[i] || "";
   });
 
   return {
-    personId: 1,
+    personId,
     title: map["标题"] || "",
     content: map["内容预览"] || "",
     tags: (map["标签"] || "").split(";").filter(Boolean),

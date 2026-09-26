@@ -392,11 +392,10 @@ function matchText(
 
   // 正则模式
   if (pq.regex) {
-    // 全局标志下需要迭代以得到所有匹配区间
-    const re = pq.regex;
+    // 创建副本避免修改原始 RegExp 对象的 lastIndex
+    const re = new RegExp(pq.regex.source, pq.regex.flags);
     const ranges: Array<[number, number]> = [];
     if (re.global) {
-      re.lastIndex = 0;
       let m: RegExpExecArray | null;
       let safety = 0;
       while ((m = re.exec(text)) !== null && safety < 100) {
