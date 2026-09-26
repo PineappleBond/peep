@@ -11,7 +11,6 @@
  */
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import type { Zwds } from "../../core/useZwds";
-import type { LifeKlineData } from "../../core/lifeKline";
 import { KlineChart } from "./KlineChart";
 import { RadarChart } from "./RadarChart";
 import { HeatmapChart } from "./HeatmapChart";

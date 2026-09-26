@@ -70,7 +70,7 @@ export function scoreColor(score: number, mid = 50): string {
 }
 
 /** 将 CSS 变量解析为具体的 rgba 字符串（用于 SVG 渐变/导出） */
-export function resolveColor(varExpr: string, isDark = true): string {
+export function resolveColor(varExpr: string, _isDark = true): string {
   // 暗色主题预设值（与 base.css 一致）
   const darkMap: Record<string, string> = {
     "var(--cyan)": "#55d7ff",

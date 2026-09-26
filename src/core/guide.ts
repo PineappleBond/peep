@@ -165,8 +165,6 @@ const guides: Record<string, GuideStep[]> = {
 
 /** localStorage 键名前缀 */
 const STORAGE_PREFIX = "guide_";
-/** 欢迎引导已完成的特殊键名 */
-const WELCOME_DONE_KEY = `${STORAGE_PREFIX}welcome`;
 
 /** 启动指定引导流程 */
 export function getGuideSteps(guideId: string): GuideStep[] | null {

@@ -6,7 +6,7 @@ import Dexie, { type Table } from "dexie";
 import { DEFAULT_BIRTH_INPUT, type BirthInput } from "./useZwds";
 import type { DaLiuRenResult } from "./daliuren/types";
 import { t } from "./i18n";
-import { registerMigration, runMigrations, checkDataIntegrity } from "./migrations";
+import { runMigrations, checkDataIntegrity } from "./migrations";
 
 /**
  * 人物档案类型：扩展 BirthInput，附加主键 id、保存时间戳、默认标志。

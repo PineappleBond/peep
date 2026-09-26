@@ -81,8 +81,6 @@ const errorMap = new Map<string, ErrorReport>();
 const pendingReports: ErrorReport[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let errorInitialized = false;
-/** 采样判定结果 */
-let sampled = false;
 
 /* ===================== 工具函数 ===================== */
 
@@ -165,7 +163,6 @@ function processError(
 
   // 开发环境实时打印
   if (!import.meta.env.PROD) {
-     
     console.warn("[错误捕获]", fullReport.type, fullReport.message);
   }
 
@@ -191,11 +188,8 @@ function flushErrors() {
   // 优先使用 sendBeacon（页面卸载时也能可靠发送）
   if (errorConfig.enabled && typeof navigator.sendBeacon === "function") {
     try {
-      const blob = new Blob([JSON.stringify(batch)], {
-        type: "application/json",
-      });
       // 预留上报端点，目前用 console.log 模拟
-      // navigator.sendBeacon("/api/errors", blob);
+      // navigator.sendBeacon("/api/errors", new Blob([JSON.stringify(batch)], { type: "application/json" }));
       errorConfig.onReport(batch);
     } catch {
       // sendBeacon 失败时降级
@@ -328,7 +322,6 @@ export function initErrorTracking(overrides?: Partial<ErrorTrackingConfig>) {
   errorInitialized = true;
 
   errorConfig = { ...DEFAULT_ERROR_CONFIG, ...overrides };
-  sampled = Math.random() < errorConfig.sampleRate;
 
   // 不论是否采样命中，都注册错误捕获（开发环境可用于调试）
   registerJsError();
