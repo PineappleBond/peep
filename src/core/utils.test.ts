@@ -1,14 +1,19 @@
 /** 干支/五虎遁/五鼠遁/时辰/真太阳时 边界测试 */
 import { describe, expect, it } from "vitest";
 import {
+  abbrPalace,
   applyTrueSolar,
   bodyPalaceBranchOf,
+  branchRelation,
   equationOfTime,
+  fixIndex,
   hourGanZhi,
   isYangStem,
+  mod,
   monthGanZhi,
   timeIndexFromClock,
   yearGanZhi,
+  yearStemIndex,
 } from "./utils";
 
 describe("干支推算", () => {
@@ -105,5 +110,90 @@ describe("中州派地/人盘身宫", () => {
       // 上游 rearrangeAstrolable 目前不更新顶层身宫支；iztro 修复后此断言变红，即可评估移除本兜底
       expect(a.earthlyBranchOfBodyPalace).not.toBe(real);
     }
+  });
+});
+
+describe("mod 与 fixIndex", () => {
+  it("mod 始终返回非负余数", () => {
+    expect(mod(-1, 12)).toBe(11);
+    expect(mod(0, 12)).toBe(0);
+    expect(mod(11, 12)).toBe(11);
+    expect(mod(12, 12)).toBe(0);
+    expect(mod(13, 12)).toBe(1);
+    expect(mod(-13, 12)).toBe(11);
+  });
+
+  it("fixIndex 将任意整数映射到 0-11", () => {
+    expect(fixIndex(0)).toBe(0);
+    expect(fixIndex(11)).toBe(11);
+    expect(fixIndex(12)).toBe(0);
+    expect(fixIndex(-1)).toBe(11);
+    expect(fixIndex(100)).toBe(4); // 100 % 12 = 4
+    expect(fixIndex(-13)).toBe(11);
+  });
+});
+
+describe("yearStemIndex 年干索引", () => {
+  it("1984 甲子年 → 0（甲）", () => {
+    expect(yearStemIndex(1984)).toBe(0);
+  });
+
+  it("2024 甲辰年 → 0（甲）", () => {
+    expect(yearStemIndex(2024)).toBe(0);
+  });
+
+  it("2025 乙巳年 → 1（乙）", () => {
+    expect(yearStemIndex(2025)).toBe(1);
+  });
+
+  it("1900 庚子年 → 6（庚）", () => {
+    expect(yearStemIndex(1900)).toBe(6);
+  });
+});
+
+describe("abbrPalace 宫位简称", () => {
+  it("命宫 → 命", () => {
+    expect(abbrPalace("命宫")).toBe("命");
+  });
+
+  it("undefined 或空字符串返回空", () => {
+    expect(abbrPalace(undefined)).toBe("");
+    expect(abbrPalace("")).toBe("");
+  });
+
+  it("不在映射表中的宫位取首字", () => {
+    expect(abbrPalace("自定义")).toBe("自");
+  });
+});
+
+describe("branchRelation 地支关系", () => {
+  it("六合：子丑合", () => {
+    expect(branchRelation("子", "丑")).toBe("六合");
+  });
+
+  it("对冲：子午冲", () => {
+    expect(branchRelation("子", "午")).toBe("对冲");
+  });
+
+  it("三合：申子辰", () => {
+    expect(branchRelation("申", "子")).toBe("三合");
+    expect(branchRelation("子", "辰")).toBe("三合");
+  });
+
+  it("相害：子未害", () => {
+    expect(branchRelation("子", "未")).toBe("相害");
+  });
+
+  it("自刑：辰辰", () => {
+    expect(branchRelation("辰", "辰")).toBe("自刑");
+  });
+
+  it("同支（非自刑）：子子", () => {
+    // 子不是自刑支，所以同支为"同支"
+    expect(branchRelation("子", "子")).toBe("同支");
+  });
+
+  it("无关系", () => {
+    expect(branchRelation("子", "寅")).toBe("无");
   });
 });

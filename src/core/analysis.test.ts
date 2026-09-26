@@ -9,8 +9,11 @@ import {
   detectHoroscopePatterns,
   detectPatterns,
   getBorrowedStars,
+  getChartDataForScope,
   getFlyMatrix,
+  getJiaGong,
   getSanfangSnapshots,
+  getSelfMarksForScope,
   scanHoroscopePatterns,
   traceMutagenChains,
 } from "./analysis";
@@ -346,6 +349,88 @@ describe("analysis 结构分析层", () => {
     ];
     for (const [d, t, g] of samples) {
       expect(() => analyzeChart(makeChart(d, t, g))).not.toThrow();
+    }
+  });
+
+  it("getJiaGong 夹宫检测：输出结构完整，含 kind/good/detail", () => {
+    const jg = getJiaGong(a);
+    expect(Array.isArray(jg)).toBe(true);
+    for (const item of jg) {
+      expect(item.palaceIndex).toBeGreaterThanOrEqual(0);
+      expect(item.palaceIndex).toBeLessThan(12);
+      expect(item.palaceName).toBeTruthy();
+      expect(item.branch).toBeTruthy();
+      expect(item.kind).toBeTruthy();
+      expect(typeof item.good).toBe("boolean");
+      expect(item.detail).toBeTruthy();
+    }
+  });
+
+  it("getJiaGong 多组生辰不抛错", () => {
+    const samples: [string, number, "男" | "女"][] = [
+      ["1984-02-02", 0, "女"],
+      ["1996-02-29", 12, "男"],
+      ["2024-06-15", 6, "女"],
+    ];
+    for (const [d, t, g] of samples) {
+      const c = makeChart(d, t, g);
+      expect(() => getJiaGong(c)).not.toThrow();
+    }
+  });
+
+  it("getSelfMarksForScope 自化标记：离心与向心列表", () => {
+    const soulIdx = a.palaces.findIndex((p) => p.name === "命宫");
+    const soulStem = a.palaces[soulIdx].heavenlyStem as string;
+    const marks = getSelfMarksForScope(soulIdx, soulStem, a);
+    expect(Array.isArray(marks.outward)).toBe(true);
+    expect(Array.isArray(marks.inward)).toBe(true);
+    // 每个标记含 star 和 char
+    for (const m of marks.outward) {
+      expect(m.star).toBeTruthy();
+      expect(["禄", "权", "科", "忌"]).toContain(m.char);
+    }
+    for (const m of marks.inward) {
+      expect(m.star).toBeTruthy();
+      expect(["禄", "权", "科", "忌"]).toContain(m.char);
+    }
+  });
+
+  it("getChartDataForScope 运限数据：horoscope 为 null 时返回空结构", () => {
+    const result = getChartDataForScope({
+      astrolabe: a,
+      horoscope: null,
+      scope: "yearly",
+    });
+    expect(result.scope).toBe("yearly");
+    expect(result.palaces).toHaveLength(0);
+    expect(result.flyMatrix).toHaveLength(0);
+    expect(result.selfLinks).toHaveLength(0);
+  });
+
+  it("getChartDataForScope 运限数据：有 horoscope 时返回完整 12 宫", () => {
+    const h = a.horoscope("2026-7-15", 0);
+    const result = getChartDataForScope({
+      astrolabe: a,
+      horoscope: h,
+      scope: "yearly",
+    });
+    expect(result.scope).toBe("yearly");
+    expect(result.palaces).toHaveLength(12);
+    expect(result.flyMatrix).toHaveLength(12);
+    // 每个宫含关键字段
+    for (const p of result.palaces) {
+      expect(p.palaceName).toBeTruthy();
+      expect(p.branch).toBeTruthy();
+      expect(Array.isArray(p.majorStars)).toBe(true);
+      expect(Array.isArray(p.natalMutagens)).toBe(true);
+      expect(Array.isArray(p.scopeMutagens)).toBe(true);
+    }
+  });
+
+  it("getChartDataForScope 各 scope 均不抛错", () => {
+    const h = a.horoscope("2026-7-15", 0);
+    for (const scope of ["decadal", "yearly", "monthly"] as const) {
+      expect(() => getChartDataForScope({ astrolabe: a, horoscope: h, scope })).not.toThrow();
     }
   });
 });
