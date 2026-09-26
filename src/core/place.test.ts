@@ -66,7 +66,7 @@ describe("resolveBirthPlace 与真太阳时联动", () => {
     const r = resolveBirthPlace(
       { placeMode: "overseas", timezone: "Asia/Tokyo", province: "", city: "", district: "" },
       "2000-6-15",
-      "12:00"
+      "12:00",
     );
     expect(r.clockOffsetMinutes).toBe(540);
     expect(r.place).toBe("Asia/Tokyo（UTC+09:00）");
@@ -79,7 +79,7 @@ describe("resolveBirthPlace 与真太阳时联动", () => {
     const r = resolveBirthPlace(
       { placeMode: "overseas", timezone: "America/New_York", province: "", city: "", district: "" },
       "1995-8-1",
-      "10:00"
+      "10:00",
     );
     expect(r.clockOffsetMinutes).toBe(-240);
     // 纽约经度 -74.02°：-74.02×4-(-240) ≈ -56 分
@@ -90,7 +90,7 @@ describe("resolveBirthPlace 与真太阳时联动", () => {
     const r = resolveBirthPlace(
       { placeMode: "china", timezone: "", province: "北京", city: "北京", district: "市区" },
       "2000-6-15",
-      "12:00"
+      "12:00",
     );
     expect(r.clockOffsetMinutes).toBe(480);
     const adj = applyTrueSolar("2000-6-15", "12:00", r.longitude, r.clockOffsetMinutes)!;

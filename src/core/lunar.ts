@@ -37,7 +37,7 @@ export function lunarToSolarStr(
   year: number,
   month: number,
   day: number,
-  isLeap = false
+  isLeap = false,
 ): string | null {
   try {
     const s = lunar2solar(`${year}-${month}-${day}`, isLeap);

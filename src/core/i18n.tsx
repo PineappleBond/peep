@@ -48,7 +48,7 @@ function interpolate(template: string, params?: Record<string, string | number>)
 export function t(
   key: string,
   params?: Record<string, string | number>,
-  locale: Locale = "zh-CN"
+  locale: Locale = "zh-CN",
 ): string {
   const dict = resources[locale] || resources["zh-CN"];
   const value = dict[key];
@@ -104,12 +104,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const translate = useCallback(
     (key: string, params?: Record<string, string | number>) => t(key, params, locale),
-    [locale]
+    [locale],
   );
 
   const value = useMemo(
     () => ({ locale, setLocale, t: translate }),
-    [locale, setLocale, translate]
+    [locale, setLocale, translate],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

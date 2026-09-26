@@ -16,7 +16,7 @@ import {
   DI_ZHI,
   XUN_HEAD,
   NOBLEMAN_TABLE,
-  SAN_HE_TRIPLES,
+  SAN_HE_TRIPLES as _SAN_HE_TRIPLES,
   DAY_VIRTUES,
   DAY_ORIGIN,
   DAY_LU,
@@ -27,9 +27,9 @@ import {
   shengOf,
   stemLodgingBranch,
   sexagenaryIndex,
-  getGeneralRidingBranch,
+  getGeneralRidingBranch as _getGeneralRidingBranch,
   findGeneralPosition,
-  inFourLessons,
+  inFourLessons as _inFourLessons,
   isFuyin,
 } from "./utils";
 
@@ -83,7 +83,7 @@ function xunTailBranch(r: DaLiuRenResult): number {
 }
 
 /** 判断地支是否旬空 */
-function isXunVoid(branch: number, r: DaLiuRenResult): boolean {
+function _isXunVoid(branch: number, r: DaLiuRenResult): boolean {
   const xunHead = xunHeadBranch(r);
   return branch === (xunHead + 10) % 12 || branch === (xunHead + 11) % 12;
 }
@@ -216,7 +216,7 @@ const rules: BiFaRule[] = [
     check: r => {
       const dayStem = r.fourPillars.dayStem;
       const lodging = stemLodgingBranch(dayStem);
-      const [dayNoble, nightNoble] = NOBLEMAN_TABLE[dayStem];
+      const [_dayNoble, nightNoble] = NOBLEMAN_TABLE[dayStem];
       // 帘幕贵人：昼占取夜贵、夜占取昼贵（简化：用昼夜贵人中非当前用者）
       // 简化判断：帘幕贵人 = 夜贵（昼占用）或昼贵（夜占用），这里用两贵交替
       const curtain = nightNoble; // 简化：取夜贵为帘幕

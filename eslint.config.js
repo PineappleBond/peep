@@ -55,7 +55,16 @@ export default [
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/consistent-type-imports": "warn",
       // @ts-ignore 在测试/第三方兼容场景仍有必要，warn 级即可
-      "@typescript-eslint/ban-ts-comment": "warn",
+      // @ts-expect-error 比 @ts-ignore 更安全（类型修复后会自动报错），允许无描述使用
+      "@typescript-eslint/ban-ts-comment": [
+        "warn",
+        {
+          "ts-expect-error": false,
+          "ts-ignore": true,
+          "ts-nocheck": true,
+          "ts-check": false,
+        },
+      ],
 
       // 代码健壮性
       "no-console": ["warn", { allow: ["warn", "error"] }],
@@ -71,6 +80,14 @@ export default [
     files: ["**/*.test.{ts,tsx}", "**/testFixtures.ts"],
     rules: {
       "no-console": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+
+  // E2E 测试文件（Playwright）放宽 no-explicit-any——页面对象/断言需要灵活类型
+  {
+    files: ["e2e/**/*.ts"],
+    rules: {
       "@typescript-eslint/no-explicit-any": "off",
     },
   },

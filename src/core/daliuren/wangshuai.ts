@@ -65,7 +65,7 @@ function getDangLingElement(monthBranch: number): number {
  */
 export function getWangXiang(
   monthBranch: number,
-  targetBranch: number
+  targetBranch: number,
 ): "旺" | "相" | "休" | "囚" | "死" {
   const dangLing = getDangLingElement(monthBranch);
   const targetElem = BRANCH_ELEMENT[targetBranch];
@@ -79,7 +79,7 @@ export function getWangXiang(
  * @returns Record<地支索引, 旺衰状态>
  */
 export function getAllWangXiang(
-  monthBranch: number
+  monthBranch: number,
 ): Record<number, "旺" | "相" | "休" | "囚" | "死"> {
   const result: Record<number, "旺" | "相" | "休" | "囚" | "死"> = {};
   for (let i = 0; i < 12; i++) {

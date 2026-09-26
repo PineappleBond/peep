@@ -4,10 +4,11 @@
  *
  * 使用类型安全的事件映射，避免 any 类型。
  */
+import type { Person } from "./personDb";
 
 /** 事件名称 → 参数签名映射 */
 interface EventMap {
-  "person.changed": (person: import("./personDb").Person) => void;
+  "person.changed": (person: Person) => void;
 }
 
 type EventName = keyof EventMap;

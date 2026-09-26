@@ -11,7 +11,7 @@
  */
 export function createTagCache<T>(
   getRecords: (personId: number) => Promise<T[]>,
-  extractTags: (record: T) => string[]
+  extractTags: (record: T) => string[],
 ) {
   let cache: { personId: number; tags: string[] } | null = null;
 

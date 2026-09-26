@@ -177,7 +177,7 @@ export async function getPerson(id: number): Promise<Person | undefined> {
 export async function savePerson(
   id: number | undefined,
   input: BirthInput,
-  isDefault: boolean
+  isDefault: boolean,
 ): Promise<Person> {
   try {
     return await db.transaction("rw", db.persons, async () => {

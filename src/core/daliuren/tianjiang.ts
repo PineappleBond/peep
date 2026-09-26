@@ -167,7 +167,7 @@ function calcSunriseSunset(
   month: number,
   day: number,
   latitude: number,
-  longitude: number
+  longitude: number,
 ): { sunrise: number; sunset: number } {
   const jd = calcJD(year, month, day);
   const T = calcT(jd + 0.5); // 使用正午计算
@@ -200,7 +200,7 @@ export function isDaytime(
   month: number,
   day: number,
   hour: number,
-  minute: number
+  minute: number,
 ): boolean {
   // 计算日出日落（返回 UTC 时间戳）
   const { sunrise, sunset } = calcSunriseSunset(
@@ -208,7 +208,7 @@ export function isDaytime(
     month,
     day,
     BEIJING_LATITUDE,
-    BEIJING_LONGITUDE
+    BEIJING_LONGITUDE,
   );
 
   // 计算当前时间戳（UTC）
@@ -242,7 +242,7 @@ export function calculateTwelveGenerals(
   month: number,
   day: number,
   hour: number,
-  minute: number
+  minute: number,
 ): TwelveGeneral[] {
   // 1. 确定昼夜（使用实际日出日落计算）
   const isDay = isDaytime(year, month, day, hour, minute);

@@ -73,7 +73,7 @@ export function calculateRiDun(dayStem: number): string[] {
 export function calculateXunDun(
   dayStem: number,
   dayBranch: number,
-  heavenBoard: number[]
+  _heavenBoard: number[],
 ): Map<number, string> {
   // 计算日柱在六甲中的旬首地支
   // 六旬：甲子(0)、甲戌(10)、甲申(8)、甲午(6)、甲辰(4)、甲寅(2)
@@ -112,7 +112,7 @@ export function calculateXunDun(
  */
 export function getXunInfo(
   dayStem: number,
-  dayBranch: number
+  dayBranch: number,
 ): {
   xunHead: number;
   xunName: string;

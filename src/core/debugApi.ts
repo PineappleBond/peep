@@ -64,9 +64,18 @@ function log(level: LogLevel, category: string, message: string, data?: unknown)
 
   // 带 CSS 样式的 console 输出（浏览器支持 %c 占位符）
   if (data !== undefined) {
-    (console as any)[method](`%c${prefix}%c ${message}`, LEVEL_STYLES[level], "", data);
+    (console as unknown as Record<string, (...a: unknown[]) => void>)[method](
+      `%c${prefix}%c ${message}`,
+      LEVEL_STYLES[level],
+      "",
+      data,
+    );
   } else {
-    (console as any)[method](`%c${prefix}%c ${message}`, LEVEL_STYLES[level], "");
+    (console as unknown as Record<string, (...a: unknown[]) => void>)[method](
+      `%c${prefix}%c ${message}`,
+      LEVEL_STYLES[level],
+      "",
+    );
   }
 }
 
@@ -212,7 +221,7 @@ export function registerWikiCallbacks(opts: {
 /** 等待页面回调注册完成 */
 async function waitForCallbacks(
   page: "ziwei" | "daliuren" | "wiki",
-  timeout = 3000
+  timeout = 3000,
 ): Promise<void> {
   const start = Date.now();
   while (!_callbacksReady[page]) {
@@ -245,7 +254,7 @@ async function waitForCallbacks(
 export async function ZiWei(
   personId: number,
   scope?: Scope,
-  time?: Date | number | string
+  time?: Date | number | string,
 ): Promise<ZiWeiResult> {
   const stop = timer("ZiWei");
   try {
@@ -360,7 +369,7 @@ function setHoroscopeTime(z: Zwds, date: Date): void {
 export function DaLiuRen(
   date: string,
   time: string,
-  fateInput?: { birthYear: number; gender: "男" | "女" }
+  fateInput?: { birthYear: number; gender: "男" | "女" },
 ): DaLiuRenResult {
   log("info", "DaLiuRen", "纯计算排盘", { date, time, fateInput });
   return calculateDaLiuRen(date, time, fateInput);
@@ -750,7 +759,7 @@ function version(): void {
   console.log(
     `%c[peep]%c 版本 ${__PEEP_VERSION__}  构建于 ${__PEEP_BUILD_TIME__}`,
     "color:#2196f3;font-weight:bold",
-    ""
+    "",
   );
   // eslint-disable-next-line no-console
   console.log("%c[peep]%c 可用调试 API:", "color:#2196f3;font-weight:bold", "");

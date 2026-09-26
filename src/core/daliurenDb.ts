@@ -9,7 +9,7 @@ import { t } from "./i18n";
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
 const tagCache = createTagCache(
   (personId: number) => db.liurenRecords.where("personId").equals(personId).toArray(),
-  (r: LiurenRecord) => r.tags
+  (r: LiurenRecord) => r.tags,
 );
 
 /** 写入/删除后使标签缓存失效 */
@@ -47,7 +47,7 @@ export interface LiurenListResult {
  */
 export async function listLiurenRecords(
   personId: number,
-  filters: LiurenListFilters = {}
+  filters: LiurenListFilters = {},
 ): Promise<LiurenListResult> {
   try {
     const allRecords = await db.liurenRecords.where("personId").equals(personId).toArray();

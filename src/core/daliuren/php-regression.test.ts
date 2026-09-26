@@ -70,7 +70,7 @@ interface PhpCase {
 function loadPhpFixture(): Record<string, PhpCase> {
   const raw = readFileSync(
     "/tmp/review-liuren-php/tests/Fixtures/pan_regression_720.json",
-    "utf-8"
+    "utf-8",
   );
   const data = JSON.parse(raw);
   return data.cases as Record<string, PhpCase>;
@@ -130,7 +130,7 @@ function compareCase(caseId: string, phpCase: PhpCase) {
   const allowedPhpCodes = TS_METHOD_TO_PHP[tsMethod] ?? [];
   expect(
     allowedPhpCodes.includes(phpJiuZongMen),
-    `${caseId} 九宗门：TS="${tsMethod}"（映射到 PHP ${JSON.stringify(allowedPhpCodes)}），PHP=${phpJiuZongMen}(${JIU_ZONG_MEN_NAMES[phpJiuZongMen] ?? "?"})`
+    `${caseId} 九宗门：TS="${tsMethod}"（映射到 PHP ${JSON.stringify(allowedPhpCodes)}），PHP=${phpJiuZongMen}(${JIU_ZONG_MEN_NAMES[phpJiuZongMen] ?? "?"})`,
   ).toBe(true);
 
   // 旬遁（前 3 位）
@@ -149,13 +149,13 @@ function compareCase(caseId: string, phpCase: PhpCase) {
       // 空亡位，TS 应返回 undefined
       expect(
         tsResult.xunDun[sanchuan[i]],
-        `${caseId} 旬遁[${i}]（三传=${sanchuan[i]}，空亡位）`
+        `${caseId} 旬遁[${i}]（三传=${sanchuan[i]}，空亡位）`,
       ).toBeUndefined();
     } else {
       const tsDunChar = tsResult.xunDun[sanchuan[i]];
       const tsDunIdx = typeof tsDunChar === "string" ? TIAN_GAN.indexOf(tsDunChar) : -1;
       expect(tsDunIdx, `${caseId} 旬遁[${i}]（三传=${sanchuan[i]}，TS遁干="${tsDunChar}"）`).toBe(
-        expDun
+        expDun,
       );
     }
   }

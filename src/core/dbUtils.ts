@@ -55,7 +55,7 @@ export function filterAndPaginate<T>(opts: FilterPaginateOptions<T>): PaginatedR
   if (searchText.trim()) {
     const keyword = searchText.trim().toLowerCase();
     filtered = filtered.filter(r =>
-      searchFields.some(f => String(r[f]).toLowerCase().includes(keyword))
+      searchFields.some(f => String(r[f]).toLowerCase().includes(keyword)),
     );
   }
 

@@ -83,7 +83,7 @@ export function TagInput({
     setInput(val);
     if (suggestions && val.trim()) {
       const filtered = suggestions.filter(
-        s => s.toLowerCase().includes(val.toLowerCase()) && !value.includes(s)
+        s => s.toLowerCase().includes(val.toLowerCase()) && !value.includes(s),
       );
       setShowSuggestions(filtered.length > 0);
     } else {

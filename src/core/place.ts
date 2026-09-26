@@ -30,7 +30,7 @@ function offsetAtEpoch(timeZone: string, epochMs: number): number {
     p.day ?? 1,
     p.hour ?? 0,
     p.minute ?? 0,
-    p.second ?? 0
+    p.second ?? 0,
   );
   return Math.round((wallUTC - epochMs) / 60000);
 }
@@ -45,7 +45,7 @@ export function zoneOffsetMinutes(
   month: number,
   day: number,
   hour = 12,
-  minute = 0
+  minute = 0,
 ): number {
   try {
     const wallUTC = Date.UTC(year, month - 1, day, hour, minute);
@@ -116,7 +116,7 @@ export type ResolvedPlace = {
 export function resolveBirthPlace(
   p: BirthPlaceInput,
   solarStr: string,
-  timeStr: string
+  timeStr: string,
 ): ResolvedPlace {
   if (p.placeMode === "overseas") {
     const tz = p.timezone || browserTimezone();

@@ -94,7 +94,7 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
         });
         // 排除当前文档（编辑模式）和已选择的文档
         const filtered = result.docs.filter(
-          d => d.id !== doc?.id && !linkTargetIds.includes(d.id!)
+          d => d.id !== doc?.id && !linkTargetIds.includes(d.id!),
         );
         setLinkSearchResults(filtered);
       } catch (e) {

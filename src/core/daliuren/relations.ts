@@ -19,7 +19,7 @@ const LIU_CHONG_PAIRS: [number, number][] = [
 
 /** 三刑 */
 // 寅巳申（无恩之刑）、丑戌未（恃势之刑）、子卯（无礼之刑）、辰午酉亥（自刑）
-const XING_CHAINS: number[][] = [
+const _XING_CHAINS: number[][] = [
   [2, 5, 8], // 寅→巳→申→寅
   [1, 10, 7], // 丑→戌→未→丑
   [0, 3], // 子→卯
@@ -150,7 +150,7 @@ export function findBranchRelations(branches: number[]): BranchRelation[] {
     if (counts[b] >= 2 && [4, 6, 9, 11].includes(b)) {
       // 检查是否已经作为自刑添加过（unique 列表中不含重复，所以这里单独处理）
       const alreadyHas = relations.some(
-        r => r.type === "刑" && r.branches[0] === b && r.branches[1] === b
+        r => r.type === "刑" && r.branches[0] === b && r.branches[1] === b,
       );
       if (!alreadyHas) {
         relations.push({

@@ -75,7 +75,7 @@ export function calculateFourPillars(solar: Solar): FourPillars {
       solar.getDay() + 1,
       solar.getHour(),
       solar.getMinute(),
-      solar.getSecond()
+      solar.getSecond(),
     );
     adjustedSolar = Solar.fromYmdHms(
       date.getFullYear(),
@@ -83,7 +83,7 @@ export function calculateFourPillars(solar: Solar): FourPillars {
       date.getDate(),
       solar.getHour(),
       solar.getMinute(),
-      solar.getSecond()
+      solar.getSecond(),
     );
   }
 
@@ -139,7 +139,7 @@ export function calculateMonthGeneral(solar: Solar): MonthGeneral {
     solar.getDay(),
     solar.getHour(),
     solar.getMinute(),
-    solar.getSecond()
+    solar.getSecond(),
   ).getTime();
 
   // 拼音键名映射（lunar-typescript 对前 6 个节气使用拼音键表示当年值）
@@ -160,7 +160,7 @@ export function calculateMonthGeneral(solar: Solar): MonthGeneral {
       s.getDay(),
       s.getHour(),
       s.getMinute(),
-      s.getSecond()
+      s.getSecond(),
     ).getTime();
 
   // 收集所有在 targetMs 之前的节气，取最近的一个
@@ -205,7 +205,7 @@ export function calculateMonthGeneral(solar: Solar): MonthGeneral {
  */
 export function buildHeavenEarthBoards(
   monthGeneralBranch: number,
-  hourBranch: number
+  hourBranch: number,
 ): HeavenEarthBoards {
   const earth: number[] = [];
   const heaven: number[] = [];
@@ -231,7 +231,7 @@ export function buildHeavenEarthBoards(
 export function extractFourLessons(
   dayStem: number,
   dayBranch: number,
-  heavenBoard: number[]
+  heavenBoard: number[],
 ): FourLesson[] {
   // 第一课：日干寄宫为下，天盘对应支为上
   const stemLodging = STEM_LODGING[dayStem];
@@ -287,7 +287,7 @@ export function calculateXunKong(dayStem: number, dayBranch: number): XunKong {
 export function calculateDaLiuRen(
   dateStr: string,
   timeStr: string,
-  fateInput?: { birthYear: number; gender: "男" | "女" }
+  fateInput?: { birthYear: number; gender: "男" | "女" },
 ): DaLiuRenResult {
   // ── 输入验证 ──
   if (!dateStr || typeof dateStr !== "string") {
@@ -376,7 +376,7 @@ export function calculateDaLiuRen(
     fourLessons,
     fourPillars.dayStem,
     fourPillars.dayBranch,
-    boards.heaven
+    boards.heaven,
   );
 
   // 十二天将
@@ -389,7 +389,7 @@ export function calculateDaLiuRen(
     month,
     day,
     hour,
-    minute
+    minute,
   );
 
   // 旺相休囚死（按天盘每个地支判断）
@@ -414,7 +414,7 @@ export function calculateDaLiuRen(
     fourPillars.monthBranch,
     fourPillars.dayStem,
     fourPillars.dayBranch,
-    fourPillars.hourBranch
+    fourPillars.hourBranch,
   );
 
   // 刑冲破害（四课 + 三传的所有地支）

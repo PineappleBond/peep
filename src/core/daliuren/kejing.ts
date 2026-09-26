@@ -27,7 +27,7 @@ import {
   isFanyin,
   inFourLessons,
   getGeneralRidingBranch,
-  findGeneralPosition,
+  findGeneralPosition as _findGeneralPosition,
 } from "./utils";
 
 // ─── 课经接口 ─────────────────────────────────────────
@@ -59,7 +59,7 @@ export interface KeJingMatch {
 // getGeneralRidingBranch, findGeneralPosition 已从 utils.ts 导入
 
 /** 天盘某支是否在三传中（保留为工具函数） */
-function inSanChuan(branch: number, r: DaLiuRenResult): boolean {
+function _inSanChuan(branch: number, r: DaLiuRenResult): boolean {
   const { initial, middle, final } = r.threeTransmissions;
   return initial === branch || middle === branch || final === branch;
 }
@@ -71,7 +71,7 @@ function sanChuanDiSheng(r: DaLiuRenResult): boolean {
 }
 
 /** 三传递克（初克中、中克末） */
-function sanChuanDiKe(r: DaLiuRenResult): boolean {
+function _sanChuanDiKe(r: DaLiuRenResult): boolean {
   const { initial, middle, final } = r.threeTransmissions;
   return keOf(elemB(initial)) === elemB(middle) && keOf(elemB(middle)) === elemB(final);
 }
@@ -86,7 +86,7 @@ function sanChuanSanHe(r: DaLiuRenResult): boolean {
 // findGeneralPosition, getGeneralRidingBranch 已从 utils.ts 导入
 
 /** 天将某是否在天盘某支（按天将落宫的天盘支判断） */
-function generalOnBranch(generalName: string, branch: number, r: DaLiuRenResult): boolean {
+function _generalOnBranch(generalName: string, branch: number, r: DaLiuRenResult): boolean {
   const g = r.twelveGenerals.find(g => g.name === generalName);
   if (!g) return false;
   return r.heavenBoard[g.position] === branch;
@@ -142,7 +142,7 @@ function isBranchWangXiang(branch: number, r: DaLiuRenResult): boolean {
  * 日干按五行是否旺相
  */
 function isStemWangXiang(stem: number, r: DaLiuRenResult): boolean {
-  const elem = STEM_ELEMENT[stem];
+  const _elem = STEM_ELEMENT[stem];
   // 找与日干同五行的地支（如甲=木→看寅卯）
   // 简化：用日干寄宫上神的旺相状态
   const lodging = stemLodgingBranch(stem);
@@ -175,7 +175,7 @@ const DAY_WONDERS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10];
 // DAY_VIRTUES 已从 constants.ts 导入
 
 /** 支仪表（六仪课用）：子→午、丑→巳、寅→辰、卯→卯(3)、辰→寅、巳→丑、午→未、未→申、申→酉、酉→戌、戌→亥、亥→子 */
-const BRANCH_INSTRUMENTS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10, 11, 0];
+const _BRANCH_INSTRUMENTS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10, 11, 0];
 
 /**
  * 九丑十日表：日干→允许的日支列表
@@ -622,8 +622,8 @@ const rules: KeJingRule[] = [
     description: "日干寄宫上神与日支上神相生，且发用为日干长生位。主玄机暗通、事有妙应。",
     check: r => {
       const dayStem = r.fourPillars.dayStem;
-      const lodging = stemLodgingBranch(dayStem);
-      const dayBranch = r.fourPillars.dayBranch;
+      const _lodging = stemLodgingBranch(dayStem);
+      const _dayBranch = r.fourPillars.dayBranch;
       const ganShang = r.fourLessons[0]?.upper;
       const zhiShang = r.fourLessons[2]?.upper;
       if (ganShang === undefined || zhiShang === undefined) return false;

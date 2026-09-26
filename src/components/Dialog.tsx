@@ -46,7 +46,7 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
       requestAnimationFrame(() => {
         // 优先聚焦面板内的第一个可交互元素
         const firstFocusable = panelRef.current?.querySelector<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
         if (firstFocusable) {
           firstFocusable.focus();
@@ -78,7 +78,7 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
       /* 焦点陷阱：Tab 循环限制在弹窗内 */
       if (e.key === "Tab" && panelRef.current) {
         const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
         );
         if (focusable.length === 0) return;
 

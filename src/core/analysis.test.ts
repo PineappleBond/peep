@@ -45,7 +45,7 @@ describe("analysis 结构分析层", () => {
       const opp = a.palaces[fixIndex(s.palaceIndex + 6)];
       expect(s.seats[1].palaceName).toBe(opp.name);
       const trines = [fixIndex(s.palaceIndex + 4), fixIndex(s.palaceIndex - 4)].map(
-        i => a.palaces[i].name
+        i => a.palaces[i].name,
       );
       expect(trines).toContain(s.seats[2].palaceName);
       expect(trines).toContain(s.seats[3].palaceName);
@@ -77,7 +77,7 @@ describe("analysis 结构分析层", () => {
       }
       // 离心自化列表 = isSelf 的飞化
       expect(pf.selfOutward).toEqual(
-        pf.flies.filter(f => f.isSelf).map(f => `${f.star}化${f.mutagen}`)
+        pf.flies.filter(f => f.isSelf).map(f => `${f.star}化${f.mutagen}`),
       );
       // 向心自化 = 对宫飞入本宫
       const opp = fm.palaces.find(x => x.palaceIndex === fixIndex(pf.palaceIndex + 6))!;
@@ -124,13 +124,13 @@ describe("analysis 结构分析层", () => {
     const mc = traceMutagenChains(a);
     const idxOf = (name: string) => a.palaces.findIndex(p => p.name === name);
     expect(mc.ji.find(c => c.headIndex === idxOf("命宫"))!.text).toBe(
-      "命宫(壬)武曲忌入财帛 → 财帛(戊)天机忌入兄弟 → 兄弟(辛)文昌忌入福德【三转止】"
+      "命宫(壬)武曲忌入财帛 → 财帛(戊)天机忌入兄弟 → 兄弟(辛)文昌忌入福德【三转止】",
     );
     const guanJi = mc.ji.find(c => c.headIndex === idxOf("官禄"))!;
     expect(guanJi.text).toBe("官禄(丙)廉贞忌入本宫【自化忌】");
     expect(guanJi.end).toBe("自化");
     expect(mc.lu.find(c => c.headIndex === idxOf("迁移"))!.text).toBe(
-      "迁移(戊)贪狼禄入本宫【自化禄】"
+      "迁移(戊)贪狼禄入本宫【自化禄】",
     );
   });
 
@@ -186,26 +186,26 @@ describe("analysis 结构分析层", () => {
       const soul = c.palaces.find(p => p.name === "命宫")!;
       const br = soul.earthlyBranch as string;
       const all = new Set(
-        [...soul.majorStars, ...soul.minorStars, ...soul.adjectiveStars].map(s => s.name as string)
+        [...soul.majorStars, ...soul.minorStars, ...soul.adjectiveStars].map(s => s.name as string),
       );
       const names = detectPatterns(c).map(p => p.name);
       expect(names.includes("擎羊入庙")).toBe(
-        all.has("擎羊") && ["辰", "戌", "丑", "未"].includes(br)
+        all.has("擎羊") && ["辰", "戌", "丑", "未"].includes(br),
       );
       expect(names.includes("雄宿朝元")).toBe(
-        soul.majorStars.some(s => s.name === "廉贞") && ["寅", "申"].includes(br)
+        soul.majorStars.some(s => s.name === "廉贞") && ["寅", "申"].includes(br),
       );
       expect(names.includes("寿星入庙")).toBe(
-        soul.majorStars.some(s => s.name === "天梁") && br === "午"
+        soul.majorStars.some(s => s.name === "天梁") && br === "午",
       );
       const prev = new Set(
-        [...c.palaces[fixIndex(soul.index - 1)].majorStars].map(s => s.name as string)
+        [...c.palaces[fixIndex(soul.index - 1)].majorStars].map(s => s.name as string),
       );
       const next = new Set(
-        [...c.palaces[fixIndex(soul.index + 1)].majorStars].map(s => s.name as string)
+        [...c.palaces[fixIndex(soul.index + 1)].majorStars].map(s => s.name as string),
       );
       expect(names.includes("紫府夹命")).toBe(
-        (prev.has("紫微") && next.has("天府")) || (prev.has("天府") && next.has("紫微"))
+        (prev.has("紫微") && next.has("天府")) || (prev.has("天府") && next.has("紫微")),
       );
     }
   });
@@ -226,7 +226,7 @@ describe("analysis 结构分析层", () => {
       const c = makeChart("1959-08-16", 3);
       const soul = c.palaces.find(p => p.name === "命宫")!;
       const all = [...soul.majorStars, ...soul.minorStars, ...soul.adjectiveStars].map(
-        s => s.name as string
+        s => s.name as string,
       );
       expect(all).toContain("天马");
       expect(detectPatterns(c).map(p => p.name)).toContain("财禄夹马");
@@ -255,7 +255,8 @@ describe("analysis 结构分析层", () => {
       const sm = soul.majorStars.map(s => s.name as string);
       const bm = body.majorStars.map(s => s.name as string);
       expect(
-        (sm.includes("武曲") && bm.includes("廉贞")) || (sm.includes("廉贞") && bm.includes("武曲"))
+        (sm.includes("武曲") && bm.includes("廉贞")) ||
+          (sm.includes("廉贞") && bm.includes("武曲")),
       ).toBe(true);
       expect(detectPatterns(c).map(p => p.name)).toContain("财与囚仇");
     }
@@ -277,7 +278,7 @@ describe("analysis 结构分析层", () => {
         "yearly",
         h.yearly.index,
         h.yearly.heavenlyStem as string,
-        h.yearly.earthlyBranch as string
+        h.yearly.earthlyBranch as string,
       );
       for (const p of pats) {
         expect(p.scope).toBe("yearly");
@@ -301,7 +302,7 @@ describe("analysis 结构分析层", () => {
         "monthly",
         h.monthly.index,
         h.monthly.heavenlyStem as string,
-        h.monthly.earthlyBranch as string
+        h.monthly.earthlyBranch as string,
       );
       for (const p of pats) {
         expect(p.scope).toBe("monthly");
@@ -332,7 +333,7 @@ describe("analysis 结构分析层", () => {
         "decadal",
         h.decadal.index,
         h.decadal.heavenlyStem as string,
-        h.decadal.earthlyBranch as string
+        h.decadal.earthlyBranch as string,
       );
     expect(JSON.stringify(run())).toBe(JSON.stringify(run()));
   });

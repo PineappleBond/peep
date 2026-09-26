@@ -26,7 +26,7 @@ interface WikiListProps {
 
 export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiList(
   { personId, selectedId, onSelect, onNewClick, onEditClick, onDeleteClick, refreshKey = 0 },
-  ref
+  ref,
 ) {
   const { t } = useI18n();
   const [docs, setDocs] = useState<WikiDocument[]>([]);

@@ -328,7 +328,7 @@ export function calculateShenSha(
   monthBranch: number,
   dayStem: number,
   dayBranch: number,
-  hourBranch: number
+  _hourBranch: number,
 ): ShenSha[] {
   const sha: ShenSha[] = [];
 

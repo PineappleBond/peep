@@ -311,7 +311,7 @@ export { buildDecades as decadesOfChart } from "./hbar";
 export function buildLifeKline(
   astrolabe: Astrolabe | null,
   decades: DecadeInfo[],
-  birthLunarYear: number
+  birthLunarYear: number,
 ): LifeKlineData | null {
   if (!astrolabe || !decades.length) return null;
   const a = astrolabe;
@@ -403,7 +403,7 @@ export function buildLifeKline(
       if (Math.abs(adjSum) >= 0.5) {
         baseline += adjSum;
         baselineNotes.push(
-          `杂曜域调 ${fmt(adjSum)}（${[...new Set(adjNames)].slice(0, 4).join("、")}）`
+          `杂曜域调 ${fmt(adjSum)}（${[...new Set(adjNames)].slice(0, 4).join("、")}）`,
         );
       }
     }
@@ -411,7 +411,7 @@ export function buildLifeKline(
     const selfMutKinds = new Set(
       mutHits(palace.heavenlyStem)
         .filter(h => h.idx === P)
-        .map(h => h.k)
+        .map(h => h.k),
     );
     const hasSelfJi = selfMutKinds.has(3);
     if (hasSelfJi) {
@@ -464,7 +464,7 @@ export function buildLifeKline(
             else if (pos === 1) nature.push(`${tag}${hit.star}忌冲本宫·被动`);
             else nature.push(`${tag}${hit.star}忌拖累三合`);
             factors.push(
-              `${tag}${hit.star}化忌→${a.palaces[hit.idx].name}${pos === 1 ? "(冲本宫)" : ""} -${round(v)}`
+              `${tag}${hit.star}化忌→${a.palaces[hit.idx].name}${pos === 1 ? "(冲本宫)" : ""} -${round(v)}`,
             );
             // 同星叠象：生年忌星再化忌=忌上加忌（应验最烈）；忌撞生年禄星=禄逢冲破
             if (natalMutMap.get(hit.star) === 3) {
@@ -483,7 +483,7 @@ export function buildLifeKline(
             gain += v;
             if (Math.abs(v) >= 1)
               factors.push(
-                `${tag}${hit.star}化${MUTAGEN_CHARS[hit.k]}→${a.palaces[hit.idx].name} ${fmt(v)}`
+                `${tag}${hit.star}化${MUTAGEN_CHARS[hit.k]}→${a.palaces[hit.idx].name} ${fmt(v)}`,
               );
             // 同星叠象：生年禄星再化禄=叠禄（喜上加喜）
             if (hit.k === 0 && natalMutMap.get(hit.star) === 0) {
@@ -535,8 +535,8 @@ export function buildLifeKline(
         // 禄马交驰年：流马与流禄同宫，或流马之宫坐本命禄存/生年禄星
         const maMates = new Set(
           [...a.palaces[liuMaIdx].majorStars, ...a.palaces[liuMaIdx].minorStars].map(
-            s => s.name as string
-          )
+            s => s.name as string,
+          ),
         );
         const natalLuStar = mutHits(natalYearStem).find(h => h.k === 0)?.star;
         const withLu =
@@ -667,7 +667,7 @@ export function buildLifeKline(
 
   domains.sort(
     (x, y) =>
-      (DOMAIN_META[x.palaceName]?.priority ?? 99) - (DOMAIN_META[y.palaceName]?.priority ?? 99)
+      (DOMAIN_META[x.palaceName]?.priority ?? 99) - (DOMAIN_META[y.palaceName]?.priority ?? 99),
   );
 
   return {
@@ -719,7 +719,7 @@ export function buildMonthlyKline(
   a: Astrolabe,
   palaceIndex: number,
   year: number,
-  anchor: { open: number; close: number }
+  anchor: { open: number; close: number },
 ): MonthlyKline | null {
   const palace = a.palaces[palaceIndex];
   if (!palace) return null;
@@ -764,14 +764,14 @@ export function buildMonthlyKline(
         const v = JI_WEIGHTS[pos] * Math.abs(MUT_MONTHLY[3]);
         drain += v;
         factors.push(
-          `月${hit.star}化忌→${a.palaces[hit.idx].name}${pos === 1 ? "(冲本宫)" : ""} -${round(v)}`
+          `月${hit.star}化忌→${a.palaces[hit.idx].name}${pos === 1 ? "(冲本宫)" : ""} -${round(v)}`,
         );
       } else {
         const v = w * MUT_MONTHLY[hit.k];
         gain += v;
         if (v >= 0.8)
           factors.push(
-            `月${hit.star}化${MUTAGEN_CHARS[hit.k]}→${a.palaces[hit.idx].name} ${fmt(v)}`
+            `月${hit.star}化${MUTAGEN_CHARS[hit.k]}→${a.palaces[hit.idx].name} ${fmt(v)}`,
           );
       }
     }

@@ -24,7 +24,7 @@ import { BRANCH_ELEMENT, STEM_ELEMENT } from "./constants";
  */
 export function getLiuQin(
   dayStem: number,
-  targetBranch: number
+  targetBranch: number,
 ): "父母" | "兄弟" | "子孙" | "妻财" | "官鬼" {
   const myElem = STEM_ELEMENT[dayStem];
   const targetElem = BRANCH_ELEMENT[targetBranch];
@@ -50,7 +50,7 @@ export function getLiuQin(
  * @returns Record<地支索引, 六亲名称>
  */
 export function getAllLiuQin(
-  dayStem: number
+  dayStem: number,
 ): Record<number, "父母" | "兄弟" | "子孙" | "妻财" | "官鬼"> {
   const result: Record<number, "父母" | "兄弟" | "子孙" | "妻财" | "官鬼"> = {};
   for (let i = 0; i < 12; i++) {

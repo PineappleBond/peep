@@ -101,7 +101,7 @@ describe("中州派地/人盘身宫", () => {
     const heaven = cast("heaven");
     // 天盘：顶层字段与宫列表一致，helper 透传
     expect(bodyPalaceBranchOf(heaven.palaces, heaven.earthlyBranchOfBodyPalace)).toBe(
-      heaven.earthlyBranchOfBodyPalace
+      heaven.earthlyBranchOfBodyPalace,
     );
     for (const t of ["earth", "human"] as const) {
       const a = cast(t);

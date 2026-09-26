@@ -97,7 +97,7 @@ export function buildChildhood(decades: DecadeInfo[], birthLunarYear: number): C
 export function calcActiveDecadeIdx(
   pickYear: number,
   decades: DecadeInfo[],
-  birthLunarYear: number
+  birthLunarYear: number,
 ): number {
   if (!decades.length) return -1;
   const age = pickYear - birthLunarYear + 1;
@@ -111,7 +111,7 @@ export function buildYears(
   activeDecadeIdx: number,
   decades: DecadeInfo[],
   childhood: Childhood | null,
-  birthLunarYear: number
+  birthLunarYear: number,
 ): CellYear[] {
   let start: number | undefined;
   let end: number | undefined;
@@ -156,7 +156,7 @@ export function buildDays(
   pickYear: number,
   pickMonth: number,
   monthDays: number,
-  effLeap: boolean
+  effLeap: boolean,
 ): CellDay[] {
   const list: CellDay[] = [];
   for (let d = 1; d <= monthDays; d++) {
@@ -179,7 +179,7 @@ export function buildHours(dayStem: string): CellHour[] {
 export function buildHbarData(
   astrolabe: Astrolabe | null,
   birthLunarYear: number,
-  pick: PickState
+  pick: PickState,
 ): HbarData | null {
   if (!astrolabe) return null;
 

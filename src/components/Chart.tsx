@@ -167,10 +167,10 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
       s => {
         if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
         return z.visible[s];
-      }
+      },
     );
     return effectiveScopes.map(s =>
-      getChartDataForScope({ astrolabe, horoscope: z.horoscope, scope: s })
+      getChartDataForScope({ astrolabe, horoscope: z.horoscope, scope: s }),
     );
   }, [z.astrolabe, z.horoscope, z.visible, z.activeDecadeIdx]);
 
@@ -281,7 +281,7 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
                     {f.mutagen}
                   </text>
                 </g>
-              )
+              ),
             )}
             {focus >= 0 && (
               <circle className="sdot-src" cx={anchor(focus).x} cy={anchor(focus).y} r="4.4" />

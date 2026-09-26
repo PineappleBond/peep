@@ -23,6 +23,7 @@ import {
 } from "../core/place";
 import type { BirthInput } from "../core/useZwds";
 import { DEFAULT_BIRTH_INPUT } from "../core/useZwds";
+import type { Person } from "../core/personDb";
 import { Dialog } from "./Dialog";
 import { useI18n } from "../core/i18n";
 
@@ -31,7 +32,7 @@ type PersonDialogProps = {
   onClose: () => void;
   onSave: (input: BirthInput, isDefault: boolean) => void;
   /** 编辑模式传入现有数据（含 isDefault），新增模式传 undefined */
-  initialData?: import("../core/personDb").Person;
+  initialData?: Person;
   /** 弹窗标题 */
   title?: string;
 };
@@ -69,7 +70,7 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
   }, [draft.date]);
   const lunarLeapMonth = useMemo(
     () => (draft.calendar === "lunar" ? leapMonthOf(lunarYMD.y) : 0),
-    [draft.calendar, lunarYMD.y]
+    [draft.calendar, lunarYMD.y],
   );
   const lunarMaxDay = useMemo(
     () =>
@@ -77,10 +78,10 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
         ? daysInLunarMonth(
             lunarYMD.y,
             lunarYMD.m,
-            draft.isLeapMonth && lunarLeapMonth === lunarYMD.m
+            draft.isLeapMonth && lunarLeapMonth === lunarYMD.m,
           )
         : 30,
-    [draft.calendar, lunarYMD, draft.isLeapMonth, lunarLeapMonth]
+    [draft.calendar, lunarYMD, draft.isLeapMonth, lunarLeapMonth],
   );
 
   const setLunar = (y: number, m: number, d: number, leap: boolean) => {
@@ -119,14 +120,14 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
   const cityNames = useMemo(() => getCityNamesOfProvince(draft.province), [draft.province]);
   const districtNames = useMemo(
     () => getDistrictNamesOfCity(draft.province, draft.city),
-    [draft.province, draft.city]
+    [draft.province, draft.city],
   );
   const timezones = useMemo(listTimezones, []);
 
   const solarStr = useMemo(
     () =>
       draft.calendar === "lunar" ? lunarStrToSolarStr(draft.date, draft.isLeapMonth) : draft.date,
-    [draft.calendar, draft.date, draft.isLeapMonth]
+    [draft.calendar, draft.date, draft.isLeapMonth],
   );
 
   const resolvedPlace = useMemo(() => {
@@ -154,7 +155,7 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
         solarStr,
         draft.exactTime,
         resolvedPlace.longitude,
-        resolvedPlace.clockOffsetMinutes
+        resolvedPlace.clockOffsetMinutes,
       )?.timeIndex ?? null
     );
   }, [draft.useTrueSolar, draft.exactTime, solarStr, resolvedPlace]);
@@ -298,7 +299,7 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
                       opts.push(
                         <option key={`${m}L`} value={`${m}L`}>
                           {t("person.leapMonth", { label })}
-                        </option>
+                        </option>,
                       );
                     }
                     return opts;

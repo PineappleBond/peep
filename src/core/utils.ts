@@ -176,7 +176,7 @@ export const BRANCH_SELF_XING = new Set(["辰", "午", "酉", "亥"]);
 /** 两地支关系（按 合>三合>冲>刑>害>自刑/同支 优先级取一） */
 export function branchRelation(
   x: string,
-  y: string
+  y: string,
 ): "六合" | "三合" | "对冲" | "相刑" | "相害" | "自刑" | "同支" | "无" {
   if (BRANCH_LIUHE[x] === y) return "六合";
   if (x !== y && BRANCH_SANHE_GROUP[x] && BRANCH_SANHE_GROUP[x] === BRANCH_SANHE_GROUP[y])
@@ -334,7 +334,7 @@ export function isYangStem(stem: string): boolean {
  */
 export function bodyPalaceBranchOf(
   palaces: readonly { isBodyPalace: boolean; earthlyBranch: string }[],
-  fallback: string
+  fallback: string,
 ): string {
   return palaces.find(p => p.isBodyPalace)?.earthlyBranch ?? fallback;
 }
@@ -411,7 +411,7 @@ export function applyTrueSolar(
   solarDateStr: string,
   timeStr: string,
   longitude: number,
-  clockOffsetMinutes = 480
+  clockOffsetMinutes = 480,
 ): TrueSolarResult | null {
   const dm = solarDateStr.split(/[-/.]/).map(Number);
   const tm = timeStr.split(":").map(Number);

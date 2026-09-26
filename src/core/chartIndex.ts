@@ -82,7 +82,7 @@ export const sanfangIdx = (P: number) => [
  */
 export function mutagenHits(
   ix: ChartIndex,
-  stem: string
+  stem: string,
 ): { idx: number; k: number; star: string }[] {
   if (!stem) return [];
   const stars = util.getMutagensByHeavenlyStem(stem as never) as string[];

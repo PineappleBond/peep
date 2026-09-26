@@ -150,7 +150,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
   const soulSeat = (
     star: string,
     branches: string[],
-    p: Omit<Pattern, "kind" | "where" | "flaw">
+    p: Omit<Pattern, "kind" | "where" | "flaw">,
   ) => {
     if (soulMajors.has(star) && branches.includes(soulBranch)) addSoulGood(p);
   };
@@ -822,7 +822,7 @@ export function detectHoroscopePatterns(
   soulIdxOfScope: number,
   stem: string,
   branch: string,
-  ix: ChartIndex = buildChartIndex(a)
+  ix: ChartIndex = buildChartIndex(a),
 ): HoroPattern[] {
   const S = fixIndex(soulIdxOfScope);
   const sf = sanfangIdx(S);
@@ -858,7 +858,7 @@ export function detectHoroscopePatterns(
       "三奇加会（运限）",
       "吉",
       `${tag}化禄${mutStars[0]}、化权${mutStars[1]}、化科${mutStars[2]}俱会${tag}命宫三方四正`,
-      "运限三奇拱照，此运才干机遇名望齐至，宜大胆进取"
+      "运限三奇拱照，此运才干机遇名望齐至，宜大胆进取",
     );
   }
 
@@ -872,7 +872,7 @@ export function detectHoroscopePatterns(
         "双禄交会（运限）",
         "吉",
         `${tag}化禄（${mutStars[0]}）与本命禄（${sfStars.has("禄存") ? "禄存" : `生年禄星${ix.natal[0]}`}）同会${tag}命宫三方`,
-        "运限禄叠本命禄，财源双至，进财应期"
+        "运限禄叠本命禄，财源双至，进财应期",
       );
     }
   }
@@ -888,7 +888,7 @@ export function detectHoroscopePatterns(
       "阳梁昌禄（运限）",
       "吉",
       `太阳、天梁会${tag}命宫三方，文昌${sfStars.has("文昌") ? "" : `（${fp}昌）`}与禄俱到`,
-      "考试功名应期：升学、考证、竞聘、体制晋升的窗口期"
+      "考试功名应期：升学、考证、竞聘、体制晋升的窗口期",
     );
   }
 
@@ -901,7 +901,7 @@ export function detectHoroscopePatterns(
         "禄马交驰（运限）",
         "吉",
         `禄（${flowIn("禄") ? `${fp}禄` : mutInSf(0) ? `化禄${mutStars[0]}` : "禄存"}）与马（${flowIn("马") ? `${fp}马` : "天马"}）同会${tag}命宫三方`,
-        "动中得财之运，宜外出经营、差旅开拓、异地机会"
+        "动中得财之运，宜外出经营、差旅开拓、异地机会",
       );
     }
   }
@@ -915,7 +915,7 @@ export function detectHoroscopePatterns(
         "羊陀夹忌（运限）",
         "凶",
         `${tag}化忌（${jiStar}）落入本命禄存之宫【${seatName(luCunPos)}】，受擎羊陀罗相夹`,
-        "此运忌星受夹无处可泄，该宫事项动辄得咎，宜守不宜攻"
+        "此运忌星受夹无处可泄，该宫事项动辄得咎，宜守不宜攻",
       );
     }
   }
@@ -929,14 +929,14 @@ export function detectHoroscopePatterns(
         "忌入运限命宫",
         "注意",
         `${tag}化忌（${jiStar}）坐${tag}命宫【${seatName(S)}】`,
-        "忌坐运限命，此运多自我纠结、执念沉淀，宜收敛整固"
+        "忌坐运限命，此运多自我纠结、执念沉淀，宜收敛整固",
       );
     } else if (jiPos === fixIndex(S + 6)) {
       add(
         "忌冲运限命宫",
         "注意",
         `${tag}化忌（${jiStar}）自对宫【${seatName(jiPos)}】冲${tag}命宫`,
-        "忌冲运限命，冲力最烈，主变动离散——换环境/换轨道的敏感期"
+        "忌冲运限命，冲力最烈，主变动离散——换环境/换轨道的敏感期",
       );
     }
   }
@@ -944,14 +944,14 @@ export function detectHoroscopePatterns(
   // 杀破狼运：运限命宫坐杀破狼
   {
     const sbl = a.palaces[S].majorStars.find(s =>
-      ["七杀", "破军", "贪狼"].includes(s.name as string)
+      ["七杀", "破军", "贪狼"].includes(s.name as string),
     );
     if (sbl) {
       add(
         "杀破狼运",
         "注意",
         `${tag}命宫坐${sbl.name}（三方必会齐杀破狼）`,
-        "变动开创之运：转型、跳槽、创业多发于此，宜主动求变忌被动硬守"
+        "变动开创之运：转型、跳槽、创业多发于此，宜主动求变忌被动硬守",
       );
     }
   }
@@ -968,7 +968,7 @@ export function detectHoroscopePatterns(
           "火贪引动（运限）",
           "注意",
           `贪狼与${fire}同宫于${seatName(tanPos)}（在${tag}命宫三方），且本${tag.charAt(1)}贪狼被四化引动`,
-          "横发格被引动：暴利与暴损同门，见好就收、落袋为安"
+          "横发格被引动：暴利与暴损同门，见好就收、落袋为安",
         );
       }
     }
@@ -990,7 +990,7 @@ export function scanHoroscopePatterns(
     decadal: { index: number; heavenlyStem: unknown; earthlyBranch: unknown };
     yearly: { index: number; heavenlyStem: unknown; earthlyBranch: unknown };
     monthly?: { index: number; heavenlyStem: unknown; earthlyBranch: unknown };
-  }
+  },
 ): { decadal: HoroPattern[]; yearly: HoroPattern[]; monthly: HoroPattern[] } {
   const ix = buildChartIndex(a);
   return {
@@ -1000,7 +1000,7 @@ export function scanHoroscopePatterns(
       h.decadal.index,
       h.decadal.heavenlyStem as string,
       h.decadal.earthlyBranch as string,
-      ix
+      ix,
     ),
     yearly: detectHoroscopePatterns(
       a,
@@ -1008,7 +1008,7 @@ export function scanHoroscopePatterns(
       h.yearly.index,
       h.yearly.heavenlyStem as string,
       h.yearly.earthlyBranch as string,
-      ix
+      ix,
     ),
     monthly: h.monthly
       ? detectHoroscopePatterns(
@@ -1017,7 +1017,7 @@ export function scanHoroscopePatterns(
           h.monthly.index,
           h.monthly.heavenlyStem as string,
           h.monthly.earthlyBranch as string,
-          ix
+          ix,
         )
       : [],
   };

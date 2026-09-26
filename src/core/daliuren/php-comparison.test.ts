@@ -104,7 +104,7 @@ function compareResults(php: any, ts: any, caseName: string): void {
   const tsMethod = ts.threeTransmissions.method;
   // 这里需要映射关系，暂时先记录
   console.log(
-    `${caseName} 九宗门: PHP=${phpMethod} (${getPhpMethodName(phpMethod)}), TS=${tsMethod}`
+    `${caseName} 九宗门: PHP=${phpMethod} (${getPhpMethodName(phpMethod)}), TS=${tsMethod}`,
   );
 
   if (checks.length > 0) {

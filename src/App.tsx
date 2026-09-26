@@ -13,7 +13,7 @@ import { useI18n } from "./core/i18n";
 
 // 大六壬 / Wiki 页面仅在访问时按需加载，降低首屏 bundle 体积
 const DaLiuRenPage = lazy(() =>
-  import("./pages/DaLiuRenPage").then(m => ({ default: m.DaLiuRenPage }))
+  import("./pages/DaLiuRenPage").then(m => ({ default: m.DaLiuRenPage })),
 );
 const WikiPage = lazy(() => import("./pages/WikiPage").then(m => ({ default: m.WikiPage })));
 

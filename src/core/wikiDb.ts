@@ -10,7 +10,7 @@ import { t } from "./i18n";
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
 const tagCache = createTagCache(
   (personId: number) => db.wikiDocs.where("personId").equals(personId).toArray(),
-  (d: WikiDocument) => d.tags
+  (d: WikiDocument) => d.tags,
 );
 
 /** 写入/删除后使标签缓存失效 */
@@ -48,7 +48,7 @@ export interface WikiListResult {
  */
 export async function listWikiDocs(
   personId: number,
-  filters: WikiListFilters = {}
+  filters: WikiListFilters = {},
 ): Promise<WikiListResult> {
   try {
     const allDocs = await db.wikiDocs.where("personId").equals(personId).toArray();

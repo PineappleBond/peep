@@ -35,7 +35,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
     onViewClick,
     refreshKey = 0,
   },
-  ref
+  ref,
 ) {
   const { t } = useI18n();
   const [records, setRecords] = useState<LiurenRecord[]>([]);
@@ -95,7 +95,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags(prev =>
-      prev.includes(tag) ? prev.filter(item => item !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter(item => item !== tag) : [...prev, tag],
     );
     setPage(1); // 切换筛选时重置到第一页
   };

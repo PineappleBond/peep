@@ -111,7 +111,7 @@ function calcShehaiDepth(upper: number, heavenBoard: number[], isZei: boolean): 
 /** 标准递推：中传=天盘[初传]，末传=天盘[中传] */
 function standardMiddleFinal(
   initial: number,
-  heavenBoard: number[]
+  heavenBoard: number[],
 ): { middle: number; final: number } {
   const middle = heavenBoard[initial];
   const final = heavenBoard[middle];
@@ -132,7 +132,7 @@ export function calculateThreeTransmissions(
   fourLessons: FourLesson[],
   dayStem: number,
   dayBranch: number,
-  heavenBoard: number[]
+  heavenBoard: number[],
 ): ThreeTransmissionsResult {
   const trace: string[] = [];
 
@@ -160,10 +160,10 @@ export function calculateThreeTransmissions(
   }
 
   trace.push(
-    `四课: ${fourLessons.map((l, idx) => `[${idx + 1}]${DI_ZHI[l.upper]}←${DI_ZHI[l.lower]}`).join(" ")}`
+    `四课: ${fourLessons.map((l, idx) => `[${idx + 1}]${DI_ZHI[l.upper]}←${DI_ZHI[l.lower]}`).join(" ")}`,
   );
   trace.push(
-    `贼(${xiaZeiShangIdx.map(i => i + 1).join(",") || "无"}) 克(${shangKeXiaIdx.map(i => i + 1).join(",") || "无"})`
+    `贼(${xiaZeiShangIdx.map(i => i + 1).join(",") || "无"}) 克(${shangKeXiaIdx.map(i => i + 1).join(",") || "无"})`,
   );
 
   // 盘面检测
@@ -185,7 +185,7 @@ export function calculateThreeTransmissions(
       heavenBoard,
       xiaZeiShangIdx,
       shangKeXiaIdx,
-      trace
+      trace,
     );
   }
 
@@ -197,7 +197,7 @@ export function calculateThreeTransmissions(
     heavenBoard,
     xiaZeiShangIdx,
     shangKeXiaIdx,
-    trace
+    trace,
   );
 
   // ── 2. 返吟（天地盘对冲），丁未/己未除外 ──
@@ -216,7 +216,7 @@ function applyFanyinOverride(
   fourLessons: FourLesson[],
   dayStem: number,
   dayBranch: number,
-  trace: string[]
+  trace: string[],
 ): ThreeTransmissionsResult {
   const l1Upper = fourLessons[0].upper;
   const l3Upper = fourLessons[2].upper;
@@ -262,7 +262,7 @@ function computeStandardJiuZongMen(
   heavenBoard: number[],
   xiaZeiShangIdx: number[],
   shangKeXiaIdx: number[],
-  trace: string[]
+  trace: string[],
 ): ThreeTransmissionsResult {
   // ── 3. 贼克：单一克取克者 ──
   if (xiaZeiShangIdx.length === 1 || (xiaZeiShangIdx.length === 0 && shangKeXiaIdx.length === 1)) {
@@ -308,7 +308,7 @@ function computeStandardJiuZongMen(
       const { middle, final } = standardMiddleFinal(initial, heavenBoard);
       const methodName = isZei ? "比用" : "知一";
       trace.push(
-        `${methodName}：${candidates.length}个${isZei ? "贼" : "克"}，取阴阳同者第${idx + 1}课`
+        `${methodName}：${candidates.length}个${isZei ? "贼" : "克"}，取阴阳同者第${idx + 1}课`,
       );
       return { initial, middle, final, method: methodName, trace };
     }
@@ -328,7 +328,7 @@ function computeStandardJiuZongMen(
       buBi,
       isZei,
       trace,
-      shehaiArr
+      shehaiArr,
     );
   }
 
@@ -400,7 +400,7 @@ function handleFuyin(
   _heavenBoard: number[],
   xiaZeiShangIdx: number[],
   shangKeXiaIdx: number[],
-  trace: string[]
+  trace: string[],
 ): ThreeTransmissionsResult {
   const hasKe = xiaZeiShangIdx.length > 0 || shangKeXiaIdx.length > 0;
 
@@ -495,7 +495,7 @@ function handleShehai(
   _buBi: number[],
   isZei: boolean,
   trace: string[],
-  shehaiArr: number[]
+  shehaiArr: number[],
 ): ThreeTransmissionsResult {
   // shehaiArr 由调用方确定：
   // PHP 逻辑：riganXiangbi > 1 时用 riganXiangbi（阴阳同者），否则用 riganBubi（阴阳异者）
@@ -530,7 +530,7 @@ function handleShehai(
       const initial = fourLessons[mengIdx].upper;
       const { middle, final } = standardMiddleFinal(initial, heavenBoard);
       trace.push(
-        `涉害见机：取孟下${DI_ZHI[mengHits[0]]}对应第${mengIdx + 1}课上神${DI_ZHI[initial]}`
+        `涉害见机：取孟下${DI_ZHI[mengHits[0]]}对应第${mengIdx + 1}课上神${DI_ZHI[initial]}`,
       );
       return { initial, middle, final, method: "涉害见机", trace };
     }
@@ -541,7 +541,7 @@ function handleShehai(
       const initial = fourLessons[zhongIdx].upper;
       const { middle, final } = standardMiddleFinal(initial, heavenBoard);
       trace.push(
-        `涉害察微：取仲下${DI_ZHI[zhongHits[0]]}对应第${zhongIdx + 1}课上神${DI_ZHI[initial]}`
+        `涉害察微：取仲下${DI_ZHI[zhongHits[0]]}对应第${zhongIdx + 1}课上神${DI_ZHI[initial]}`,
       );
       return { initial, middle, final, method: "涉害察微", trace };
     }
@@ -551,7 +551,7 @@ function handleShehai(
     const initial = isYang ? fourLessons[0].upper : fourLessons[2].upper;
     const { middle, final } = standardMiddleFinal(initial, heavenBoard);
     trace.push(
-      `涉害缀瑕：${isYang ? "阳" : "阴"}日取${isYang ? "干" : "支"}上课${DI_ZHI[initial]}`
+      `涉害缀瑕：${isYang ? "阳" : "阴"}日取${isYang ? "干" : "支"}上课${DI_ZHI[initial]}`,
     );
     return { initial, middle, final, method: "涉害缀瑕", trace };
   }
@@ -572,7 +572,7 @@ function tryYaoke(
   dayStem: number,
   _dayBranch: number,
   heavenBoard: number[],
-  trace: string[]
+  trace: string[],
 ): ThreeTransmissionsResult | null {
   const dayElem = elemS(dayStem);
   const yaokeShangKeXia: number[] = []; // 四课上神克日干
@@ -642,7 +642,7 @@ function handleMaoxing(
   _dayBranch: number,
   heavenBoard: number[],
   fourLessons: FourLesson[],
-  trace: string[]
+  trace: string[],
 ): ThreeTransmissionsResult {
   const isYang = STEM_YIN_YANG[dayStem] === 1;
 
@@ -671,7 +671,7 @@ function handleBiezhe(
   dayBranch: number,
   heavenBoard: number[],
   fourLessons: FourLesson[],
-  trace: string[]
+  trace: string[],
 ): ThreeTransmissionsResult {
   const isYang = STEM_YIN_YANG[dayStem] === 1;
   let initial: number;
@@ -702,7 +702,7 @@ function handleBazhuan(
   _dayBranch: number,
   _heavenBoard: number[],
   fourLessons: FourLesson[],
-  trace: string[]
+  trace: string[],
 ): ThreeTransmissionsResult {
   const isYang = STEM_YIN_YANG[dayStem] === 1;
   let initial: number;

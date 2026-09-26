@@ -36,7 +36,7 @@ export interface FateInfo {
 export function calculateFate(
   birthYear: number,
   gender: "男" | "女",
-  currentYear: number
+  currentYear: number,
 ): FateInfo {
   // 虚岁 = 当前年 - 生年 + 1
   const age = currentYear - birthYear + 1;
