@@ -15,7 +15,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   // ─── 1. 基础 CRUD ────────────────────────────────────────
 
   test("WikiCreate：创建文档，返回包含 title/content/tags/personId", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const title = uid("创建测试");
@@ -44,7 +44,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   });
 
   test("WikiView：查看刚创建的文档，数据完整", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const title = uid("查看测试");
@@ -79,7 +79,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   });
 
   test("WikiList：查询列表，包含刚创建的文档", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const title = uid("列表测试");
@@ -116,7 +116,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   // ─── 2. 搜索与筛选 ──────────────────────────────────────
 
   test("WikiList + searchText：按标题搜索", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const uniqueKeyword = uid("搜索关键词");
@@ -145,7 +145,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   });
 
   test("WikiList + searchText：按内容搜索", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const uniqueContent = uid("正文唯一标识");
@@ -172,7 +172,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   });
 
   test("WikiList + tags：按标签筛选", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const uniqueTag = uid("标签");
@@ -202,7 +202,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   });
 
   test("WikiList + 分页：验证分页参数", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 批量创建多篇文档（用于分页测试）
@@ -245,7 +245,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   // ─── 3. 双向链接 ────────────────────────────────────────
 
   test("双向链接：第二篇关联第一篇，WikiView 验证 linkTargetIds", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 创建第一篇文档
@@ -289,7 +289,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   // ─── 4. 路由切换 ────────────────────────────────────────
 
   test("路由切换：访问 /wiki 页面可正常加载", async ({ page }) => {
-    await page.goto("/wiki");
+    await page.goto("/peep/wiki");
     await page.waitForLoadState("networkidle");
 
     // 页面应包含知识库相关元素
@@ -303,7 +303,7 @@ test.describe("Wiki 知识库 debugApi", () => {
 
   test("路由切换：WikiCreate 自动跳转到 /wiki", async ({ page }) => {
     // 从首页开始
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 调用 WikiCreate（会自动跳转到 /wiki）
@@ -332,7 +332,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   // ─── 5. 错误处理 ────────────────────────────────────────
 
   test("错误处理：API 未注册时应抛出明确错误", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 模拟 API 未注册的场景：临时移除 window.peep
@@ -365,7 +365,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   // ─── 6. 人物关联 ────────────────────────────────────────
 
   test("人物关联：WikiCreate 使用 personId=1（默认人物）", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const title = uid("人物关联测试");
@@ -383,7 +383,7 @@ test.describe("Wiki 知识库 debugApi", () => {
   });
 
   test("人物关联：WikiList 按 personId 过滤", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const title = uid("人物过滤测试");

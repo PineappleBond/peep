@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   test("基本排盘：输入日期时间，返回完整的天地盘、四课、三传、天将", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
 
     // 等待页面加载完成
     await page.waitForLoadState("networkidle");
@@ -50,7 +50,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第二阶段：九宗门覆盖
   test("九宗门覆盖：不同日干支应触发不同的三传取法", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const results = await page.evaluate(async () => {
@@ -102,7 +102,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第二阶段：贵神昼夜区分
   test("贵神昼夜区分：同一日期不同时辰，贵人起法应不同", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const [dayResult, nightResult] = await page.evaluate(async () => {
@@ -128,7 +128,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("月将精确换将：节气交界时刻，月将应正确切换", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -157,7 +157,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("旬空计算：应正确标注空亡地支", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -185,7 +185,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第三阶段：旺相休囚死
   test("旺相休囚死：应正确标注每个地支的季节状态", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -221,7 +221,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第三阶段：六亲
   test("六亲：应正确标注每个地支的六亲关系", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -261,7 +261,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第三阶段：神煞
   test("神煞：应包含常用神煞", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -337,7 +337,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第三阶段：遁干和刑冲破害
   test("遁干与刑冲破害：应包含完整结果", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -372,7 +372,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第四阶段：课经规则
   test("课经规则：应识别常见课经格局", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -433,7 +433,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第四阶段：建除十二直
   test("建除十二直：应正确标注每个地支的建除类型", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -476,7 +476,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第四阶段：纳音五行
   test("纳音五行：应正确标注每个干支的纳音", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -516,7 +516,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第四阶段：命宫行年
   test("命宫行年：传入生年和性别时应返回命宫行年信息", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -556,7 +556,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   // ─── 边界情况测试 ────────────────────────────────────
 
   test("输入验证：无效日期应抛出错误", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 无效日期（2024年没有2月30日）
@@ -597,7 +597,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("输入验证：无效时间应抛出错误", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 无效小时
@@ -638,7 +638,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("输入验证：无效命宫参数应抛出错误", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 生年晚于当前年
@@ -673,7 +673,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("子时边界：23时和0时的时辰行为一致", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const results = await page.evaluate(async () => {
@@ -703,7 +703,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("伏吟盘面：月将与时支相同时天地盘重合", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 找一个能产生伏吟盘面的日期：月将加时，月将=时支时 offset=0，天地盘重合
@@ -732,7 +732,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("返吟盘面：月将与时支对冲时天地盘对冲", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -757,7 +757,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("闰月年份：闰月不影响月将计算", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 2023年有闰二月，验证闰二月期间的月将正常
@@ -782,7 +782,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("八专日：三传可能全部相同（独足格）", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 八专日：干支同位（甲寅、乙卯、丙午、丁未、戊午、己未、庚申、辛酉、壬子、癸亥等）
@@ -825,7 +825,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
   });
 
   test("跨年边界：冬至前后的月将切换（大雪→冬至）", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -851,7 +851,7 @@ test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
 
   // 第五阶段：毕法规则
   test("毕法规则：应识别毕法赋前六法", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {

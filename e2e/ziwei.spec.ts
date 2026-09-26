@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
   test("基本排盘：切换人物后返回完整的盘面数据", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // 先确认调试 API 已注册
@@ -45,7 +45,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
   });
 
   test("运限级别切换：传入 scope 参数，返回对应运限数据", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const scopes = ["decadal", "yearly", "monthly", "daily", "hourly"] as const;
@@ -65,7 +65,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
   });
 
   test("时间参数：传入 Date 时间应正确切换运限", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -79,7 +79,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
   });
 
   test("错误处理：无效 personId 应抛出错误", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     // personId = 0 应报错
@@ -120,7 +120,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
   });
 
   test("错误处理：无效 scope 应抛出错误", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/peep/");
     await page.waitForLoadState("networkidle");
 
     const result = await page.evaluate(async () => {
@@ -138,7 +138,7 @@ test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
 
   test("页面跳转：ZiWei 调用后自动跳转到首页", async ({ page }) => {
     // 从 /wiki 页面开始
-    await page.goto("/wiki");
+    await page.goto("/peep/wiki");
     await page.waitForLoadState("networkidle");
 
     // 调用 ZiWei（应自动跳转到 /）
