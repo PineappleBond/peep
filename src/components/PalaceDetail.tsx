@@ -128,7 +128,12 @@ export const PalaceDetail = memo(function PalaceDetail({
       aria-labelledby={titleId}
       onClick={handleClose}
     >
-      <div className="pd-panel" ref={panelRef} onClick={e => e.stopPropagation()}>
+      <div
+        className="pd-panel"
+        ref={panelRef}
+        onClick={e => e.stopPropagation()}
+        data-guide="ziwei-palace"
+      >
         <div className="pd-head">
           <b id={titleId} tabIndex={-1}>
             {palace.name}

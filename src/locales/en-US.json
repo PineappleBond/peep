@@ -424,5 +424,11 @@
   "search.category.person": "Persons",
   "search.category.liuren": "Divinations",
   "search.category.wiki": "Documents",
-  "search.category.action": "Actions"
+  "search.category.action": "Actions",
+  "guide.title": "New User Guide",
+  "guide.skip": "Skip",
+  "guide.prev": "Previous",
+  "guide.next": "Next",
+  "guide.finish": "Done",
+  "guide.replay": "Replay Guide"
 }

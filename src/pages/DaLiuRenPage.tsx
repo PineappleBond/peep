@@ -250,7 +250,7 @@ export function DaLiuRenPage() {
   return (
     <div className="liuren-page">
       <div className="liuren-layout">
-        <div className="liuren-left">
+        <div className="liuren-left" data-guide="liuren-list">
           <LiurenList
             ref={liurenListRef}
             personId={person.id!}
@@ -264,7 +264,9 @@ export function DaLiuRenPage() {
           />
         </div>
         <div className="liuren-right">
-          <LiurenChart record={selectedRecord} />
+          <div data-guide="liuren-chart">
+            <LiurenChart record={selectedRecord} />
+          </div>
         </div>
       </div>
 
@@ -296,12 +298,14 @@ export function DaLiuRenPage() {
       />
 
       {/* 导出对话框 */}
-      <ExportDialog
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        person={person}
-        liurenRecords={selectedRecord ? [selectedRecord] : []}
-      />
+      <div data-guide="liuren-export">
+        <ExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          person={person}
+          liurenRecords={selectedRecord ? [selectedRecord] : []}
+        />
+      </div>
     </div>
   );
 }

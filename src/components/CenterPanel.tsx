@@ -38,7 +38,7 @@ export const CenterPanel = memo(function CenterPanel({
   const ts = z.trueSolar;
 
   return (
-    <div className="center" style={{ gridArea: "c" }}>
+    <div className="center" style={{ gridArea: "c" }} data-guide="ziwei-input">
       <div className="center-head">
         <h2>{t("center.title")}</h2>
         <span className="center-sub">{t("center.subtitle")}</span>

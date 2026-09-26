@@ -115,7 +115,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
     <div className="record-list">
       {/* 顶部操作区 */}
       <div className="record-list-header">
-        <button className="record-new-btn" onClick={onNewClick}>
+        <button className="record-new-btn" onClick={onNewClick} data-guide="liuren-create">
           + {t("daliuren.create")}
         </button>
       </div>

@@ -280,7 +280,7 @@ export function WikiPage() {
         </button>
       </div>
       <div className="wiki-layout">
-        <div className="wiki-left">
+        <div className="wiki-left" data-guide="wiki-list">
           <WikiList
             ref={wikiListRef}
             personId={person.id!}
@@ -294,20 +294,24 @@ export function WikiPage() {
         </div>
         <div className="wiki-right">
           {mode === "read" ? (
-            <WikiReader
-              doc={selectedDoc}
-              personName={person.name || ""}
-              onEditClick={() => selectedDoc && handleEditClick(selectedDoc)}
-              onDocClick={handleDocClick}
-            />
+            <div data-guide="wiki-related">
+              <WikiReader
+                doc={selectedDoc}
+                personName={person.name || ""}
+                onEditClick={() => selectedDoc && handleEditClick(selectedDoc)}
+                onDocClick={handleDocClick}
+              />
+            </div>
           ) : (
-            <WikiEditor
-              doc={editingDoc}
-              personId={person.id!}
-              existingTags={existingTags}
-              onSave={handleSave}
-              onCancel={handleCancel}
-            />
+            <div data-guide="wiki-editor">
+              <WikiEditor
+                doc={editingDoc}
+                personId={person.id!}
+                existingTags={existingTags}
+                onSave={handleSave}
+                onCancel={handleCancel}
+              />
+            </div>
           )}
         </div>
       </div>

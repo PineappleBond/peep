@@ -424,5 +424,11 @@
   "search.category.person": "人物",
   "search.category.liuren": "占课记录",
   "search.category.wiki": "知识文档",
-  "search.category.action": "快捷操作"
+  "search.category.action": "快捷操作",
+  "guide.title": "新用户引导",
+  "guide.skip": "跳过",
+  "guide.prev": "上一步",
+  "guide.next": "下一步",
+  "guide.finish": "完成",
+  "guide.replay": "重新播放引导"
 }

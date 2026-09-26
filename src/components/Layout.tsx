@@ -4,12 +4,13 @@
  */
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { ToastHost } from "./ToastHost";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { ImportDialog } from "./ImportDialog";
 import { CommandPalette } from "./CommandPalette";
+import { GuideOverlay } from "./GuideOverlay";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
@@ -17,6 +18,14 @@ import { useI18n } from "../core/i18n";
 import { registerShortcuts, toggleHelp } from "../core/shortcuts";
 import { getTheme, setTheme, type Theme } from "../core/theme";
 import type { SearchContext } from "../core/globalSearch";
+import {
+  getGuideSteps,
+  isGuideCompleted,
+  markGuideCompleted,
+  shouldAutoStartWelcome,
+  markWelcomeCompleted,
+  type GuideStep,
+} from "../core/guide";
 
 const STORAGE_KEY = "zwds-current-person-id";
 
@@ -26,12 +35,17 @@ type LayoutProps = {
 
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, locale, setLocale } = useI18n();
   const [currentPersonId, setCurrentPersonId] = useState<number | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [theme, setThemeState] = useState<Theme>(getTheme);
   const currentPersonRef = useRef<Person | null>(null);
+
+  /* ── 引导系统状态 ──────────────────────────── */
+  const [guideSteps, setGuideSteps] = useState<GuideStep[] | null>(null);
+  const [guideCurrentStep, setGuideCurrentStep] = useState(0);
 
   // 初始化：加载默认人物
   useEffect(() => {
@@ -108,6 +122,67 @@ export function Layout({ children }: LayoutProps) {
   // ── 命令面板开关 ────────────────────────────
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
+
+  // ── 引导系统 ────────────────────────────
+  /** 启动指定引导流程 */
+  const startGuide = useCallback((guideId: string) => {
+    const steps = getGuideSteps(guideId);
+    if (!steps || steps.length === 0) return;
+    setGuideSteps(steps);
+    setGuideCurrentStep(0);
+  }, []);
+
+  /** 关闭引导 */
+  const stopGuide = useCallback(() => {
+    setGuideSteps(null);
+    setGuideCurrentStep(0);
+  }, []);
+
+  /** 完成引导 */
+  const handleGuideComplete = useCallback(() => {
+    if (guideSteps) {
+      /* 从第一步 id 推断 guideId（welcome-1 → welcome） */
+      const guideId = guideSteps[0]?.id.split("-")[0];
+      if (guideId) markGuideCompleted(guideId);
+    }
+    stopGuide();
+  }, [guideSteps, stopGuide]);
+
+  /** 跳过引导 */
+  const handleGuideSkip = useCallback(() => {
+    if (guideSteps) {
+      const guideId = guideSteps[0]?.id.split("-")[0];
+      if (guideId) markGuideCompleted(guideId);
+    }
+    stopGuide();
+  }, [guideSteps, stopGuide]);
+
+  /** 自动启动欢迎引导（首次访问） */
+  useEffect(() => {
+    if (shouldAutoStartWelcome()) {
+      /* 延迟一帧确保页面渲染完成 */
+      requestAnimationFrame(() => {
+        startGuide("welcome");
+        markWelcomeCompleted();
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** 暴露全局方法供页面组件调用（重新播放引导） */
+  useEffect(() => {
+    (window as any).__startGuide = startGuide;
+    return () => {
+      delete (window as any).__startGuide;
+    };
+  }, [startGuide]);
+
+  /** 根据路由推断当前页面应播放的引导 */
+  const getGuideIdForPath = (pathname: string): string | null => {
+    if (pathname.startsWith("/wiki")) return "wiki";
+    if (pathname.startsWith("/liuren")) return "daliuren";
+    if (pathname === "/" || pathname === "") return "ziwei";
+    return null;
+  };
 
   // 搜索上下文（供 CommandPalette 使用）
   const searchContext = useMemo<SearchContext>(
@@ -206,6 +281,20 @@ export function Layout({ children }: LayoutProps) {
           iztro
         </a>{" "}
         · {t("layout.chartNote")}
+        {/* 重新播放当前页面引导 */}
+        {getGuideIdForPath(location.pathname) && (
+          <button
+            className="guide-replay-btn"
+            onClick={() => {
+              const guideId = getGuideIdForPath(location.pathname);
+              if (guideId) startGuide(guideId);
+            }}
+            title={t("guide.replay")}
+            aria-label={t("guide.replay")}
+          >
+            ?
+          </button>
+        )}
       </footer>
       {/* Toast 通知宿主：全局浮动层，渲染在 app 内以便继承主题 */}
       <ToastHost />
@@ -219,6 +308,16 @@ export function Layout({ children }: LayoutProps) {
         onClose={() => setImportOpen(false)}
         onImportSuccess={handleImportSuccess}
       />
+      {/* 用户引导浮层 */}
+      {guideSteps && (
+        <GuideOverlay
+          steps={guideSteps}
+          currentStep={guideCurrentStep}
+          onGoTo={setGuideCurrentStep}
+          onComplete={handleGuideComplete}
+          onSkip={handleGuideSkip}
+        />
+      )}
     </div>
   );
 }

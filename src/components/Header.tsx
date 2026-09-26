@@ -76,7 +76,7 @@ export function Header({
     <header className="top">
       <h1>{t(titleKey)}</h1>
       <span className="top-sub">{t(subtitleKey)}</span>
-      <nav className="top-nav" aria-label={t("nav.mainNav")}>
+      <nav className="top-nav" aria-label={t("nav.mainNav")} data-guide="nav">
         <NavLink
           to="/"
           end
@@ -103,6 +103,7 @@ export function Header({
       <div className="top-actions">
         <button
           className="theme-toggle"
+          data-guide="theme"
           onClick={onCycleTheme}
           title={themeTitle}
           aria-label={themeTitle}

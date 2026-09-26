@@ -100,7 +100,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
 
   return (
     <>
-      <div className="person-sel">
+      <div className="person-sel" data-guide="person-selector">
         <select
           value={currentId || ""}
           onChange={handleSelect}

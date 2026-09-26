@@ -50,8 +50,12 @@ export function ZiweiPage() {
     <div className="ziwei-page">
       {z.astrolabe ? (
         <ErrorBoundary>
-          <HoroscopeBar z={z} />
-          <Chart z={z} genId={genId} />
+          <div data-guide="ziwei-dial">
+            <HoroscopeBar z={z} />
+          </div>
+          <div data-guide="ziwei-chart">
+            <Chart z={z} genId={genId} />
+          </div>
         </ErrorBoundary>
       ) : (
         <div className="err-box" role="alert">
@@ -60,12 +64,14 @@ export function ZiweiPage() {
       )}
 
       {/* 导出对话框 */}
-      <ExportDialog
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        person={person}
-        zwds={z}
-      />
+      <div data-guide="ziwei-export">
+        <ExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          person={person}
+          zwds={z}
+        />
+      </div>
     </div>
   );
 }
