@@ -1,11 +1,13 @@
 /**
  * 大六壬历史列表组件（左侧）
+ * 使用 useListData hook 统一数据获取逻辑
  */
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, forwardRef, useImperativeHandle } from "react";
 import type { LiurenRecord } from "../../core/personDb";
 import { listLiurenRecords, getAllLiurenTags, type LiurenListFilters } from "../../core/daliurenDb";
 import { formatRelativeTime } from "../../core/utils";
 import { useI18n } from "../../core/i18n";
+import { useListData } from "../../core/usePageInit";
 import { Spinner } from "../Spinner";
 
 /** LiurenList 暴露给父组件的命令式接口 */
@@ -25,6 +27,15 @@ interface LiurenListProps {
   refreshKey?: number;
 }
 
+/** 适配 listLiurenRecords 的返回格式为 useListData 的统一格式 */
+async function fetchLiurenList(
+  personId: number,
+  filters: { searchText?: string; tags?: string[]; page?: number; pageSize?: number },
+) {
+  const result = await listLiurenRecords(personId, filters as LiurenListFilters);
+  return { items: result.records, total: result.total };
+}
+
 export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function LiurenList(
   {
     personId,
@@ -39,96 +50,20 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
   ref,
 ) {
   const { t } = useI18n();
-  const [records, setRecords] = useState<LiurenRecord[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [searchText, setSearchText] = useState("");
-  /** 防抖后的搜索文本（实际用于查询） */
-  const [debouncedSearchText, setDebouncedSearchText] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [allTags, setAllTags] = useState<string[]>([]);
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
-  /** 列表数据加载中 */
-  const [loading, setLoading] = useState(true);
-  /** 是否首次加载（首次加载时清空旧数据，后续加载保留旧数据避免闪烁） */
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
-  /** 加载错误信息 */
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const pageSize = 20;
 
-  // 搜索防抖（300ms）
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchText(searchText);
-      // 搜索文本变化时重置到第一页
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchText]);
+  const list = useListData<LiurenRecord>({
+    personId,
+    fetchFn: fetchLiurenList,
+    fetchTagsFn: getAllLiurenTags,
+    refreshKey,
+  });
+
+  const [hoveredId, setHoveredId] = useHoverState();
 
   // 暴露命令式接口：允许外部设置过滤条件
   useImperativeHandle(ref, () => ({
-    setFilters: (filters: { searchText?: string; selectedTags?: string[]; page?: number }) => {
-      if (filters.searchText !== undefined) {
-        setSearchText(filters.searchText);
-      }
-      if (filters.selectedTags !== undefined) {
-        setSelectedTags(filters.selectedTags);
-      }
-      if (filters.page !== undefined) {
-        setPage(filters.page);
-      }
-    },
+    setFilters: list.setFilters,
   }));
-
-  const loadRecords = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const filters: LiurenListFilters = {
-        searchText: debouncedSearchText,
-        tags: selectedTags.length > 0 ? selectedTags : undefined,
-        page,
-        pageSize,
-      };
-      const result = await listLiurenRecords(personId, filters);
-      setRecords(result.records);
-      setTotal(result.total);
-    } catch (err) {
-      console.error("[LiurenList] 加载记录失败", err);
-      setLoadError(t("daliuren.loadFailed"));
-    } finally {
-      setLoading(false);
-      setIsFirstLoad(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personId, debouncedSearchText, selectedTags, page, refreshKey]);
-
-  useEffect(() => {
-    loadRecords();
-  }, [loadRecords]);
-
-  useEffect(() => {
-    getAllLiurenTags(personId)
-      .then(setAllTags)
-      .catch(err => {
-        console.error("[LiurenList] 加载标签失败", err);
-      });
-  }, [personId, records.length, refreshKey]); // 记录变化时刷新标签
-
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-  const handleTagToggle = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag) ? prev.filter(item => item !== tag) : [...prev, tag],
-    );
-    setPage(1); // 切换筛选时重置到第一页
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearchText(value);
-    // 搜索文本变化时由防抖 effect 统一处理 setPage(1)
-  };
 
   return (
     <div className="record-list">
@@ -145,21 +80,21 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           type="text"
           className="record-search-input"
           placeholder={t("daliuren.search")}
-          value={searchText}
-          onChange={e => handleSearchChange(e.target.value)}
+          value={list.searchText}
+          onChange={e => list.setSearchText(e.target.value)}
           aria-label={t("daliuren.searchAria")}
         />
       </div>
 
       {/* Tag 筛选 */}
-      {allTags.length > 0 && (
+      {list.allTags.length > 0 && (
         <div className="record-list-tags" role="group" aria-label={t("daliuren.tagFilter")}>
-          {allTags.map(tag => (
+          {list.allTags.map(tag => (
             <button
               key={tag}
-              className={`record-tag-filter ${selectedTags.includes(tag) ? "active" : ""}`}
-              onClick={() => handleTagToggle(tag)}
-              aria-pressed={selectedTags.includes(tag)}
+              className={`record-tag-filter ${list.selectedTags.includes(tag) ? "active" : ""}`}
+              onClick={() => list.toggleTag(tag)}
+              aria-pressed={list.selectedTags.includes(tag)}
             >
               {tag}
             </button>
@@ -169,23 +104,23 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
 
       {/* 列表区 */}
       <div className="record-list-items">
-        {isFirstLoad && loading ? (
+        {list.isFirstLoad && list.loading ? (
           <div className="record-list-empty liuren-empty">
             <Spinner size="sm" label={t("common.loading")} />
           </div>
-        ) : loadError ? (
+        ) : list.loadError ? (
           <div className="record-list-empty liuren-empty err-box" role="alert">
-            {loadError}
+            {list.loadError}
           </div>
-        ) : records.length === 0 ? (
+        ) : list.items.length === 0 ? (
           <div className="record-list-empty liuren-empty">
-            {debouncedSearchText || selectedTags.length > 0
+            {list.debouncedSearchText || list.selectedTags.length > 0
               ? t("daliuren.noMatch")
               : t("daliuren.noRecords")}
           </div>
         ) : (
           <>
-            {records.map(record => (
+            {list.items.map(record => (
               <div
                 key={record.id}
                 className={`record-list-item ${selectedId === record.id ? "active" : ""} ${hoveredId === record.id ? "hovered" : ""}`}
@@ -259,7 +194,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
               </div>
             ))}
             {/* 非首次加载时的轻量加载指示器（覆盖在列表顶部） */}
-            {loading && (
+            {list.loading && (
               <div className="record-list-loading-bar" role="status" aria-live="polite">
                 <Spinner size="sm" label={t("common.loading")} />
               </div>
@@ -269,21 +204,17 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
       </div>
 
       {/* 分页 */}
-      {total > pageSize && (
+      {list.total > list.pageSize && (
         <div className="record-list-pagination">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage(p => p - 1)}
-            aria-label={t("common.prev")}
-          >
+          <button disabled={list.page <= 1} onClick={list.prevPage} aria-label={t("common.prev")}>
             ‹
           </button>
           <span className="record-pagination-info">
-            {page} / {totalPages}
+            {list.page} / {list.totalPages}
           </span>
           <button
-            disabled={page >= totalPages}
-            onClick={() => setPage(p => p + 1)}
+            disabled={list.page >= list.totalPages}
+            onClick={list.nextPage}
             aria-label={t("common.next")}
           >
             ›
@@ -293,3 +224,12 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
     </div>
   );
 });
+
+/**
+ * 列表项 hover 状态 hook
+ * 提取 hover 状态管理，避免每个列表组件重复实现
+ */
+function useHoverState(): [number | null, (id: number | null) => void] {
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
+  return [hoveredId, setHoveredId];
+}

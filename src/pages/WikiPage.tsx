@@ -294,6 +294,7 @@ export function WikiPage() {
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
             refreshKey={listRefreshKey}
+            personName={person.name || ""}
           />
         </div>
         <div className="wiki-right">
