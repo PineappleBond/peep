@@ -43,12 +43,19 @@
   "nav.ziwei": "Zi Wei",
   "nav.daliuren": "Da Liu Ren",
   "nav.wiki": "Wiki",
+  "nav.viz": "Visualization",
   "nav.mainNav": "Main navigation",
   "nav.skipNav": "Skip navigation",
 
   "header.ziwei.subtitle": "Astrologe Engine · iztro · Custom Chart",
   "header.daliuren.subtitle": "Ancient Divination · Heaven-Earth Board · Four Courses Three Transmissions",
   "header.wiki.subtitle": "LLM Knowledge Base · Markdown · Entity Relations",
+  "header.viz.subtitle": "Life K-Line · Personality Analysis · Daily Fortune",
+
+  "viz.title": "Data Visualization",
+  "viz.subtitle": "Life K-Line and Personality Analysis based on Zi Wei Dou Shu",
+  "viz.noData": "No chart data available",
+  "viz.goHome": "Please enter birth information on the home page first",
 
   "layout.engine": "Engine",
   "layout.engineLabel": "iztro algorithm engine (opens in new tab)",

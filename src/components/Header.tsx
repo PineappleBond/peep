@@ -8,6 +8,7 @@ import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
 import { LiurenIcon } from "./icons/LiurenIcon";
 import { WikiIcon } from "./icons/WikiIcon";
+import { VizIcon } from "./icons/VizIcon";
 import type { Person } from "../core/personDb";
 import { useI18n, type Locale } from "../core/i18n";
 import type { Theme } from "../core/theme";
@@ -34,6 +35,7 @@ type HeaderProps = {
 function getTitleKeyByPath(pathname: string): string {
   if (pathname.startsWith("/wiki")) return "nav.wiki";
   if (pathname.startsWith("/liuren")) return "nav.daliuren";
+  if (pathname.startsWith("/viz")) return "nav.viz";
   return "nav.ziwei";
 }
 
@@ -41,6 +43,7 @@ function getTitleKeyByPath(pathname: string): string {
 function getSubtitleKeyByPath(pathname: string): string {
   if (pathname.startsWith("/wiki")) return "header.wiki.subtitle";
   if (pathname.startsWith("/liuren")) return "header.daliuren.subtitle";
+  if (pathname.startsWith("/viz")) return "header.viz.subtitle";
   return "header.ziwei.subtitle";
 }
 
@@ -98,6 +101,13 @@ export function Header({
           aria-label={t("nav.wiki")}
         >
           <WikiIcon aria-hidden="true" />
+        </NavLink>
+        <NavLink
+          to="/viz"
+          className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
+          aria-label={t("nav.viz")}
+        >
+          <VizIcon aria-hidden="true" />
         </NavLink>
       </nav>
       <div className="top-actions">

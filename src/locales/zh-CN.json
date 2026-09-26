@@ -43,12 +43,19 @@
   "nav.ziwei": "紫微斗数",
   "nav.daliuren": "大六壬",
   "nav.wiki": "知识库",
+  "nav.viz": "可视化",
   "nav.mainNav": "主导航",
   "nav.skipNav": "跳过导航",
 
   "header.ziwei.subtitle": "玄机排盘 · iztro 引擎 · 自研盘面",
   "header.daliuren.subtitle": "古法占课 · 天地盘 · 四课三传",
   "header.wiki.subtitle": "LLM 知识底座 · Markdown · 实体关联",
+  "header.viz.subtitle": "人生K线 · 性格分析 · 流日吉凶",
+
+  "viz.title": "数据可视化",
+  "viz.subtitle": "基于紫微斗数的人生K线与性格分析",
+  "viz.noData": "暂无盘面数据",
+  "viz.goHome": "请先在首页输入生辰信息起盘",
 
   "layout.engine": "算法引擎",
   "layout.engineLabel": "iztro 算法引擎（在新标签页打开）",

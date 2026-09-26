@@ -1,0 +1,390 @@
+/* ════════════════════════════════════════════════════
+   viz.css — 数据可视化组件样式
+   ════════════════════════════════════════════════════ */
+
+/* ── 可视化面板 ── */
+.viz-panel {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--glass-bg);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+}
+
+.viz-panel.viz-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  margin: 0;
+  border-radius: 0;
+  background: var(--bg);
+  overflow: auto;
+}
+
+.viz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.viz-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.viz-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--glass-bg-soft);
+  color: var(--dim);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--t-normal);
+}
+
+.viz-tab:hover {
+  background: var(--glass-bg);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.viz-tab.active {
+  background: color-mix(in srgb, var(--cyan) 12%, transparent);
+  color: var(--cyan);
+  border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+}
+
+.tab-icon {
+  font-size: 1rem;
+}
+
+.tab-label {
+  font-size: 0.85rem;
+}
+
+.viz-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.viz-select,
+.viz-year-input {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--glass-bg-input);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--t-normal);
+}
+
+.viz-select:hover,
+.viz-year-input:hover {
+  border-color: var(--line-strong);
+}
+
+.viz-select:focus,
+.viz-year-input:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cyan) 20%, transparent);
+}
+
+.viz-year-input {
+  width: 80px;
+}
+
+.viz-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--glass-bg-soft);
+  color: var(--dim);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: var(--t-normal);
+}
+
+.viz-action-btn:hover {
+  background: var(--glass-bg);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.viz-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  overflow: auto;
+}
+
+.viz-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.viz-note {
+  font-size: 0.75rem;
+  color: var(--faint);
+  line-height: 1.6;
+}
+
+.viz-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.viz-placeholder {
+  color: var(--dim);
+  font-size: 0.9rem;
+}
+
+/* ── 可视化页面 ── */
+.viz-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.viz-page-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.viz-page-header {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.viz-page-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--gold);
+  margin: 0 0 8px 0;
+  letter-spacing: 2px;
+}
+
+.viz-page-subtitle {
+  font-size: 0.9rem;
+  color: var(--dim);
+  margin: 0;
+}
+
+.viz-empty-notice {
+  text-align: center;
+  color: var(--dim);
+}
+
+.viz-empty-notice h2 {
+  color: var(--gold);
+  margin: 0 0 12px 0;
+  font-size: 1.4rem;
+}
+
+.viz-empty-notice p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ── K线图 ── */
+.kline-chart {
+  width: 100%;
+}
+
+.kline-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.kline-controls select {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--glass-bg-input);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.range-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.range-buttons button {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--glass-bg-soft);
+  color: var(--dim);
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--t-normal);
+}
+
+.range-buttons button:hover {
+  background: var(--glass-bg);
+  color: var(--text);
+}
+
+.range-buttons button.active {
+  background: color-mix(in srgb, var(--cyan) 12%, transparent);
+  color: var(--cyan);
+  border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+}
+
+.kline-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.kline-candle {
+  transition: opacity 0.15s ease;
+}
+
+.kline-candle:hover {
+  opacity: 0.8;
+}
+
+.kline-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+
+.legend-color {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.legend-line {
+  display: inline-block;
+  width: 20px;
+  height: 0;
+  border-top: 2px dashed;
+}
+
+/* ── 雷达图 ── */
+.radar-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.radar-svg {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  display: block;
+}
+
+.radar-note {
+  max-width: 500px;
+  text-align: center;
+}
+
+/* ── 热力图 ── */
+.heatmap-chart {
+  width: 100%;
+}
+
+.heatmap-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.heatmap-note {
+  text-align: center;
+}
+
+/* ── 桑基图 ── */
+.sankey-chart {
+  width: 100%;
+}
+
+.sankey-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.sankey-note {
+  text-align: center;
+}
+
+/* ── 响应式 ── */
+@media (max-width: 768px) {
+  .viz-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .viz-tabs {
+    justify-content: center;
+  }
+
+  .viz-actions {
+    justify-content: center;
+  }
+
+  .viz-content {
+    min-height: 300px;
+  }
+
+  .kline-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .range-buttons {
+    justify-content: center;
+  }
+}

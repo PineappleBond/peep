@@ -18,6 +18,7 @@ const DaLiuRenPage = lazy(() =>
   import("./pages/DaLiuRenPage").then(m => ({ default: m.DaLiuRenPage })),
 );
 const WikiPage = lazy(() => import("./pages/WikiPage").then(m => ({ default: m.WikiPage })));
+const VizPage = lazy(() => import("./pages/VizPage").then(m => ({ default: m.VizPage })));
 
 // 初始化调试 API
 initDebugApi();
@@ -57,6 +58,7 @@ function App() {
               <Route path="/" element={<ZiweiPage />} />
               <Route path="/liuren" element={<DaLiuRenPage />} />
               <Route path="/wiki" element={<WikiPage />} />
+              <Route path="/viz" element={<VizPage />} />
               {/* 兜底：未知路径重定向到首页 */}
               <Route path="*" element={<NotFoundRedirect />} />
             </Routes>
