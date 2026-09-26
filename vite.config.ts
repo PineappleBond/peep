@@ -176,7 +176,7 @@ export default defineConfig({
       "dexie",
       "lunar-lite",
       "lunar-typescript",
-      "@toon-format/toon",
+      "pinyin-pro",
     ],
     // Vite 8 已切换到 rolldown 内核；用 rolldownOptions 替代旧的 esbuildOptions。
     // 此处保留默认行为即可，rolldown 会自动按来源分 chunk。
@@ -194,6 +194,18 @@ export default defineConfig({
     minify: "oxc",
     // 报告产物体积阈值——超过 500 KiB 时打印警告，帮助识别大 chunk
     chunkSizeWarningLimit: 500,
+    // 模块预加载：为入口依赖的 chunk 注入 <link rel="modulepreload">
+    // 让浏览器提前发现并下载关键 JS，减少串行加载延迟
+    modulePreload: {
+      // 仅预加载入口直接依赖的 chunk（不递归展开），平衡预加载数量与带宽
+      resolveDependencies: (_filename, deps, { hostImportedModule }) => {
+        // 预加载所有直接依赖（react / engine / router 等首屏必需 chunk）
+        return deps.filter(dep => {
+          // 排除大体积异步分包（rtc / pinyin），避免首屏浪费带宽
+          return !/(rtc|pinyin|shared-worker)/.test(dep);
+        });
+      },
+    },
     rollupOptions: {
       output: {
         // rolldown（vite 8 内核）下 advancedChunks 已弃用，
@@ -226,6 +238,20 @@ export default defineConfig({
           if (/\/node_modules\/@rtc-agent\/component\//.test(id)) {
             return "rtc";
           }
+          // 拼音库单独分包——仅搜索时按需加载（动态 import），体积 ~624KB ESM
+          if (/\/node_modules\/pinyin-pro\//.test(id)) {
+            return "pinyin";
+          }
+        },
+        // 分包文件命名：[name]-[hash]，hash 变化时文件名改变，利于长期缓存
+        chunkFileNames: "assets/[name]-[hash].js",
+        entryFileNames: "assets/[name]-[hash].js",
+        assetFileNames: (assetInfo) => {
+          // CSS 文件单独命名，便于识别
+          if (assetInfo.name?.endsWith(".css")) {
+            return "assets/[name]-[hash][extname]";
+          }
+          return "assets/[name]-[hash][extname]";
         },
       },
     },

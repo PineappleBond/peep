@@ -20,7 +20,21 @@
 
 import { db, type Person } from "./personDb";
 import { t } from "./i18n";
-import { pinyin } from "pinyin-pro";
+
+/**
+ * pinyin-pro 按需加载：
+ * 该库 ESM 体积约 624KB，仅在实际需要拼音匹配时才动态导入，
+ * 避免将其打入 CommandPalette 首屏 chunk。
+ * 使用 Promise 缓存确保只加载一次。
+ */
+type PinyinFn = typeof import("pinyin-pro").pinyin;
+let _pinyinPromise: Promise<PinyinFn> | null = null;
+function loadPinyin(): Promise<PinyinFn> {
+  if (!_pinyinPromise) {
+    _pinyinPromise = import("pinyin-pro").then(m => m.pinyin);
+  }
+  return _pinyinPromise;
+}
 
 /** 搜索结果类型 */
 export type SearchResultType = "person" | "liuren" | "wiki" | "action";
@@ -167,8 +181,9 @@ const PINYIN_CACHE_MAX = 2000;
  * 提取文本的拼音表示（仅对含中文字符的文本有效）
  * 返回：{ full: 全拼连写小写, initial: 各字首字母连写小写 }
  * 若文本不含中文，返回空字符串
+ * 异步：首次调用时动态加载 pinyin-pro（~624KB ESM）
  */
-function getPinyin(text: string): { full: string; initial: string } {
+async function getPinyin(text: string): Promise<{ full: string; initial: string }> {
   if (!text) return { full: "", initial: "" };
   const cached = pinyinCache.get(text);
   if (cached) return cached;
@@ -177,6 +192,7 @@ function getPinyin(text: string): { full: string; initial: string } {
     const empty = { full: "", initial: "" };
     return empty;
   }
+  const pinyin = await loadPinyin();
   const fullArr = pinyin(text, { toneType: "none", type: "array" });
   const initialArr = pinyin(text, { pattern: "first", type: "array" });
   const result = {
@@ -200,19 +216,20 @@ function isAlpha(s: string): boolean {
 /**
  * 拼音匹配：query 为纯字母时，尝试在 text 的拼音表示中查找
  * 返回匹配区间（在原文中的字符区间），或 null
+ * 异步：内部按需加载 pinyin-pro
  */
-function matchPinyin(
+async function matchPinyin(
   text: string,
   query: string,
-): { range: [number, number]; mode: "full" | "initial" } | null {
+): Promise<{ range: [number, number]; mode: "full" | "initial" } | null> {
   if (!query || !isAlpha(query)) return null;
-  const py = getPinyin(text);
+  const py = await getPinyin(text);
   if (!py.full) return null;
   const q = query.toLowerCase();
   const fullIdx = py.full.indexOf(q);
   if (fullIdx >= 0) {
     // 反推原文字符区间：根据每个字的拼音长度累计
-    const range = mapPinyinIndexToTextRange(text, fullIdx, q.length);
+    const range = await mapPinyinIndexToTextRange(text, fullIdx, q.length);
     if (range) return { range, mode: "full" };
   }
   const initialIdx = py.initial.indexOf(q);
@@ -240,13 +257,15 @@ function matchPinyin(
 /**
  * 将拼音字符串中的匹配区间映射回原文字符区间
  * full: 全拼连写；每个中文字对应一段拼音
+ * 异步：内部按需加载 pinyin-pro
  */
-function mapPinyinIndexToTextRange(
+async function mapPinyinIndexToTextRange(
   text: string,
   pinyinStart: number,
   pinyinLen: number,
-): [number, number] | null {
+): Promise<[number, number] | null> {
   const chars = [...text];
+  const pinyin = await loadPinyin();
   const pyArr = pinyin(text, { toneType: "none", type: "array" });
   let pinyinOffset = 0;
   let textStart = -1;
@@ -374,15 +393,16 @@ export function parseQuery(input: string): ParsedQuery {
 /**
  * 统一匹配函数：根据 ParsedQuery 判断文本是否命中
  * 返回匹配区间列表（用于高亮），空数组表示未命中
+ * 异步：拼音匹配分支按需加载 pinyin-pro
  */
-function matchText(
+async function matchText(
   text: string,
   pq: ParsedQuery,
-): {
+): Promise<{
   ranges: Array<[number, number]>;
   score: number;
   mode: "exact" | "fuzzy" | "regex" | "pinyin";
-} | null {
+} | null> {
   if (!text) return null;
 
   // 排除检查
@@ -439,7 +459,7 @@ function matchText(
   }
 
   // 拼音匹配
-  const py = matchPinyin(text, q);
+  const py = await matchPinyin(text, q);
   if (py) {
     return { ranges: [py.range], score: 70, mode: "pinyin" };
   }
@@ -452,7 +472,7 @@ function matchText(
       const wl = w.toLowerCase();
       const wi = tl.indexOf(wl);
       if (wi < 0) {
-        const pyw = matchPinyin(text, w);
+        const pyw = await matchPinyin(text, w);
         if (pyw) {
           allRanges.push(pyw.range);
           continue;
@@ -467,14 +487,17 @@ function matchText(
   return null;
 }
 
+/** matchText 返回的匹配结果类型 */
+type MatchResult = Awaited<ReturnType<typeof matchText>>;
+
 /**
  * 计算综合得分
  * - 标题/副标题命中加权
  * - 最近使用加分
  */
 function computeScore(
-  titleMatch: ReturnType<typeof matchText>,
-  subtitleMatch: ReturnType<typeof matchText>,
+  titleMatch: MatchResult,
+  subtitleMatch: MatchResult,
   recentRank: number, // -1 表示不在列表
 ): number {
   let score = 0;
@@ -524,8 +547,8 @@ async function searchPersons(pq: ParsedQuery, ctx: SearchContext): Promise<Searc
     const subtitle = p.date
       ? `${p.date} ${p.timeIndex >= 0 ? `时序${p.timeIndex}` : ""}`
       : undefined;
-    const tm = matchText(name, pq);
-    const sm = subtitle ? matchText(subtitle, pq) : null;
+    const tm = await matchText(name, pq);
+    const sm = subtitle ? await matchText(subtitle, pq) : null;
     if (!tm && !sm) continue;
     const recentRank = recentIds.indexOf(`person:${p.id}`);
     const item: SearchResultItem = {
@@ -563,8 +586,8 @@ async function searchLiuren(pq: ParsedQuery, ctx: SearchContext): Promise<Search
     if (!passTimeFilter(r.savedAt, pq)) continue;
     const title = r.question || t("common.unnamed");
     const subtitle = `${r.calculationTime}${r.note ? ` · ${r.note}` : ""}`;
-    const tm = matchText(title, pq);
-    const sm = matchText(subtitle, pq);
+    const tm = await matchText(title, pq);
+    const sm = await matchText(subtitle, pq);
     if (!tm && !sm) continue;
     const recentRank = recentIds.indexOf(`liuren:${r.id}`);
     result.push({
@@ -599,8 +622,8 @@ async function searchWiki(pq: ParsedQuery, ctx: SearchContext): Promise<SearchRe
     if (!passTimeFilter(d.updatedAt || d.savedAt, pq)) continue;
     const title = d.title || t("common.unnamed");
     const preview = d.content.slice(0, 200).replace(/\n/g, " ").trim();
-    const tm = matchText(title, pq);
-    const sm = matchText(preview, pq);
+    const tm = await matchText(title, pq);
+    const sm = await matchText(preview, pq);
     if (!tm && !sm) continue;
     const recentRank = recentIds.indexOf(`wiki:${d.id}`);
     result.push({
@@ -624,7 +647,7 @@ async function searchWiki(pq: ParsedQuery, ctx: SearchContext): Promise<SearchRe
   return result;
 }
 
-function searchActions(pq: ParsedQuery, ctx: SearchContext): SearchResultItem[] {
+async function searchActions(pq: ParsedQuery, ctx: SearchContext): Promise<SearchResultItem[]> {
   if (pq.types.length > 0 && !pq.types.includes("action")) return [];
   const recentIds = getRecentIds();
 
@@ -711,7 +734,7 @@ function searchActions(pq: ParsedQuery, ctx: SearchContext): SearchResultItem[] 
   const result: SearchResultItem[] = [];
   for (const a of actions) {
     const title = t(a.titleKey);
-    const tm = matchText(title, pq);
+    const tm = await matchText(title, pq);
     if (!tm) continue;
     result.push({
       id: a.id,
@@ -750,7 +773,7 @@ export async function searchAll(
     searchPersons(parsed, ctx),
     searchLiuren(parsed, ctx),
     searchWiki(parsed, ctx),
-    Promise.resolve(searchActions(parsed, ctx)),
+    searchActions(parsed, ctx),
   ]);
 
   const all = [...actions, ...persons, ...liuren, ...wiki];
