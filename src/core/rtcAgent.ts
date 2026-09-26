@@ -780,14 +780,28 @@ export async function syncLocale(locale: Locale): Promise<void> {
  * 2. 系统 prefers-color-scheme 变化（system 模式下自动跟随）
  *
  * 任一触发都会重新读 getTheme() 并同步给 RTC 组件。
+ *
+ * 返回值：cleanup 函数，用于在组件卸载时移除监听器，避免内存泄漏。
+ * 若 agent 未初始化则返回 no-op 函数。
  */
-export function startThemeSync(): void {
+export function startThemeSync(): () => void {
+  if (!_agent) return () => {};
+
   // 1. 监听 :root[data-theme] 变化
   const observer = new MutationObserver(() => syncTheme());
   observer.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ["data-theme"],
   });
+
   // 2. 监听系统主题变化
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => syncTheme());
+  const mql = window.matchMedia("(prefers-color-scheme: dark)");
+  const handler = () => syncTheme();
+  mql.addEventListener("change", handler);
+
+  // 返回清理函数：断开 MutationObserver、移除 matchMedia 监听器
+  return () => {
+    observer.disconnect();
+    mql.removeEventListener("change", handler);
+  };
 }

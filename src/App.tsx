@@ -73,11 +73,12 @@ function App() {
     if (!slot) return;
     const agent = createPeepRtcAgent();
     slot.replaceChildren(agent);
-    startThemeSync();
+    const cleanupThemeSync = startThemeSync();
     // 初始化时同步一次（agent 创建时的 theme 已取 getTheme()，但 data-theme 属性
     // 可能在 initTheme() 之后被覆盖，这里确保一致）
     syncTheme();
     return () => {
+      cleanupThemeSync();
       agent.destroy();
     };
   }, []);
