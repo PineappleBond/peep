@@ -14,6 +14,7 @@
  * - 关闭时先播放离场动画（0.25s），再卸载 DOM
  */
 import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "../core/i18n";
 
 type DialogProps = {
@@ -140,7 +141,8 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
   /* 离场动画中或未挂载时不渲染 */
   if (!mounted) return null;
 
-  return (
+  /* 使用 Portal 渲染到 body 下，避免被父级层叠上下文（如 .app 的 z-index: 1）限制 */
+  return createPortal(
     <div className={`dlg-mask${isClosing ? " closing" : ""}`} onClick={handleClose}>
       <div
         ref={panelRef}
@@ -163,6 +165,7 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
         <div className="dlg-body">{children}</div>
         {footer && <div className="dlg-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
