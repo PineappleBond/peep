@@ -2,7 +2,7 @@
  * 排盘主 Hook：iztro 负责全部命理计算，这里负责
  * 「大限/流年/流月/流日/流时」拨盘状态 → 目标公历日期 → horoscope。
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
 import type { MutagenTableKey, Scope } from "./utils";
@@ -273,8 +273,21 @@ export function useZwds(input: BirthInput) {
   const [pick, setPick] = useState<PickState>(initPick);
   const [visible, setVisible] = useState<ScopeVisible>(DEFAULT_VISIBLE);
 
+  // pick 版本号：每次更新递增，用于检测并发竞态（debugApi 事务式更新后验证）
+  const [pickVersion, setPickVersion] = useState(0);
+
+  // 事务锁标志：为 true 时 useEffect 不重置 pick，防止 setHoroscopeTime 期间被覆盖
+  const [pickLocked, setPickLocked] = useState(false);
+  const pickLockedRef = useRef(false);
+  pickLockedRef.current = pickLocked;
+
   // 换盘（起盘/改输入致 astrolabe 变化）或刷新挂载后回到今天（不早于出生年）
+  // 如果 pickLocked 为 true（debugApi 正在事务式更新），跳过重置
   useEffect(() => {
+    if (pickLockedRef.current) {
+      // 事务进行中，不重置 pick——等事务完成后再由事务方负责设置正确值
+      return;
+    }
     setPick(clampPick(initPick(), birthLunarYear));
   }, [astrolabe, birthLunarYear]);
 
@@ -358,7 +371,33 @@ export function useZwds(input: BirthInput) {
     },
     pickHour(h: number) {
       setPick(p => ({ ...p, hour: h }));
+      setPickVersion(v => v + 1);
       show("hourly");
+    },
+    /**
+     * 事务式批量更新 pick：一次性设置年月日时，避免多次 setPick 调用导致的竞态。
+     * 同时递增 pickVersion，供 debugApi 验证更新是否生效。
+     */
+    setPickBatch(partial: Partial<PickState>) {
+      setPick(p => ({ ...p, ...partial }));
+      setPickVersion(v => v + 1);
+    },
+    /**
+     * 锁定 pick：阻止 useEffect 在 astrolabe 变化时重置 pick。
+     * 用于 debugApi 的事务式更新期间，防止竞态。
+     */
+    lockPick() {
+      setPickLocked(true);
+    },
+    /**
+     * 解锁 pick：恢复 useEffect 的正常重置行为。
+     */
+    unlockPick() {
+      setPickLocked(false);
+    },
+    /** 获取当前 pick 版本号（用于 debugApi 验证） */
+    getPickVersion() {
+      return pickVersion;
     },
     resetToday() {
       setPick(clampPick(initPick(), birthLunarYear));

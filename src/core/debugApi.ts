@@ -737,11 +737,15 @@ function parseDate(time: Date | number | string): Date {
 /**
  * 设置运限时间：根据 Date 设置年月日时。
  * 纯同步函数，仅调用 actions 不验证结果。
+ *
+ * 改进：使用事务式批量更新（setPickBatch），一次性设置所有字段，
+ * 避免 4 次独立 setPick 调用导致的竞态条件。
+ * 同时使用 pickLocked 标志防止 useEffect 在此期间重置 pick。
  */
 function _setHoroscopeTime(
   z: Zwds,
   date: Date,
-): { year: number; month: number; day: number; hour: number } {
+): { year: number; month: number; day: number; hour: number; version: number } {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -751,20 +755,21 @@ function _setHoroscopeTime(
   const hourIdx = Math.floor(((hour + 1) % 24) / 2);
 
   // hbar 流月/流日按阳历排列，所以 pick 直接用阳历值
-  z.actions.pickYear(year);
-  z.actions.pickMonth(month, false);
-  z.actions.pickDay(day);
-  z.actions.pickHour(hourIdx);
+  // 事务式更新：锁定 pick → 批量设置 → 记录版本号
+  z.actions.lockPick();
+  z.actions.setPickBatch({ year, month, day, hour: hourIdx, leap: false });
+  const versionAfterSet = z.actions.getPickVersion();
 
-  return { year, month, day, hour: hourIdx };
+  return { year, month, day, hour: hourIdx, version: versionAfterSet };
 }
 
 /**
  * 设置运限时间（带验证和重试）：
- * 1. 调用 _setHoroscopeTime 设置 pick
+ * 1. 调用 _setHoroscopeTime 事务式设置 pick（锁定 + 批量更新）
  * 2. 等待 React 渲染
- * 3. 验证 pick 是否匹配预期值
- * 4. 如果不匹配（可能被 useEffect 重置），最多重试 2 次
+ * 3. 验证 pick 是否匹配预期值 且 版本号一致
+ * 4. 如果不匹配（可能被其他操作覆盖），最多重试 2 次（指数退避）
+ * 5. 无论成功失败，最终都解锁 pick
  */
 async function setHoroscopeTimeWithRetry(z: Zwds, date: Date, maxRetries = 2): Promise<void> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -774,9 +779,13 @@ async function setHoroscopeTimeWithRetry(z: Zwds, date: Date, maxRetries = 2): P
     await nextFrame();
     await nextFrame();
 
-    // 验证 pick 是否匹配预期
+    // 验证 pick 是否匹配预期（包含版本号校验，确保未被其他操作覆盖）
     const matched = await waitForPickMatch(z, expected, 300);
-    if (matched) {
+    const versionMatch = z.actions.getPickVersion() === expected.version;
+
+    if (matched && versionMatch) {
+      // 成功：解锁 pick，恢复正常 useEffect 行为
+      z.actions.unlockPick();
       if (attempt > 0) {
         log("info", "ZiWei", `setHoroscopeTime 重试 ${attempt} 次后成功`, { expected });
       } else {
@@ -785,25 +794,32 @@ async function setHoroscopeTimeWithRetry(z: Zwds, date: Date, maxRetries = 2): P
       return;
     }
 
-    // pick 不匹配，可能被 useEffect 重置——记录并重试
-    log("warn", "ZiWei", `setHoroscopeTime 验证失败，pick 被重置`, {
+    // pick 不匹配，可能被其他操作覆盖——记录并重试
+    log("warn", "ZiWei", `setHoroscopeTime 验证失败`, {
       attempt: attempt + 1,
+      pickMatched: matched,
+      versionMatched: versionMatch,
       expected,
       actual: z.pick,
+      actualVersion: z.actions.getPickVersion(),
     });
 
     if (attempt < maxRetries) {
-      // 等待一小段时间再重试，让 useEffect 完成
-      await new Promise(r => setTimeout(r, 50));
+      // 指数退避：50ms, 100ms
+      const delayMs = 50 * Math.pow(2, attempt);
+      await new Promise(r => setTimeout(r, delayMs));
     }
   }
+
+  // 所有重试均失败：解锁 pick 并抛出错误
+  z.actions.unlockPick();
 
   throw new ZiWeiError(
     `setHoroscopeTime 重试 ${maxRetries} 次后仍失败：pick=${JSON.stringify(z.pick)}，期望=${JSON.stringify(date)}`,
     "setHoroscopeTime",
     {
       context: { maxRetries, expectedPick: date.toISOString(), actualPick: z.pick },
-      suggestion: "pick 值持续被 useEffect 重置，可能是 React 状态更新冲突。请尝试刷新页面后重试",
+      suggestion: "pick 值持续被其他操作覆盖，可能是 React 状态更新冲突。请尝试刷新页面后重试",
     },
   );
 }
