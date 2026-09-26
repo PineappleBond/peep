@@ -41,7 +41,7 @@ export function ZiweiPage() {
   }, []);
 
   return (
-    <>
+    <div className="ziwei-page">
       {z.astrolabe ? (
         <ErrorBoundary>
           <HoroscopeBar z={z} />
@@ -52,6 +52,6 @@ export function ZiweiPage() {
           {t("ziwei.errorMessage")}
         </div>
       )}
-    </>
+    </div>
   );
 }

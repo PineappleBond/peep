@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useRef, memo } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { SCOPES, SCOPE_META } from "../core/utils";
 import { getSelfMarksForScope, buildChartIndex } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 import { useI18n } from "../core/i18n";
+
+/** 离场动画时长（毫秒），与 CSS --dur-component 保持一致 */
+const CLOSE_DURATION = 250;
 
 /** 宫位详情弹层：三方四正快照 + 飞宫四化/自化 + 相关格局 + 夹宫 + 借星 */
 export const PalaceDetail = memo(function PalaceDetail({
@@ -18,17 +21,27 @@ export const PalaceDetail = memo(function PalaceDetail({
   const a = z.astrolabe;
   const an = z.analysis;
 
+  /* 离场动画状态 */
+  const [isClosing, setIsClosing] = useState(false);
+
+  /** 关闭处理：先播放离场动画，再回调父级 */
+  const handleClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(onClose, CLOSE_DURATION);
+  }, [isClosing, onClose]);
+
   /* 生成稳定的标题 id，供 aria-labelledby 引用 */
   const titleId = `pd-title-${index}`;
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [handleClose]);
 
   /* 焦点陷阱：Tab / Shift+Tab 在弹层内循环 */
   useEffect(() => {
@@ -109,11 +122,11 @@ export const PalaceDetail = memo(function PalaceDetail({
 
   return (
     <div
-      className="pd-overlay"
+      className={`pd-overlay${isClosing ? " closing" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div className="pd-panel" ref={panelRef} onClick={e => e.stopPropagation()}>
         <div className="pd-head">
@@ -128,7 +141,7 @@ export const PalaceDetail = memo(function PalaceDetail({
           </b>
           <button
             className="pd-close"
-            onClick={onClose}
+            onClick={handleClose}
             title={t("detail.close")}
             aria-label={t("detail.closeAria")}
           >

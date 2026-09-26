@@ -29,7 +29,11 @@ export function ToastHost() {
   return (
     <div className="toast-host" role="status" aria-live="polite" aria-atomic="false">
       {items.map(item => (
-        <div key={item.id} className={`toast-item toast-${item.type}`} role="alert">
+        <div
+          key={item.id}
+          className={`toast-item toast-${item.type}${item.dismissing ? " toast-out" : ""}`}
+          role="alert"
+        >
           <span className="toast-icon" aria-hidden="true">
             {TYPE_ICON[item.type]}
           </span>

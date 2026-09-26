@@ -25,6 +25,8 @@ export type ToastItem = {
   closable: boolean;
   /** 自动关闭时长（毫秒），0 表示不自动关闭 */
   duration: number;
+  /** 是否正在播放离场动画 */
+  dismissing?: boolean;
 };
 
 /** 监听器类型 */
@@ -56,10 +58,24 @@ function emit() {
   }
 }
 
-/** 移除指定 id 的 Toast */
+/** Toast 离场动画时长（毫秒），与 CSS --dur-component 保持一致 */
+const DISMISS_DURATION = 250;
+
+/** 移除指定 id 的 Toast（先标记离场，动画结束后真正移除） */
 function remove(id: number) {
-  items = items.filter(it => it.id !== id);
+  const item = items.find(it => it.id === id);
+  if (!item) return;
+  if (item.dismissing) return; // 已经在离场中
+
+  /* 标记为离场状态（触发 CSS 离场动画） */
+  items = items.map(it => (it.id === id ? { ...it, dismissing: true } : it));
   emit();
+
+  /* 动画结束后真正移除 */
+  setTimeout(() => {
+    items = items.filter(it => it.id !== id);
+    emit();
+  }, DISMISS_DURATION);
 }
 
 /** 添加一条 Toast */
@@ -105,8 +121,13 @@ export const toast = {
   /** 关闭指定 Toast；不传 id 则关闭全部 */
   dismiss: (id?: number) => {
     if (id === undefined) {
-      items = [];
+      /* 批量离场：先标记所有，动画结束后统一移除 */
+      items = items.map(it => ({ ...it, dismissing: true }));
       emit();
+      setTimeout(() => {
+        items = [];
+        emit();
+      }, DISMISS_DURATION);
     } else {
       remove(id);
     }

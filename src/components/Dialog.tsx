@@ -8,8 +8,12 @@
  * - 焦点陷阱（Tab/Shift+Tab 不会逃逸到弹窗背后）
  * - Escape 关闭
  * - 关闭后焦点返回触发元素
+ *
+ * 动画支持：
+ * - 入场/离场均使用 CSS animation（GPU 加速的 transform + opacity）
+ * - 关闭时先播放离场动画（0.25s），再卸载 DOM
  */
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { useI18n } from "../core/i18n";
 
 type DialogProps = {
@@ -26,11 +30,41 @@ type DialogProps = {
 /** 标题 id 生成器（确保 aria-labelledby 唯一） */
 let dialogCounter = 0;
 
+/** 离场动画时长（毫秒），与 CSS --dur-component 保持一致 */
+const CLOSE_DURATION = 250;
+
 export function Dialog({ open, onClose, title, children, width = 480, footer }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const titleId = useRef(`dlg-title-${++dialogCounter}`);
   const { t } = useI18n();
+
+  /* 离场动画状态：true 表示正在播放离场动画 */
+  const [isClosing, setIsClosing] = useState(false);
+  /* 是否在 DOM 中渲染（入场时 true，离场动画结束后 false） */
+  const [mounted, setMounted] = useState(false);
+
+  /* 监听 open 变化：打开时挂载，关闭时先播离场动画再卸载 */
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      setIsClosing(false);
+    } else if (mounted) {
+      /* 触发离场动画 */
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setMounted(false);
+        setIsClosing(false);
+      }, CLOSE_DURATION);
+      return () => clearTimeout(timer);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* 包装 onClose：先触发动画，动画结束后由父级处理 open 状态变化 */
+  const handleClose = useCallback(() => {
+    if (isClosing) return;
+    onClose();
+  }, [isClosing, onClose]);
 
   /* 记录触发弹窗的元素，关闭后恢复焦点 */
   useEffect(() => {
@@ -71,7 +105,7 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
 
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        handleClose();
         return;
       }
 
@@ -101,12 +135,13 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
 
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
+  }, [open, handleClose]);
 
-  if (!open) return null;
+  /* 离场动画中或未挂载时不渲染 */
+  if (!mounted) return null;
 
   return (
-    <div className="dlg-mask" onClick={onClose}>
+    <div className={`dlg-mask${isClosing ? " closing" : ""}`} onClick={handleClose}>
       <div
         ref={panelRef}
         className="dlg-panel"
@@ -121,7 +156,7 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
           <h2 className="dlg-title" id={titleId.current}>
             {title}
           </h2>
-          <button className="dlg-close" onClick={onClose} aria-label={t("dialog.close")}>
+          <button className="dlg-close" onClick={handleClose} aria-label={t("dialog.close")}>
             ✕
           </button>
         </div>

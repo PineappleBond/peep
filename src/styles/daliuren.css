@@ -6,7 +6,7 @@
 .liuren-page {
   padding: 20px 24px;
   min-height: calc(100vh - 40px);
-  animation: liurenFadeIn 0.4s var(--ease) both;
+  animation: liurenFadeIn var(--dur-enter) var(--ease-enter) both;
 }
 
 @keyframes liurenFadeIn {
@@ -272,9 +272,7 @@
     inset 0 0 6px rgba(0, 0, 0, 0.2),
     0 0 0 1px rgba(255, 255, 255, 0.02);
   text-shadow: 0 0 8px color-mix(in srgb, var(--cyan) 10%, transparent);
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: var(--t-fast);
 }
 
 .liuren-pillar:hover .liuren-pillar-value {
@@ -313,10 +311,7 @@
     color-mix(in srgb, black 10%, transparent)
   );
   font-size: var(--text-xs);
-  transition:
-    border-color 0.2s,
-    background 0.2s,
-    box-shadow 0.2s;
+  transition: var(--t-fast);
 }
 
 .liuren-board-cell:hover {
@@ -388,9 +383,7 @@
     color-mix(in srgb, black 20%, transparent),
     color-mix(in srgb, black 10%, transparent)
   );
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: var(--t-fast);
 }
 
 .liuren-lesson:hover {
@@ -508,7 +501,7 @@
     color-mix(in srgb, black 15%, transparent),
     color-mix(in srgb, black 8%, transparent)
   );
-  transition: border-color 0.2s;
+  transition: border-color var(--t-fast);
 }
 
 .liuren-general-item:hover {
@@ -560,7 +553,7 @@
   padding: 2px 6px;
   border-radius: var(--radius-md);
   cursor: default;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-micro);
 }
 
 .liuren-shensha-item:hover {
@@ -595,9 +588,7 @@
     color-mix(in srgb, black 15%, transparent),
     color-mix(in srgb, black 8%, transparent)
   );
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: var(--t-fast);
 }
 
 .liuren-kejing-item:hover {
@@ -646,9 +637,7 @@
     color-mix(in srgb, black 15%, transparent),
     color-mix(in srgb, black 8%, transparent)
   );
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: var(--t-fast);
 }
 
 .liuren-bifa-item:hover {
@@ -845,7 +834,7 @@
 .liuren-form-field input::placeholder,
 .liuren-form-field textarea::placeholder {
   color: var(--faint);
-  transition: opacity 0.2s;
+  transition: opacity var(--t-fast);
 }
 
 .liuren-form-field input:focus::placeholder,
@@ -984,7 +973,7 @@
   cursor: pointer;
   padding: 0 2px;
   opacity: 0.6;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-micro);
   line-height: 1;
 }
 
@@ -1036,8 +1025,8 @@
   color: var(--text);
   border-radius: 7px;
   transition:
-    background 0.15s var(--ease),
-    color 0.15s;
+    background var(--dur-micro) var(--ease),
+    color var(--dur-micro);
 }
 
 .tag-input-suggestion-item:hover {

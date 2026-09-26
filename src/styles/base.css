@@ -127,16 +127,38 @@
 
   /* 通用过渡时长（消除重复的 cubic-bezier 长定义） */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  /* 入场缓动：从慢到快（加速进入视野） */
+  --ease-in: cubic-bezier(0, 0, 0.2, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1); /* 别名，语义更明确 */
+  /* 离场缓动：从快到慢（减速离开视野） */
+  --ease-out: cubic-bezier(0.4, 0, 1, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1); /* 别名，语义更明确 */
+  /* 弹性缓动：轻微弹跳效果 */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); /* 别名，语义更明确 */
+
+  /* ── 动画时长标准 ── */
+  --dur-micro: 0.15s; /* 微交互：hover/active */
+  --dur-fast: 0.2s; /* 快速过渡：按钮状态、小元素 */
+  --dur-normal: 0.25s; /* 常规过渡：组件状态切换 */
+  --dur-component: 0.25s; /* 组件过渡：dialog/toast（= dur-normal） */
+  --dur-slow: 0.35s; /* 慢速过渡：面板展开、大面积变化 */
+  --dur-page: 0.35s; /* 页面过渡（= dur-slow） */
+  --dur-enter: 0.4s; /* 入场动画 */
+
   --t-medium: 0.3s;
   --t-fast:
-    color 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease),
-    box-shadow 0.15s var(--ease), opacity 0.15s var(--ease), transform 0.15s var(--ease);
+    color var(--dur-micro) var(--ease), background var(--dur-micro) var(--ease),
+    border-color var(--dur-micro) var(--ease), box-shadow var(--dur-micro) var(--ease),
+    opacity var(--dur-micro) var(--ease), transform var(--dur-micro) var(--ease);
   --t-normal:
-    color 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease),
-    box-shadow 0.2s var(--ease), opacity 0.2s var(--ease), transform 0.2s var(--ease);
+    color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   --t-slow:
-    color 0.25s var(--ease), background 0.25s var(--ease), border-color 0.25s var(--ease),
-    box-shadow 0.25s var(--ease), opacity 0.25s var(--ease), transform 0.25s var(--ease);
+    color var(--dur-normal) var(--ease), background var(--dur-normal) var(--ease),
+    border-color var(--dur-normal) var(--ease), box-shadow var(--dur-normal) var(--ease),
+    opacity var(--dur-normal) var(--ease), transform var(--dur-normal) var(--ease);
 
   /* ── 安全区域（适配刘海屏/圆角屏） ── */
   --sat: env(safe-area-inset-top, 0px);
@@ -414,11 +436,47 @@ body {
 @keyframes u-fade-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/** 淡出动画（离场） */
+@keyframes u-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/** 缩放淡入（弹窗入场） */
+@keyframes u-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/** 缩放淡出（弹窗离场） */
+@keyframes u-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
   }
 }
 
@@ -440,7 +498,7 @@ body {
 /* ── 可访问性：跳过导航链接（键盘用户直达主内容） ── */
 .skip-link {
   position: absolute;
-  top: -100%;
+  top: 0;
   left: 16px;
   z-index: 9999;
   padding: 8px 16px;
@@ -451,11 +509,12 @@ body {
   font-size: 0.85rem;
   font-weight: var(--font-bold);
   text-decoration: none;
-  transition: top 0.15s;
+  transform: translateY(-100%);
+  transition: transform var(--dur-micro) var(--ease);
 }
 
 .skip-link:focus {
-  top: 0;
+  transform: translateY(0);
 }
 
 /* ── 可访问性：全局焦点指示器（键盘导航可见） ── */
@@ -542,6 +601,7 @@ textarea:focus-visible,
 }
 
 /* ── 可访问性：减弱动画偏好 ── */
+/* 全局禁用动画：将过渡和动画时长缩至接近零，保持功能正常 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -550,6 +610,22 @@ textarea:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* 持续旋转动画降级为静态（中宫扫光） */
+  .center::before {
+    animation: none !important;
+  }
+
+  /* 虚线流动动画降级为静态 */
+  .sline,
+  .fly-line {
+    animation: none !important;
+  }
+
+  /* Spinner 旋转降级：保留可见但极慢转动（用户仍可感知"加载中"） */
+  .spinner-ring {
+    animation-duration: 6s !important;
   }
 }
 
