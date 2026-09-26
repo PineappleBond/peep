@@ -24,12 +24,32 @@ import { MUTAGEN_TABLES } from "./utils";
  */
 export type ScopeName = Scope;
 
+/**
+ * computeZiWeiData 返回数据：hbar 运限拨盘 + chart 运限盘面
+ */
+export type ZiWeiComputedData = {
+  /** 运限拨盘完整数据（含大运/流年/流月/流日/流时列表及可见性）；拨盘计算失败时为 null */
+  hbar: (HbarData & { visible: Record<Scope, boolean> }) | null;
+  /** 运限盘面数据；scope 未传或无 horoscope 时为 null */
+  chart: ScopeChartData | null;
+};
+
 /** ZiWei 返回数据 */
 export type ZiWeiResult = {
   person: Person | null;
   /** 运限拨盘完整数据（含大运/流年/流月/流日/流时列表）；拨盘计算失败时为 null */
   hbar: (HbarData & { visible: Record<Scope, boolean> }) | null;
   chart: ScopeChartData | null;
+};
+
+/** ZiWei 接口选项 */
+export type ZiWeiOptions = {
+  /**
+   * 为 true 时跳过 UI 操控（导航、切换人物、设置时间、设置运限级别），
+   * 仅根据当前 Zwds 状态计算并返回 hbar/chart 数据。
+   * 等价于纯计算路径，可在任意上下文调用。
+   */
+  skipUI?: boolean;
 };
 
 /* ============================================================
@@ -501,22 +521,63 @@ export async function PersonDelete(personId: number): Promise<void> {
 /* ── 紫微斗数 ──────────────────────────────────────────── */
 
 /**
- * 核心调试接口：切换人物 + 运限级别 + 时间，同时操控 UI 并返回数据
+ * 纯计算函数：从 Zwds 状态提取 hbar（运限拨盘）和 chart（运限盘面）数据。
  *
- * 执行顺序：
+ * 不包含任何 UI 操控逻辑，也不依赖 React 状态——只读取传入 Zwds 对象中
+ * 已有的 astrolabe / horoscope / pick / visible 字段。
+ *
+ * ZiWei（skipUI=true）和 GetScopeData 都可以通过此函数复用计算逻辑，
+ * 避免重复的 buildHbarData / getChartDataForScope 样板代码。
+ *
+ * @param z Zwds 对象（已包含 astrolabe / horoscope / pick / visible）
+ * @param scope 运限级别（可选；不传则 chart 返回 null）
+ * @returns hbar 和 chart 数据
+ */
+export function computeZiWeiData(z: Zwds, scope?: Scope): ZiWeiComputedData {
+  // 构建 hbar：运限拨盘数据（大运/流年/流月/流日/流时列表）
+  const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
+  const hbar = hbarBase ? { ...hbarBase, visible: { ...z.visible } } : null;
+
+  // 构建 chart：指定 scope 的运限盘面数据
+  let chart: ScopeChartData | null = null;
+  if (scope && z.astrolabe && z.horoscope) {
+    chart = getChartDataForScope({
+      astrolabe: z.astrolabe,
+      horoscope: z.horoscope,
+      scope,
+    });
+  }
+
+  return { hbar, chart };
+}
+
+/**
+ * 核心调试接口：切换人物 + 运限级别 + 时间，同时操控 UI 并返回数据。
+ *
+ * 职责分为两层：
+ * - UI 操控层（skipUI=false 时）：导航页面、切换人物、设置时间、设置运限级别
+ * - 数据计算层（computeZiWeiData）：从 Zwds 状态提取 hbar/chart 数据
+ *
+ * 执行顺序（skipUI=false）：
  * 1. 切换人物（等待 astrolabe 重新计算完成）
  * 2. 设置时间（在 pick 被 useEffect 重置为"今天"之后）
  * 3. 设置运限级别（只显示目标 scope）
  * 4. 等待所有状态更新完成
+ * 5. 调用 computeZiWeiData 获取数据
  *
- * @param personId 人物 ID（可选，不传则使用默认人物）
+ * skipUI=true 时：跳过步骤 1-4，直接读取当前 Zwds 状态并计算数据，
+ * 等价于纯计算路径，可在任意上下文调用（例如 RTC Agent 或自动化测试）。
+ *
+ * @param personId 人物 ID（可选，不传则使用默认人物；skipUI=true 时忽略）
  * @param scope 运限级别（decadal/yearly/monthly/daily/hourly）
- * @param time 可选时间参数（Date 或时间戳），用于设置运限时间
+ * @param time 可选时间参数（Date 或时间戳），用于设置运限时间（skipUI=true 时忽略）
+ * @param options 可选配置项（目前支持 skipUI）
  */
 export async function ZiWei(
   personId?: number,
   scope?: Scope,
   time?: Date | number | string,
+  options?: ZiWeiOptions,
 ): Promise<ZiWeiResult> {
   const stop = timer("ZiWei");
   const maxRetries = 2;
@@ -544,8 +605,41 @@ export async function ZiWei(
         );
       }
 
-      log("info", "ZiWei", "开始执行", { personId, scope, time, attempt: attempt + 1 });
+      log("info", "ZiWei", "开始执行", {
+        personId,
+        scope,
+        time,
+        attempt: attempt + 1,
+        skipUI: !!options?.skipUI,
+      });
 
+      // skipUI 模式：跳过所有 UI 操控，直接读取当前 Zwds 状态并计算数据
+      // 此时 personId / time 参数被忽略，仅 scope 用于 chart 计算
+      if (options?.skipUI) {
+        if (!_getZwds || !_getPerson) {
+          throw new ZiWeiError("调试 API 未初始化，请确认 App 已加载", "ZiWei", {
+            context: { getZwdsReady: !!_getZwds, getPersonReady: !!_getPerson },
+            suggestion: "请确认 App.tsx 已完成挂载，或等待页面加载完成后重试",
+          });
+        }
+        const z = _getZwds();
+        if (!z) {
+          throw new ZiWeiError("排盘数据未就绪", "ZiWei", {
+            suggestion: "排盘引擎尚未初始化，请确认人物已选择后再调用",
+          });
+        }
+        const { hbar, chart } = computeZiWeiData(z, scope);
+        const person = _getPerson();
+        log("info", "ZiWei", "skipUI 模式执行成功", {
+          personId: person?.id,
+          scope,
+          hasChart: !!chart,
+        });
+        stop();
+        return { person, hbar, chart };
+      }
+
+      // 正常模式：执行 UI 操控（导航、切换人物、设置时间、设置运限级别）
       // 跳转到 / 页面（紫微斗数）并等待回调注册
       await navigateToPage("/", "ziwei");
 
@@ -596,19 +690,9 @@ export async function ZiWei(
       // 4. 等待所有状态更新完成（轮询 + rAF 确保 React 状态和渲染完成）
       await waitForStateUpdate();
 
-      // 5. 获取数据
+      // 5. 获取数据（复用纯计算函数，与 GetScopeData 共享 hbar/chart 构建逻辑）
       const person = _getPerson();
-      const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
-      const hbar = hbarBase ? { ...hbarBase, visible: { ...z.visible } } : null;
-
-      let chart: ScopeChartData | null = null;
-      if (scope && z.astrolabe && z.horoscope) {
-        chart = getChartDataForScope({
-          astrolabe: z.astrolabe,
-          horoscope: z.horoscope,
-          scope,
-        });
-      }
+      const { hbar, chart } = computeZiWeiData(z, scope);
 
       log("info", "ZiWei", "执行成功", { personId: person?.id, scope, hasChart: !!chart });
       stop();
@@ -964,9 +1048,17 @@ export function computeScopeData(person: Person, solarDate: Date | string): Hbar
 }
 
 /**
- * 调试接口：根据阳历日期 + 人物 ID 获取运限数据（大运/流年/流月/流日/流时）
+ * 调试接口：根据阳历日期 + 人物 ID 获取运限数据（大运/流年/流月/流日/流时）。
  *
  * 纯计算接口，不操控 UI，可在任意上下文调用。
+ *
+ * 与 computeZiWeiData 的区别：
+ * - GetScopeData / computeScopeData：从 Person 原始数据出发，独立计算本命盘 + 运限（不依赖 React 状态）
+ * - computeZiWeiData：从已存在的 Zwds 对象读取数据（依赖 React 状态中的 astrolabe / horoscope / pick）
+ *
+ * 适用场景：
+ * - 需要脱离 UI 状态独立计算（RTC Agent、自动化测试、后台计算）→ 用 GetScopeData
+ * - 已经排盘完成、想读取当前盘面数据 → 用 computeZiWeiData 或 ZiWei(..., { skipUI: true })
  *
  * @param solarDate 阳历日期（Date 对象或 YYYY-MM-DD / YYYY-MM-DD HH:mm 格式字符串）
  * @param personId 人物 ID（可选，不传则使用默认人物）
@@ -1639,6 +1731,7 @@ export function initDebugApi() {
     ZiWei,
     GetScopeData,
     computeScopeData,
+    computeZiWeiData,
     DaLiuRen,
     DaLiuRenCreate,
     DaLiuRenList,
