@@ -6,6 +6,7 @@ import Dexie, { type Table } from "dexie";
 import { DEFAULT_BIRTH_INPUT, type BirthInput } from "./useZwds";
 import type { DaLiuRenResult } from "./daliuren/types";
 import { t } from "./i18n";
+import { registerMigration, runMigrations, checkDataIntegrity } from "./migrations";
 
 /**
  * 人物档案类型：扩展 BirthInput，附加主键 id、保存时间戳、默认标志。
@@ -72,6 +73,7 @@ export interface WikiLink {
 /**
  * 紫微斗数应用数据库（Dexie 封装 IndexedDB）。
  * 三版本迁移：v1 人物 → v2 + 大六壬记录 → v3 + Wiki 文档与链接。
+ * 数据迁移逻辑在 migrations.ts 注册，通过 upgrade() 钩子执行。
  */
 class PeepDatabase extends Dexie {
   persons!: Table<Person, number>;
@@ -84,18 +86,25 @@ class PeepDatabase extends Dexie {
     this.version(1).stores({
       persons: "++id, savedAt, isDefault",
     });
-    this.version(2).stores({
-      persons: "++id, savedAt, isDefault",
-      liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
-    });
-    this.version(3).stores({
-      persons: "++id, savedAt, isDefault",
-      liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
-      wikiDocs: "++id, personId, updatedAt, savedAt, *tags",
-      wikiLinks: "++id, sourceDocId, targetDocId",
-    });
+    this.version(2)
+      .stores({
+        persons: "++id, savedAt, isDefault",
+        liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
+      })
+      .upgrade(() => runMigrations(this, 1, 2));
+    this.version(3)
+      .stores({
+        persons: "++id, savedAt, isDefault",
+        liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
+        wikiDocs: "++id, personId, updatedAt, savedAt, *tags",
+        wikiLinks: "++id, sourceDocId, targetDocId",
+      })
+      .upgrade(() => runMigrations(this, 2, 3));
   }
 }
+
+/** 当前数据库版本号（新增版本时同步更新） */
+export const DB_VERSION = 3;
 
 /** Dexie 数据库实例：管理人物/大六壬记录/Wiki 文档/链接关系四张表 */
 export const db = new PeepDatabase();
@@ -220,3 +229,34 @@ export async function deletePerson(id: number): Promise<void> {
 export async function getDefaultPerson(): Promise<Person> {
   return ensureDefault();
 }
+
+/** 数据库是否已完成初始化（含完整性检查） */
+let initPromise: Promise<void> | null = null;
+
+/**
+ * 初始化数据库：确保默认人物存在，并执行数据完整性检查。
+ * 应用启动时调用一次，Promise 缓存防并发。
+ * 完整性问题仅记录日志，不抛错（避免阻塞应用启动）。
+ */
+export function initDatabase(): Promise<void> {
+  if (!initPromise) {
+    initPromise = (async () => {
+      try {
+        await ensureDefault();
+        const { valid, issues } = await checkDataIntegrity(db);
+        if (!valid) {
+          console.warn("[personDb] 数据完整性问题：", issues);
+        } else {
+          console.log("[personDb] 数据完整性检查通过");
+        }
+      } catch (err) {
+        console.error("[personDb] 数据库初始化失败", err);
+        // 不抛出，允许应用继续运行
+      }
+    })();
+  }
+  return initPromise;
+}
+
+// 立即启动数据库初始化
+initDatabase();
