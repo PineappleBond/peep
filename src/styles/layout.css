@@ -133,6 +133,14 @@
   min-width: 36px;
 }
 
+/* 主题切换按钮 */
+.top-actions .theme-toggle {
+  padding: 7px 12px;
+  font-size: 1.1rem;
+  min-width: 36px;
+  line-height: 1;
+}
+
 /* ── 顶部导航图标 ── */
 .top-nav {
   display: flex;

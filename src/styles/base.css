@@ -95,8 +95,144 @@
     color 0.25s var(--ease), background 0.25s var(--ease), border-color 0.25s var(--ease),
     box-shadow 0.25s var(--ease), opacity 0.25s var(--ease), transform 0.25s var(--ease);
 
+  /* ── 安全区域（适配刘海屏/圆角屏） ── */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
   font-family: var(--font-body);
   color-scheme: dark;
+}
+
+/* ════════════════════════════════════════════════════
+   亮色主题变量
+   跟随系统：@media (prefers-color-scheme: light) 下覆盖 :root:not([data-theme="dark"])
+   手动切换：:root[data-theme="light"] 强制覆盖
+   ════════════════════════════════════════════════════ */
+
+:root[data-theme="light"] {
+  --bg: #f5f7fa;
+  --panel: rgba(255, 255, 255, 0.85);
+  --line: rgba(0, 0, 0, 0.1);
+  --line-strong: rgba(0, 0, 0, 0.25);
+  --text: #1a202c;
+  --dim: #4a5568;
+  --faint: #a0aec0;
+  --gold: #b7791f;
+  --gold-deep: #975a16;
+  --cyan: #2b6cb0;
+
+  /* 运限五色 + 小限（降低饱和度以适应亮色背景） */
+  --c-decadal: #276749;
+  --c-yearly: #2b6cb0;
+  --c-monthly: #c05621;
+  --c-daily: #6b46c1;
+  --c-hourly: #b83280;
+  --c-age: #b7791f;
+
+  /* 四化 */
+  --m-lu: #276749;
+  --m-quan: #2b6cb0;
+  --m-ke: #c05621;
+  --m-ji: #97266d;
+
+  /* 语义色 */
+  --danger: #c53030;
+  --danger-soft: #e53e3e;
+  --rose: #d53f8c;
+
+  /* 阴影（亮色下更柔和） */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --glow-gold: 0 0 8px rgba(183, 121, 31, 0.15);
+  --glow-cyan: 0 0 8px rgba(43, 108, 176, 0.15);
+
+  color-scheme: light;
+}
+
+/* 亮色主题下的硬编码覆盖 */
+:root[data-theme="light"] .u-glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+}
+:root[data-theme="light"] ::selection {
+  background: rgba(43, 108, 176, 0.25);
+}
+:root[data-theme="light"] * {
+  scrollbar-color: rgba(43, 108, 176, 0.2) transparent;
+}
+:root[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: rgba(43, 108, 176, 0.15);
+}
+
+/* 跟随系统：当系统为亮色且未手动指定深色时 */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f5f7fa;
+    --panel: rgba(255, 255, 255, 0.85);
+    --line: rgba(0, 0, 0, 0.1);
+    --line-strong: rgba(0, 0, 0, 0.25);
+    --text: #1a202c;
+    --dim: #4a5568;
+    --faint: #a0aec0;
+    --gold: #b7791f;
+    --gold-deep: #975a16;
+    --cyan: #2b6cb0;
+
+    --c-decadal: #276749;
+    --c-yearly: #2b6cb0;
+    --c-monthly: #c05621;
+    --c-daily: #6b46c1;
+    --c-hourly: #b83280;
+    --c-age: #b7791f;
+
+    --m-lu: #276749;
+    --m-quan: #2b6cb0;
+    --m-ke: #c05621;
+    --m-ji: #97266d;
+
+    --danger: #c53030;
+    --danger-soft: #e53e3e;
+    --rose: #d53f8c;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+    --glow-gold: 0 0 8px rgba(183, 121, 31, 0.15);
+    --glow-cyan: 0 0 8px rgba(43, 108, 176, 0.15);
+
+    color-scheme: light;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .u-glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+  }
+  :root:not([data-theme="dark"]) ::selection {
+    background: rgba(43, 108, 176, 0.25);
+  }
+  :root:not([data-theme="dark"]) * {
+    scrollbar-color: rgba(43, 108, 176, 0.2) transparent;
+  }
+  :root:not([data-theme="dark"]) *::-webkit-scrollbar-thumb {
+    background: rgba(43, 108, 176, 0.15);
+  }
+}
+
+/* ── 触摸设备全局优化 ── */
+/* 消除移动端点击高亮闪烁 */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* body 安全区域内边距（防止内容被刘海/圆角裁切） */
+body {
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
 }
 
 /* ── 公共工具类（消除跨模块重复样式） ── */

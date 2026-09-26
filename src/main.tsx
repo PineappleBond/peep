@@ -4,7 +4,11 @@ import App from "./App";
 import { I18nProvider } from "./core/i18n";
 import { initPerformanceMonitoring } from "./core/performance";
 import { initErrorTracking } from "./core/errorTracking";
+import { initTheme } from "./core/theme";
 import "./index.css";
+
+// ── 初始化主题（在渲染前应用，避免闪烁） ──────────────────────────
+initTheme();
 
 // ── 初始化监控模块 ──────────────────────────────────────────
 // 性能监控：生产环境启用上报，开发环境仅控制台输出

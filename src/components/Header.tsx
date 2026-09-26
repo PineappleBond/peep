@@ -2,6 +2,7 @@
  * Header 组件 - 全局共用
  * 包含标题、SVG Icon 导航、PersonSelector
  */
+import { useState, useCallback } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
@@ -9,6 +10,7 @@ import { LiurenIcon } from "./icons/LiurenIcon";
 import { WikiIcon } from "./icons/WikiIcon";
 import type { Person } from "../core/personDb";
 import { useI18n, type Locale } from "../core/i18n";
+import { getTheme, setTheme, type Theme } from "../core/theme";
 
 type HeaderProps = {
   /** 当前选中人物 ID */
@@ -36,12 +38,26 @@ export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
   const { t, locale, setLocale } = useI18n();
   const titleKey = getTitleKeyByPath(location.pathname);
   const subtitleKey = getSubtitleKeyByPath(location.pathname);
+  const [theme, setThemeState] = useState<Theme>(getTheme);
 
   /** 切换语言 */
   const toggleLocale = () => {
     const next: Locale = locale === "zh-CN" ? "en-US" : "zh-CN";
     setLocale(next);
   };
+
+  /** 循环切换主题：system → light → dark → system */
+  const cycleTheme = useCallback(() => {
+    const order: Theme[] = ["system", "light", "dark"];
+    const idx = order.indexOf(theme);
+    const next = order[(idx + 1) % order.length];
+    setThemeState(next);
+    setTheme(next);
+  }, [theme]);
+
+  /** 主题按钮显示文本 */
+  const themeLabel = theme === "system" ? "⚙" : theme === "light" ? "☀" : "☾";
+  const themeTitle = theme === "system" ? "跟随系统" : theme === "light" ? "亮色主题" : "暗色主题";
 
   return (
     <header className="top">
@@ -72,6 +88,14 @@ export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
         </NavLink>
       </nav>
       <div className="top-actions">
+        <button
+          className="theme-toggle"
+          onClick={cycleTheme}
+          title={themeTitle}
+          aria-label={themeTitle}
+        >
+          {themeLabel}
+        </button>
         <button
           className="lang-toggle"
           onClick={toggleLocale}
