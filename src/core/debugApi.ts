@@ -11,6 +11,12 @@ import { buildHbarData, clearHbarCaches, type HbarData } from "./hbar";
 import { calculateDaLiuRen } from "./daliuren/calculator";
 import type { DaLiuRenResult } from "./daliuren/types";
 import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
+import {
+  getLiurenRecord,
+  listLiurenRecords,
+  saveLiurenRecord,
+  invalidateLiurenTagCache,
+} from "./daliurenDb";
 import { getWikiLinks, type WikiListFilters, type WikiListResult } from "./wikiDb";
 import { globalEvents } from "./events";
 import type { BirthInput } from "./useZwds";
@@ -43,6 +49,32 @@ export type ZiWeiOptions = {
    * 等价于纯计算路径，可在任意上下文调用。
    */
   skipUI?: boolean;
+};
+
+/** DaLiuRen 计算返回数据：起课结果 + 关联人物 */
+export type DaLiuRenComputedData = {
+  /** 起课时间字符串（YYYY-MM-DD HH:mm:ss） */
+  calculationTime: string;
+  /** 完整大六壬排盘结果 */
+  result: DaLiuRenResult;
+  /** 关联人物（可能为 null） */
+  person: Person | null;
+};
+
+/** DaLiuRen 接口选项 */
+export type DaLiuRenOptions = {
+  /**
+   * 为 true 时跳过 UI 操控（导航、切换人物、打开 Dialog 等），
+   * 仅执行纯计算或直接查询数据库。
+   * 等价于纯计算路径，可在任意上下文调用（RTC Agent、自动化测试）。
+   */
+  skipUI?: boolean;
+};
+
+/** DaLiuRenView 返回数据：记录 + 计算数据 */
+export type DaLiuRenViewResult = LiurenRecord & {
+  /** 纯计算数据（skipUI=true 时包含，skipUI=false 时也包含以便 RTC Agent 使用） */
+  computed?: DaLiuRenComputedData;
 };
 
 /* ============================================================
@@ -152,6 +184,49 @@ export class ComputeScopeError extends ZiWeiError {
       cause: options?.cause,
     });
     this.name = "ComputeScopeError";
+  }
+}
+
+/**
+ * 大六壬错误类：DaLiuRen 系列调试接口的专用错误。
+ * 包含上下文信息（输入参数、回调状态）和恢复建议。
+ */
+export class DaLiuRenError extends Error {
+  /** 错误来源标签（如 "DaLiuRen"、"DaLiuRenCreate"） */
+  public readonly source: string;
+  /** 上下文信息：输入参数、中间状态等（仅 DEV 环境包含完整数据） */
+  public readonly context: Record<string, unknown>;
+  /** 恢复建议（对开发者友好的调试提示） */
+  public readonly suggestion?: string;
+  /** 原始错误（错误链） */
+  public readonly cause?: unknown;
+
+  constructor(
+    message: string,
+    source: string,
+    options?: {
+      context?: Record<string, unknown>;
+      suggestion?: string;
+      cause?: unknown;
+    },
+  ) {
+    // 开发环境：消息包含完整上下文；生产环境：仅包含概要消息
+    const fullMessage =
+      import.meta.env.DEV && options?.context
+        ? `${message}\n  来源: ${source}\n  上下文: ${JSON.stringify(options.context, null, 2)}${options?.suggestion ? `\n  建议: ${options.suggestion}` : ""}`
+        : message;
+    super(fullMessage);
+    this.name = "DaLiuRenError";
+    this.source = source;
+    this.context = options?.context ?? {};
+    this.suggestion = options?.suggestion;
+    this.cause = options?.cause;
+    // 确保堆栈追踪可用（V8 引擎）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ErrCtor = Error as any;
+    if (typeof ErrCtor.captureStackTrace === "function") {
+      ErrCtor.captureStackTrace(this, new.target);
+    }
   }
 }
 
@@ -1089,7 +1164,49 @@ export async function GetScopeData(
 }
 
 /**
- * 大六壬排盘调试接口
+ * 纯计算函数：大六壬排盘（不操控 UI，不依赖 React 状态）。
+ *
+ * 对 calculateDaLiuRen 的薄包装：增加日志、计时、DaLiuRenError 错误处理。
+ * 可在任意上下文调用（RTC Agent、自动化测试、控制台调试）。
+ *
+ * @param date 公历日期（YYYY-MM-DD 或 YYYY/MM/DD）
+ * @param time 时间（HH:mm 或 HH:mm:ss）
+ * @param fateInput 可选：生年与性别（用于计算命宫行年）
+ * @returns 完整大六壬排盘结果
+ * @throws DaLiuRenError 排盘失败时抛出，包含输入上下文和恢复建议
+ */
+export function computeDaLiuRenData(
+  date: string,
+  time: string,
+  fateInput?: { birthYear: number; gender: "男" | "女" },
+): DaLiuRenResult {
+  const stop = timer("computeDaLiuRenData");
+  try {
+    log("info", "computeDaLiuRenData", "纯计算排盘", { date, time, fateInput });
+    const result = calculateDaLiuRen(date, time, fateInput);
+    log("info", "computeDaLiuRenData", "排盘成功", {
+      calculationTime: result.calculationTime,
+      hasFate: !!result.fate,
+    });
+    stop();
+    return result;
+  } catch (err) {
+    stop();
+    if (err instanceof DaLiuRenError) throw err;
+    log("error", "computeDaLiuRenData", "排盘失败", err);
+    throw new DaLiuRenError("大六壬排盘计算失败", "computeDaLiuRenData", {
+      context: { date, time, fateInput },
+      suggestion: "请检查日期格式（YYYY-MM-DD）和时间格式（HH:mm 或 HH:mm:ss）是否正确",
+      cause: err,
+    });
+  }
+}
+
+/**
+ * 大六壬排盘调试接口（向后兼容）
+ *
+ * 直接调用 computeDaLiuRenData 纯计算函数。
+ * 保留原签名以兼容已有调用方，推荐新代码直接使用 computeDaLiuRenData。
  *
  * @param date 公历日期（YYYY-MM-DD）
  * @param time 时间（HH:mm 或 HH:mm:ss）
@@ -1100,76 +1217,175 @@ export function DaLiuRen(
   time: string,
   fateInput?: { birthYear: number; gender: "男" | "女" },
 ): DaLiuRenResult {
-  log("info", "DaLiuRen", "纯计算排盘", { date, time, fateInput });
-  return calculateDaLiuRen(date, time, fateInput);
+  return computeDaLiuRenData(date, time, fateInput);
 }
 
 /**
- * 大六壬起课调试接口
- * 跳转到 /liuren 页面，选择人物，打开新建 Dialog，填写表单，提交
+ * 大六壬起课调试接口——创建起课记录。
+ *
+ * 职责分为两层：
+ * - UI 操控层（skipUI=false 时）：导航页面、切换人物、填写表单、打开 Dialog、提交
+ * - 数据计算层（computeDaLiuRenData / DB 操作）：纯计算或直接写入数据库
+ *
+ * skipUI=true 时：跳过所有 UI 操控，直接计算排盘结果并写入数据库。
+ * 适用于 RTC Agent、自动化测试等无 UI 上下文。
+ *
+ * skipUI=false 时（默认）：执行完整 UI 流程。
+ *
+ * @param params 起课参数
+ * @param options 可选配置项（目前支持 skipUI）
  */
-export async function DaLiuRenCreate(params: {
-  personId?: number;
-  question: string;
-  note?: string;
-  background?: string;
-  tags?: string[];
-}): Promise<LiurenRecord> {
+export async function DaLiuRenCreate(
+  params: {
+    personId?: number;
+    question: string;
+    note?: string;
+    background?: string;
+    tags?: string[];
+    /** 可选：自定义起课时间（YYYY-MM-DD HH:mm:ss），不传则使用当前时间 */
+    calculationTime?: string;
+  },
+  options?: DaLiuRenOptions,
+): Promise<LiurenRecord> {
   const stop = timer("DaLiuRenCreate");
   try {
     const personId = await resolvePersonId(params.personId);
     log("info", "DaLiuRenCreate", "开始创建起课", {
       personId,
       question: params.question,
+      skipUI: !!options?.skipUI,
     });
 
-    // 1. 跳转到 /liuren 页面并等待回调注册
-    await navigateToPage("/liuren", "daliuren");
+    /* ── skipUI 模式：纯计算 + DB 写入，不操控 UI ── */
+    if (options?.skipUI) {
+      // 验证人物存在
+      const personCheck = await getPerson(personId);
+      if (!personCheck) {
+        throw new DaLiuRenError(`人物 ${personId} 不存在`, "DaLiuRenCreate", {
+          context: { personId },
+          suggestion: "请检查人物 ID 是否正确",
+        });
+      }
 
-    if (!_selectPerson || !_openCreateDialog || !_fillCreateForm || !_submitCreateForm) {
-      throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+      // 计算排盘结果（有自定义时间则用之，否则用当前时间）
+      let calcResult: DaLiuRenResult;
+      let calculationTime: string;
+      if (params.calculationTime) {
+        // 解析自定义时间：期望格式 "YYYY-MM-DD HH:mm:ss"
+        const parts = params.calculationTime.split(" ");
+        const date = parts[0];
+        const time = parts[1] ?? "00:00:00";
+        calcResult = computeDaLiuRenData(date, time);
+        calculationTime = params.calculationTime;
+      } else {
+        const now = new Date();
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        calcResult = computeDaLiuRenData(date, time);
+        calculationTime = `${date} ${time}`;
+      }
+
+      // 构造记录并写入数据库
+      const record: LiurenRecord = {
+        personId,
+        calculationTime,
+        question: params.question,
+        note: params.note ?? "",
+        background: params.background ?? "",
+        tags: params.tags ?? [],
+        result: calcResult,
+        savedAt: Date.now(),
+      };
+      const id = await saveLiurenRecord(record);
+      invalidateLiurenTagCache();
+
+      log("info", "DaLiuRenCreate", "skipUI 模式创建成功", { recordId: id });
+      stop();
+      return { ...record, id };
     }
 
-    // 2. 选择人物
+    /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /liuren 页面并等待回调注册
+    await navigateToPage("/liuren", "daliuren");
+
+    // 等待大六壬回调就绪（轮询验证替代盲等）
+    await waitForDaLiuRenCallbacks();
+
+    if (!_selectPerson || !_openCreateDialog || !_fillCreateForm || !_submitCreateForm) {
+      throw new DaLiuRenError("大六壬调试 API 未初始化", "DaLiuRenCreate", {
+        context: {
+          selectPersonReady: !!_selectPerson,
+          openCreateDialogReady: !!_openCreateDialog,
+          fillCreateFormReady: !!_fillCreateForm,
+          submitCreateFormReady: !!_submitCreateForm,
+        },
+        suggestion: "请确认 DaLiuRenPage 组件已正确挂载并注册回调",
+      });
+    }
+
+    // 1. 选择人物（带状态验证）
     await selectPersonAndWait(personId);
 
-    // 3. 填写表单（在打开 Dialog 之前设置初始数据）
+    // 2. 填写表单（在打开 Dialog 之前设置初始数据）
     _fillCreateForm({
       question: params.question,
-      note: params.note || "",
-      background: params.background || "",
-      tags: params.tags || [],
+      note: params.note ?? "",
+      background: params.background ?? "",
+      tags: params.tags ?? [],
     });
-    await waitForFormFill();
+    // 等待表单状态更新完成（双 rAF 替代盲等）
+    await nextFrame();
+    await nextFrame();
 
-    // 4. 打开新建 Dialog（Dialog 打开时会读取已设置的初始数据）
+    // 3. 打开新建 Dialog（Dialog 打开时会读取已设置的初始数据）
     _openCreateDialog();
-    await waitForDialogOpen();
+    // 等待 Dialog DOM 渲染完成（轮询检测替代盲等）
+    await waitForDialogReady();
 
-    // 5. 提交表单
+    // 4. 提交表单
     const record = await _submitCreateForm();
-    await waitForSaveComplete();
+
+    // 5. 等待保存完成并验证记录存在
+    await waitForRecordSaved(record.id, 2000);
 
     log("info", "DaLiuRenCreate", "创建成功", { recordId: record.id });
     stop();
     return record;
   } catch (err) {
+    if (err instanceof DaLiuRenError) {
+      log("error", "DaLiuRenCreate", "执行失败（不重试）", {
+        errorType: err.name,
+        message: err.message.split("\n")[0],
+      });
+      stop();
+      throw err;
+    }
     log("error", "DaLiuRenCreate", "执行失败", err);
-    throw wrapDebugError("DaLiuRenCreate", err);
+    stop();
+    throw wrapDaLiuRenError("DaLiuRenCreate", err);
   }
 }
 
 /**
- * 大六壬起课列表调试接口
- * 跳转到 /liuren 页面，选择人物，设置过滤条件，返回列表
+ * 大六壬起课列表调试接口——查询起课记录列表。
+ *
+ * skipUI=true 时：直接查询数据库，不导航页面、不切换人物。
+ * skipUI=false 时（默认）：导航页面 + 切换人物 + 设置 UI 过滤条件 + 查询。
+ *
+ * @param params 查询参数
+ * @param options 可选配置项（目前支持 skipUI）
  */
-export async function DaLiuRenList(params: {
-  personId?: number;
-  searchText?: string;
-  tags?: string[];
-  page?: number;
-  pageSize?: number;
-}): Promise<{ records: LiurenRecord[]; total: number }> {
+export async function DaLiuRenList(
+  params: {
+    personId?: number;
+    searchText?: string;
+    tags?: string[];
+    page?: number;
+    pageSize?: number;
+  },
+  options?: DaLiuRenOptions,
+): Promise<{ records: LiurenRecord[]; total: number }> {
   const stop = timer("DaLiuRenList");
   try {
     const personId = await resolvePersonId(params.personId);
@@ -1177,35 +1393,57 @@ export async function DaLiuRenList(params: {
       personId,
       searchText: params.searchText,
       tags: params.tags,
+      skipUI: !!options?.skipUI,
     });
 
-    // 1. 跳转到 /liuren 页面并等待回调注册
-    await navigateToPage("/liuren", "daliuren");
-
-    if (!_selectPerson || !_getDaLiuRenList) {
-      throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
-    }
-
-    // 2. 选择人物
-    await selectPersonAndWait(personId);
-
-    // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
-    if (_setListFilters && (params.searchText || params.tags || params.page)) {
-      _setListFilters({
-        searchText: params.searchText,
-        tags: params.tags,
-        page: params.page,
-      });
-      await waitForStateUpdate();
-    }
-
-    // 4. 获取列表
     const filters: LiurenListFilters = {
       searchText: params.searchText,
       tags: params.tags,
       page: params.page,
       pageSize: params.pageSize,
     };
+
+    /* ── skipUI 模式：直接查询数据库，不操控 UI ── */
+    if (options?.skipUI) {
+      const result = await listLiurenRecords(personId, filters);
+      log("info", "DaLiuRenList", "skipUI 模式查询成功", {
+        total: result.total,
+        returned: result.records.length,
+      });
+      stop();
+      return { records: result.records, total: result.total };
+    }
+
+    /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /liuren 页面并等待回调注册
+    await navigateToPage("/liuren", "daliuren");
+    await waitForDaLiuRenCallbacks();
+
+    if (!_selectPerson || !_getDaLiuRenList) {
+      throw new DaLiuRenError("大六壬调试 API 未初始化", "DaLiuRenList", {
+        context: {
+          selectPersonReady: !!_selectPerson,
+          getDaLiuRenListReady: !!_getDaLiuRenList,
+        },
+        suggestion: "请确认 DaLiuRenPage 组件已正确挂载并注册回调",
+      });
+    }
+
+    // 1. 选择人物（带状态验证）
+    await selectPersonAndWait(personId);
+
+    // 2. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
+    if (_setListFilters && (params.searchText || params.tags || params.page)) {
+      _setListFilters({
+        searchText: params.searchText,
+        tags: params.tags,
+        page: params.page,
+      });
+      // 等待 UI 状态更新完成
+      await waitForStateUpdate();
+    }
+
+    // 3. 获取列表
     const result = await _getDaLiuRenList(filters);
 
     log("info", "DaLiuRenList", "查询成功", {
@@ -1215,53 +1453,111 @@ export async function DaLiuRenList(params: {
     stop();
     return { records: result.records, total: result.total };
   } catch (err) {
+    if (err instanceof DaLiuRenError) {
+      stop();
+      throw err;
+    }
     log("error", "DaLiuRenList", "执行失败", err);
-    throw wrapDebugError("DaLiuRenList", err);
+    stop();
+    throw wrapDaLiuRenError("DaLiuRenList", err);
   }
 }
 
 /**
- * 大六壬起课详情调试接口
- * 跳转到 /liuren 页面，选择人物，点击某条记录，返回详情
+ * 大六壬起课详情调试接口——查看单条起课记录。
+ *
+ * skipUI=true 时：直接查询数据库获取记录，并附带纯计算数据。
+ * skipUI=false 时（默认）：导航页面 + 切换人物 + 选择记录 + 返回详情。
+ *
+ * @param params 查看参数（personId 可选，recordId 必填）
+ * @param options 可选配置项（目前支持 skipUI）
  */
-export async function DaLiuRenView(params: {
-  personId?: number;
-  recordId: number;
-}): Promise<LiurenRecord> {
+export async function DaLiuRenView(
+  params: {
+    personId?: number;
+    recordId: number;
+  },
+  options?: DaLiuRenOptions,
+): Promise<DaLiuRenViewResult> {
   const stop = timer("DaLiuRenView");
   try {
     const personId = await resolvePersonId(params.personId);
     log("info", "DaLiuRenView", "查看详情", {
       personId,
       recordId: params.recordId,
+      skipUI: !!options?.skipUI,
     });
 
-    // 1. 跳转到 /liuren 页面并等待回调注册
-    await navigateToPage("/liuren", "daliuren");
-
-    if (!_selectPerson || !_selectRecord || !_getSelectedRecord) {
-      throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
+    /* ── skipUI 模式：直接查询数据库，不操控 UI ── */
+    if (options?.skipUI) {
+      const record = await getLiurenRecord(params.recordId);
+      if (!record) {
+        throw new DaLiuRenError(`记录 ${params.recordId} 不存在`, "DaLiuRenView", {
+          context: { recordId: params.recordId },
+          suggestion: "请检查记录 ID 是否正确，该记录可能已被删除",
+        });
+      }
+      // 附带纯计算数据（验证 result 结构完整性）
+      const computed: DaLiuRenComputedData = {
+        calculationTime: record.calculationTime,
+        result: record.result,
+        person: (await getPerson(record.personId)) ?? null,
+      };
+      log("info", "DaLiuRenView", "skipUI 模式查看成功", { recordId: record.id });
+      stop();
+      return { ...record, computed };
     }
 
-    // 2. 选择人物
+    /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /liuren 页面并等待回调注册
+    await navigateToPage("/liuren", "daliuren");
+    await waitForDaLiuRenCallbacks();
+
+    if (!_selectPerson || !_selectRecord || !_getSelectedRecord) {
+      throw new DaLiuRenError("大六壬调试 API 未初始化", "DaLiuRenView", {
+        context: {
+          selectPersonReady: !!_selectPerson,
+          selectRecordReady: !!_selectRecord,
+          getSelectedRecordReady: !!_getSelectedRecord,
+        },
+        suggestion: "请确认 DaLiuRenPage 组件已正确挂载并注册回调",
+      });
+    }
+
+    // 1. 选择人物（带状态验证）
     await selectPersonAndWait(personId);
 
-    // 3. 点击某条记录（selectRecord 直接返回记录数据）
+    // 2. 选择记录（带重试验证）
     const record = await _selectRecord(params.recordId);
     await waitForStateUpdate();
 
-    // 4. 获取详情（优先使用 selectRecord 返回值，回退到 getSelectedRecord）
+    // 3. 获取详情（优先使用 selectRecord 返回值，回退到 getSelectedRecord）
     const selectedRecord = record ?? _getSelectedRecord();
     if (!selectedRecord) {
-      throw new Error(`记录 ${params.recordId} 未找到或加载失败`);
+      throw new DaLiuRenError(`记录 ${params.recordId} 未找到或加载失败`, "DaLiuRenView", {
+        context: { recordId: params.recordId, selectRecordReturned: !!record },
+        suggestion: "请检查记录 ID 是否正确，或尝试刷新页面后重试",
+      });
     }
+
+    // 4. 附带纯计算数据
+    const computed: DaLiuRenComputedData = {
+      calculationTime: selectedRecord.calculationTime,
+      result: selectedRecord.result,
+      person: _getPerson?.() ?? null,
+    };
 
     log("info", "DaLiuRenView", "查看成功", { recordId: selectedRecord.id });
     stop();
-    return selectedRecord;
+    return { ...selectedRecord, computed };
   } catch (err) {
+    if (err instanceof DaLiuRenError) {
+      stop();
+      throw err;
+    }
     log("error", "DaLiuRenView", "执行失败", err);
-    throw wrapDebugError("DaLiuRenView", err);
+    stop();
+    throw wrapDaLiuRenError("DaLiuRenView", err);
   }
 }
 
@@ -1658,19 +1954,100 @@ function wrapDebugError(label: string, err: unknown): Error {
   });
 }
 
-/** 辅助函数：等待 Dialog 打开 */
+/** 辅助函数：等待 Dialog 打开（Wiki 函数共用） */
 function waitForDialogOpen(): Promise<void> {
   return new Promise(r => setTimeout(r, 100));
 }
 
-/** 辅助函数：等待表单填写 */
-function waitForFormFill(): Promise<void> {
-  return new Promise(r => setTimeout(r, 50));
+/**
+ * 辅助函数：等待 Dialog DOM 渲染就绪（改进版）。
+ * 使用双 rAF 确保 React commit 阶段完成，替代固定 100ms 盲等。
+ */
+async function waitForDialogReady(): Promise<void> {
+  await nextFrame();
+  await nextFrame();
+  // 额外等待一帧确保 Dialog 动画/过渡完成
+  await new Promise(r => setTimeout(r, 50));
 }
 
-/** 辅助函数：等待保存完成 */
+/** 辅助函数：等待保存完成（Wiki 函数共用） */
 function waitForSaveComplete(): Promise<void> {
   return new Promise(r => setTimeout(r, 150));
+}
+
+/**
+ * 辅助函数：等待大六壬页面回调注册完成。
+ * 轮询验证替代盲等——检查 _callbacksReady.daliuren 标志。
+ */
+async function waitForDaLiuRenCallbacks(timeout = 3000): Promise<void> {
+  const start = Date.now();
+  while (!_callbacksReady.daliuren) {
+    if (Date.now() - start > timeout) {
+      throw new DaLiuRenError(
+        `大六壬页面回调注册超时（${timeout}ms）`,
+        "waitForDaLiuRenCallbacks",
+        {
+          context: { timeout, callbacksReady: _callbacksReady },
+          suggestion: "请确认 DaLiuRenPage 组件已正确挂载并注册回调",
+        },
+      );
+    }
+    await new Promise(r => setTimeout(r, 50));
+  }
+}
+
+/**
+ * 辅助函数：等待记录保存到数据库（轮询验证）。
+ * 替代盲等——通过查询 DB 确认记录确实存在。
+ */
+async function waitForRecordSaved(recordId: number | undefined, timeout = 2000): Promise<void> {
+  // 无 ID 时跳过验证（新建记录可能尚未分配 ID）
+  if (recordId == null) {
+    await new Promise(r => setTimeout(r, 150));
+    return;
+  }
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const record = await getLiurenRecord(recordId);
+    if (record) {
+      log("debug", "wait", "记录保存验证成功", {
+        recordId,
+        elapsed: Date.now() - start,
+      });
+      return;
+    }
+    await new Promise(r => setTimeout(r, 50));
+  }
+  // 超时不抛错——记录可能已通过回调成功保存但 DB 查询有延迟
+  log("warn", "wait", "记录保存等待超时，继续执行", { recordId, timeout });
+}
+
+/**
+ * DaLiuRen 错误包装：保证调试 API 抛出的错误始终是 Error 实例，
+ * 且消息包含来源标签。对于 DaLiuRenError 直接返回。
+ */
+function wrapDaLiuRenError(label: string, err: unknown): Error {
+  // DaLiuRenError 直接返回
+  if (err instanceof DaLiuRenError) {
+    return err;
+  }
+  // ZiWeiError 也直接返回（兼容）
+  if (err instanceof ZiWeiError) {
+    return err;
+  }
+  // 原生 Error：附加来源标签
+  if (err instanceof Error) {
+    if (!err.message.startsWith(`[${label}]`)) {
+      err.message = `[${label}] ${err.message}`;
+    }
+    return err;
+  }
+  // 非 Error 值：包装为 DaLiuRenError
+  return new DaLiuRenError(`${label} 执行失败：${String(err)}`, label, {
+    context: { rawError: typeof err === "object" ? JSON.stringify(err) : String(err) },
+    suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
+    cause: err,
+  });
 }
 
 /* ============================================================
@@ -1698,10 +2075,11 @@ function version(): void {
     { 方法: "PersonUpdate(personId, input)", 说明: "更新人物" },
     { 方法: "PersonDelete(personId)", 说明: "删除人物" },
     { 方法: "ZiWei(personId?, scope?, time?)", 说明: "紫微斗数排盘+运限操控" },
-    { 方法: "DaLiuRen(date, time, fateInput?)", 说明: "大六壬纯计算排盘" },
-    { 方法: "DaLiuRenCreate(params)", 说明: "大六壬起课（创建记录）" },
-    { 方法: "DaLiuRenList(params)", 说明: "大六壬起课列表" },
-    { 方法: "DaLiuRenView(params)", 说明: "大六壬起课详情" },
+    { 方法: "DaLiuRen(date, time, fateInput?)", 说明: "大六壬纯计算排盘（向后兼容）" },
+    { 方法: "computeDaLiuRenData(date, time, fateInput?)", 说明: "大六壬纯计算排盘（推荐）" },
+    { 方法: "DaLiuRenCreate(params, options?)", 说明: "大六壬起课（创建记录，支持 skipUI）" },
+    { 方法: "DaLiuRenList(params, options?)", 说明: "大六壬起课列表（支持 skipUI）" },
+    { 方法: "DaLiuRenView(params, options?)", 说明: "大六壬起课详情（支持 skipUI）" },
     { 方法: "WikiCreate(params)", 说明: "Wiki 文档创建" },
     { 方法: "WikiList(params)", 说明: "Wiki 文档列表" },
     { 方法: "WikiView(params)", 说明: "Wiki 文档详情" },
@@ -1753,6 +2131,7 @@ export function initDebugApi() {
     computeScopeData,
     computeZiWeiData,
     DaLiuRen,
+    computeDaLiuRenData,
     DaLiuRenCreate,
     DaLiuRenList,
     DaLiuRenView,

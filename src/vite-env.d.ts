@@ -15,6 +15,7 @@ import type {
   computeScopeData,
   computeZiWeiData,
   DaLiuRen,
+  computeDaLiuRenData,
   DaLiuRenCreate,
   DaLiuRenList,
   DaLiuRenView,
@@ -45,6 +46,8 @@ declare global {
       /** 纯计算：从 Zwds 状态提取 hbar/chart 数据（不操控 UI） */
       computeZiWeiData: typeof computeZiWeiData;
       DaLiuRen: typeof DaLiuRen;
+      /** 纯计算：大六壬排盘（不操控 UI，推荐新代码使用） */
+      computeDaLiuRenData: typeof computeDaLiuRenData;
       DaLiuRenCreate: typeof DaLiuRenCreate;
       DaLiuRenList: typeof DaLiuRenList;
       DaLiuRenView: typeof DaLiuRenView;
