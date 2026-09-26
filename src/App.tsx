@@ -65,7 +65,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter>
+      <BrowserRouter basename="/peep">
         <Layout>
           <Suspense fallback={<LazyFallback />}>
             <Routes>

@@ -9,6 +9,10 @@ import { VitePWA } from "vite-plugin-pwa";
 const enableAnalyze = process.env.ANALYZE === "1";
 
 export default defineConfig({
+  // GitHub Pages 部署在子路径 https://<user>.github.io/peep/；
+  // Vite 会据此给所有静态资源 URL 自动加前缀，并在 index.html 注入正确的 base 引用。
+  // 尾斜杠必须带：'/peep/' 是目录，'/peep' 是文件——浏览器解析相对路径时两者行为不同。
+  base: "/peep/",
   plugins: [
     react(),
     // 生产构建移除源码中的 console.log / console.debug / console.info（保留 error / warn）
@@ -19,7 +23,24 @@ export default defineConfig({
       includeAssets: ["icon.svg", "icon-192.png", "icon-512.png"],
       // 开发环境不注册 SW，避免干扰 HMR
       disable: process.env.NODE_ENV === "development",
-      manifest: false, // 使用 public/manifest.json，避免重复定义
+      // manifest 内联声明（不再用 public/manifest.json）——
+      // Vite build 时 vite-plugin-pwa 会自动把 icon/src 等相对路径按 base 前缀拼接，
+      // 而 public/ 目录里的文件是原样 copy 到 dist 的，路径不会随 base 改变。
+      manifest: {
+        name: "紫微斗数排盘",
+        short_name: "紫微斗数",
+        description: "紫微斗数排盘 Web 应用",
+        start_url: "./",
+        scope: "./",
+        display: "standalone",
+        background_color: "#04060d",
+        theme_color: "#04060d",
+        orientation: "any",
+        icons: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+        ],
+      },
       workbox: {
         // 静态资源使用 stale-while-revalidate：先展示缓存，后台更新
         // 文档页使用 NetworkFirst：优先网络，离线时回退缓存
@@ -39,6 +60,7 @@ export default defineConfig({
           },
         ],
         // 导航回退：离线时显示 index.html（SPA 单页应用必备）
+        // vite-plugin-pwa 在 build 时会自动加上 base 前缀，无需手工写 /peep/index.html
         navigateFallback: "/index.html",
       },
     }),
