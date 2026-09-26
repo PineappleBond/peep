@@ -7,6 +7,8 @@ import type { WikiDocument } from "../../core/personDb";
 import { listWikiDocs, getWikiLinks, getWikiDoc } from "../../core/wikiDb";
 import { TagInput } from "../daliuren/TagInput";
 import { useI18n } from "../../core/i18n";
+import { useUnsavedChanges } from "../../core/useUnsavedChanges";
+import { ConfirmDialog } from "../ConfirmDialog";
 
 export interface WikiEditorProps {
   /** 文档数据，undefined 表示新建模式 */
@@ -36,9 +38,16 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
   // UI 状态
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 是否有未保存的修改（用于离开前确认） */
+  const [dirty, setDirty] = useState(false);
+  /** 取消编辑时的二次确认弹窗 */
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   // Refs
   const linkSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 未保存变更：阻止浏览器意外关闭/刷新
+  useUnsavedChanges(dirty);
 
   // 初始化：编辑模式加载数据（含已关联文档及标题），新建模式清空
   useEffect(() => {
@@ -73,7 +82,20 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
       setLinkTargetIds([]);
       setLinkTargetTitles({});
     }
+    // 初始加载后重置 dirty 状态（避免加载本身触发）
+    setDirty(false);
+    setCancelConfirmOpen(false);
   }, [doc]);
+
+  // 用户编辑任意字段后标记 dirty
+  useEffect(() => {
+    if (saving) return;
+    const handle = setTimeout(() => {
+      // 只要表单有内容（标题或正文不为空），就视为有修改
+      if (title.trim() || content.trim()) setDirty(true);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [title, content, tags, linkTargetIds, saving]);
 
   // 关联文档搜索（防抖）
   useEffect(() => {
@@ -156,6 +178,7 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
       };
 
       await onSave(wikiDoc, linkTargetIds);
+      setDirty(false);
       onCancel();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("common.saveFailed"));
@@ -164,9 +187,25 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
     }
   };
 
-  // 取消
-  const handleCancel = () => {
+  // 取消：有未保存修改时弹二次确认
+  const handleCancelClick = () => {
+    if (dirty) {
+      setCancelConfirmOpen(true);
+    } else {
+      onCancel();
+    }
+  };
+
+  // 确认放弃修改
+  const handleConfirmDiscard = () => {
+    setDirty(false);
+    setCancelConfirmOpen(false);
     onCancel();
+  };
+
+  // 取消关闭确认弹窗
+  const handleCancelDiscard = () => {
+    setCancelConfirmOpen(false);
   };
 
   return (
@@ -272,13 +311,24 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
 
       {/* 底部按钮 */}
       <div className="wiki-editor-footer">
-        <button className="btn-cancel" onClick={handleCancel} disabled={saving}>
+        <button className="btn-cancel" onClick={handleCancelClick} disabled={saving}>
           {t("wiki.editor.cancel")}
         </button>
         <button className="btn-primary" onClick={handleSave} disabled={saving}>
           {saving ? t("wiki.editor.saving") : t("wiki.editor.save")}
         </button>
       </div>
+
+      {/* 未保存修改二次确认 */}
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onConfirm={handleConfirmDiscard}
+        onCancel={handleCancelDiscard}
+        title={t("wiki.editor.discardTitle")}
+        message={t("wiki.editor.discardMessage")}
+        confirmText={t("wiki.editor.discardConfirm")}
+        cancelText={t("wiki.editor.discardCancel")}
+      />
     </div>
   );
 }

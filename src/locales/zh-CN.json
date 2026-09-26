@@ -338,6 +338,10 @@
   "wiki.editor.saving": "保存中...",
   "wiki.editor.save": "保存",
   "wiki.editor.cancel": "取消",
+  "wiki.editor.discardTitle": "放弃修改？",
+  "wiki.editor.discardMessage": "当前文档有未保存的修改，确定要放弃吗？",
+  "wiki.editor.discardConfirm": "放弃修改",
+  "wiki.editor.discardCancel": "继续编辑",
 
   "loading": "加载中...",
 

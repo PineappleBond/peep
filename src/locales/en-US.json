@@ -338,6 +338,10 @@
   "wiki.editor.saving": "Saving...",
   "wiki.editor.save": "Save",
   "wiki.editor.cancel": "Cancel",
+  "wiki.editor.discardTitle": "Discard changes?",
+  "wiki.editor.discardMessage": "You have unsaved changes. Are you sure you want to discard them?",
+  "wiki.editor.discardConfirm": "Discard",
+  "wiki.editor.discardCancel": "Keep editing",
 
   "loading": "Loading...",
 
