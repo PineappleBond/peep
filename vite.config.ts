@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
 import { removeConsoleCalls } from "./vite-plugin-remove-console-log.ts";
+import { VitePWA } from "vite-plugin-pwa";
 
 // Bundle 分析：设 ANALYZE=1 启用；会生成 stats.html 可视化报告（gitignore 掉）
 const enableAnalyze = process.env.ANALYZE === "1";
@@ -12,6 +13,35 @@ export default defineConfig({
     react(),
     // 生产构建移除源码中的 console.log / console.debug / console.info（保留 error / warn）
     removeConsoleCalls(),
+    // PWA 支持——自动生成 Service Worker，实现离线缓存与主屏幕安装
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["icon.svg", "icon-192.png", "icon-512.png"],
+      // 开发环境不注册 SW，避免干扰 HMR
+      disable: process.env.NODE_ENV === "development",
+      manifest: false, // 使用 public/manifest.json，避免重复定义
+      workbox: {
+        // 静态资源使用 stale-while-revalidate：先展示缓存，后台更新
+        // 文档页使用 NetworkFirst：优先网络，离线时回退缓存
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: { cacheName: "google-fonts-stylesheets" },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-webfonts",
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+        ],
+        // 导航回退：离线时显示 index.html（SPA 单页应用必备）
+        navigateFallback: "/index.html",
+      },
+    }),
     // Bundle 分析器——仅 ANALYZE=1 时启用，生成 stats.html 便于定位大模块
     enableAnalyze &&
       visualizer({
