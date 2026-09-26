@@ -5,6 +5,7 @@
  * - 注册/注销模式：组件挂载时注册、卸载时自动注销
  * - 后注册的快捷键优先匹配（页面快捷键优先于全局快捷键）
  * - 输入框（input/textarea/select/contenteditable）中的按键不触发
+ * - Web Component（如 RTC Agent AI 助手）shadow DOM 内的按键不触发
  * - 无修饰键的定义自动允许 Shift（因 Shift 只改变字符大小写/符号）
  */
 
@@ -153,15 +154,22 @@ export function getRegisteredShortcuts(): ShortcutDef[] {
  */
 export function initShortcuts(): () => void {
   const handleKeyDown = (e: KeyboardEvent) => {
-    // 忽略输入框中的按键
-    const target = e.target as HTMLElement;
-    if (
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement ||
-      target.isContentEditable
-    ) {
-      return;
+    // 忽略输入框中的按键（含 shadow DOM 内的输入框，如 RTC Agent AI 助手）
+    // composedPath() 能穿透 shadow DOM，拿到事件传播路径上的所有节点
+    const path = e.composedPath();
+    for (const node of path) {
+      if (
+        node instanceof HTMLInputElement ||
+        node instanceof HTMLTextAreaElement ||
+        node instanceof HTMLSelectElement ||
+        (node instanceof HTMLElement && node.isContentEditable)
+      ) {
+        return;
+      }
+      // 事件来自 web component 内部（如 RTC Agent），不触发全局快捷键
+      if (node instanceof ShadowRoot) {
+        return;
+      }
     }
 
     // 遍历注册列表（后注册的在前面，优先匹配）
