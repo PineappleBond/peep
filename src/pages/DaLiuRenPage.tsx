@@ -12,7 +12,7 @@ import { LiurenCreateDialog } from "../components/daliuren/LiurenCreateDialog";
 import { LiurenViewDialog } from "../components/daliuren/LiurenViewDialog";
 import { LiurenEditDialog } from "../components/daliuren/LiurenEditDialog";
 import { LiurenDeleteDialog } from "../components/daliuren/LiurenDeleteDialog";
-import { Spinner } from "../components/Spinner";
+import { PageState } from "../components/PageState";
 import { ExportDialog } from "../components/ExportDialog";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import type { LiurenRecord, Person } from "../core/personDb";
@@ -233,86 +233,74 @@ export function DaLiuRenPage() {
     }
   }, [refreshList, dialogRecord, selectedRecord]);
 
-  if (person === null) {
-    if (initError) {
-      return (
-        <div className="liuren-page">
-          <div className="err-box" role="alert">
-            {initError}
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div className="liuren-page">
-        <div className="liuren-loading" role="status" aria-live="polite">
-          <Spinner size="md" text={t("daliuren.loading")} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="liuren-page">
-      <ErrorBoundary name="DaLiuRenPage" maxAutoRetries={1}>
-        <div className="liuren-layout">
-          <div className="liuren-left" data-guide="liuren-list">
-            <LiurenList
-              ref={liurenListRef}
-              personId={person.id!}
-              selectedId={selectedRecord?.id ?? null}
-              onSelect={handleSelect}
-              onNewClick={handleNewClick}
-              onEditClick={handleEditClick}
-              onDeleteClick={handleDeleteClick}
-              onViewClick={handleViewClick}
-              refreshKey={listRefreshKey}
-            />
-          </div>
-          <div className="liuren-right">
-            <div data-guide="liuren-chart">
-              <LiurenChart record={selectedRecord} />
+    <PageState
+      ready={person !== null}
+      error={initError}
+      loadingText={t("daliuren.loading")}
+      className="liuren-page"
+    >
+      <div className="liuren-page">
+        <ErrorBoundary name="DaLiuRenPage" maxAutoRetries={1}>
+          <div className="liuren-layout">
+            <div className="liuren-left" data-guide="liuren-list">
+              <LiurenList
+                ref={liurenListRef}
+                personId={person!.id!}
+                selectedId={selectedRecord?.id ?? null}
+                onSelect={handleSelect}
+                onNewClick={handleNewClick}
+                onEditClick={handleEditClick}
+                onDeleteClick={handleDeleteClick}
+                onViewClick={handleViewClick}
+                refreshKey={listRefreshKey}
+              />
+            </div>
+            <div className="liuren-right">
+              <div data-guide="liuren-chart">
+                <LiurenChart record={selectedRecord} />
+              </div>
             </div>
           </div>
-        </div>
-      </ErrorBoundary>
+        </ErrorBoundary>
 
-      {/* Dialogs */}
-      <LiurenCreateDialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        person={person}
-        onSaved={handleCreateSaved}
-        initialData={createFormInitialDataRef.current ?? undefined}
-        submitTrigger={createSubmitTrigger}
-      />
-      <LiurenViewDialog
-        open={viewDialogOpen}
-        onClose={() => setViewDialogOpen(false)}
-        record={dialogRecord}
-      />
-      <LiurenEditDialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        record={dialogRecord}
-        onSaved={handleEditSaved}
-      />
-      <LiurenDeleteDialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        record={dialogRecord}
-        onDeleted={handleDeleted}
-      />
-
-      {/* 导出对话框 */}
-      <div data-guide="liuren-export">
-        <ExportDialog
-          open={exportOpen}
-          onClose={() => setExportOpen(false)}
-          person={person}
-          liurenRecords={selectedRecord ? [selectedRecord] : []}
+        {/* Dialogs */}
+        <LiurenCreateDialog
+          open={createDialogOpen}
+          onClose={() => setCreateDialogOpen(false)}
+          person={person!}
+          onSaved={handleCreateSaved}
+          initialData={createFormInitialDataRef.current ?? undefined}
+          submitTrigger={createSubmitTrigger}
         />
+        <LiurenViewDialog
+          open={viewDialogOpen}
+          onClose={() => setViewDialogOpen(false)}
+          record={dialogRecord}
+        />
+        <LiurenEditDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          record={dialogRecord}
+          onSaved={handleEditSaved}
+        />
+        <LiurenDeleteDialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          record={dialogRecord}
+          onDeleted={handleDeleted}
+        />
+
+        {/* 导出对话框 */}
+        <div data-guide="liuren-export">
+          <ExportDialog
+            open={exportOpen}
+            onClose={() => setExportOpen(false)}
+            person={person}
+            liurenRecords={selectedRecord ? [selectedRecord] : []}
+          />
+        </div>
       </div>
-    </div>
+    </PageState>
   );
 }

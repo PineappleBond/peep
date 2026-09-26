@@ -4153,3 +4153,47 @@ textarea.field-has-error {
 :root[data-theme="light"] .plugin-sample-hint code {
   background: rgba(0, 0, 0, 0.06);
 }
+
+/* ── 通用空状态组件 ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  gap: 14px;
+}
+
+.empty-state-icon {
+  font-size: 2.6rem;
+  color: var(--cyan);
+  opacity: 0.5;
+  filter: grayscale(0.3);
+}
+
+.empty-state-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 25%, transparent);
+}
+
+.empty-state-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+  line-height: 1.8;
+  max-width: 280px;
+}
+
+/* ── 页面级加载/错误状态 ── */
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+}

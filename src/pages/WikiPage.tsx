@@ -20,7 +20,7 @@ import { WikiList, type WikiListHandle } from "../components/wiki/WikiList";
 import { WikiReader } from "../components/wiki/WikiReader";
 import { WikiEditor } from "../components/wiki/WikiEditor";
 import { Dialog } from "../components/Dialog";
-import { Spinner } from "../components/Spinner";
+import { PageState } from "../components/PageState";
 import { ExportDialog } from "../components/ExportDialog";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
@@ -256,108 +256,99 @@ export function WikiPage() {
     [t],
   );
 
-  // 加载中状态
-  if (person === null) {
-    if (initError) {
-      return (
-        <div className="wiki-page">
-          <div className="err-box" role="alert">
-            {initError}
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div className="wiki-page">
-        <div className="wiki-loading" role="status" aria-live="polite">
-          <Spinner size="md" text={t("wiki.loading")} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="wiki-page">
-      <ErrorBoundary name="WikiPage" maxAutoRetries={1}>
-        <div className="wiki-header">
-          <h2 className="wiki-title">{t("wiki.title")}</h2>
-          <button className="wiki-export-btn" onClick={handleExport} title={t("wiki.exportTitle")}>
-            {t("wiki.export")}
-          </button>
-        </div>
-        <div className="wiki-layout">
-          <div className="wiki-left" data-guide="wiki-list">
-            <WikiList
-              ref={wikiListRef}
-              personId={person.id!}
-              selectedId={selectedDoc?.id ?? null}
-              onSelect={handleSelect}
-              onNewClick={handleNewClick}
-              onEditClick={handleEditClick}
-              onDeleteClick={handleDeleteClick}
-              refreshKey={listRefreshKey}
-              personName={person.name || ""}
-            />
-          </div>
-          <div className="wiki-right">
-            {mode === "read" ? (
-              <div data-guide="wiki-related">
-                <WikiReader
-                  doc={selectedDoc}
-                  personName={person.name || ""}
-                  onEditClick={() => selectedDoc && handleEditClick(selectedDoc)}
-                  onDocClick={handleDocClick}
-                />
-              </div>
-            ) : (
-              <div data-guide="wiki-editor">
-                <WikiEditor
-                  doc={editingDoc}
-                  personId={person.id!}
-                  existingTags={existingTags}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </ErrorBoundary>
-
-      {/* 删除确认 Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        title={t("wiki.confirmDeleteTitle")}
-        footer={
-          <div className="dlg-buttons">
-            <button className="btn-cancel" onClick={() => setDeleteDialogOpen(false)}>
-              {t("common.cancel")}
-            </button>
-            <button className="btn-danger" onClick={handleConfirmDelete}>
-              {t("common.delete")}
+    <PageState
+      ready={person !== null}
+      error={initError}
+      loadingText={t("wiki.loading")}
+      className="wiki-page"
+    >
+      <div className="wiki-page">
+        <ErrorBoundary name="WikiPage" maxAutoRetries={1}>
+          <div className="wiki-header">
+            <h2 className="wiki-title">{t("wiki.title")}</h2>
+            <button
+              className="wiki-export-btn"
+              onClick={handleExport}
+              title={t("wiki.exportTitle")}
+            >
+              {t("wiki.export")}
             </button>
           </div>
-        }
-      >
-        <p>{t("wiki.confirmDeleteMessage")}</p>
-        {deletingDoc && (
-          <p className="dlg-hint">
-            {t("common.labelValue", {
-              label: t("wiki.docLabel"),
-              value: deletingDoc.title || t("wiki.noTitle"),
-            })}
-          </p>
-        )}
-      </Dialog>
+          <div className="wiki-layout">
+            <div className="wiki-left" data-guide="wiki-list">
+              <WikiList
+                ref={wikiListRef}
+                personId={person!.id!}
+                selectedId={selectedDoc?.id ?? null}
+                onSelect={handleSelect}
+                onNewClick={handleNewClick}
+                onEditClick={handleEditClick}
+                onDeleteClick={handleDeleteClick}
+                refreshKey={listRefreshKey}
+                personName={person!.name || ""}
+              />
+            </div>
+            <div className="wiki-right">
+              {mode === "read" ? (
+                <div data-guide="wiki-related">
+                  <WikiReader
+                    doc={selectedDoc}
+                    personName={person!.name || ""}
+                    onEditClick={() => selectedDoc && handleEditClick(selectedDoc)}
+                    onDocClick={handleDocClick}
+                  />
+                </div>
+              ) : (
+                <div data-guide="wiki-editor">
+                  <WikiEditor
+                    doc={editingDoc}
+                    personId={person!.id!}
+                    existingTags={existingTags}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </ErrorBoundary>
 
-      {/* 导出对话框 */}
-      <ExportDialog
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        person={person}
-        wikiDocs={wikiDocs}
-      />
-    </div>
+        {/* 删除确认 Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          title={t("wiki.confirmDeleteTitle")}
+          footer={
+            <div className="dlg-buttons">
+              <button className="btn-cancel" onClick={() => setDeleteDialogOpen(false)}>
+                {t("common.cancel")}
+              </button>
+              <button className="btn-danger" onClick={handleConfirmDelete}>
+                {t("common.delete")}
+              </button>
+            </div>
+          }
+        >
+          <p>{t("wiki.confirmDeleteMessage")}</p>
+          {deletingDoc && (
+            <p className="dlg-hint">
+              {t("common.labelValue", {
+                label: t("wiki.docLabel"),
+                value: deletingDoc.title || t("wiki.noTitle"),
+              })}
+            </p>
+          )}
+        </Dialog>
+
+        {/* 导出对话框 */}
+        <ExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          person={person!}
+          wikiDocs={wikiDocs}
+        />
+      </div>
+    </PageState>
   );
 }
