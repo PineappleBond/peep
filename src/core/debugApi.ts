@@ -14,6 +14,11 @@ import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
 import { getWikiLinks, type WikiListFilters, type WikiListResult } from "./wikiDb";
 import { globalEvents } from "./events";
 import type { BirthInput } from "./useZwds";
+import { solar2lunar } from "lunar-lite";
+import { astro } from "iztro";
+import type { GenderName } from "iztro/lib/i18n";
+import { MUTAGEN_TABLES } from "./utils";
+import { solarToPickState } from "./lunar";
 
 /**
  * 运限级别（已统一使用 utils/Scope，此处为向后兼容保留别名）。
@@ -302,12 +307,15 @@ export async function PersonGet(personId?: number): Promise<Person> {
  * 1. savePerson() 写入 IndexedDB
  * 2. globalEvents.emit("person.changed") 通知所有页面
  * 3. ZiweiPage 收到事件后重新计算盘面
+ *
+ * @param input 出生信息
+ * @param isDefault 是否设为默认人物（可选，默认 false）
  */
-export async function PersonCreate(input: BirthInput): Promise<Person> {
+export async function PersonCreate(input: BirthInput, isDefault?: boolean): Promise<Person> {
   const stop = timer("PersonCreate");
   try {
-    log("info", "PersonCreate", "创建人物", { name: input.name });
-    const person = await savePerson(undefined, input, false);
+    log("info", "PersonCreate", "创建人物", { name: input.name, isDefault });
+    const person = await savePerson(undefined, input, isDefault ?? false);
     // UI 同步：通知所有页面切换到新人物
     globalEvents.emit("person.changed", person);
     log("info", "PersonCreate", "创建成功", { id: person.id });
@@ -322,15 +330,25 @@ export async function PersonCreate(input: BirthInput): Promise<Person> {
 /**
  * 更新人物：按 ID 更新并触发 UI 同步。
  * 如果更新的是当前选中人物，页面会自动重新计算盘面。
+ *
+ * @param personId 人物 ID
+ * @param input 出生信息
+ * @param isDefault 是否设为默认人物（可选，不传则保持原值）
  */
-export async function PersonUpdate(personId: number, input: BirthInput): Promise<Person> {
+export async function PersonUpdate(
+  personId: number,
+  input: BirthInput,
+  isDefault?: boolean,
+): Promise<Person> {
   const stop = timer("PersonUpdate");
   try {
     if (!Number.isFinite(personId) || personId <= 0) {
       throw new Error(`personId 无效：${personId}，需为正整数`);
     }
-    log("info", "PersonUpdate", "更新人物", { id: personId, name: input.name });
-    const person = await savePerson(personId, input, false);
+    log("info", "PersonUpdate", "更新人物", { id: personId, name: input.name, isDefault });
+    // 如果未指定 isDefault，保持原值
+    const defaultFlag = isDefault ?? (await getPerson(personId))?.isDefault ?? false;
+    const person = await savePerson(personId, input, defaultFlag);
     // UI 同步：通知所有页面人物数据已变化
     globalEvents.emit("person.changed", person);
     log("info", "PersonUpdate", "更新成功", { id: person.id });
@@ -484,10 +502,131 @@ function setHoroscopeTime(z: Zwds, date: Date): void {
   // 转换为时辰索引（0-11）
   const hourIdx = Math.floor(((hour + 1) % 24) / 2);
 
-  z.actions.pickYear(year);
-  z.actions.pickMonth(month, false);
-  z.actions.pickDay(day);
+  // 公历转农历
+  let lunarYear = year;
+  let lunarMonth = month;
+  let lunarDay = day;
+  let isLeap = false;
+
+  try {
+    const lunar = solar2lunar(date);
+    lunarYear = lunar.lunarYear;
+    lunarMonth = lunar.lunarMonth;
+    lunarDay = lunar.lunarDay;
+    isLeap = lunar.isLeap;
+  } catch {
+    // 转换失败时使用公历值（兜底）
+    console.warn("[debugApi] 公历转农历失败，使用公历值");
+  }
+
+  z.actions.pickYear(lunarYear);
+  z.actions.pickMonth(lunarMonth, isLeap);
+  z.actions.pickDay(lunarDay);
   z.actions.pickHour(hourIdx);
+}
+
+/**
+ * 纯函数：从 Person 数据计算紫微斗数本命盘（不依赖 React 状态）
+ *
+ * @param person 人物数据（包含完整 BirthInput）
+ * @returns iztro 本命盘对象，计算失败返回 null
+ */
+function computeAstrolabe(person: Person) {
+  try {
+    return astro.withOptions({
+      type: person.calendar,
+      dateStr: person.date,
+      timeIndex: person.timeIndex,
+      gender: person.gender as unknown as GenderName,
+      isLeapMonth: person.isLeapMonth,
+      fixLeap: true,
+      language: "zh-CN",
+      astroType: person.algorithm === "zhongzhou" ? person.astroType : "heaven",
+      config: {
+        algorithm: person.algorithm,
+        yearDivide: person.yearDivide,
+        horoscopeDivide: person.yearDivide,
+        dayDivide: person.dayDivide,
+        mutagens: (MUTAGEN_TABLES[person.mutagenTable] ?? MUTAGEN_TABLES.default) as never,
+      },
+    });
+  } catch (e) {
+    log("error", "computeAstrolabe", "排盘失败", e);
+    return null;
+  }
+}
+
+/**
+ * 纯函数：根据阳历日期获取人物的运限数据（大运/流年/流月/流日/流时）
+ *
+ * 不依赖 React 状态，可在任意上下文调用（调试 API、RTC Agent 等）。
+ *
+ * @param person 人物数据（包含完整 BirthInput）
+ * @param solarDate 阳历日期（Date 对象或 YYYY-MM-DD 格式字符串）
+ * @returns 运限拨盘完整数据，计算失败返回 null
+ */
+export function computeScopeData(person: Person, solarDate: Date | string): HbarData | null {
+  const stop = timer("computeScopeData");
+  try {
+    const astrolabe = computeAstrolabe(person);
+    if (!astrolabe) {
+      log("error", "computeScopeData", "本命盘计算失败");
+      return null;
+    }
+
+    const birthLunarYear = astrolabe.rawDates.lunarDate.lunarYear;
+    const pick = solarToPickState(solarDate);
+
+    // 确保 pick.year 不早于出生农历年
+    if (pick.year < birthLunarYear) {
+      pick.year = birthLunarYear;
+    }
+
+    const result = buildHbarData(astrolabe, birthLunarYear, pick);
+    log("info", "computeScopeData", "计算成功", {
+      birthLunarYear,
+      pick,
+      hasResult: !!result,
+    });
+    stop();
+    return result;
+  } catch (err) {
+    log("error", "computeScopeData", "计算失败", err);
+    return null;
+  }
+}
+
+/**
+ * 调试接口：根据阳历日期 + 人物 ID 获取运限数据（大运/流年/流月/流日/流时）
+ *
+ * 纯计算接口，不操控 UI，可在任意上下文调用。
+ *
+ * @param solarDate 阳历日期（Date 对象或 YYYY-MM-DD / YYYY-MM-DD HH:mm 格式字符串）
+ * @param personId 人物 ID（可选，不传则使用默认人物）
+ * @returns 运限拨盘完整数据
+ */
+export async function GetScopeData(
+  solarDate: Date | string,
+  personId?: number,
+): Promise<HbarData | null> {
+  const stop = timer("GetScopeData");
+  try {
+    const resolvedId = await resolvePersonId(personId);
+    log("info", "GetScopeData", "开始计算", { solarDate, personId: resolvedId });
+
+    const person = await getPerson(resolvedId);
+    if (!person) {
+      throw new Error(`人物 ${resolvedId} 不存在`);
+    }
+
+    const result = computeScopeData(person, solarDate);
+    log("info", "GetScopeData", "计算完成", { personId: resolvedId, hasResult: !!result });
+    stop();
+    return result;
+  } catch (err) {
+    log("error", "GetScopeData", "计算失败", err);
+    throw wrapDebugError("GetScopeData", err);
+  }
 }
 
 /**
@@ -946,6 +1085,8 @@ export function initDebugApi() {
     PersonUpdate,
     PersonDelete,
     ZiWei,
+    GetScopeData,
+    computeScopeData,
     DaLiuRen,
     DaLiuRenCreate,
     DaLiuRenList,

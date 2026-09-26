@@ -8,6 +8,7 @@ import type { BirthInput } from "../core/useZwds";
 import { PersonDialog } from "./PersonDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { useI18n } from "../core/i18n";
+import { globalEvents } from "../core/events";
 import { toast } from "../core/toast";
 
 type PersonSelectorProps = {
@@ -42,6 +43,12 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
 
   useEffect(() => {
     loadPersons();
+    // 监听人物变化事件（创建/更新/删除），自动刷新列表
+    const handlePersonChanged = () => loadPersons();
+    globalEvents.on("person.changed", handlePersonChanged);
+    return () => {
+      globalEvents.off("person.changed", handlePersonChanged);
+    };
   }, []);
 
   const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {

@@ -11,6 +11,8 @@ import type {
   PersonUpdate,
   PersonDelete,
   ZiWei,
+  GetScopeData,
+  computeScopeData,
   DaLiuRen,
   DaLiuRenCreate,
   DaLiuRenList,
@@ -37,6 +39,8 @@ declare global {
       PersonUpdate: typeof PersonUpdate;
       PersonDelete: typeof PersonDelete;
       ZiWei: typeof ZiWei;
+      GetScopeData: typeof GetScopeData;
+      computeScopeData: typeof computeScopeData;
       DaLiuRen: typeof DaLiuRen;
       DaLiuRenCreate: typeof DaLiuRenCreate;
       DaLiuRenList: typeof DaLiuRenList;

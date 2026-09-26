@@ -127,35 +127,22 @@ const DEFAULT_PERSON: Omit<Person, "id"> = {
 };
 
 /**
- * 确保默认人物存在（首次调用时自动种子，Promise 缓存防并发重复插入）。
- * 失败时清空缓存，允许下次调用重试，避免「一次失败，永久不可用」。
+ * 确保默认人物存在（首次调用时自动种子）。
+ * 每次都从数据库查询，确保返回最新的默认人物。
  */
-let defaultPromise: Promise<Person> | null = null;
-
-function ensureDefault(): Promise<Person> {
-  if (!defaultPromise) {
-    defaultPromise = (async () => {
-      try {
-        const defaults = await db.persons.filter(p => p.isDefault).toArray();
-        if (defaults.length > 1) {
-          // 去重：保留最早的一条（id 最小），删除其余
-          defaults.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
-          const [keep, ...dupes] = defaults;
-          await db.persons.bulkDelete(dupes.map(d => d.id!));
-          return keep;
-        }
-        if (defaults.length === 1) return defaults[0];
-        const id = await db.persons.add(DEFAULT_PERSON);
-        return { ...DEFAULT_PERSON, id };
-      } catch (err) {
-        // 失败时清空缓存，允许下次重试
-        defaultPromise = null;
-        console.error("[personDb] 初始化默认人物失败", err);
-        throw new Error(t("db.initFailed"));
-      }
-    })();
+async function ensureDefault(): Promise<Person> {
+  const defaults = await db.persons.filter(p => p.isDefault).toArray();
+  if (defaults.length > 1) {
+    // 去重：保留最早的一条（id 最小），删除其余
+    defaults.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+    const [keep, ...dupes] = defaults;
+    await db.persons.bulkDelete(dupes.map(d => d.id!));
+    return keep;
   }
-  return defaultPromise;
+  if (defaults.length === 1) return defaults[0];
+  // 没有默认人物，插入种子数据
+  const id = await db.persons.add(DEFAULT_PERSON);
+  return { ...DEFAULT_PERSON, id };
 }
 
 /** 获取全部人物列表 */
@@ -189,7 +176,7 @@ export async function savePerson(
   isDefault: boolean,
 ): Promise<Person> {
   try {
-    return await db.transaction("rw", db.persons, async () => {
+    const result = await db.transaction("rw", db.persons, async () => {
       if (isDefault) {
         // 事务内清除所有现有默认标记
         const currentDefaults = await db.persons.filter(p => p.isDefault).toArray();
@@ -205,6 +192,7 @@ export async function savePerson(
       const newId = await db.persons.add({ ...input, savedAt: now, isDefault });
       return { ...input, id: newId, savedAt: now, isDefault };
     });
+    return result;
   } catch (err) {
     console.error("[personDb] 保存人物失败", err);
     throw new Error(t("db.savePersonFailed"));

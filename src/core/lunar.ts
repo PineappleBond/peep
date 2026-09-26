@@ -7,6 +7,7 @@
  */
 import { solar2lunar, lunar2solar, getHeavenlyStemAndEarthlyBranchBySolarDate } from "lunar-lite";
 import { LunarMonth, LunarYear } from "lunar-typescript";
+import { LUNAR_MONTHS, LUNAR_DAYS } from "./utils";
 
 /** 格式化 Date 为 YYYY-M-D 字符串 */
 export function fmtSolar(d: Date): string {
@@ -69,6 +70,109 @@ export function todayLunar(): {
   }
 }
 
+/**
+ * 公历日期转农历日期
+ *
+ * @param date 公历日期（Date 对象或 YYYY-MM-DD 格式字符串）
+ * @returns 农历日期对象，包含年月日时分和闰月标志
+ */
+export function solarToLunar(date: Date | string): {
+  /** 农历年 */
+  year: number;
+  /** 农历月 */
+  month: number;
+  /** 农历日 */
+  day: number;
+  /** 时辰索引（0-11，子时=0，丑时=1，...亥时=11） */
+  hour: number;
+  /** 是否闰月 */
+  leap: boolean;
+  /** 年干支 */
+  yearGz: string;
+  /** 月干支 */
+  monthGz: string;
+  /** 日干支 */
+  dayGz: string;
+  /** 时干支 */
+  hourGz: string;
+  /** 农历月名称（如"正月"、"腊月"） */
+  monthName: string;
+  /** 农历日名称（如"初一"、"十五"） */
+  dayName: string;
+  /** 时辰名称（如"子时"、"丑时"） */
+  hourName: string;
+} {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const hour = Math.floor((d.getHours() + 1) / 2) % 12; // 0~11 子~亥
+
+  try {
+    const l = solar2lunar(d);
+    const dateStr = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    const gz = getHeavenlyStemAndEarthlyBranchBySolarDate(dateStr, 2);
+    const yearGz = gz.yearly.join("");
+    const monthGz = gz.monthly.join("");
+    const dayGz = gz.daily.join("");
+    const hourGz = gz.hourly.join("");
+
+    return {
+      year: l.lunarYear,
+      month: l.lunarMonth,
+      day: l.lunarDay,
+      hour,
+      leap: l.isLeap,
+      yearGz,
+      monthGz,
+      dayGz,
+      hourGz,
+      monthName: l.isLeap ? `闰${LUNAR_MONTHS[l.lunarMonth - 1]}` : LUNAR_MONTHS[l.lunarMonth - 1],
+      dayName: LUNAR_DAYS[l.lunarDay - 1] || `${l.lunarDay}日`,
+      hourName: [
+        "子时",
+        "丑时",
+        "寅时",
+        "卯时",
+        "辰时",
+        "巳时",
+        "午时",
+        "未时",
+        "申时",
+        "酉时",
+        "戌时",
+        "亥时",
+      ][hour],
+    };
+  } catch {
+    // 转换失败时回退到公历
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+      hour,
+      leap: false,
+      yearGz: "",
+      monthGz: "",
+      dayGz: "",
+      hourGz: "",
+      monthName: `${d.getMonth() + 1}月`,
+      dayName: `${d.getDate()}日`,
+      hourName: [
+        "子时",
+        "丑时",
+        "寅时",
+        "卯时",
+        "辰时",
+        "巳时",
+        "午时",
+        "未时",
+        "申时",
+        "酉时",
+        "戌时",
+        "亥时",
+      ][hour],
+    };
+  }
+}
+
 /** 某公历日的日柱干支，失败返回空串 */
 export function dayGanZhi(solarStr: string): string {
   try {
@@ -85,5 +189,42 @@ export function lunarStrToSolarStr(dateStr: string, isLeapMonth: boolean): strin
     return `${s.solarYear}-${s.solarMonth}-${s.solarDay}`;
   } catch {
     return null;
+  }
+}
+
+/**
+ * 从阳历日期计算拨盘选择状态（PickState）
+ *
+ * @param date 阳历日期（Date 对象或 YYYY-MM-DD 格式字符串）
+ * @returns 拨盘选择状态（年月日时+闰月标志）
+ */
+export function solarToPickState(date: Date | string): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  leap: boolean;
+} {
+  const d = typeof date === "string" ? new Date(date) : date;
+  try {
+    const l = solar2lunar(d);
+    const hour = Math.floor((d.getHours() + 1) / 2) % 12;
+    return {
+      year: l.lunarYear,
+      month: l.lunarMonth,
+      day: l.lunarDay,
+      hour,
+      leap: l.isLeap,
+    };
+  } catch {
+    // 转换失败时回退到公历
+    const hour = Math.floor((d.getHours() + 1) / 2) % 12;
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+      hour,
+      leap: false,
+    };
   }
 }

@@ -9,9 +9,8 @@
  * - 主题 / 语言与 peep-v2 自身状态同步（见 syncTheme / syncLocale）
  * - 服务端走官方 https://rtc-agent.cherish.chat，认证由 RTC 组件内部处理
  */
-import { createRtcAgent, switchLocale } from "@rtc-agent/component";
-import type { RtcAgentConfig, RtcAgentWithLifecycle } from "@rtc-agent/component";
-import { z } from "zod";
+import { createRtcAgent, switchLocale, withMeta, z } from "@rtc-agent/component";
+import type { RtcAgentWithLifecycle } from "@rtc-agent/component";
 import { getTheme } from "./theme";
 import type { Locale } from "./i18n";
 import type { Scope } from "./utils";
@@ -86,26 +85,10 @@ function peepOrThrow() {
  * 参数 Schema：用 Zod 描述每个 Function 的参数，RTC Agent 会据此让 AI 生成正确调用。
  *
  * 约定：
- * - 每个字段都加 .describe() 给 AI 看
+ * - 每个字段都加 withMeta + .describe() 给 AI 看
  * - 必填字段不加 .optional()，可选字段加
  * - 枚举值用 z.enum()，AI 会从枚举里选
  */
-
-const scopeSchema = z
-  .enum(["decadal", "yearly", "monthly", "daily", "hourly"])
-  .describe("运限级别：decadal=大限, yearly=流年, monthly=流月, daily=流日, hourly=流时");
-
-const personIdSchema = z
-  .number()
-  .int()
-  .positive()
-  .optional()
-  .describe("命主 ID；省略则使用默认人物");
-
-const timeSchema = z
-  .string()
-  .optional()
-  .describe("公历时间，如 '2024-06-15 12:00' 或 '2024-06-15'；省略则用当前时间");
 
 /* ── Person CRUD Functions ──────────────────────────────── */
 
@@ -116,7 +99,7 @@ const personListFunction = {
   handler: () => peepOrThrow().PersonList(),
   returns: {
     schema: {
-      type: "array",
+      type: "array" as const,
       description: "人物列表",
     },
   },
@@ -126,12 +109,12 @@ const personGetFunction = {
   name: "PersonGet",
   description: "获取单个人物的完整出生信息。",
   zodSchema: z.object({
-    personId: personIdSchema,
+    personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
   }),
   handler: (args: { personId?: number }) => peepOrThrow().PersonGet(args.personId),
   returns: {
     schema: {
-      type: "object",
+      type: "object" as const,
       description: "人物详情",
     },
   },
@@ -141,17 +124,17 @@ const personGetFunction = {
  * AI 只需提供核心出生信息，其余字段用默认值填充。
  * 这样 AI 不用关心真太阳时/安星流派等高级设置。
  */
-const birthInputSchema = z.object({
-  name: z.string().describe("姓名"),
-  date: z.string().describe("公历出生日期，YYYY-MM-DD"),
-  timeIndex: z.number().int().min(0).max(12).describe("时辰索引 0-12，对应早子时至晚子时"),
-  gender: z.enum(["男", "女"]).describe("性别"),
-  calendar: z.enum(["solar", "lunar"]).optional().describe("历法，默认 solar"),
-  isLeapMonth: z.boolean().optional().describe("是否农历闰月"),
-});
+interface BirthInputFields {
+  name: string;
+  date: string;
+  timeIndex: number;
+  gender: "男" | "女";
+  calendar?: "solar" | "lunar";
+  isLeapMonth?: boolean;
+}
 
 /** 将 AI 提供的部分字段合并为完整 BirthInput */
-function mergeBirthInput(partial: z.infer<typeof birthInputSchema>): BirthInput {
+function mergeBirthInput(partial: BirthInputFields): BirthInput {
   return {
     ...DEFAULT_BIRTH_INPUT,
     ...partial,
@@ -164,12 +147,24 @@ const personCreateFunction = {
   name: "PersonCreate",
   description: "创建新人物并自动切换为该人物。",
   zodSchema: z.object({
-    input: birthInputSchema.describe("人物出生信息"),
+    name: withMeta(z.string(), { example: "张三" }).describe("姓名"),
+    date: withMeta(z.string(), { example: "1990-05-15" }).describe("公历出生日期，YYYY-MM-DD"),
+    timeIndex: withMeta(z.number().int().min(0).max(12), { example: 4 }).describe(
+      "时辰索引 0-12，对应早子时至晚子时",
+    ),
+    gender: withMeta(z.enum(["男", "女"]), { example: "男" }).describe("性别"),
+    calendar: withMeta(z.enum(["solar", "lunar"]), { example: "solar" })
+      .optional()
+      .describe("历法，默认 solar"),
+    isLeapMonth: withMeta(z.boolean(), { example: false }).optional().describe("是否农历闰月"),
+    isDefault: withMeta(z.boolean(), { example: false })
+      .optional()
+      .describe("是否设为默认人物，默认 false"),
   }),
-  handler: (args: { input: z.infer<typeof birthInputSchema> }) =>
-    peepOrThrow().PersonCreate(mergeBirthInput(args.input)),
+  handler: (args: BirthInputFields & { isDefault?: boolean }) =>
+    peepOrThrow().PersonCreate(mergeBirthInput(args), args.isDefault),
   returns: {
-    schema: { type: "object", description: "创建后的人物" },
+    schema: { type: "object" as const, description: "创建后的人物" },
   },
 };
 
@@ -177,13 +172,25 @@ const personUpdateFunction = {
   name: "PersonUpdate",
   description: "更新指定人物的出生信息。",
   zodSchema: z.object({
-    personId: z.number().int().positive().describe("命主 ID"),
-    input: birthInputSchema.describe("人物出生信息"),
+    personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
+    name: withMeta(z.string(), { example: "张三" }).describe("姓名"),
+    date: withMeta(z.string(), { example: "1990-05-15" }).describe("公历出生日期，YYYY-MM-DD"),
+    timeIndex: withMeta(z.number().int().min(0).max(12), { example: 4 }).describe(
+      "时辰索引 0-12，对应早子时至晚子时",
+    ),
+    gender: withMeta(z.enum(["男", "女"]), { example: "男" }).describe("性别"),
+    calendar: withMeta(z.enum(["solar", "lunar"]), { example: "solar" })
+      .optional()
+      .describe("历法，默认 solar"),
+    isLeapMonth: withMeta(z.boolean(), { example: false }).optional().describe("是否农历闰月"),
+    isDefault: withMeta(z.boolean(), { example: false })
+      .optional()
+      .describe("是否设为默认人物；不传则保持原值"),
   }),
-  handler: (args: { personId: number; input: z.infer<typeof birthInputSchema> }) =>
-    peepOrThrow().PersonUpdate(args.personId, mergeBirthInput(args.input)),
+  handler: (args: { personId: number } & BirthInputFields & { isDefault?: boolean }) =>
+    peepOrThrow().PersonUpdate(args.personId, mergeBirthInput(args), args.isDefault),
   returns: {
-    schema: { type: "object", description: "更新后的人物" },
+    schema: { type: "object" as const, description: "更新后的人物" },
   },
 };
 
@@ -191,11 +198,11 @@ const personDeleteFunction = {
   name: "PersonDelete",
   description: "删除指定人物；默认人物不可删除。",
   zodSchema: z.object({
-    personId: z.number().int().positive().describe("命主 ID"),
+    personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
   }),
   handler: (args: { personId: number }) => peepOrThrow().PersonDelete(args.personId),
   returns: {
-    schema: { type: "object", description: "删除结果" },
+    schema: { type: "object" as const, description: "删除结果" },
   },
 };
 
@@ -205,17 +212,66 @@ const ziweiFunction = {
   name: "ZiWei",
   description: "为指定命主排出紫微斗数盘面，按运限级别（大限/流年/流月/流日/流时）返回分析数据。",
   zodSchema: z.object({
-    personId: personIdSchema,
-    scope: scopeSchema,
-    time: timeSchema,
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID；省略则使用默认人物"),
+    scope: withMeta(z.enum(["decadal", "yearly", "monthly", "daily", "hourly"]), {
+      example: "yearly",
+    }).describe("运限级别：decadal=大限, yearly=流年, monthly=流月, daily=流日, hourly=流时"),
+    time: withMeta(z.string(), { example: "2024-06-15 12:00" })
+      .optional()
+      .describe("公历时间，如 '2024-06-15 12:00' 或 '2024-06-15'；省略则用当前时间"),
   }),
   handler: async (args: { personId?: number; scope?: Scope; time?: string }) => {
     return peepOrThrow().ZiWei(args.personId, args.scope, args.time);
   },
   returns: {
     schema: {
-      type: "object",
+      type: "object" as const,
       description: "紫微盘面数据",
+    },
+  },
+};
+
+const getScopeDataFunction = {
+  name: "GetScopeData",
+  description:
+    "根据公历日期获取指定命主的运限数据（大运/流年/流月/流日/流时），纯计算接口，不操控 UI。",
+  zodSchema: z.object({
+    solarDate: withMeta(z.string(), { example: "2024-06-15 12:00" }).describe(
+      "公历日期，如 '2024-06-15 12:00' 或 '2024-06-15'",
+    ),
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID；省略则使用默认人物"),
+  }),
+  handler: async (args: { solarDate: string; personId?: number }) => {
+    return peepOrThrow().GetScopeData(args.solarDate, args.personId);
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "运限拨盘数据（含大运/流年/流月/流日/流时列表）",
+    },
+  },
+};
+
+const solarToLunarFunction = {
+  name: "SolarToLunar",
+  description: "将公历日期转换为农历日期，返回年月日时、干支、闰月等信息。",
+  zodSchema: z.object({
+    date: withMeta(z.string(), { example: "2024-06-15 12:00" }).describe(
+      "公历日期，如 '2024-06-15 12:00' 或 '2024-06-15'",
+    ),
+  }),
+  handler: (args: { date: string }) => {
+    // 从 lunar.ts 导入的 solarToLunar 函数
+    return import("./lunar").then(({ solarToLunar }) => solarToLunar(args.date));
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "农历日期信息",
     },
   },
 };
@@ -224,12 +280,12 @@ const daliurenCalcFunction = {
   name: "DaLiuRen",
   description: "按指定公历时间起大六壬课，返回天地盘、四课、三传、神将等完整课式。仅计算不落库。",
   zodSchema: z.object({
-    date: z.string().describe("公历日期，格式 YYYY-MM-DD"),
-    time: z.string().describe("时间，格式 HH:mm 或 HH:mm:ss"),
+    date: withMeta(z.string(), { example: "2024-06-15" }).describe("公历日期，格式 YYYY-MM-DD"),
+    time: withMeta(z.string(), { example: "14:30" }).describe("时间，格式 HH:mm 或 HH:mm:ss"),
     fateInput: z
       .object({
-        birthYear: z.number().int().describe("命主生年（公历）"),
-        gender: z.enum(["男", "女"]).describe("命主性别"),
+        birthYear: withMeta(z.number().int(), { example: 1990 }).describe("命主生年（公历）"),
+        gender: withMeta(z.enum(["男", "女"]), { example: "男" }).describe("命主性别"),
       })
       .optional()
       .describe("命主信息，用于起贵人神将；占事无关命主可省略"),
@@ -241,7 +297,7 @@ const daliurenCalcFunction = {
   }) => peepOrThrow().DaLiuRen(args.date, args.time, args.fateInput),
   returns: {
     schema: {
-      type: "object",
+      type: "object" as const,
       description: "大六壬课式",
     },
   },
@@ -251,21 +307,25 @@ const daliurenCreateFunction = {
   name: "DaLiuRenCreate",
   description: "为命主起一课大六壬并以当前时间落库保存，返回带 id 的起课记录。",
   zodSchema: z.object({
-    personId: personIdSchema,
-    question: z.string().describe("所占问题，如'这笔生意能不能做'"),
-    note: z.string().optional().describe("备注"),
-    background: z.string().optional().describe("背景信息"),
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID；省略则使用默认人物"),
+    question: withMeta(z.string(), { example: "这笔生意能不能做" }).describe("所占问题"),
+    note: withMeta(z.string(), { example: "客户询问合作前景" }).optional().describe("备注"),
+    background: withMeta(z.string(), { example: "客户与对方已洽谈三月" })
+      .optional()
+      .describe("背景信息"),
     tags: z.array(z.string()).optional().describe("标签"),
   }),
   handler: (args: {
-    personId: number;
+    personId?: number;
     question: string;
     note?: string;
     background?: string;
     tags?: string[];
   }) => peepOrThrow().DaLiuRenCreate(args),
   returns: {
-    schema: { type: "object", description: "保存后的起课记录" },
+    schema: { type: "object" as const, description: "保存后的起课记录" },
   },
 };
 
@@ -273,14 +333,18 @@ const daliurenListFunction = {
   name: "DaLiuRenList",
   description: "列出命主的大六壬起课记录，支持关键字搜索、标签过滤与分页。",
   zodSchema: z.object({
-    personId: personIdSchema,
-    searchText: z.string().optional().describe("搜索关键字"),
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID；省略则使用默认人物"),
+    searchText: withMeta(z.string(), { example: "合作" }).optional().describe("搜索关键字"),
     tags: z.array(z.string()).optional().describe("按标签过滤"),
-    page: z.number().int().positive().optional().describe("页码，默认 1"),
-    pageSize: z.number().int().positive().optional().describe("每页条数，默认 20"),
+    page: withMeta(z.number().int().positive(), { example: 1 }).optional().describe("页码，默认 1"),
+    pageSize: withMeta(z.number().int().positive(), { example: 20 })
+      .optional()
+      .describe("每页条数，默认 20"),
   }),
   handler: (args: {
-    personId: number;
+    personId?: number;
     searchText?: string;
     tags?: string[];
     page?: number;
@@ -288,7 +352,7 @@ const daliurenListFunction = {
   }) => peepOrThrow().DaLiuRenList(args),
   returns: {
     schema: {
-      type: "object",
+      type: "object" as const,
       description: "起课记录列表",
     },
   },
@@ -298,12 +362,14 @@ const daliurenViewFunction = {
   name: "DaLiuRenView",
   description: "查看指定大六壬起课记录的完整课式详情。",
   zodSchema: z.object({
-    personId: personIdSchema,
-    recordId: z.number().int().positive().describe("起课记录 ID"),
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID；省略则使用默认人物"),
+    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe("起课记录 ID"),
   }),
-  handler: (args: { personId: number; recordId: number }) => peepOrThrow().DaLiuRenView(args),
+  handler: (args: { personId?: number; recordId: number }) => peepOrThrow().DaLiuRenView(args),
   returns: {
-    schema: { type: "object", description: "起课记录详情" },
+    schema: { type: "object" as const, description: "起课记录详情" },
   },
 };
 
@@ -311,14 +377,18 @@ const wikiListFunction = {
   name: "WikiList",
   description: "查询 Wiki 文档列表，可按关键字、标签过滤并分页。",
   zodSchema: z.object({
-    personId: personIdSchema,
-    searchText: z.string().optional().describe("按标题或正文搜索"),
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID；省略则使用默认人物"),
+    searchText: withMeta(z.string(), { example: "紫微" }).optional().describe("按标题或正文搜索"),
     tags: z.array(z.string()).optional().describe("按标签过滤"),
-    page: z.number().int().positive().optional().describe("页码，默认 1"),
-    pageSize: z.number().int().positive().optional().describe("每页条数，默认 20"),
+    page: withMeta(z.number().int().positive(), { example: 1 }).optional().describe("页码，默认 1"),
+    pageSize: withMeta(z.number().int().positive(), { example: 20 })
+      .optional()
+      .describe("每页条数，默认 20"),
   }),
   handler: (args: {
-    personId: number;
+    personId?: number;
     searchText?: string;
     tags?: string[];
     page?: number;
@@ -326,7 +396,7 @@ const wikiListFunction = {
   }) => peepOrThrow().WikiList(args),
   returns: {
     schema: {
-      type: "object",
+      type: "object" as const,
       description: "Wiki 文档列表",
     },
   },
@@ -336,21 +406,25 @@ const wikiCreateFunction = {
   name: "WikiCreate",
   description: "创建一篇 Wiki 文档（Markdown 正文），可设置标签与关联文档。",
   zodSchema: z.object({
-    personId: personIdSchema,
-    title: z.string().describe("文档标题"),
-    content: z.string().describe("Markdown 正文"),
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID；省略则使用默认人物"),
+    title: withMeta(z.string(), { example: "紫微斗数入门" }).describe("文档标题"),
+    content: withMeta(z.string(), { example: "# 紫微斗数\n\n紫微斗数是..." }).describe(
+      "Markdown 正文",
+    ),
     tags: z.array(z.string()).optional().describe("标签"),
     linkTargetIds: z.array(z.number().int().positive()).optional().describe("关联文档 ID"),
   }),
   handler: (args: {
-    personId: number;
+    personId?: number;
     title: string;
     content: string;
     tags?: string[];
     linkTargetIds?: number[];
   }) => peepOrThrow().WikiCreate(args),
   returns: {
-    schema: { type: "object", description: "保存后的文档" },
+    schema: { type: "object" as const, description: "保存后的文档" },
   },
 };
 
@@ -358,20 +432,22 @@ const wikiViewFunction = {
   name: "WikiView",
   description: "查看指定 Wiki 文档的完整内容。",
   zodSchema: z.object({
-    personId: personIdSchema,
-    docId: z.number().int().positive().describe("文档 ID"),
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID；省略则使用默认人物"),
+    docId: withMeta(z.number().int().positive(), { example: 456 }).describe("文档 ID"),
   }),
-  handler: (args: { personId: number; docId: number }) => peepOrThrow().WikiView(args),
+  handler: (args: { personId?: number; docId: number }) => peepOrThrow().WikiView(args),
   returns: {
     schema: {
-      type: "object",
+      type: "object" as const,
       description: "Wiki 文档，content 为 Markdown 正文",
     },
   },
 };
 
 /** Function 分组：按业务域划分，AI 据此理解能力边界 */
-const FUNCTION_GROUPS: RtcAgentConfig["groups"] = [
+const FUNCTION_GROUPS = [
   {
     name: "person",
     description: "命主档案增删改查",
@@ -386,13 +462,13 @@ const FUNCTION_GROUPS: RtcAgentConfig["groups"] = [
   {
     name: "ziwei",
     description: "紫微斗数排盘与运限",
-    functions: [ziweiFunction],
+    functions: [ziweiFunction, getScopeDataFunction, solarToLunarFunction],
   },
   {
     name: "daliuren",
     description: "大六壬起课与占卜",
     functions: [
-      daliurenCalcFunction,
+      // daliurenCalcFunction, // 禁用
       daliurenCreateFunction,
       daliurenListFunction,
       daliurenViewFunction,
@@ -420,7 +496,7 @@ let _agent: RtcAgentWithLifecycle | null = null;
 export function createPeepRtcAgent(): RtcAgentWithLifecycle {
   if (_agent) return _agent;
 
-  const config: RtcAgentConfig = {
+  const config = {
     appLabel: "窥见人生 · 命理 AI 助手",
     logo: {
       light: LOGO_SVG,
@@ -437,17 +513,19 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
       // OAuth 回调路径（含 base 前缀，GitHub Pages 部署后是 /peep/auth/callback.html）
       redirectUri: `${import.meta.env.BASE_URL}auth/callback.html`,
     },
+    scenariosUrl: `${import.meta.env.BASE_URL}scenarios/`,
     workerUrl: `${import.meta.env.BASE_URL}rtc-agent/shared-worker.js`,
     // Function 注册
     agentName: "PeepAstro",
     agentDescription: "紫微斗数 · 大六壬 · 知识库 —— 命理分析 AI 助手",
     persona: document.documentElement.lang === "en-US" ? PERSONA_EN : PERSONA_ZH,
-    groups: FUNCTION_GROUPS,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    groups: FUNCTION_GROUPS as any,
     // 嵌入式面板模式：embedded=true 自动禁用拖拽/缩放/最小化/最大化/关闭按钮，
     // 并设 defaultMode='maximized'——让 RTC 填满父容器（peep-v2 右侧 3/8 侧栏）
     window: {
       embedded: true,
-      defaultMode: "maximized",
+      defaultMode: "maximized" as const,
       draggable: false,
       resizable: false,
       showMinimize: false,
@@ -456,7 +534,7 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
     },
     // 只保留 chat 按钮，禁用文件/设置面板
     activityBar: {
-      disabledActivities: ["files", "settings"],
+      disabledActivities: ["files", "settings"] as ("files" | "settings")[],
     },
     on: {
       ready: () => {
