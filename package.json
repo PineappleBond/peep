@@ -19,7 +19,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@rtc-agent/component": "^0.2.7-rc.0",
+    "@rtc-agent/component": "^0.2.7-rc.1",
     "@toon-format/toon": "^2.3.1",
     "dexie": "^4.4.5",
     "iztro": "^2.5.8",
