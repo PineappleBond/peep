@@ -15,6 +15,8 @@ import { z } from "zod";
 import { getTheme } from "./theme";
 import type { Locale } from "./i18n";
 import type { Scope } from "./utils";
+import type { BirthInput } from "./useZwds";
+import { DEFAULT_BIRTH_INPUT } from "./useZwds";
 
 /* ============================================================
  * Logo：窥字 SVG（用于 RTC Agent 气泡图标，分亮/暗主题）
@@ -151,24 +153,130 @@ const scopeSchema = z
   .enum(["decadal", "yearly", "monthly", "daily", "hourly"])
   .describe("运限级别：decadal=大限(10年), yearly=流年, monthly=流月, daily=流日, hourly=流时");
 
-const personIdSchema = z.number().int().positive().describe("命主 ID（从人物列表获取）");
+const personIdSchema = z
+  .number()
+  .int()
+  .positive()
+  .optional()
+  .describe("命主 ID（可选，不传则使用默认人物；从 PersonList 获取）");
 
 const timeSchema = z
   .string()
   .optional()
   .describe("公历时间，格式如 '2024-06-15 12:00' 或 '2024-06-15'；不传则用当前时间");
 
+/* ── Person CRUD Functions ──────────────────────────────── */
+
+const personListFunction = {
+  name: "PersonList",
+  description:
+    "获取所有人物列表：返回 id、姓名、生年、性别等信息。AI 应先调用此函数确认可用的人物，再决定分析哪位命主。",
+  zodSchema: z.object({}),
+  handler: () => peepOrThrow().PersonList(),
+  returns: {
+    schema: {
+      type: "array",
+      description: "人物列表（按保存时间倒序），每人含 id/name/date/timeIndex/gender 等",
+    },
+  },
+};
+
+const personGetFunction = {
+  name: "PersonGet",
+  description: "获取单个人物详情：按 ID 查询，不传则返回默认人物。返回完整的出生信息。",
+  zodSchema: z.object({
+    personId: personIdSchema,
+  }),
+  handler: (args: { personId?: number }) => peepOrThrow().PersonGet(args.personId),
+  returns: {
+    schema: {
+      type: "object",
+      description: "人物详情（含 id/name/date/timeIndex/gender/savedAt/isDefault）",
+    },
+  },
+};
+
+/**
+ * AI 只需提供核心出生信息，其余字段用默认值填充。
+ * 这样 AI 不用关心真太阳时/安星流派等高级设置。
+ */
+const birthInputSchema = z.object({
+  name: z.string().describe("姓名"),
+  date: z.string().describe("公历出生日期，格式 YYYY-MM-DD"),
+  timeIndex: z
+    .number()
+    .int()
+    .min(0)
+    .max(12)
+    .describe("时辰索引（0=早子时, 1=丑时, ..., 11=亥时, 12=晚子时）"),
+  gender: z.enum(["男", "女"]).describe("性别"),
+  calendar: z.enum(["solar", "lunar"]).optional().describe("历法（默认 solar 公历）"),
+  isLeapMonth: z.boolean().optional().describe("农历闰月（仅农历日期且为闰月时为 true）"),
+});
+
+/** 将 AI 提供的部分字段合并为完整 BirthInput */
+function mergeBirthInput(partial: z.infer<typeof birthInputSchema>): BirthInput {
+  return {
+    ...DEFAULT_BIRTH_INPUT,
+    ...partial,
+    calendar: partial.calendar ?? "solar",
+    isLeapMonth: partial.isLeapMonth ?? false,
+  };
+}
+
+const personCreateFunction = {
+  name: "PersonCreate",
+  description:
+    "创建新人物：输入姓名、出生日期时间、性别等信息，保存到人物库。创建后自动切换为该人物（UI 同步）。",
+  zodSchema: z.object({
+    input: birthInputSchema.describe("人物出生信息"),
+  }),
+  handler: (args: { input: z.infer<typeof birthInputSchema> }) =>
+    peepOrThrow().PersonCreate(mergeBirthInput(args.input)),
+  returns: {
+    schema: { type: "object", description: "创建后的人物（含 id）" },
+  },
+};
+
+const personUpdateFunction = {
+  name: "PersonUpdate",
+  description:
+    "更新人物信息：按 ID 修改人物的出生信息。更新后 UI 会自动重新计算盘面（如果是当前选中人物）。",
+  zodSchema: z.object({
+    personId: z.number().int().positive().describe("命主 ID"),
+    input: birthInputSchema.describe("人物出生信息"),
+  }),
+  handler: (args: { personId: number; input: z.infer<typeof birthInputSchema> }) =>
+    peepOrThrow().PersonUpdate(args.personId, mergeBirthInput(args.input)),
+  returns: {
+    schema: { type: "object", description: "更新后的人物" },
+  },
+};
+
+const personDeleteFunction = {
+  name: "PersonDelete",
+  description: "删除人物：按 ID 从人物库删除。默认人物不可删除。删除后 UI 自动切换到默认人物。",
+  zodSchema: z.object({
+    personId: z.number().int().positive().describe("命主 ID"),
+  }),
+  handler: (args: { personId: number }) => peepOrThrow().PersonDelete(args.personId),
+  returns: {
+    schema: { type: "object", description: "删除成功返回 {success: true}" },
+  },
+};
+
+/* ── 紫微斗数 ──────────────────────────────────────────── */
+
 const ziweiFunction = {
   name: "ZiWei",
   description:
-    "紫微斗数排盘：切换命主、设置运限级别与时间，返回完整盘面数据（十二宫星曜、四化、运限拨盘数据、指定运限级别的分析图表）。调用前务必确认命主 ID 与运限级别。",
+    "紫微斗数排盘：切换命主、设置运限级别与时间，返回完整盘面数据（十二宫星曜、四化、运限拨盘数据、指定运限级别的分析图表）。personId 可选——不传则使用默认人物。",
   zodSchema: z.object({
     personId: personIdSchema,
     scope: scopeSchema,
     time: timeSchema,
   }),
-  handler: async (args: { personId: number; scope?: Scope; time?: string }) => {
-    // 桥接 window.peep——与调试 API 同一套语义
+  handler: async (args: { personId?: number; scope?: Scope; time?: string }) => {
     return peepOrThrow().ZiWei(args.personId, args.scope, args.time);
   },
   returns: {
@@ -336,6 +444,18 @@ const wikiViewFunction = {
 
 /** Function 分组：按业务域划分，AI 据此理解能力边界 */
 const FUNCTION_GROUPS: RtcAgentConfig["groups"] = [
+  {
+    name: "person",
+    description:
+      "人物管理——增删改查命主档案。AI 应先调用 PersonList 确认可用的人物，再决定分析哪位命主。",
+    functions: [
+      personListFunction,
+      personGetFunction,
+      personCreateFunction,
+      personUpdateFunction,
+      personDeleteFunction,
+    ],
+  },
   {
     name: "ziwei",
     description: "紫微斗数排盘与运限分析——通过 ZiWei Function 获取完整盘面数据",

@@ -5,6 +5,11 @@
  * window.peep 仅在 import.meta.env.DEV 下可用
  */
 import type {
+  PersonList,
+  PersonGet,
+  PersonCreate,
+  PersonUpdate,
+  PersonDelete,
   ZiWei,
   DaLiuRen,
   DaLiuRenCreate,
@@ -26,6 +31,11 @@ declare global {
 
   interface Window {
     peep?: {
+      PersonList: typeof PersonList;
+      PersonGet: typeof PersonGet;
+      PersonCreate: typeof PersonCreate;
+      PersonUpdate: typeof PersonUpdate;
+      PersonDelete: typeof PersonDelete;
       ZiWei: typeof ZiWei;
       DaLiuRen: typeof DaLiuRen;
       DaLiuRenCreate: typeof DaLiuRenCreate;

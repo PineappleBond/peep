@@ -6,11 +6,14 @@ import { getChartDataForScope, type ScopeChartData } from "./analysis";
 import type { Scope } from "./utils";
 import type { Zwds } from "./useZwds";
 import type { Person, LiurenRecord, WikiDocument } from "./personDb";
+import { listPersons, getPerson, savePerson, deletePerson, getDefaultPerson } from "./personDb";
 import { buildHbarData, type HbarData } from "./hbar";
 import { calculateDaLiuRen } from "./daliuren/calculator";
 import type { DaLiuRenResult } from "./daliuren/types";
 import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
 import { getWikiLinks, type WikiListFilters, type WikiListResult } from "./wikiDb";
+import { globalEvents } from "./events";
+import type { BirthInput } from "./useZwds";
 
 /**
  * 运限级别（已统一使用 utils/Scope，此处为向后兼容保留别名）。
@@ -239,6 +242,132 @@ async function waitForCallbacks(
  * ============================================================ */
 
 /**
+ * 解析人物 ID：未传或无效时返回默认人物 ID。
+ * 所有接受 personId 的调试接口共用此逻辑——AI 不传 ID 时自动使用默认人物。
+ */
+async function resolvePersonId(personId?: number): Promise<number> {
+  if (personId != null && Number.isFinite(personId) && personId > 0) {
+    return personId;
+  }
+  const defaultPerson = await getDefaultPerson();
+  return defaultPerson.id!;
+}
+
+/* ── Person CRUD ──────────────────────────────────────── */
+
+/**
+ * 人物列表：返回所有人物（按保存时间倒序）。
+ * 纯 DB 操作，无 UI 交互。
+ */
+export async function PersonList(): Promise<Person[]> {
+  const stop = timer("PersonList");
+  try {
+    log("info", "PersonList", "查询人物列表");
+    const persons = await listPersons();
+    log("info", "PersonList", "查询成功", { count: persons.length });
+    stop();
+    return persons;
+  } catch (err) {
+    log("error", "PersonList", "查询失败", err);
+    throw wrapDebugError("PersonList", err);
+  }
+}
+
+/**
+ * 获取人物详情：按 ID 查询，不传则返回默认人物。
+ * 纯 DB 操作，无 UI 交互。
+ */
+export async function PersonGet(personId?: number): Promise<Person> {
+  const stop = timer("PersonGet");
+  try {
+    const id = await resolvePersonId(personId);
+    log("info", "PersonGet", "查询人物", { id });
+    const person = await getPerson(id);
+    if (!person) {
+      throw new Error(`人物 ${id} 不存在`);
+    }
+    log("info", "PersonGet", "查询成功", { id, name: person.name });
+    stop();
+    return person;
+  } catch (err) {
+    log("error", "PersonGet", "查询失败", err);
+    throw wrapDebugError("PersonGet", err);
+  }
+}
+
+/**
+ * 创建人物：写入 DB 并触发 UI 同步（切换为新人物）。
+ *
+ * UI 同步流程：
+ * 1. savePerson() 写入 IndexedDB
+ * 2. globalEvents.emit("person.changed") 通知所有页面
+ * 3. ZiweiPage 收到事件后重新计算盘面
+ */
+export async function PersonCreate(input: BirthInput): Promise<Person> {
+  const stop = timer("PersonCreate");
+  try {
+    log("info", "PersonCreate", "创建人物", { name: input.name });
+    const person = await savePerson(undefined, input, false);
+    // UI 同步：通知所有页面切换到新人物
+    globalEvents.emit("person.changed", person);
+    log("info", "PersonCreate", "创建成功", { id: person.id });
+    stop();
+    return person;
+  } catch (err) {
+    log("error", "PersonCreate", "创建失败", err);
+    throw wrapDebugError("PersonCreate", err);
+  }
+}
+
+/**
+ * 更新人物：按 ID 更新并触发 UI 同步。
+ * 如果更新的是当前选中人物，页面会自动重新计算盘面。
+ */
+export async function PersonUpdate(personId: number, input: BirthInput): Promise<Person> {
+  const stop = timer("PersonUpdate");
+  try {
+    if (!Number.isFinite(personId) || personId <= 0) {
+      throw new Error(`personId 无效：${personId}，需为正整数`);
+    }
+    log("info", "PersonUpdate", "更新人物", { id: personId, name: input.name });
+    const person = await savePerson(personId, input, false);
+    // UI 同步：通知所有页面人物数据已变化
+    globalEvents.emit("person.changed", person);
+    log("info", "PersonUpdate", "更新成功", { id: person.id });
+    stop();
+    return person;
+  } catch (err) {
+    log("error", "PersonUpdate", "更新失败", err);
+    throw wrapDebugError("PersonUpdate", err);
+  }
+}
+
+/**
+ * 删除人物：从 DB 删除并触发 UI 同步（切换到默认人物）。
+ * 默认人物不可删除（personDb.ts 会抛错）。
+ */
+export async function PersonDelete(personId: number): Promise<void> {
+  const stop = timer("PersonDelete");
+  try {
+    if (!Number.isFinite(personId) || personId <= 0) {
+      throw new Error(`personId 无效：${personId}，需为正整数`);
+    }
+    log("info", "PersonDelete", "删除人物", { id: personId });
+    await deletePerson(personId);
+    // UI 同步：删除后切换到默认人物
+    const defaultPerson = await getDefaultPerson();
+    globalEvents.emit("person.changed", defaultPerson);
+    log("info", "PersonDelete", "删除成功", { id: personId });
+    stop();
+  } catch (err) {
+    log("error", "PersonDelete", "删除失败", err);
+    throw wrapDebugError("PersonDelete", err);
+  }
+}
+
+/* ── 紫微斗数 ──────────────────────────────────────────── */
+
+/**
  * 核心调试接口：切换人物 + 运限级别 + 时间，同时操控 UI 并返回数据
  *
  * 执行顺序：
@@ -247,20 +376,22 @@ async function waitForCallbacks(
  * 3. 设置运限级别（只显示目标 scope）
  * 4. 等待所有状态更新完成
  *
- * @param personId 人物 ID
+ * @param personId 人物 ID（可选，不传则使用默认人物）
  * @param scope 运限级别（decadal/yearly/monthly/daily/hourly）
  * @param time 可选时间参数（Date 或时间戳），用于设置运限时间
  */
 export async function ZiWei(
-  personId: number,
+  personId?: number,
   scope?: Scope,
   time?: Date | number | string,
 ): Promise<ZiWeiResult> {
   const stop = timer("ZiWei");
   try {
+    // 解析人物 ID（不传则用默认）
+    const resolvedId = await resolvePersonId(personId);
     // 输入校验
-    if (!Number.isFinite(personId) || personId <= 0) {
-      throw new Error(`personId 无效：${personId}，需为正整数`);
+    if (!Number.isFinite(resolvedId) || resolvedId <= 0) {
+      throw new Error(`personId 无效：${resolvedId}，需为正整数`);
     }
     if (scope && !["decadal", "yearly", "monthly", "daily", "hourly"].includes(scope)) {
       throw new Error(`scope 无效：${scope}，需为 decadal/yearly/monthly/daily/hourly 之一`);
@@ -276,7 +407,7 @@ export async function ZiWei(
     }
 
     // 1. 切换人物（操控 UI）
-    await _selectPerson(personId);
+    await _selectPerson(resolvedId);
 
     // 等待 astrolabe 重新计算 + useEffect 重置 pick 完成
     await new Promise(r => setTimeout(r, 100));
@@ -380,7 +511,7 @@ export function DaLiuRen(
  * 跳转到 /liuren 页面，选择人物，打开新建 Dialog，填写表单，提交
  */
 export async function DaLiuRenCreate(params: {
-  personId: number;
+  personId?: number;
   question: string;
   note?: string;
   background?: string;
@@ -388,8 +519,9 @@ export async function DaLiuRenCreate(params: {
 }): Promise<LiurenRecord> {
   const stop = timer("DaLiuRenCreate");
   try {
+    const personId = await resolvePersonId(params.personId);
     log("info", "DaLiuRenCreate", "开始创建起课", {
-      personId: params.personId,
+      personId,
       question: params.question,
     });
 
@@ -401,7 +533,7 @@ export async function DaLiuRenCreate(params: {
     }
 
     // 2. 选择人物
-    await selectPersonAndWait(params.personId);
+    await selectPersonAndWait(personId);
 
     // 3. 填写表单（在打开 Dialog 之前设置初始数据）
     _fillCreateForm({
@@ -434,7 +566,7 @@ export async function DaLiuRenCreate(params: {
  * 跳转到 /liuren 页面，选择人物，设置过滤条件，返回列表
  */
 export async function DaLiuRenList(params: {
-  personId: number;
+  personId?: number;
   searchText?: string;
   tags?: string[];
   page?: number;
@@ -442,8 +574,9 @@ export async function DaLiuRenList(params: {
 }): Promise<{ records: LiurenRecord[]; total: number }> {
   const stop = timer("DaLiuRenList");
   try {
+    const personId = await resolvePersonId(params.personId);
     log("info", "DaLiuRenList", "查询列表", {
-      personId: params.personId,
+      personId,
       searchText: params.searchText,
       tags: params.tags,
     });
@@ -456,7 +589,7 @@ export async function DaLiuRenList(params: {
     }
 
     // 2. 选择人物
-    await selectPersonAndWait(params.personId);
+    await selectPersonAndWait(personId);
 
     // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
     if (_setListFilters && (params.searchText || params.tags || params.page)) {
@@ -494,13 +627,14 @@ export async function DaLiuRenList(params: {
  * 跳转到 /liuren 页面，选择人物，点击某条记录，返回详情
  */
 export async function DaLiuRenView(params: {
-  personId: number;
+  personId?: number;
   recordId: number;
 }): Promise<LiurenRecord> {
   const stop = timer("DaLiuRenView");
   try {
+    const personId = await resolvePersonId(params.personId);
     log("info", "DaLiuRenView", "查看详情", {
-      personId: params.personId,
+      personId,
       recordId: params.recordId,
     });
 
@@ -512,7 +646,7 @@ export async function DaLiuRenView(params: {
     }
 
     // 2. 选择人物
-    await selectPersonAndWait(params.personId);
+    await selectPersonAndWait(personId);
 
     // 3. 点击某条记录（selectRecord 直接返回记录数据）
     const record = await _selectRecord(params.recordId);
@@ -538,7 +672,7 @@ export async function DaLiuRenView(params: {
  * 跳转到 /wiki 页面，选择人物，设置过滤条件，返回列表
  */
 export async function WikiList(params: {
-  personId: number;
+  personId?: number;
   searchText?: string;
   tags?: string[];
   page?: number;
@@ -546,8 +680,9 @@ export async function WikiList(params: {
 }): Promise<{ docs: WikiDocument[]; total: number }> {
   const stop = timer("WikiList");
   try {
+    const personId = await resolvePersonId(params.personId);
     log("info", "WikiList", "查询文档列表", {
-      personId: params.personId,
+      personId,
       searchText: params.searchText,
     });
 
@@ -559,7 +694,7 @@ export async function WikiList(params: {
     }
 
     // 2. 选择人物
-    await selectPersonAndWait(params.personId);
+    await selectPersonAndWait(personId);
 
     // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
     if (_setWikiListFilters && (params.searchText || params.tags || params.page)) {
@@ -594,7 +729,7 @@ export async function WikiList(params: {
  * 跳转到 /wiki 页面，选择人物，打开编辑器，保存文档
  */
 export async function WikiCreate(params: {
-  personId: number;
+  personId?: number;
   title: string;
   content: string;
   tags?: string[];
@@ -602,7 +737,8 @@ export async function WikiCreate(params: {
 }): Promise<WikiDocument> {
   const stop = timer("WikiCreate");
   try {
-    log("info", "WikiCreate", "创建文档", { personId: params.personId, title: params.title });
+    const personId = await resolvePersonId(params.personId);
+    log("info", "WikiCreate", "创建文档", { personId, title: params.title });
 
     // 1. 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
@@ -612,7 +748,7 @@ export async function WikiCreate(params: {
     }
 
     // 2. 选择人物
-    await selectPersonAndWait(params.personId);
+    await selectPersonAndWait(personId);
 
     // 3. 打开编辑器
     _openWikiEditor();
@@ -621,7 +757,7 @@ export async function WikiCreate(params: {
     // 4. 构造文档并保存
     const now = Date.now();
     const doc: WikiDocument = {
-      personId: params.personId,
+      personId,
       title: params.title,
       content: params.content,
       tags: params.tags || [],
@@ -646,12 +782,13 @@ export async function WikiCreate(params: {
  * 跳转到 /wiki 页面，选择人物，打开指定文档，返回详情
  */
 export async function WikiView(params: {
-  personId: number;
+  personId?: number;
   docId: number;
 }): Promise<WikiDocument & { linkTargetIds: number[] }> {
   const stop = timer("WikiView");
   try {
-    log("info", "WikiView", "查看文档", { personId: params.personId, docId: params.docId });
+    const personId = await resolvePersonId(params.personId);
+    log("info", "WikiView", "查看文档", { personId, docId: params.docId });
 
     // 1. 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
@@ -661,7 +798,7 @@ export async function WikiView(params: {
     }
 
     // 2. 选择人物
-    await selectPersonAndWait(params.personId);
+    await selectPersonAndWait(personId);
 
     // 3. 打开指定文档（selectWikiDoc 直接返回文档数据）
     const doc = await _selectWikiDoc(params.docId);
@@ -772,7 +909,12 @@ function version(): void {
   console.log("%c[peep]%c 可用调试 API:", "color:#2196f3;font-weight:bold", "");
   // eslint-disable-next-line no-console
   console.table([
-    { 方法: "ZiWei(personId, scope?, time?)", 说明: "紫微斗数排盘+运限操控" },
+    { 方法: "PersonList()", 说明: "人物列表" },
+    { 方法: "PersonGet(personId?)", 说明: "获取人物详情（不传返回默认）" },
+    { 方法: "PersonCreate(input)", 说明: "创建人物" },
+    { 方法: "PersonUpdate(personId, input)", 说明: "更新人物" },
+    { 方法: "PersonDelete(personId)", 说明: "删除人物" },
+    { 方法: "ZiWei(personId?, scope?, time?)", 说明: "紫微斗数排盘+运限操控" },
     { 方法: "DaLiuRen(date, time, fateInput?)", 说明: "大六壬纯计算排盘" },
     { 方法: "DaLiuRenCreate(params)", 说明: "大六壬起课（创建记录）" },
     { 方法: "DaLiuRenList(params)", 说明: "大六壬起课列表" },
@@ -798,6 +940,11 @@ export function initDebugApi() {
   // 避免生产控制台输出调试信息。
 
   window.peep = {
+    PersonList,
+    PersonGet,
+    PersonCreate,
+    PersonUpdate,
+    PersonDelete,
     ZiWei,
     DaLiuRen,
     DaLiuRenCreate,
