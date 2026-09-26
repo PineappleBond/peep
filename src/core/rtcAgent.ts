@@ -390,10 +390,20 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
     groups: FUNCTION_GROUPS,
     on: {
       ready: () => {
-        // 嵌入式面板模式：禁用拖拽/缩放/气泡按钮，默认最大化，填满父容器
+        // 嵌入式面板：禁用窗口交互，默认最大化
         // （peep-v2 在 App.tsx 用 5:3 双栏布局把 RTC 嵌在右侧侧栏）
         if (_agent) {
-          _agent.windowConfig = { embedded: true, defaultMode: "maximized" };
+          _agent.windowConfig = {
+            defaultMode: "maximized",
+            draggable: false,
+            resizable: false,
+            showMinimize: false,
+            showMaximize: false,
+          };
+          // 只保留 chat 按钮，禁用文件/设置面板
+          _agent.activityBarConfig = {
+            disabledActivities: ["files", "settings"],
+          };
         }
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
