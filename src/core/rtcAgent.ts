@@ -390,9 +390,18 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
     groups: FUNCTION_GROUPS,
     on: {
       ready: () => {
+        // 嵌入式面板模式：禁用拖拽/缩放/气泡按钮，默认最大化，填满父容器
+        // （peep-v2 在 App.tsx 用 5:3 双栏布局把 RTC 嵌在右侧侧栏）
+        if (_agent) {
+          _agent.windowConfig = { embedded: true };
+        }
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
-          console.log("%c[rtc]%c Agent 已就绪", "color:#2196f3;font-weight:bold", "");
+          console.log(
+            "%c[rtc]%c Agent 已就绪（embedded 模式）",
+            "color:#2196f3;font-weight:bold",
+            "",
+          );
         }
       },
     },
@@ -434,7 +443,6 @@ export async function syncLocale(locale: Locale): Promise<void> {
     await switchLocale(locale);
   } catch (err) {
     if (import.meta.env.DEV) {
-       
       console.warn("[rtc] switchLocale 失败", err);
     }
   }

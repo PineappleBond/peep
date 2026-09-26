@@ -54,6 +54,17 @@ declare module "@rtc-agent/component" {
     theme: "light" | "dark" | "system";
     lang: string;
     agentConfig: RtcAgentConfig["agentConfig"];
+    /** 窗口配置（ready 事件后设置）：embedded=true 表示嵌入式面板模式 */
+    windowConfig: {
+      embedded?: boolean;
+      defaultMode?: string;
+      draggable?: boolean;
+      resizable?: boolean;
+    };
+    /** 活动栏配置（ready 事件后设置） */
+    activityBarConfig: {
+      disabledActivities?: string[];
+    };
     destroy(): void;
   }
 
