@@ -37,7 +37,18 @@ type FlyLine = {
   self: boolean;
 };
 
-/** 星盘：十二宫 + 中宫 + 三方四正/飞宫四化连线 */
+/**
+ * 星盘组件：4×4 网格布局展示十二宫 + 中宫，含三方四正/飞宫四化 SVG 连线。
+ *
+ * @param z - 排盘结果对象（useZwds 返回值）
+ * @param genId - 起盘代数（换盘时重置聚焦状态）
+ *
+ * 功能：
+ * - 自动聚焦当前最深运限层的命宫（全关则本命命宫）
+ * - 三方四正发光虚线（金=对照、青=三合）
+ * - 飞宫模式：点任一宫画出该宫宫干四化飞线
+ * - 点击宫位打开宫位详情弹层
+ */
 export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
   const a = z.astrolabe;
 

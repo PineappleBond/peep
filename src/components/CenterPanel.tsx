@@ -4,7 +4,10 @@ import type { Zwds } from "../core/useZwds";
 
 const PILLAR_LABELS = ["年", "月", "日", "时"];
 
-/** 中宫：命盘信息 + 观测点 + 本限年月日时切换 + 飞宫模式 + 自化模式 */
+/**
+ * 中宫面板：显示命造信息/五行局/四柱干支/观测点/运限层级切换/飞宫模式开关/自化标记。
+ * 位于 4×4 盘面正中央。
+ */
 export const CenterPanel = memo(function CenterPanel({
   z,
   flyMode = false,

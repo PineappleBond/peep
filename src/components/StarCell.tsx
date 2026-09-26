@@ -9,7 +9,11 @@ type StarLike = {
   mutagen?: string;
 };
 
-/** 单颗星：竖排星名 + 亮度 + 生年四化（实心）/ 自化（虚线）/ 运限四化（描边按限色）/ 运限自化（点线按限色） */
+/**
+ * 单颗星渲染单元：竖排星名 + 亮度 + 四化徽章。
+ * 四化徽章区分：生年四化（实心）/ 自化（虚线）/ 运限四化（描边按限色）/ 运限自化（点线按限色）。
+ * 使用 memo 优化避免无关渲染。
+ */
 export const StarCell = memo(function StarCell({
   star,
   horoscope,
