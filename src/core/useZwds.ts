@@ -2,7 +2,7 @@
  * 排盘主 Hook：iztro 负责全部命理计算，这里负责
  * 「大限/流年/流月/流日/流时」拨盘状态 → 目标公历日期 → horoscope。
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
 import type { MutagenTableKey, Scope } from "./utils";
@@ -150,6 +150,79 @@ const DEFAULT_VISIBLE: ScopeVisible = {
 };
 
 /**
+ * 拨盘相关状态的 action 类型定义
+ * 使用 useReducer 管理 pick、visible、version、locked 四个相关状态
+ */
+type PickAction =
+  | { type: "SET_PICK"; payload: PickState }
+  | { type: "UPDATE_PICK"; payload: Partial<PickState> }
+  | { type: "SET_VISIBLE"; payload: ScopeVisible }
+  | { type: "ENSURE_SCOPE_VISIBLE"; payload: Scope }
+  | { type: "TOGGLE_SCOPE"; payload: Scope }
+  | { type: "SHOW_SCOPE"; payload: Scope }
+  | { type: "SHOW_NATAL" }
+  | { type: "INCREMENT_VERSION" }
+  | { type: "LOCK_PICK" }
+  | { type: "UNLOCK_PICK" };
+
+/**
+ * 拨盘相关状态（pick、visible、version、locked）的聚合类型
+ * 使用 useReducer 集中管理，避免多个 useState 导致的重复渲染
+ */
+interface PickStateBundle {
+  pick: PickState;
+  visible: ScopeVisible;
+  version: number;
+  locked: boolean;
+}
+
+/** 拨盘状态 reducer：集中管理 pick 相关的所有状态变更 */
+function pickReducer(state: PickStateBundle, action: PickAction): PickStateBundle {
+  switch (action.type) {
+    case "SET_PICK":
+      return { ...state, pick: action.payload };
+    case "UPDATE_PICK":
+      return { ...state, pick: { ...state.pick, ...action.payload } };
+    case "SET_VISIBLE":
+      return { ...state, visible: action.payload };
+    case "ENSURE_SCOPE_VISIBLE":
+      // 如果已显示则不变，否则开启该 scope
+      if (state.visible[action.payload]) return state;
+      return { ...state, visible: { ...state.visible, [action.payload]: true } };
+    case "TOGGLE_SCOPE":
+      return {
+        ...state,
+        visible: { ...state.visible, [action.payload]: !state.visible[action.payload] },
+      };
+    case "SHOW_SCOPE":
+      return {
+        ...state,
+        visible: {
+          decadal: false,
+          yearly: false,
+          monthly: false,
+          daily: false,
+          hourly: false,
+          [action.payload]: true,
+        },
+      };
+    case "SHOW_NATAL":
+      return {
+        ...state,
+        visible: { decadal: false, yearly: false, monthly: false, daily: false, hourly: false },
+      };
+    case "INCREMENT_VERSION":
+      return { ...state, version: state.version + 1 };
+    case "LOCK_PICK":
+      return { ...state, locked: true };
+    case "UNLOCK_PICK":
+      return { ...state, locked: false };
+    default:
+      return state;
+  }
+}
+
+/**
  * 实际排盘参数（经真太阳时校正后）。
  * 当未启用真太阳时时 trueSolar 为 null，直接按原始输入排盘。
  */
@@ -270,14 +343,16 @@ export function useZwds(input: BirthInput) {
   );
 
   // 拨盘导航不持久化：命盘由存储的起盘参数直接渲染，拨盘位置每次刷新/起盘回默认（今天）
-  const [pick, setPick] = useState<PickState>(initPick);
-  const [visible, setVisible] = useState<ScopeVisible>(DEFAULT_VISIBLE);
+  // 使用 useReducer 集中管理 pick 相关的四个状态，减少重复渲染
+  const [pickState, dispatch] = useReducer(pickReducer, {
+    pick: initPick(),
+    visible: DEFAULT_VISIBLE,
+    version: 0,
+    locked: false,
+  });
+  const { pick, visible, version: pickVersion, locked: pickLocked } = pickState;
 
-  // pick 版本号：每次更新递增，用于检测并发竞态（debugApi 事务式更新后验证）
-  const [pickVersion, setPickVersion] = useState(0);
-
-  // 事务锁标志：为 true 时 useEffect 不重置 pick，防止 setHoroscopeTime 期间被覆盖
-  const [pickLocked, setPickLocked] = useState(false);
+  // 事务锁 ref：useEffect 读取最新值，避免依赖变化导致不必要的 effect 重跑
   const pickLockedRef = useRef(false);
   pickLockedRef.current = pickLocked;
 
@@ -288,7 +363,7 @@ export function useZwds(input: BirthInput) {
       // 事务进行中，不重置 pick——等事务完成后再由事务方负责设置正确值
       return;
     }
-    setPick(clampPick(initPick(), birthLunarYear));
+    dispatch({ type: "SET_PICK", payload: clampPick(initPick(), birthLunarYear) });
   }, [astrolabe, birthLunarYear]);
 
   /** 当前流年所落的大限序号；-1 = 童限 */
@@ -349,77 +424,76 @@ export function useZwds(input: BirthInput) {
     }
   }, [astrolabe, targetSolar, pick.hour]);
 
-  const show = (s: Scope) => setVisible(v => (v[s] ? v : { ...v, [s]: true }));
+  /** 显示指定 scope（如果尚未显示） */
+  const show = useCallback((s: Scope) => {
+    dispatch({ type: "ENSURE_SCOPE_VISIBLE", payload: s });
+  }, []);
 
-  const actions = {
-    pickDecade(i: number) {
-      const y = i === -1 ? (childhood?.startYear ?? birthLunarYear) : decades[i]?.startYear;
-      if (y != null) setPick(p => ({ ...p, year: y }));
-      show("decadal");
-    },
-    pickYear(y: number) {
-      setPick(p => ({ ...p, year: y }));
-      show("yearly");
-    },
-    pickMonth(m: number, leap = false) {
-      setPick(p => ({ ...p, month: m, leap }));
-      show("monthly");
-    },
-    pickDay(d: number) {
-      setPick(p => ({ ...p, day: d }));
-      show("daily");
-    },
-    pickHour(h: number) {
-      setPick(p => ({ ...p, hour: h }));
-      setPickVersion(v => v + 1);
-      show("hourly");
-    },
-    /**
-     * 事务式批量更新 pick：一次性设置年月日时，避免多次 setPick 调用导致的竞态。
-     * 同时递增 pickVersion，供 debugApi 验证更新是否生效。
-     */
-    setPickBatch(partial: Partial<PickState>) {
-      setPick(p => ({ ...p, ...partial }));
-      setPickVersion(v => v + 1);
-    },
-    /**
-     * 锁定 pick：阻止 useEffect 在 astrolabe 变化时重置 pick。
-     * 用于 debugApi 的事务式更新期间，防止竞态。
-     */
-    lockPick() {
-      setPickLocked(true);
-    },
-    /**
-     * 解锁 pick：恢复 useEffect 的正常重置行为。
-     */
-    unlockPick() {
-      setPickLocked(false);
-    },
-    /** 获取当前 pick 版本号（用于 debugApi 验证） */
-    getPickVersion() {
-      return pickVersion;
-    },
-    resetToday() {
-      setPick(clampPick(initPick(), birthLunarYear));
-    },
-    toggleScope(s: Scope) {
-      setVisible(v => ({ ...v, [s]: !v[s] }));
-    },
-    /** 只显示指定 scope，其他全部关闭 */
-    showScope(s: Scope) {
-      setVisible({
-        decadal: false,
-        yearly: false,
-        monthly: false,
-        daily: false,
-        hourly: false,
-        [s]: true,
-      });
-    },
-    showNatal() {
-      setVisible({ decadal: false, yearly: false, monthly: false, daily: false, hourly: false });
-    },
-  };
+  /** 操作函数集合：使用 useMemo 避免每次渲染重建，防止子组件不必要的重渲染 */
+  const actions = useMemo(() => {
+    return {
+      pickDecade(i: number) {
+        const y = i === -1 ? (childhood?.startYear ?? birthLunarYear) : decades[i]?.startYear;
+        if (y != null) dispatch({ type: "UPDATE_PICK", payload: { year: y } });
+        show("decadal");
+      },
+      pickYear(y: number) {
+        dispatch({ type: "UPDATE_PICK", payload: { year: y } });
+        show("yearly");
+      },
+      pickMonth(m: number, leap = false) {
+        dispatch({ type: "UPDATE_PICK", payload: { month: m, leap } });
+        show("monthly");
+      },
+      pickDay(d: number) {
+        dispatch({ type: "UPDATE_PICK", payload: { day: d } });
+        show("daily");
+      },
+      pickHour(h: number) {
+        dispatch({ type: "UPDATE_PICK", payload: { hour: h } });
+        dispatch({ type: "INCREMENT_VERSION" });
+        show("hourly");
+      },
+      /**
+       * 事务式批量更新 pick：一次性设置年月日时，避免多次 dispatch 调用导致的竞态。
+       * 同时递增 pickVersion，供 debugApi 验证更新是否生效。
+       */
+      setPickBatch(partial: Partial<PickState>) {
+        dispatch({ type: "UPDATE_PICK", payload: partial });
+        dispatch({ type: "INCREMENT_VERSION" });
+      },
+      /**
+       * 锁定 pick：阻止 useEffect 在 astrolabe 变化时重置 pick。
+       * 用于 debugApi 的事务式更新期间，防止竞态。
+       */
+      lockPick() {
+        dispatch({ type: "LOCK_PICK" });
+      },
+      /**
+       * 解锁 pick：恢复 useEffect 的正常重置行为。
+       */
+      unlockPick() {
+        dispatch({ type: "UNLOCK_PICK" });
+      },
+      /** 获取当前 pick 版本号（用于 debugApi 验证） */
+      getPickVersion() {
+        return pickVersion;
+      },
+      resetToday() {
+        dispatch({ type: "SET_PICK", payload: clampPick(initPick(), birthLunarYear) });
+      },
+      toggleScope(s: Scope) {
+        dispatch({ type: "TOGGLE_SCOPE", payload: s });
+      },
+      /** 只显示指定 scope，其他全部关闭 */
+      showScope(s: Scope) {
+        dispatch({ type: "SHOW_SCOPE", payload: s });
+      },
+      showNatal() {
+        dispatch({ type: "SHOW_NATAL" });
+      },
+    };
+  }, [childhood, decades, birthLunarYear, pickVersion, show]);
 
   /** 本命命宫索引 */
   const soulPalaceIndex = useMemo(

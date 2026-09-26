@@ -2,7 +2,7 @@
  * Header 组件 - 全局共用
  * 包含标题、SVG Icon 导航、PersonSelector
  */
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, memo } from "react";
 import { NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
@@ -37,7 +37,12 @@ type HeaderProps = {
   pluginMenus?: PluginExtensionsView["menus"];
 };
 
-export function Header({
+/**
+ * Header 组件 - 全局共用
+ * 包含标题、SVG Icon 导航、PersonSelector
+ * 使用 memo 优化避免父组件重渲染时的不必要更新
+ */
+export const Header = memo(function Header({
   currentPersonId,
   onSelectPerson,
   onOpenImport,
@@ -169,4 +174,4 @@ export function Header({
       </div>
     </header>
   );
-}
+});

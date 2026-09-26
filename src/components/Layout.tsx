@@ -2,7 +2,16 @@
  * Layout 组件 - 全局布局
  * 包含背景光雾、Header（含 PersonSelector）、main、footer
  */
-import { lazy, Suspense, useEffect, useRef, useState, useCallback, useMemo } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  useReducer,
+} from "react";
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "./Header";
@@ -37,6 +46,79 @@ const GuideOverlay = lazy(() => import("./GuideOverlay").then(m => ({ default: m
 
 const STORAGE_KEY = "zwds-current-person-id";
 
+/**
+ * 对话框状态聚合类型：将四个独立的对话框开关状态合并管理
+ * 使用 useReducer 避免多个 useState 导致的重复渲染
+ */
+interface DialogState {
+  importOpen: boolean;
+  syncOpen: boolean;
+  paletteOpen: boolean;
+  themeEditorOpen: boolean;
+}
+
+type DialogAction =
+  | { type: "OPEN_IMPORT" }
+  | { type: "CLOSE_IMPORT" }
+  | { type: "OPEN_SYNC" }
+  | { type: "CLOSE_SYNC" }
+  | { type: "OPEN_PALETTE" }
+  | { type: "CLOSE_PALETTE" }
+  | { type: "TOGGLE_PALETTE" }
+  | { type: "OPEN_THEME_EDITOR" }
+  | { type: "CLOSE_THEME_EDITOR" };
+
+function dialogReducer(state: DialogState, action: DialogAction): DialogState {
+  switch (action.type) {
+    case "OPEN_IMPORT":
+      return { ...state, importOpen: true };
+    case "CLOSE_IMPORT":
+      return { ...state, importOpen: false };
+    case "OPEN_SYNC":
+      return { ...state, syncOpen: true };
+    case "CLOSE_SYNC":
+      return { ...state, syncOpen: false };
+    case "OPEN_PALETTE":
+      return { ...state, paletteOpen: true };
+    case "CLOSE_PALETTE":
+      return { ...state, paletteOpen: false };
+    case "TOGGLE_PALETTE":
+      return { ...state, paletteOpen: !state.paletteOpen };
+    case "OPEN_THEME_EDITOR":
+      return { ...state, themeEditorOpen: true };
+    case "CLOSE_THEME_EDITOR":
+      return { ...state, themeEditorOpen: false };
+    default:
+      return state;
+  }
+}
+
+/**
+ * 引导系统状态聚合类型：将引导步骤和当前步骤索引合并管理
+ */
+interface GuideState {
+  steps: GuideStep[] | null;
+  currentStep: number;
+}
+
+type GuideAction =
+  | { type: "START_GUIDE"; payload: GuideStep[] }
+  | { type: "GO_TO_STEP"; payload: number }
+  | { type: "STOP_GUIDE" };
+
+function guideReducer(state: GuideState, action: GuideAction): GuideState {
+  switch (action.type) {
+    case "START_GUIDE":
+      return { steps: action.payload, currentStep: 0 };
+    case "GO_TO_STEP":
+      return { ...state, currentStep: action.payload };
+    case "STOP_GUIDE":
+      return { steps: null, currentStep: 0 };
+    default:
+      return state;
+  }
+}
+
 type LayoutProps = {
   children: ReactNode;
 };
@@ -46,17 +128,24 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { t, locale, setLocale } = useI18n();
   const [currentPersonId, setCurrentPersonId] = useState<number | null>(null);
-  const [importOpen, setImportOpen] = useState(false);
-  const [syncOpen, setSyncOpen] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const [themeEditorOpen, setThemeEditorOpen] = useState(false);
+  // 使用 useReducer 管理对话框状态，减少重复渲染
+  const [dialogState, dialogDispatch] = useReducer(dialogReducer, {
+    importOpen: false,
+    syncOpen: false,
+    paletteOpen: false,
+    themeEditorOpen: false,
+  });
+  const { importOpen, syncOpen, paletteOpen, themeEditorOpen } = dialogState;
   const [theme, setThemeState] = useState<Theme>(getTheme);
   const currentPersonRef = useRef<Person | null>(null);
   const pluginExtensions = usePluginExtensions();
 
-  /* ── 引导系统状态 ──────────────────────────── */
-  const [guideSteps, setGuideSteps] = useState<GuideStep[] | null>(null);
-  const [guideCurrentStep, setGuideCurrentStep] = useState(0);
+  /* ── 引导系统状态：使用 useReducer 集中管理 ──────────────────────────── */
+  const [guideState, guideDispatch] = useReducer(guideReducer, {
+    steps: null,
+    currentStep: 0,
+  });
+  const { steps: guideSteps, currentStep: guideCurrentStep } = guideState;
 
   // 初始化：加载默认人物 + 自定义主题
   useEffect(() => {
@@ -134,21 +223,19 @@ export function Layout({ children }: LayoutProps) {
   }, [locale, setLocale]);
 
   // ── 命令面板开关 ────────────────────────────
-  const closePalette = useCallback(() => setPaletteOpen(false), []);
+  const closePalette = useCallback(() => dialogDispatch({ type: "CLOSE_PALETTE" }), []);
 
   // ── 引导系统 ────────────────────────────
   /** 启动指定引导流程 */
   const startGuide = useCallback((guideId: string) => {
     const steps = getGuideSteps(guideId);
     if (!steps || steps.length === 0) return;
-    setGuideSteps(steps);
-    setGuideCurrentStep(0);
+    guideDispatch({ type: "START_GUIDE", payload: steps });
   }, []);
 
   /** 关闭引导 */
   const stopGuide = useCallback(() => {
-    setGuideSteps(null);
-    setGuideCurrentStep(0);
+    guideDispatch({ type: "STOP_GUIDE" });
   }, []);
 
   /** 完成引导 */
@@ -204,7 +291,7 @@ export function Layout({ children }: LayoutProps) {
       currentPersonId,
       onSelectPerson: handleSelectPerson,
       onClose: closePalette,
-      onOpenImport: () => setImportOpen(true),
+      onOpenImport: () => dialogDispatch({ type: "OPEN_IMPORT" }),
       onCycleTheme: cycleTheme,
       onToggleLocale: toggleLocale,
       onToggleHelp: () => toggleHelp(),
@@ -254,7 +341,7 @@ export function Layout({ children }: LayoutProps) {
         key: "Ctrl+K",
         description: t("search.title"),
         group: "shortcut.group.general",
-        handler: () => setPaletteOpen(v => !v),
+        handler: () => dialogDispatch({ type: "TOGGLE_PALETTE" }),
       },
       {
         key: "?",
@@ -276,11 +363,11 @@ export function Layout({ children }: LayoutProps) {
       <Header
         currentPersonId={currentPersonId}
         onSelectPerson={handleSelectPerson}
-        onOpenImport={() => setImportOpen(true)}
-        onOpenSync={() => setSyncOpen(true)}
+        onOpenImport={() => dialogDispatch({ type: "OPEN_IMPORT" })}
+        onOpenSync={() => dialogDispatch({ type: "OPEN_SYNC" })}
         theme={theme}
         onCycleTheme={cycleTheme}
-        onOpenThemeEditor={() => setThemeEditorOpen(true)}
+        onOpenThemeEditor={() => dialogDispatch({ type: "OPEN_THEME_EDITOR" })}
         locale={locale}
         onToggleLocale={toggleLocale}
         pluginMenus={pluginExtensions.menus}
@@ -327,20 +414,23 @@ export function Layout({ children }: LayoutProps) {
           <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
           <ImportDialog
             open={importOpen}
-            onClose={() => setImportOpen(false)}
+            onClose={() => dialogDispatch({ type: "CLOSE_IMPORT" })}
             onImportSuccess={handleImportSuccess}
           />
           <SyncDialog
             open={syncOpen}
-            onClose={() => setSyncOpen(false)}
+            onClose={() => dialogDispatch({ type: "CLOSE_SYNC" })}
             onRestored={handleImportSuccess}
           />
-          <ThemeEditor open={themeEditorOpen} onClose={() => setThemeEditorOpen(false)} />
+          <ThemeEditor
+            open={themeEditorOpen}
+            onClose={() => dialogDispatch({ type: "CLOSE_THEME_EDITOR" })}
+          />
           {guideSteps && (
             <GuideOverlay
               steps={guideSteps}
               currentStep={guideCurrentStep}
-              onGoTo={setGuideCurrentStep}
+              onGoTo={(step: number) => guideDispatch({ type: "GO_TO_STEP", payload: step })}
               onComplete={handleGuideComplete}
               onSkip={handleGuideSkip}
             />
