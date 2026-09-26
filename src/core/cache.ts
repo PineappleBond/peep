@@ -135,6 +135,11 @@ export function memoizeWeak<T extends object, R>(fn: (arg: T) => R): (arg: T) =>
 /**
  * 多参数函数记忆化：使用 LRU 缓存，以序列化参数为键。
  * 适用于：buildMonths(year)、buildDays(year, month) 这类以原始值为键的场景。
+ *
+ * 安全说明：默认使用 JSON.stringify(args) 作为缓存键。
+ * 如果参数来自外部输入，恶意构造的字符串可能与合法参数产生相同缓存键（缓存投毒）。
+ * 当前调用方均为内部计算函数（参数为数字/日期等原始值），风险可接受。
+ * 若未来用于安全敏感场景，请传入自定义 keyFn 对输入进行规范化或哈希。
  */
 export function memoize<A extends unknown[], R>(
   fn: (...args: A) => R,

@@ -145,9 +145,10 @@ class BaseDebugError extends Error {
         : message;
     super(fullMessage);
     this.source = source;
-    this.context = options?.context ?? {};
-    this.suggestion = options?.suggestion;
-    this.cause = options?.cause;
+    // 生产环境清空 context，防止敏感人物数据通过错误序列化泄露给 AI
+    this.context = import.meta.env.DEV ? (options?.context ?? {}) : {};
+    this.suggestion = import.meta.env.DEV ? options?.suggestion : undefined;
+    this.cause = import.meta.env.DEV ? options?.cause : undefined;
     // 确保堆栈追踪可用（V8 引擎）
     // captureStackTrace 是 Node.js/V8 特有的 API，标准 TypeScript 类型定义中未包含
     // 使用 never 类型避免严格的构造函数签名检查
@@ -547,8 +548,11 @@ async function waitForCallbacks(
   timeout = 1000,
 ): Promise<void> {
   const start = Date.now();
+  // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
+  const maxIterations = Math.ceil(timeout / 20) + 10;
+  let iterations = 0;
   while (!_callbacksReady[page]) {
-    if (Date.now() - start > timeout) {
+    if (++iterations > maxIterations || Date.now() - start > timeout) {
       const err = new ZiWeiError(
         `${page} 页面的调试 API 回调注册超时（${timeout}ms）——页面可能未访问过或已卸载`,
         "waitForCallbacks",
@@ -1026,6 +1030,15 @@ export function parseDate(time: Date | number | string): Date {
   const str = String(time).trim();
   if (!str) {
     throw new ParseDateError(time, [], "输入为空字符串");
+  }
+  // 安全保护：限制输入长度，防止超长字符串导致正则/Date.parse DoS
+  // 合理日期字符串不超过 30 字符，留足余量取 100
+  if (str.length > 100) {
+    throw new ParseDateError(
+      time,
+      [],
+      `输入字符串过长（${str.length} 字符，上限 100），可能存在恶意输入`,
+    );
   }
 
   // 子分支 3.1：纯数字字符串 → 当作时间戳
@@ -2303,7 +2316,10 @@ async function waitForStateUpdate(): Promise<void> {
   let stableCount = 0;
   const requiredStable = 3; // 连续 3 次采样相同才认为已稳定（防止振荡误判）
   const maxWait = 300;
-  while (Date.now() - start < maxWait) {
+  // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
+  const maxIterations = Math.ceil(maxWait / 20) + 10;
+  let iterations = 0;
+  while (++iterations <= maxIterations && Date.now() - start < maxWait) {
     await new Promise(r => setTimeout(r, 20));
     const currentPick = JSON.stringify(z.pick);
     if (currentPick === lastPick) {
@@ -2341,7 +2357,10 @@ async function waitForPersonMatch(expectedId: number, timeout = 2000): Promise<v
     return;
   }
   const start = Date.now();
-  while (Date.now() - start < timeout) {
+  // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
+  const maxIterations = Math.ceil(timeout / 20) + 10;
+  let iterations = 0;
+  while (++iterations <= maxIterations && Date.now() - start < timeout) {
     const person = _getPerson();
     if (person && person.id === expectedId) {
       log("debug", "wait", "人物匹配成功", {
@@ -2372,8 +2391,11 @@ async function waitForAstrolabeStable(z: Zwds, timeout = 2000): Promise<void> {
   let lastAstrolabe = z.astrolabe;
   let stableCount = 0;
   const requiredStable = 2; // 连续 2 次采样（间隔 30ms）相同，认为已稳定
+  // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
+  const maxIterations = Math.ceil(timeout / 30) + 10;
+  let iterations = 0;
 
-  while (Date.now() - start < timeout) {
+  while (++iterations <= maxIterations && Date.now() - start < timeout) {
     await new Promise(r => setTimeout(r, 30));
     if (z.astrolabe === lastAstrolabe) {
       stableCount++;
@@ -2535,7 +2557,10 @@ async function waitForDialogReady(): Promise<void> {
  */
 async function waitForDaLiuRenCallbacks(timeout = 1000): Promise<void> {
   const start = Date.now();
-  while (!_callbacksReady.daliuren) {
+  // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
+  const maxIterations = Math.ceil(timeout / 50) + 10;
+  let iterations = 0;
+  while (++iterations <= maxIterations && !_callbacksReady.daliuren) {
     if (Date.now() - start > timeout) {
       throw new DaLiuRenError(
         `大六壬页面回调注册超时（${timeout}ms）——页面可能未访问过或已卸载`,
@@ -2582,7 +2607,10 @@ async function waitForRecordSaved(recordId: number | undefined, timeout = 2000):
  */
 async function waitForWikiCallbacks(timeout = 1000): Promise<void> {
   const start = Date.now();
-  while (!_callbacksReady.wiki) {
+  // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
+  const maxIterations = Math.ceil(timeout / 50) + 10;
+  let iterations = 0;
+  while (++iterations <= maxIterations && !_callbacksReady.wiki) {
     if (Date.now() - start > timeout) {
       throw new WikiError(
         `Wiki 页面回调注册超时（${timeout}ms）——页面可能未访问过或已卸载`,
