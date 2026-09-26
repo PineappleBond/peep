@@ -413,5 +413,16 @@
   "import.complete": "Import Complete",
   "import.retry": "Retry",
   "import.warning": "Note: Importing will not overwrite existing data. Records with duplicate IDs will be automatically assigned new IDs.",
-  "common.close": "Close"
+  "common.close": "Close",
+  "search.title": "Search",
+  "search.placeholder": "Search name, question, title or action…",
+  "search.noResult": "No matching results found",
+  "search.empty": "Type a keyword to search, or pick an item below",
+  "search.hintNavigate": "Navigate",
+  "search.hintSelect": "Select",
+  "search.hintClose": "Close",
+  "search.category.person": "Persons",
+  "search.category.liuren": "Divinations",
+  "search.category.wiki": "Documents",
+  "search.category.action": "Actions"
 }

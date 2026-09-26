@@ -413,5 +413,16 @@
   "import.complete": "导入完成",
   "import.retry": "重试",
   "import.warning": "注意：导入操作不会覆盖现有数据，相同 ID 的记录会自动生成新 ID。",
-  "common.close": "关闭"
+  "common.close": "关闭",
+  "search.title": "搜索",
+  "search.placeholder": "输入姓名、问题、标题或操作…",
+  "search.noResult": "没有找到匹配的结果",
+  "search.empty": "输入关键词搜索，或直接选择一项",
+  "search.hintNavigate": "导航",
+  "search.hintSelect": "选择",
+  "search.hintClose": "关闭",
+  "search.category.person": "人物",
+  "search.category.liuren": "占课记录",
+  "search.category.wiki": "知识文档",
+  "search.category.action": "快捷操作"
 }

@@ -2,7 +2,7 @@
  * Header 组件 - 全局共用
  * 包含标题、SVG Icon 导航、PersonSelector
  */
-import { useState, useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
@@ -10,7 +10,7 @@ import { LiurenIcon } from "./icons/LiurenIcon";
 import { WikiIcon } from "./icons/WikiIcon";
 import type { Person } from "../core/personDb";
 import { useI18n, type Locale } from "../core/i18n";
-import { getTheme, setTheme, type Theme } from "../core/theme";
+import type { Theme } from "../core/theme";
 import { registerShortcut } from "../core/shortcuts";
 
 type HeaderProps = {
@@ -20,6 +20,14 @@ type HeaderProps = {
   onSelectPerson: (person: Person) => void;
   /** 打开导入对话框 */
   onOpenImport?: () => void;
+  /** 当前主题 */
+  theme: Theme;
+  /** 循环切换主题 */
+  onCycleTheme: () => void;
+  /** 当前语言 */
+  locale: Locale;
+  /** 切换语言 */
+  onToggleLocale: () => void;
 };
 
 /** 根据路由获取标题键名 */
@@ -36,27 +44,19 @@ function getSubtitleKeyByPath(pathname: string): string {
   return "header.ziwei.subtitle";
 }
 
-export function Header({ currentPersonId, onSelectPerson, onOpenImport }: HeaderProps) {
+export function Header({
+  currentPersonId,
+  onSelectPerson,
+  onOpenImport,
+  theme,
+  onCycleTheme,
+  locale,
+  onToggleLocale,
+}: HeaderProps) {
   const location = useLocation();
-  const { t, locale, setLocale } = useI18n();
+  const { t } = useI18n();
   const titleKey = getTitleKeyByPath(location.pathname);
   const subtitleKey = getSubtitleKeyByPath(location.pathname);
-  const [theme, setThemeState] = useState<Theme>(getTheme);
-
-  /** 切换语言 */
-  const toggleLocale = () => {
-    const next: Locale = locale === "zh-CN" ? "en-US" : "zh-CN";
-    setLocale(next);
-  };
-
-  /** 循环切换主题：system → light → dark → system */
-  const cycleTheme = useCallback(() => {
-    const order: Theme[] = ["system", "light", "dark"];
-    const idx = order.indexOf(theme);
-    const next = order[(idx + 1) % order.length];
-    setThemeState(next);
-    setTheme(next);
-  }, [theme]);
 
   /** 主题按钮显示文本 */
   const themeLabel = theme === "system" ? "⚙" : theme === "light" ? "☀" : "☾";
@@ -68,9 +68,9 @@ export function Header({ currentPersonId, onSelectPerson, onOpenImport }: Header
       key: "T",
       description: t("shortcut.toggleTheme"),
       group: "shortcut.group.general",
-      handler: cycleTheme,
+      handler: onCycleTheme,
     });
-  }, [cycleTheme, t]);
+  }, [onCycleTheme, t]);
 
   return (
     <header className="top">
@@ -103,7 +103,7 @@ export function Header({ currentPersonId, onSelectPerson, onOpenImport }: Header
       <div className="top-actions">
         <button
           className="theme-toggle"
-          onClick={cycleTheme}
+          onClick={onCycleTheme}
           title={themeTitle}
           aria-label={themeTitle}
         >
@@ -111,7 +111,7 @@ export function Header({ currentPersonId, onSelectPerson, onOpenImport }: Header
         </button>
         <button
           className="lang-toggle"
-          onClick={toggleLocale}
+          onClick={onToggleLocale}
           title={locale === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")}
           aria-label={
             locale === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")

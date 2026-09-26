@@ -2,18 +2,21 @@
  * Layout 组件 - 全局布局
  * 包含背景光雾、Header（含 PersonSelector）、main、footer
  */
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "./Header";
 import { ToastHost } from "./ToastHost";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { ImportDialog } from "./ImportDialog";
+import { CommandPalette } from "./CommandPalette";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
 import { useI18n } from "../core/i18n";
 import { registerShortcuts, toggleHelp } from "../core/shortcuts";
+import { getTheme, setTheme, type Theme } from "../core/theme";
+import type { SearchContext } from "../core/globalSearch";
 
 const STORAGE_KEY = "zwds-current-person-id";
 
@@ -23,9 +26,11 @@ type LayoutProps = {
 
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const [currentPersonId, setCurrentPersonId] = useState<number | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(getTheme);
   const currentPersonRef = useRef<Person | null>(null);
 
   // 初始化：加载默认人物
@@ -85,6 +90,40 @@ export function Layout({ children }: LayoutProps) {
     globalEvents.emit("person.changed", currentPersonRef.current!);
   }, []);
 
+  // ── 主题循环切换 ────────────────────────────
+  const cycleTheme = useCallback(() => {
+    const order: Theme[] = ["system", "light", "dark"];
+    const idx = order.indexOf(theme);
+    const next = order[(idx + 1) % order.length];
+    setThemeState(next);
+    setTheme(next);
+  }, [theme]);
+
+  // ── 语言切换 ────────────────────────────
+  const toggleLocale = useCallback(() => {
+    const next = locale === "zh-CN" ? "en-US" : "zh-CN";
+    setLocale(next);
+  }, [locale, setLocale]);
+
+  // ── 命令面板开关 ────────────────────────────
+  const openPalette = useCallback(() => setPaletteOpen(true), []);
+  const closePalette = useCallback(() => setPaletteOpen(false), []);
+
+  // 搜索上下文（供 CommandPalette 使用）
+  const searchContext = useMemo<SearchContext>(
+    () => ({
+      navigate,
+      currentPersonId,
+      onSelectPerson: handleSelectPerson,
+      onClose: closePalette,
+      onOpenImport: () => setImportOpen(true),
+      onCycleTheme: cycleTheme,
+      onToggleLocale: toggleLocale,
+      onToggleHelp: () => toggleHelp(),
+    }),
+    [navigate, currentPersonId, handleSelectPerson, closePalette, cycleTheme, toggleLocale],
+  );
+
   // 注册调试 API 回调
   useEffect(() => {
     registerDebugApi({
@@ -102,7 +141,7 @@ export function Layout({ children }: LayoutProps) {
     });
   }, [navigate, handleSelectPerson]);
 
-  // ── 全局导航快捷键 + 帮助弹窗 ────────────────────────────
+  // ── 全局导航快捷键 + 帮助弹窗 + 命令面板 ────────────────────────────
   useEffect(() => {
     const unreg = registerShortcuts([
       {
@@ -122,6 +161,12 @@ export function Layout({ children }: LayoutProps) {
         description: t("nav.wiki"),
         group: "shortcut.group.nav",
         handler: () => navigate("/wiki"),
+      },
+      {
+        key: "Ctrl+K",
+        description: t("search.title"),
+        group: "shortcut.group.general",
+        handler: () => setPaletteOpen(v => !v),
       },
       {
         key: "?",
@@ -144,6 +189,10 @@ export function Layout({ children }: LayoutProps) {
         currentPersonId={currentPersonId}
         onSelectPerson={handleSelectPerson}
         onOpenImport={() => setImportOpen(true)}
+        theme={theme}
+        onCycleTheme={cycleTheme}
+        locale={locale}
+        onToggleLocale={toggleLocale}
       />
       <main id="main-content">{children}</main>
       <footer className="foot">
@@ -162,6 +211,8 @@ export function Layout({ children }: LayoutProps) {
       <ToastHost />
       {/* 快捷键帮助弹窗 */}
       <ShortcutHelp />
+      {/* 全局搜索命令面板 */}
+      <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
       {/* 数据导入对话框 */}
       <ImportDialog
         open={importOpen}
