@@ -68,27 +68,27 @@ export async function runMigrations(
   toVersion: number,
 ): Promise<void> {
   if (fromVersion >= toVersion) {
-    console.log(`[migration] 无需迁移（当前版本 ${fromVersion}）`);
+    console.warn(`[migration] 无需迁移（当前版本 ${fromVersion}）`);
     return;
   }
 
-  console.log(`[migration] 开始迁移：v${fromVersion} → v${toVersion}`);
+  console.warn(`[migration] 开始迁移：v${fromVersion} → v${toVersion}`);
 
   for (let v = fromVersion + 1; v <= toVersion; v++) {
     const fn = migrations.get(v);
     if (!fn) {
-      console.log(`[migration] 版本 ${v} 无迁移函数，跳过`);
+      console.warn(`[migration] 版本 ${v} 无迁移函数，跳过`);
       continue;
     }
 
     const startTime = Date.now();
-    console.log(`[migration] 执行版本 ${v} 迁移...`);
+    console.warn(`[migration] 执行版本 ${v} 迁移...`);
 
     try {
       await fn(db);
       const duration = Date.now() - startTime;
 
-      console.log(`[migration] 版本 ${v} 迁移成功（${duration}ms）`);
+      console.warn(`[migration] 版本 ${v} 迁移成功（${duration}ms）`);
       saveMigrationLog({
         version: v,
         timestamp: Date.now(),
@@ -112,7 +112,7 @@ export async function runMigrations(
     }
   }
 
-  console.log(`[migration] 迁移完成：v${toVersion}`);
+  console.warn(`[migration] 迁移完成：v${toVersion}`);
 }
 
 /**
@@ -139,7 +139,7 @@ export async function checkDataIntegrity(db: Dexie): Promise<{
     // 检查 persons 表
     if (tables.includes("persons")) {
       const persons = await db.table("persons").toArray();
-      const defaults = persons.filter((p: any) => p.isDefault);
+      const defaults = persons.filter((p: Record<string, unknown>) => p.isDefault);
 
       if (defaults.length === 0) {
         issues.push("缺少默认人物");
@@ -159,7 +159,7 @@ export async function checkDataIntegrity(db: Dexie): Promise<{
     if (tables.includes("wikiDocs") && tables.includes("wikiLinks")) {
       const docs = await db.table("wikiDocs").toArray();
       const links = await db.table("wikiLinks").toArray();
-      const docIds = new Set(docs.map((d: any) => d.id));
+      const docIds = new Set(docs.map((d: Record<string, unknown>) => d.id as string));
 
       for (const link of links) {
         if (!docIds.has(link.sourceDocId)) {

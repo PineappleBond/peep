@@ -7,10 +7,9 @@
  * - 失败不阻塞主应用启动
  */
 import { registerAndEnable } from "../core/pluginSystem";
-import { samplePlugin } from "../plugins/samplePlugin";
 
 /** 内建插件清单：新增插件在此追加 */
-const BUILTIN_PLUGINS = [samplePlugin];
+const BUILTIN_PLUGINS: any[] = [];
 
 let initialized = false;
 

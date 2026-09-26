@@ -18,7 +18,6 @@ import {
   getCustomTheme,
   saveCustomTheme,
   clearCustomTheme,
-  exportTheme,
   importTheme,
   themeFromPreset,
   type CustomTheme,
@@ -169,7 +168,7 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
           setThemeName(imported.name);
           setIsDirty(false);
           toast.success(t("themeEditor.imported"));
-        } catch (err) {
+        } catch (_err) {
           toast.error(t("themeEditor.importFailed"));
         }
       };

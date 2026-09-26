@@ -8,8 +8,6 @@ import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
 import { LiurenIcon } from "./icons/LiurenIcon";
 import { WikiIcon } from "./icons/WikiIcon";
-import { VizIcon } from "./icons/VizIcon";
-import { InsightsIcon } from "./icons/InsightsIcon";
 import type { Person } from "../core/personDb";
 import { useI18n, type Locale } from "../core/i18n";
 import type { Theme } from "../core/theme";
@@ -92,20 +90,6 @@ export function Header({
           aria-label={t("nav.wiki")}
         >
           <WikiIcon aria-hidden="true" />
-        </NavLink>
-        <NavLink
-          to="/viz"
-          className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
-          aria-label={t("nav.viz")}
-        >
-          <VizIcon aria-hidden="true" />
-        </NavLink>
-        <NavLink
-          to="/insights"
-          className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
-          aria-label={t("nav.insights")}
-        >
-          <InsightsIcon aria-hidden="true" />
         </NavLink>
         {/* 插件注册的菜单扩展 */}
         {pluginMenus?.map(menu => {

@@ -62,21 +62,6 @@ export function GuideOverlay({
     };
   }, [step]);
 
-  /* 键盘导航 */
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onSkip();
-      } else if (e.key === "ArrowRight" || e.key === "Enter") {
-        handleNext();
-      } else if (e.key === "ArrowLeft") {
-        handlePrev();
-      }
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [currentStep]);
-
   const handleNext = useCallback(() => {
     if (currentStep < steps.length - 1) {
       onGoTo(currentStep + 1);
@@ -90,6 +75,21 @@ export function GuideOverlay({
       onGoTo(currentStep - 1);
     }
   }, [currentStep, onGoTo]);
+
+  /* 键盘导航 */
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onSkip();
+      } else if (e.key === "ArrowRight" || e.key === "Enter") {
+        handleNext();
+      } else if (e.key === "ArrowLeft") {
+        handlePrev();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [currentStep, handleNext, handlePrev, onSkip]);
 
   /* 计算气泡位置 */
   const getPopoverStyle = (): React.CSSProperties => {

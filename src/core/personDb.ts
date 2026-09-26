@@ -247,7 +247,7 @@ export function initDatabase(): Promise<void> {
         if (!valid) {
           console.warn("[personDb] 数据完整性问题：", issues);
         } else {
-          console.log("[personDb] 数据完整性检查通过");
+          console.warn("[personDb] 数据完整性检查通过");
         }
       } catch (err) {
         console.error("[personDb] 数据库初始化失败", err);

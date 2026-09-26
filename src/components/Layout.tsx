@@ -8,7 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { ToastHost } from "./ToastHost";
 import { ShortcutHelp } from "./ShortcutHelp";
-import { Spinner } from "./Spinner";
+// import { Spinner } from "./Spinner"; // 暂未使用，保留以备后续需要
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
@@ -19,7 +19,6 @@ import { initCustomTheme } from "../core/themeEditor";
 import type { SearchContext } from "../core/globalSearch";
 import {
   getGuideSteps,
-  isGuideCompleted,
   markGuideCompleted,
   shouldAutoStartWelcome,
   markWelcomeCompleted,
@@ -135,7 +134,6 @@ export function Layout({ children }: LayoutProps) {
   }, [locale, setLocale]);
 
   // ── 命令面板开关 ────────────────────────────
-  const openPalette = useCallback(() => setPaletteOpen(true), []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
 
   // ── 引导系统 ────────────────────────────
@@ -185,9 +183,9 @@ export function Layout({ children }: LayoutProps) {
 
   /** 暴露全局方法供页面组件调用（重新播放引导） */
   useEffect(() => {
-    (window as any).__startGuide = startGuide;
+    (window as unknown as Record<string, unknown>).__startGuide = startGuide;
     return () => {
-      delete (window as any).__startGuide;
+      delete (window as unknown as Record<string, unknown>).__startGuide;
     };
   }, [startGuide]);
 
