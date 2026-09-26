@@ -315,7 +315,7 @@ export function WikiPage() {
       >
         <p>{t("wiki.confirmDeleteMessage")}</p>
         {deletingDoc && (
-          <p className="dlg-hint">{t("wiki.docLabel")}：{deletingDoc.title || t("wiki.noTitle")}</p>
+          <p className="dlg-hint">{t("common.labelValue", { label: t("wiki.docLabel"), value: deletingDoc.title || t("wiki.noTitle") })}</p>
         )}
       </Dialog>
     </div>

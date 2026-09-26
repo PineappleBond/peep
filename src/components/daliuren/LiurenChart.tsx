@@ -55,7 +55,7 @@ function MonthGeneralSection({ result }: { result: DaLiuRenResult }) {
     <section className="liuren-section" aria-label={t("daliuren.monthGeneral")}>
       <h4 className="liuren-section-title">{t("daliuren.monthGeneral")}</h4>
       <div className="liuren-month-general">
-        {result.monthGeneral.name}（{branchText(result.monthGeneral.branch)}）
+        {t("daliuren.nameWithBranch", { name: result.monthGeneral.name, branch: branchText(result.monthGeneral.branch) })}
       </div>
     </section>
   );
@@ -169,7 +169,7 @@ function XunKongSection({ result }: { result: DaLiuRenResult }) {
     <section className="liuren-section" aria-label={t("daliuren.xunKong")}>
       <h4 className="liuren-section-title">{t("daliuren.xunKong")}</h4>
       <div className="liuren-xunkong">
-        {t("daliuren.xunHead")}：{branchText(xunKong.xunHead)} {t("daliuren.void")}：{branchText(xunKong.void1)} {branchText(xunKong.void2)}
+        {t("common.labelValue", { label: t("daliuren.xunHead"), value: `${branchText(xunKong.xunHead)} ${t("common.labelValue", { label: t("daliuren.void"), value: `${branchText(xunKong.void1)} ${branchText(xunKong.void2)}` })}` })}
       </div>
     </section>
   );
@@ -211,7 +211,7 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
           <div className="liuren-shensha-list">
             {jiShen.map((s, i) => (
               <span key={i} className="liuren-shensha-item ji" title={s.description}>
-                {s.name}（{branchText(s.branch)}）
+                {t("daliuren.nameWithBranch", { name: s.name, branch: branchText(s.branch) })}
               </span>
             ))}
           </div>
@@ -223,7 +223,7 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
           <div className="liuren-shensha-list">
             {xiongSha.map((s, i) => (
               <span key={i} className="liuren-shensha-item xiong" title={s.description}>
-                {s.name}（{branchText(s.branch)}）
+                {t("daliuren.nameWithBranch", { name: s.name, branch: branchText(s.branch) })}
               </span>
             ))}
           </div>

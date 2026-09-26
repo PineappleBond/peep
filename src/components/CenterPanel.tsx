@@ -25,7 +25,7 @@ export const CenterPanel = memo(function CenterPanel({
   const h = z.horoscope;
   const pillars = a.chineseDate.split(" ");
   const yearStem = pillars[0]?.charAt(0) ?? "";
-  const zao = a.gender === "女" ? "坤造" : "乾造";
+  const zao = a.gender === "女" ? t("center.kunZao") : t("center.qianZao");
   const yinyang = `${isYangStem(yearStem) ? t("center.yang") : t("center.yin")}${a.gender === "男" ? t("common.male") : t("common.female")}`;
   const qiyun = z.decades[0]?.range[0];
   const allOff = SCOPES.every((s) => !z.visible[s]);
@@ -64,7 +64,7 @@ export const CenterPanel = memo(function CenterPanel({
         <div className="ci">
           <b>{t("center.time")}</b>
           <span>
-            {a.time}（{a.timeRange}）
+            {t("center.timeWithRange", { time: a.time, range: a.timeRange })}
           </span>
         </div>
         <div className="ci">
@@ -83,9 +83,14 @@ export const CenterPanel = memo(function CenterPanel({
           <div className="ci ci-wide">
             <b>{t("center.trueSolar")}</b>
             <span title={t("center.trueSolarHint", { place: ts.place, longitude: ts.longitude, eot: ts.eotMinutes.toFixed(1) })}>
-              {ts.place} · {ts.trueDate} {ts.trueTime}（{t("center.clockTime")} {ts.clockTime}，
-              {ts.offsetMinutes >= 0 ? "+" : ""}
-              {ts.offsetMinutes.toFixed(1)}{t("person.lngOffsetUnit")}）
+              {t("center.trueSolarDetail", {
+                place: ts.place,
+                trueDate: ts.trueDate,
+                trueTime: ts.trueTime,
+                clockTime: ts.clockTime,
+                offset: `${ts.offsetMinutes >= 0 ? "+" : ""}${ts.offsetMinutes.toFixed(1)}`,
+                unit: t("person.lngOffsetUnit"),
+              })}
             </span>
           </div>
         )}
@@ -105,7 +110,7 @@ export const CenterPanel = memo(function CenterPanel({
           <div className="ci">
             <b>{t("center.originPalace")}</b>
             <span>
-              {origin.name}（{origin.earthlyBranch}）
+              {t("center.nameWithBranch", { name: origin.name, branch: origin.earthlyBranch })}
             </span>
           </div>
         )}

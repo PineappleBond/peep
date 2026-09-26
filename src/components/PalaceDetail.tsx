@@ -150,7 +150,7 @@ export const PalaceDetail = memo(function PalaceDetail({
                     {s.role}
                   </i>
                   <b>
-                    {s.palaceName}（{s.branch}）
+                    {t("center.nameWithBranch", { name: s.palaceName, branch: s.branch })}
                   </b>
                   <span>{s.majors}</span>
                 </li>
@@ -160,15 +160,15 @@ export const PalaceDetail = memo(function PalaceDetail({
             <div className="pd-tags">
               <p>
                 <i className="pd-k pd-k-good">{t("detail.auspicious")}</i>
-                {snap.auspicious.join("、") || t("common.none")}
+                {snap.auspicious.join(t("common.listSep")) || t("common.none")}
               </p>
               <p>
                 <i className="pd-k pd-k-bad">{t("detail.inauspicious")}</i>
-                {snap.inauspicious.join("、") || t("common.none")}
+                {snap.inauspicious.join(t("common.listSep")) || t("common.none")}
               </p>
               <p>
                 <i className="pd-k pd-k-mut">{t("detail.natalMutagens")}</i>
-                {snap.natalMutagens.join("、") || t("common.none")}
+                {snap.natalMutagens.join(t("common.listSep")) || t("common.none")}
               </p>
             </div>
           </section>
@@ -191,7 +191,7 @@ export const PalaceDetail = memo(function PalaceDetail({
               ))}
             </ul>
             {fly.selfInward.length > 0 && (
-              <p className="pd-inward">{t("detail.inwardSelf")}：{fly.selfInward.join("、")}</p>
+              <p className="pd-inward">{t("common.labelValue", { label: t("detail.inwardSelf"), value: fly.selfInward.join(t("common.listSep")) })}</p>
             )}
           </section>
         )}
@@ -250,9 +250,9 @@ export const PalaceDetail = memo(function PalaceDetail({
             {scopeSelfMarks.map((s) => (
               <p key={s.scope}>
                 <span className={`pat-scope pat-scope-${s.scope}`}>{SCOPE_META[s.scope].rowLabel}</span>
-                {t("detail.outwardLabel")}：{s.outward.length ? s.outward.map((m) => `${m.star}化${m.char}`).join("、") : t("common.none")}
+                {t("common.labelValue", { label: t("detail.outwardLabel"), value: s.outward.length ? s.outward.map((m) => `${m.star}${t("common.huaChar")}${m.char}`).join(t("common.listSep")) : t("common.none") })}
                 {" / "}
-                {t("detail.inwardLabel")}：{s.inward.length ? s.inward.map((m) => `${m.star}化${m.char}`).join("、") : t("common.none")}
+                {t("common.labelValue", { label: t("detail.inwardLabel"), value: s.inward.length ? s.inward.map((m) => `${m.star}${t("common.huaChar")}${m.char}`).join(t("common.listSep")) : t("common.none") })}
               </p>
             ))}
           </section>

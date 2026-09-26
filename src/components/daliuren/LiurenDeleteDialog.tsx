@@ -63,13 +63,11 @@ export function LiurenDeleteDialog({
         {record && (
           <div className="liuren-delete-info">
             <div>
-              <strong>{t("daliuren.courseTime")}：</strong>
-              {record.calculationTime}
+              <strong>{t("common.labelValue", { label: t("daliuren.courseTime"), value: record.calculationTime })}</strong>
             </div>
             {record.question && (
               <div>
-                <strong>{t("daliuren.questionLabel")}：</strong>
-                {record.question}
+                <strong>{t("common.labelValue", { label: t("daliuren.questionLabel"), value: record.question })}</strong>
               </div>
             )}
           </div>
