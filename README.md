@@ -42,49 +42,242 @@
 - **移动端适配**：≤1024px 自动压缩为文墨天机 APP 式高密度整屏盘面，无需横向滚动
 - 出生信息支持阳历/农历（含闰月）、早晚子时（timeIndex 0~12）、真太阳时（农历输入亦先转公历再校正），本地记忆上次输入
 
-## 开发
+## 快速开始
+
+### 环境要求
+
+- Node.js >= 18
+- npm >= 9
+
+### 安装与开发
 
 ```bash
+# 克隆仓库
+git clone https://github.com/PineappleBond/peep-v2.git
+cd peep-v2
+
+# 安装依赖
 npm install
-npm run dev      # http://localhost:5199
-npm run build    # 产物在 dist/
-npm test         # vitest：干支/农历闰月/K线引擎/结构分析 27+ 项
+
+# 启动开发服务器（端口 5199）
+npm run dev        # http://localhost:5199
+
+# 构建生产版本（tsc 类型检查 + vite 打包）
+npm run build      # 产物在 dist/
+
+# 预览生产构建
+npm run preview
+
+# 运行测试（vitest：干支/农历闰月/K线引擎/结构分析 27+ 项）
+npm test
 ```
+
+### 浏览器支持
+
+- Chrome / Edge >= 90（推荐）
+- Firefox >= 90
+- Safari >= 15
+- 移动端浏览器（iOS Safari / Chrome Android）
 
 ## 技术栈
 
-Vite 5 · React 18 · TypeScript · iztro 2.x · lunar-lite / lunar-typescript · Vitest
+| 类别 | 技术 | 说明 |
+| ---- | ---- | ---- |
+| 构建工具 | Vite 8 | 极速 HMR 开发体验 |
+| 前端框架 | React 18 | 函数组件 + Hooks |
+| 类型系统 | TypeScript 5.6 | 严格模式 |
+| 算法引擎 | [iztro](https://github.com/SylarLong/iztro) 2.x | 星耀安放、四化、运限计算 |
+| 历法计算 | lunar-lite + lunar-typescript | 农历⇄公历、闰月、日柱干支 |
+| 数据存储 | Dexie.js (IndexedDB) | 人物档案/大六壬记录/Wiki 文档 |
+| 序列化 | TOON | 紧凑数据格式，较 JSON 省约 70% token |
+| 路由 | react-router-dom v7 | 三页面路由（紫微/大六壬/Wiki） |
+| 测试 | Vitest + Playwright | 单元测试 + E2E 测试 |
+| 样式 | 原生 CSS | 无 UI 框架，集中在 src/styles/ |
 
-## 目录
+## 项目结构
 
 ```
-docs/
-  kb/              # 公版赋文库：二十篇紫微古籍原文（L3 知识层）
-src/
-  core/
-    utils.ts       # 干支/五虎遁/五鼠遁/四化表预设/真太阳时等
-    archive.ts     # 多盘档案册（localStorage，按姓名索引）
-    rectify.ts     # 生时校正助手（十三时辰候选/特征判定/大事年份反查评分）
-    lunar.ts       # 农历⇄公历、日柱干支、闰月（lunar-typescript 兜底）
-    place.ts       # 出生地解析：中国城市经度 / IANA 时区偏移（含夏令时）
-    tzdata.ts      # tzdb zone1970.tab 生成的时区主城经度表（312 区）
-    useZwds.ts     # 排盘主 Hook：拨盘状态 → 目标日期 → horoscope
-    chartIndex.ts  # 盘面索引原语（星→宫/三方四正/星文本，整盘建一次共享）
-    analysis.ts    # 结构分析层门面：飞宫矩阵/三方四正快照/四化传导链/夹宫/借星 + 聚合再导出
-    patterns.ts    # 格局检测层：本命格局 ~65 个 + 运限格局扫描八类（大限/流年/流月）
-    decadePlan.ts  # 十年规划表（叠宫/四化/均值/高光低谷/运限格局）
-    knowledge.ts   # L1 知识层：推理规则速查（随导出附给 AI）
-    lifeKline.ts   # 人生K线评分引擎（进出双动能+流曜引动）
-    exportData.ts  # AI 导出（JSON/Markdown/推理指引/附录）
-  components/
-    Chart.tsx      # 4×4 盘面 + 三方四正 SVG 连线
-    Palace.tsx     # 宫位卡片
-    StarCell.tsx   # 星耀 + 四化徽章
-    CenterPanel.tsx# 中宫
-    HoroscopeBar.tsx # 大限/流年/流月/流日/流时拨盘（含闰月位）
-    InputPanel.tsx # 出生信息输入（农历三级下拉/流派/四化表/子时界）
-    LifeKline.tsx  # 人生K线图
+peep-v2/
+├── docs/
+│   ├── kb/                  # 公版赋文库：二十篇紫微古籍原文（L3 知识层）
+│   ├── debug-api.md         # 调试 API（window.peep）使用文档
+│   ├── architecture.md      # 架构说明文档
+│   └── superpowers/specs/   # 设计规格文档
+├── src/
+│   ├── core/                # 纯逻辑层（无 React 依赖，可独立测试）
+│   │   ├── utils.ts         # 干支/五虎遁/五鼠遁/四化表预设/真太阳时/地支关系
+│   │   ├── useZwds.ts       # 排盘主 Hook：拨盘状态 → 目标日期 → horoscope
+│   │   ├── lunar.ts         # 农历⇄公历、日柱干支、闰月（lunar-typescript 兜底）
+│   │   ├── place.ts         # 出生地解析：中国城市经度 / IANA 时区偏移（含夏令时）
+│   │   ├── cities.ts        # 中国省/市/区三级经度表
+│   │   ├── tzdata.ts        # tzdb zone1970.tab 生成的时区主城经度表（312 区）
+│   │   ├── hbar.ts          # 运限拨盘数据计算（大限/流年/流月/流日/流时）
+│   │   ├── chartIndex.ts    # 盘面索引原语（星→宫/三方四正/星文本，整盘建一次共享）
+│   │   ├── analysis.ts      # 结构分析层门面：飞宫矩阵/三方快照/四化传导链/夹宫/借星
+│   │   ├── patterns.ts      # 格局检测：本命格局 ~45 个 + 运限格局扫描八类
+│   │   ├── lifeKline.ts     # 人生K线评分引擎（进出双动能+流曜引动+月K线）
+│   │   ├── knowledge.ts     # L1 知识层：推理规则速查（随导出附给 AI）
+│   │   ├── markdown.ts      # 简易 Markdown 渲染器（XSS 安全）
+│   │   ├── personDb.ts      # 人物库 + 大六壬记录 + Wiki 文档（Dexie/IndexedDB）
+│   │   ├── daliurenDb.ts    # 大六壬起课 CRUD + 分页过滤 + 标签缓存
+│   │   ├── wikiDb.ts        # Wiki 文档 CRUD + 分页过滤 + 链接关系
+│   │   ├── dbUtils.ts       # 通用数据库工具（分页/过滤/搜索）
+│   │   ├── tagCache.ts      # 标签缓存（避免全表扫描提取 tags）
+│   │   ├── events.ts        # 跨组件事件总线
+│   │   ├── debugApi.ts      # 调试 API 统一管理（window.peep 接口）
+│   │   ├── usePageInit.ts   # 页面初始化 Hook
+│   │   └── daliuren/        # 大六壬算法引擎
+│   │       ├── calculator.ts  # 大六壬排盘主计算
+│   │       ├── types.ts       # 大六壬类型定义
+│   │       ├── sanchuan.ts    # 三传四课
+│   │       ├── dungan.ts      # 遁干计算
+│   │       ├── kejing.ts      # 课经判断
+│   │       ├── shensha.ts     # 神煞系统
+│   │       ├── liuqin.ts      # 六亲系统
+│   │       ├── nayin.ts       # 纳音五行
+│   │       ├── wangshuai.ts   # 旺衰判断
+│   │       ├── jianchu.ts     # 建除十二神
+│   │       ├── tianjiang.ts   # 天将系统
+│   │       ├── relations.ts   # 地支关系
+│   │       ├── fate.ts        # 命主信息
+│   │       ├── bifa.ts        # 毕法赋
+│   │       ├── utils.ts       # 大六壬工具函数
+│   │       └── constants.ts   # 常量定义
+│   ├── components/          # UI 组件
+│   │   ├── Chart.tsx          # 4×4 盘面 + 三方四正 SVG 连线
+│   │   ├── Palace.tsx         # 宫位卡片
+│   │   ├── StarCell.tsx       # 星耀 + 四化徽章
+│   │   ├── CenterPanel.tsx    # 中宫面板
+│   │   ├── HoroscopeBar.tsx   # 大限/流年/流月/流日/流时拨盘（含闰月位）
+│   │   ├── PalaceDetail.tsx   # 宫位详情弹层
+│   │   ├── Header.tsx         # 顶栏导航
+│   │   ├── Layout.tsx         # 页面布局框架
+│   │   ├── PersonDialog.tsx   # 人物档案编辑对话框
+│   │   ├── PersonSelector.tsx # 人物选择器
+│   │   ├── Dialog.tsx         # 通用对话框
+│   │   ├── ConfirmDialog.tsx  # 确认对话框
+│   │   ├── ErrorBoundary.tsx  # 全局错误边界
+│   │   ├── icons/             # 图标组件
+│   │   ├── daliuren/          # 大六壬页面组件
+│   │   │   ├── LiurenChart.tsx      # 大六壬盘面
+│   │   │   ├── LiurenList.tsx       # 起课列表
+│   │   │   ├── LiurenCreateDialog.tsx # 新建起课对话框
+│   │   │   ├── LiurenEditDialog.tsx   # 编辑起课
+│   │   │   ├── LiurenViewDialog.tsx   # 查看起课详情
+│   │   │   ├── LiurenDeleteDialog.tsx # 删除确认
+│   │   │   ├── LiurenFormFields.tsx   # 表单字段
+│   │   │   ├── LiurenEmpty.tsx        # 空状态
+│   │   │   └── TagInput.tsx           # 标签输入
+│   │   └── wiki/              # Wiki 页面组件
+│   │       ├── WikiList.tsx         # 文档列表
+│   │       ├── WikiEditor.tsx       # 文档编辑器
+│   │       └── WikiReader.tsx       # 文档阅读器
+│   ├── pages/               # 页面组件（路由级）
+│   │   ├── ZiweiPage.tsx      # 紫微斗数页面
+│   │   ├── DaLiuRenPage.tsx   # 大六壬页面
+│   │   └── WikiPage.tsx       # Wiki 页面
+│   ├── styles/              # 样式文件
+│   │   ├── base.css           # 基础样式 / CSS 变量 / 重置
+│   │   ├── layout.css         # 布局样式
+│   │   ├── components.css     # 通用组件样式
+│   │   ├── ziwei.css          # 紫微斗数盘面样式
+│   │   ├── daliuren.css       # 大六壬盘面样式
+│   │   └── wiki.css           # Wiki 样式
+│   ├── App.tsx              # 应用入口（路由配置）
+│   ├── main.tsx             # React 入口
+│   ├── index.css            # 全局样式入口
+│   └── vite-env.d.ts        # Vite 类型声明 + window.peep 类型
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
 ```
+
+## 架构概览
+
+项目采用**三层架构**：
+
+```
+┌─────────────────────────────────────────────────┐
+│                  页面层 (pages/)                  │
+│   ZiweiPage / DaLiuRenPage / WikiPage           │
+├─────────────────────────────────────────────────┤
+│                 组件层 (components/)              │
+│   Chart / Palace / HoroscopeBar / CenterPanel   │
+├─────────────────────────────────────────────────┤
+│                  逻辑层 (core/)                   │
+│   useZwds → analysis → patterns → lifeKline     │
+│   lunar / place / utils → iztro 引擎            │
+│   personDb / daliurenDb / wikiDb → IndexedDB    │
+└─────────────────────────────────────────────────┘
+```
+
+**数据流**：
+
+1. 用户输入生辰 → `BirthInput` 状态 → `useZwds` Hook 调用 iztro 排盘
+2. `useZwds` 返回 `Astrolabe`（本命盘）+ `Horoscope`（运限）+ 拨盘状态
+3. 结构分析层（`analysis.ts`）基于本命盘确定性计算中间结果
+4. K线引擎（`lifeKline.ts`）逐年评分
+5. 导出时组装 JSON/TOON/MD 载荷
+
+详细架构说明见 [docs/architecture.md](docs/architecture.md)。
+
+## 开发规范
+
+### 代码风格
+
+- **语言**：代码注释、提交信息使用中文
+- **类型**：TypeScript 严格模式，避免 `any`
+- **组件**：函数组件 + Hooks，不使用 class 组件
+- **样式**：原生 CSS，不使用 CSS-in-JS 或 UI 框架
+- **测试**：核心逻辑必须有单元测试（Vitest）
+
+### Git 提交规范
+
+提交信息格式：`类别：概述——细节`
+
+| 类别 | 含义 |
+| ---- | ---- |
+| 功能 | 新功能 |
+| 修 | Bug 修复 |
+| 文档 | 文档变更 |
+| 重构 | 代码重构（不影响功能） |
+| 测试 | 测试相关 |
+
+示例：`修：调试 API 跨页面调用时序——添加回调注册等待机制`
+
+### 重要口径
+
+- **AI 导出不携带人生K线量化数据**——K线仅盘面展示，避免自定分值被 AI 当作命理定论
+- **流日/流时默认不随导出**——由底部面板勾选附加
+- **小限保留导出**但带口径备注
+- **杂耀带 weight 权重档**（中=可参与断事，低=仅叠加参考）
+
+## 贡献指南
+
+欢迎贡献！请遵循以下流程：
+
+1. Fork 本仓库
+2. 创建功能分支：`git checkout -b feature/your-feature`
+3. 编写代码和测试
+4. 确保测试通过：`npm test`
+5. 提交代码（中文提交信息）：`git commit -m "功能：xxx——xxx"`
+6. 推送分支：`git push origin feature/your-feature`
+7. 创建 Pull Request
+
+### 开发提示
+
+- 排盘算法由 iztro 引擎提供，不要直接修改 iztro 内部逻辑
+- 新增格局检测请在 `patterns.ts` 中添加，参考现有格式
+- 新增知识条目请编辑 `knowledge.ts` 中的 `RULEBOOK_MD`
+- 新增赋文库请在 `docs/kb/` 中添加（仅收录公版古籍）
+- 调试 API（`window.peep`）仅在开发环境可用，详见 [docs/debug-api.md](docs/debug-api.md)
+
+## 许可证
+
+本项目仅供命理学习研究使用。
+
+算法引擎 [iztro](https://github.com/SylarLong/iztro) 遵循 MIT 许可证。
+赋文库收录内容为明清传本公版古籍，属公有领域。
 
 ## 声明
 
