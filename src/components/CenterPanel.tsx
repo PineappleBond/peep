@@ -125,7 +125,7 @@ export const CenterPanel = memo(function CenterPanel({
       )}
 
       <div className="depth-row">
-        <button className={`db db-natal ${allOff ? "on" : ""}`} onClick={z.actions.showNatal} title="只看本命盘">
+        <button className={`db db-natal ${allOff ? "on" : ""}`} onClick={z.actions.showNatal} title="只看本命盘" aria-pressed={allOff}>
           本
         </button>
         {SCOPES.map((s) => (
@@ -134,6 +134,7 @@ export const CenterPanel = memo(function CenterPanel({
             className={`db db-${s} ${z.visible[s] ? "on" : ""}`}
             onClick={() => z.actions.toggleScope(s)}
             title={SCOPE_META[s].rowLabel}
+            aria-pressed={z.visible[s]}
           >
             {SCOPE_META[s].label}
           </button>
@@ -146,6 +147,7 @@ export const CenterPanel = memo(function CenterPanel({
             className={`db db-fly ${flyMode ? "on" : ""}`}
             onClick={onToggleFly}
             title="飞宫模式：点任一宫，显示该宫宫干四化飞入何宫（禄绿·权蓝·科金·忌紫）；再点关闭恢复三方四正连线"
+            aria-pressed={flyMode}
           >
             飞
           </button>
@@ -153,6 +155,7 @@ export const CenterPanel = memo(function CenterPanel({
         <button
           className="db db-self on"
           title="自化模式：显示运限离心（向外放射）与向心（指向本宫）自化箭头，颜色区分运限级别"
+          aria-pressed={true}
         >
           化
         </button>

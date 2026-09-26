@@ -217,6 +217,7 @@ export function PersonDialog({
                 key={g}
                 className={draft.gender === g ? "on" : ""}
                 onClick={() => set("gender", g)}
+                aria-pressed={draft.gender === g}
               >
                 {g}
               </button>
@@ -242,6 +243,7 @@ export function PersonDialog({
                     return { ...d, calendar: cal, date, isLeapMonth: false };
                   })
                 }
+                aria-pressed={draft.calendar === cal}
               >
                 {cal === "solar" ? "阳历" : "农历"}
               </button>
@@ -434,6 +436,7 @@ export function PersonDialog({
                 type="button"
                 className={draft.placeMode !== "overseas" ? "on" : ""}
                 onClick={() => set("placeMode", "china")}
+                aria-pressed={draft.placeMode !== "overseas"}
               >
                 中国
               </button>
@@ -447,6 +450,7 @@ export function PersonDialog({
                     timezone: d.timezone || browserTimezone(),
                   }))
                 }
+                aria-pressed={draft.placeMode === "overseas"}
               >
                 海外
               </button>

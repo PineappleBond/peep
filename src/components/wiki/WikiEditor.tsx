@@ -217,7 +217,7 @@ export function WikiEditor({
   return (
     <div className="wiki-editor">
       {/* 错误提示 */}
-      {error && <div className="wiki-editor-error">{error}</div>}
+      {error && <div className="wiki-editor-error" role="alert">{error}</div>}
 
       {/* 标题输入 */}
       <div className="wiki-editor-field">
@@ -229,6 +229,7 @@ export function WikiEditor({
           placeholder="文档标题"
           maxLength={200}
           autoFocus
+          aria-label="文档标题"
         />
       </div>
 
@@ -241,6 +242,7 @@ export function WikiEditor({
           placeholder="使用 Markdown 格式撰写..."
           rows={20}
           maxLength={100000}
+          aria-label="文档正文"
         />
       </div>
 
@@ -273,6 +275,7 @@ export function WikiEditor({
             onKeyDown={handleTagKeyDown}
             onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
             placeholder={tags.length === 0 ? "输入标签后按回车..." : ""}
+            aria-label="添加标签"
           />
 
           {/* 标签建议下拉 */}
@@ -290,6 +293,14 @@ export function WikiEditor({
                     key={t}
                     className="wiki-tag-suggestion-item"
                     onClick={() => addTag(t)}
+                    role="option"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        addTag(t);
+                      }
+                    }}
                   >
                     {t}
                   </div>
@@ -310,6 +321,7 @@ export function WikiEditor({
             value={linkSearchText}
             onChange={(e) => setLinkSearchText(e.target.value)}
             placeholder="搜索其他文档..."
+            aria-label="搜索关联文档"
           />
 
           {/* 搜索结果列表 */}
@@ -320,6 +332,14 @@ export function WikiEditor({
                   key={result.id}
                   className="wiki-link-search-item"
                   onClick={() => addLinkTarget(result.id!)}
+                  role="option"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      addLinkTarget(result.id!);
+                    }
+                  }}
                 >
                   <span className="wiki-link-title">{result.title}</span>
                   <span className="wiki-link-tags">

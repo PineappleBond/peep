@@ -2,7 +2,9 @@
  * 紫微斗数图标 - 北斗七星
  * 使用玄空霓虹主题色彩
  */
-export function ZiweiIcon() {
+import type { SVGAttributes } from "react";
+
+export function ZiweiIcon(props: SVGAttributes<SVGSVGElement>) {
   return (
     <svg
       width="24"
@@ -10,7 +12,9 @@ export function ZiweiIcon() {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      role="img"
       aria-label="紫微斗数"
+      {...props}
     >
       {/* 北斗七星 - 简化版 */}
       <circle cx="5" cy="8" r="1.2" fill="currentColor" opacity="0.9" />

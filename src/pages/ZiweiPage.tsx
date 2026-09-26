@@ -46,7 +46,7 @@ export function ZiweiPage() {
           <Chart z={z} genId={genId} />
         </ErrorBoundary>
       ) : (
-        <div className="err-box">
+        <div className="err-box" role="alert">
           排盘失败：请检查出生日期与时辰（支持 1900 ~ 2100 年，农历请勿超出当月天数）。
         </div>
       )}

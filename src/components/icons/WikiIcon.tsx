@@ -2,7 +2,9 @@
  * 知识库图标 - 展开书卷 / 多层文档
  * 使用 currentColor 适配主题，与 ZiweiIcon、LiurenIcon 风格一致
  */
-export function WikiIcon() {
+import type { SVGAttributes } from "react";
+
+export function WikiIcon(props: SVGAttributes<SVGSVGElement>) {
   return (
     <svg
       width="24"
@@ -10,7 +12,9 @@ export function WikiIcon() {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      role="img"
       aria-label="知识库"
+      {...props}
     >
       {/* 后层文档（偏移，营造层次感） */}
       <rect

@@ -183,7 +183,7 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
   if (!a) return null;
 
   return (
-    <div className="chart-outer">
+    <div className="chart-outer" role="region" aria-label="紫微斗数星盘">
       <div className="chart-wrap">
         <div className={`chart ${flyMode ? "chart-flymode" : ""} chart-selfmode`}>
           {a.palaces.map((p) => (

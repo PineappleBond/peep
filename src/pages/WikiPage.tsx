@@ -268,13 +268,13 @@ export function WikiPage() {
     if (initError) {
       return (
         <div className="wiki-page">
-          <div className="err-box">{initError}</div>
+          <div className="err-box" role="alert">{initError}</div>
         </div>
       );
     }
     return (
       <div className="wiki-page">
-        <div className="wiki-loading">加载中...</div>
+        <div className="wiki-loading" role="status" aria-live="polite">加载中...</div>
       </div>
     );
   }

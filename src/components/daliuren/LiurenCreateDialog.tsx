@@ -141,7 +141,7 @@ export function LiurenCreateDialog({
       }
     >
       <div className="liuren-dialog-form">
-        {error && <div className="liuren-form-error">{error}</div>}
+        {error && <div className="liuren-form-error" role="alert">{error}</div>}
         <div className="liuren-form-field">
           <label>
             占事问题 <span className="required">*</span>

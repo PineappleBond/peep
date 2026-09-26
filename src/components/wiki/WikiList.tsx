@@ -150,6 +150,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           placeholder="搜索标题、内容..."
           value={searchText}
           onChange={(e) => handleSearchChange(e.target.value)}
+          aria-label="搜索文档"
         />
       </div>
 
@@ -184,6 +185,14 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
               onClick={() => onSelect(doc)}
               onMouseEnter={() => setHoveredId(doc.id ?? null)}
               onMouseLeave={() => setHoveredId(null)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(doc);
+                }
+              }}
             >
               <div className="wiki-list-item-main">
                 <div className="wiki-list-item-time">
@@ -210,30 +219,30 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
                   </div>
                 )}
               </div>
-              {hoveredId === doc.id && (
-                <div className="wiki-list-item-actions">
-                  <button
-                    className="wiki-action-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditClick(doc);
-                    }}
-                    title="编辑"
-                  >
-                    ✎
-                  </button>
-                  <button
-                    className="wiki-action-btn wiki-action-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteClick(doc);
-                    }}
-                    title="删除"
-                  >
-                    🗑
-                  </button>
-                </div>
-              )}
+              <div className={`wiki-list-item-actions${hoveredId === doc.id ? " visible" : ""}`}>
+                <button
+                  className="wiki-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditClick(doc);
+                  }}
+                  title="编辑"
+                  aria-label="编辑"
+                >
+                  ✎
+                </button>
+                <button
+                  className="wiki-action-btn wiki-action-delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteClick(doc);
+                  }}
+                  title="删除"
+                  aria-label="删除"
+                >
+                  🗑
+                </button>
+              </div>
             </div>
           ))
         )}
@@ -245,6 +254,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            aria-label="上一页"
           >
             &lt;
           </button>
@@ -254,6 +264,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
+            aria-label="下一页"
           >
             &gt;
           </button>

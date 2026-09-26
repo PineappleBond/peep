@@ -31,7 +31,7 @@ export class ErrorBoundary extends Component<Props, { error: Error | null }> {
         return this.props.fallback(this.state.error, this.reset);
       }
       return (
-        <div className="err-box">
+        <div className="err-box" role="alert" aria-live="assertive">
           <div>盘面渲染异常：{String(this.state.error.message || this.state.error)}</div>
           <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
             请调整参数或点击下方按钮重试；若持续异常请刷新页面。

@@ -56,7 +56,7 @@ export function LiurenDeleteDialog({
       }
     >
       <div className="liuren-delete-confirm">
-        {error && <div className="liuren-form-error">{error}</div>}
+        {error && <div className="liuren-form-error" role="alert">{error}</div>}
         <p className="liuren-delete-msg">确定要删除这条起课记录吗？此操作不可恢复。</p>
         {record && (
           <div className="liuren-delete-info">

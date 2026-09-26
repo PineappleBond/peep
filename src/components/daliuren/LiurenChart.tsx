@@ -22,7 +22,7 @@ function branchText(idx: number): string {
 function FourPillarsSection({ result }: { result: DaLiuRenResult }) {
   const { fourPillars: fp } = result;
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="四柱">
       <h4 className="liuren-section-title">四柱</h4>
       <div className="liuren-four-pillars">
         <div className="liuren-pillar">
@@ -42,19 +42,19 @@ function FourPillarsSection({ result }: { result: DaLiuRenResult }) {
           <div className="liuren-pillar-value">{fp.hourPillar}</div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
 /** 月将展示 */
 function MonthGeneralSection({ result }: { result: DaLiuRenResult }) {
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="月将">
       <h4 className="liuren-section-title">月将</h4>
       <div className="liuren-month-general">
         {result.monthGeneral.name}（{branchText(result.monthGeneral.branch)}）
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -65,7 +65,7 @@ function HeavenEarthBoardSection({ result }: { result: DaLiuRenResult }) {
   const gridPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="天地盘">
       <h4 className="liuren-section-title">天地盘</h4>
       <div className="liuren-board-grid">
         {gridPositions.map((earthIdx) => {
@@ -103,14 +103,14 @@ function HeavenEarthBoardSection({ result }: { result: DaLiuRenResult }) {
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
 /** 四课展示 */
 function FourLessonsSection({ result }: { result: DaLiuRenResult }) {
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="四课">
       <h4 className="liuren-section-title">四课</h4>
       <div className="liuren-four-lessons">
         {result.fourLessons.map((lesson, i) => (
@@ -122,7 +122,7 @@ function FourLessonsSection({ result }: { result: DaLiuRenResult }) {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -130,7 +130,7 @@ function FourLessonsSection({ result }: { result: DaLiuRenResult }) {
 function ThreeTransmissionsSection({ result }: { result: DaLiuRenResult }) {
   const { threeTransmissions: tt } = result;
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="三传">
       <h4 className="liuren-section-title">三传</h4>
       <div className="liuren-three-transmissions">
         <div className="liuren-transmission-method">{tt.method}</div>
@@ -151,7 +151,7 @@ function ThreeTransmissionsSection({ result }: { result: DaLiuRenResult }) {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -159,19 +159,19 @@ function ThreeTransmissionsSection({ result }: { result: DaLiuRenResult }) {
 function XunKongSection({ result }: { result: DaLiuRenResult }) {
   const { xunKong } = result;
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="旬空">
       <h4 className="liuren-section-title">旬空</h4>
       <div className="liuren-xunkong">
         旬首：{branchText(xunKong.xunHead)} 空亡：{branchText(xunKong.void1)} {branchText(xunKong.void2)}
       </div>
-    </div>
+    </section>
   );
 }
 
 /** 十二天将展示 */
 function TwelveGeneralsSection({ result }: { result: DaLiuRenResult }) {
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="十二天将">
       <h4 className="liuren-section-title">十二天将</h4>
       <div className="liuren-twelve-generals">
         {result.twelveGenerals.map((g) => (
@@ -181,7 +181,7 @@ function TwelveGeneralsSection({ result }: { result: DaLiuRenResult }) {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -194,7 +194,7 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
   const xiongSha = shenSha.filter((s) => s.type === "凶");
 
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="神煞">
       <h4 className="liuren-section-title">神煞</h4>
       {jiShen.length > 0 && (
         <div className="liuren-shensha-group">
@@ -247,7 +247,7 @@ function KeJingSection({ result }: { result: DaLiuRenResult }) {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -257,7 +257,7 @@ function BiFaSection({ result }: { result: DaLiuRenResult }) {
   if (biFa.length === 0) return null;
 
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="毕法">
       <h4 className="liuren-section-title">毕法</h4>
       <div className="liuren-bifa-list">
         {biFa.map((b, i) => (
@@ -274,14 +274,14 @@ function BiFaSection({ result }: { result: DaLiuRenResult }) {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
 /** 占事信息展示 */
 function QuestionInfoSection({ record }: { record: LiurenRecord }) {
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="占事信息">
       <h4 className="liuren-section-title">占事信息</h4>
       <div className="liuren-question-info">
         <div className="liuren-info-row">

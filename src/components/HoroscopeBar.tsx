@@ -39,6 +39,7 @@ function Row({
         className={`hlabel ${on ? "on" : ""}`}
         onClick={onToggle}
         title={on ? "点击隐藏该层级" : "点击显示该层级"}
+        aria-pressed={on}
       >
         {label}
       </button>
@@ -65,7 +66,7 @@ function Cell({
   title?: string;
 }) {
   return (
-    <button className={`hcell ${active ? `on on-${scope}` : ""}`} onClick={onClick} title={title}>
+    <button className={`hcell ${active ? `on on-${scope}` : ""}`} onClick={onClick} title={title} aria-selected={active}>
       <b>{main}</b>
       {sub ? <i>{sub}</i> : null}
     </button>
@@ -76,7 +77,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
   const { decades, childhood, activeDecadeIdx, years, months, days, hours, pick, clampedDay, effLeap, visible, actions } = z;
 
   return (
-    <section className="hbar">
+    <section className="hbar" aria-label="运限选择">
       <Row
         label="大限"
         scope="decadal"

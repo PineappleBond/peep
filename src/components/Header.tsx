@@ -47,28 +47,28 @@ export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
     <header className="top">
       <h1>{title}</h1>
       <span className="top-sub">{subtitle}</span>
-      <nav className="top-nav">
+      <nav className="top-nav" aria-label="主导航">
         <NavLink
           to="/"
           end
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
-          title="紫微斗数"
+          aria-label="紫微斗数"
         >
-          <ZiweiIcon />
+          <ZiweiIcon aria-hidden="true" />
         </NavLink>
         <NavLink
           to="/liuren"
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
-          title="大六壬"
+          aria-label="大六壬"
         >
-          <LiurenIcon />
+          <LiurenIcon aria-hidden="true" />
         </NavLink>
         <NavLink
           to="/wiki"
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
-          title="知识库"
+          aria-label="知识库"
         >
-          <WikiIcon />
+          <WikiIcon aria-hidden="true" />
         </NavLink>
       </nav>
       <div className="top-actions">

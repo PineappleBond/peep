@@ -115,6 +115,7 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
       <div
         className="wiki-reader-content"
         dangerouslySetInnerHTML={{ __html: htmlContent }}
+        aria-live="polite"
       />
 
       {/* 关联文档面板 */}
@@ -124,12 +125,13 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
           <ul className="wiki-related-list">
             {relatedDocs.map((rd) => (
               <li key={rd.id} className="wiki-related-item">
-                <a
+                <button
+                  type="button"
                   className="wiki-related-link"
                   onClick={() => onDocClick(rd.id)}
                 >
                   {rd.title || "（无标题）"}
-                </a>
+                </button>
               </li>
             ))}
           </ul>

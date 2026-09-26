@@ -81,11 +81,25 @@ export const PalaceCard = memo(function PalaceCard({
     .join(" ");
 
   return (
-    <div className={cls} style={{ gridArea: `g${i}` }} onClick={() => onFocus(i)}>
+    <div
+      className={cls}
+      style={{ gridArea: `g${i}` }}
+      onClick={() => onFocus(i)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onFocus(i);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`${palace.name}宫位`}
+      aria-pressed={isFocus}
+    >
       {isFocus && onDetail && (
         <button
           className="p-detail-btn"
-          title="宫位详情：三方四正快照 / 飞宫四化 / 格局 / 夹宫"
+          aria-label="宫位详情：三方四正快照、飞宫四化、格局、夹宫"
           onClick={(e) => {
             e.stopPropagation();
             onDetail(i);

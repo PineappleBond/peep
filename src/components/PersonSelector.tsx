@@ -100,6 +100,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
           value={currentId || ""}
           onChange={handleSelect}
           className="person-select"
+          aria-label="选择人物"
         >
           {persons.map((p) => (
             <option key={p.id} value={p.id}>
@@ -107,16 +108,17 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
             </option>
           ))}
         </select>
-        <button className="person-btn" onClick={handleAdd} title="新增人物">
+        <button className="person-btn" onClick={handleAdd} aria-label="新增人物">
           +
         </button>
-        <button className="person-btn" onClick={handleEdit} title="编辑当前人物">
+        <button className="person-btn" onClick={handleEdit} aria-label="编辑当前人物">
           ✎
         </button>
         <button
           className="person-btn person-del"
           onClick={handleDeleteClick}
           disabled={!canDelete}
+          aria-label={canDelete ? "删除当前人物" : "默认人物不可删除"}
           title={canDelete ? "删除当前人物" : "默认人物不可删除"}
         >
           ✕

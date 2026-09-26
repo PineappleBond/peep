@@ -91,12 +91,17 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="app">
+      {/* 可访问性：跳过导航链接，键盘用户可直达主内容 */}
+      <a href="#main-content" className="skip-link">
+        跳过导航
+      </a>
       <div className="bg-fx" aria-hidden="true" />
       <Header currentPersonId={currentPersonId} onSelectPerson={handleSelectPerson} />
-      <main>{children}</main>
+      <main id="main-content">{children}</main>
       <footer className="foot">
         算法引擎{" "}
-        <a href="https://github.com/SylarLong/iztro" target="_blank" rel="noreferrer">
+        <a href="https://github.com/SylarLong/iztro" target="_blank" rel="noreferrer"
+           aria-label="iztro 算法引擎（在新标签页打开）">
           iztro
         </a>{" "}
         · 盘面 react-zwds · 星盘仅供学习研究

@@ -2,7 +2,9 @@
  * 大六壬图标 - 天地盘
  * 使用玄空霓虹主题色彩
  */
-export function LiurenIcon() {
+import type { SVGAttributes } from "react";
+
+export function LiurenIcon(props: SVGAttributes<SVGSVGElement>) {
   return (
     <svg
       width="24"
@@ -10,7 +12,9 @@ export function LiurenIcon() {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      role="img"
       aria-label="大六壬"
+      {...props}
     >
       {/* 地盘（外圈，固定） */}
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.6" />

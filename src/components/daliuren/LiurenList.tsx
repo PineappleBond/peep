@@ -139,6 +139,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           placeholder="搜索占事、备注..."
           value={searchText}
           onChange={(e) => handleSearchChange(e.target.value)}
+          aria-label="搜索占事"
         />
       </div>
 
@@ -169,10 +170,18 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           records.map((record) => (
             <div
               key={record.id}
-              className={`liuren-list-item ${selectedId === record.id ? "active" : ""}`}
+              className={`liuren-list-item ${selectedId === record.id ? "active" : ""} ${hoveredId === record.id ? "hovered" : ""}`}
               onClick={() => onSelect(record)}
               onMouseEnter={() => setHoveredId(record.id ?? null)}
               onMouseLeave={() => setHoveredId(null)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(record);
+                }
+              }}
             >
               <div className="liuren-list-item-main">
                 <div className="liuren-list-item-time">
@@ -196,42 +205,43 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                   </div>
                 )}
               </div>
-              {hoveredId === record.id && (
-                <div className="liuren-list-item-actions">
-                  {onViewClick && (
-                    <button
-                      className="liuren-action-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onViewClick(record);
-                      }}
-                      title="查看盘面"
-                    >
-                      ⚏
-                    </button>
-                  )}
+              <div className="liuren-list-item-actions">
+                {onViewClick && (
                   <button
                     className="liuren-action-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onEditClick(record);
+                      onViewClick(record);
                     }}
-                    title="编辑"
+                    title="查看盘面"
+                    aria-label="查看盘面"
                   >
-                    ✎
+                    ⚏
                   </button>
-                  <button
-                    className="liuren-action-btn liuren-action-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteClick(record);
-                    }}
-                    title="删除"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
+                )}
+                <button
+                  className="liuren-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditClick(record);
+                  }}
+                  title="编辑"
+                  aria-label="编辑"
+                >
+                  ✎
+                </button>
+                <button
+                  className="liuren-action-btn liuren-action-delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteClick(record);
+                  }}
+                  title="删除"
+                  aria-label="删除"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           ))
         )}
@@ -243,6 +253,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            aria-label="上一页"
           >
             ‹
           </button>
@@ -252,6 +263,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
+            aria-label="下一页"
           >
             ›
           </button>

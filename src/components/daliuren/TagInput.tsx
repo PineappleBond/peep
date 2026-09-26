@@ -49,7 +49,7 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
 
   return (
     <div className="tag-input">
-      <div className="tag-input-tags">
+      <div className="tag-input-tags" role="group" aria-label="标签列表">
         {value.map((tag) => (
           <span key={tag} className="tag-input-tag">
             <span className="tag-input-tag-text">{tag}</span>
@@ -71,6 +71,7 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           placeholder={value.length === 0 ? placeholder : ""}
+          aria-label="添加标签"
         />
       </div>
     </div>

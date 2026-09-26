@@ -33,7 +33,7 @@ try {
 
 /** 懒加载路由的占位加载指示器 */
 function LazyFallback() {
-  return <div className="lazy-loading">加载中…</div>;
+  return <div className="lazy-loading" role="status" aria-live="polite">加载中…</div>;
 }
 
 /** 404 未找到路由：重定向到首页 */
