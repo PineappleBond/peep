@@ -38,6 +38,12 @@
     "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
   --font-display: "KaiTi", "STKaiti", "DFKai-SB", "BiauKai", var(--font-body);
 
+  /* 通用过渡时长（消除重复的 cubic-bezier 长定义） */
+  --ease: cubic-bezier(.4, 0, .2, 1);
+  --t-fast: color .15s var(--ease), background .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease), opacity .15s var(--ease), transform .15s var(--ease);
+  --t-normal: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease), opacity .2s var(--ease), transform .2s var(--ease);
+  --t-slow: color .25s var(--ease), background .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease), opacity .25s var(--ease), transform .25s var(--ease);
+
   font-family: var(--font-body);
   color-scheme: dark;
 }
@@ -313,7 +319,7 @@ body {
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -357,7 +363,7 @@ body {
   background: rgba(217, 228, 255, 0.03);
   color: var(--dim);
   cursor: pointer;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
   text-decoration: none;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -2962,7 +2968,7 @@ body {
   border: 1px solid rgba(96, 165, 250, 0.1);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
 }
 
 .person-sel:hover {
@@ -2981,7 +2987,7 @@ body {
   outline: none;
   min-width: 150px;
   cursor: pointer;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237787a8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
@@ -3367,7 +3373,7 @@ body {
   font-size: 0.8rem;
   font-family: inherit;
   cursor: pointer;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
   letter-spacing: 0.1em;
 }
 
@@ -3400,7 +3406,7 @@ body {
   font-size: 0.75rem;
   font-family: inherit;
   outline: none;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
 }
 
 .record-search-input:focus {
@@ -3433,7 +3439,7 @@ body {
   font-size: 0.65rem;
   font-family: inherit;
   cursor: pointer;
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-normal);
 }
 
 .record-tag-filter:hover {
@@ -3506,7 +3512,7 @@ body {
   border-radius: 6px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-normal);
 }
 
 .record-list-item:hover {
@@ -3615,7 +3621,7 @@ body {
   color: var(--dim);
   font-size: 0.7rem;
   cursor: pointer;
-  transition: color .15s cubic-bezier(.4,0,.2,1), background .15s cubic-bezier(.4,0,.2,1), border-color .15s cubic-bezier(.4,0,.2,1), box-shadow .15s cubic-bezier(.4,0,.2,1), opacity .15s cubic-bezier(.4,0,.2,1), transform .15s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-fast);
 }
 
 .record-action-btn:hover {
@@ -3653,7 +3659,7 @@ body {
   color: var(--dim);
   font-size: 0.85rem;
   cursor: pointer;
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-normal);
 }
 
 .record-list-pagination button:hover:not(:disabled) {
@@ -4307,7 +4313,7 @@ body {
   color: var(--text);
   font-size: 0.88rem;
   font-family: inherit;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
 }
 
 .liuren-form-field input:focus,
@@ -4422,7 +4428,7 @@ body {
   min-height: 36px;
   align-items: center;
   cursor: text;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
 }
 
 .tag-input-tags:focus-within {
@@ -4582,7 +4588,7 @@ body {
   border: 1px solid var(--line-strong);
   border-radius: 6px;
   cursor: pointer;
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-normal);
   letter-spacing: 0.03em;
 }
 
@@ -5193,7 +5199,7 @@ body {
   font-family: inherit;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
   margin-top: 4px;
 }
 
@@ -5382,7 +5388,7 @@ body {
   color: var(--cyan);
   text-decoration: none;
   border-bottom: 1px solid transparent;
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-normal);
   text-shadow: 0 0 8px rgba(85, 215, 255, 0.2);
 }
 
@@ -5530,7 +5536,7 @@ body {
   font-size: 0.78rem;
   text-decoration: none;
   cursor: pointer;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
+  transition: var(--t-slow);
   letter-spacing: 0.02em;
 }
 
