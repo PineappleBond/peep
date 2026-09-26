@@ -1,5 +1,5 @@
 /**
- * debugApi 单元测试：自定义错误类、computeZiWeiData、computeScopeData
+ * debugApi 单元测试：自定义错误类、computeZiWeiData、computeScopeData、parseDate、wrapError
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { astro } from "iztro";
@@ -9,6 +9,8 @@ import {
   ComputeScopeError,
   computeZiWeiData,
   computeScopeData,
+  parseDate,
+  wrapError,
 } from "./debugApi";
 import type { Person } from "./personDb";
 import type { Zwds, PickState } from "./useZwds";
@@ -286,5 +288,194 @@ describe("computeScopeData", () => {
     expect(result!.pick.year).toBeGreaterThanOrEqual(
       result!.pick.year, // 至少不小于自身（说明 clamp 逻辑运行）
     );
+  });
+});
+
+/* ─────────────── parseDate ─────────────── */
+
+describe("parseDate", () => {
+  describe("Date 实例", () => {
+    it("有效 Date 实例直接返回", () => {
+      const input = new Date("2024-06-15T12:00:00");
+      const result = parseDate(input);
+      expect(result).toBe(input);
+    });
+
+    it("Invalid Date 抛出 ParseDateError", () => {
+      const input = new Date("invalid");
+      expect(() => parseDate(input)).toThrow(ParseDateError);
+      try {
+        parseDate(input);
+      } catch (err) {
+        expect(err).toBeInstanceOf(ParseDateError);
+        expect((err as ParseDateError).attemptedFormats).toEqual(["Date 实例"]);
+      }
+    });
+  });
+
+  describe("数字时间戳", () => {
+    it("毫秒时间戳正确解析", () => {
+      const input = 1718452800000; // 2024-06-15T16:00:00.000Z
+      const result = parseDate(input);
+      expect(result.getTime()).toBe(input);
+    });
+
+    it("秒级时间戳自动转毫秒", () => {
+      const input = 1718452800; // 秒级时间戳
+      const result = parseDate(input);
+      expect(result.getTime()).toBe(input * 1000);
+    });
+
+    it("无效时间戳抛出 ParseDateError", () => {
+      expect(() => parseDate(NaN)).toThrow(ParseDateError);
+    });
+  });
+
+  describe("字符串格式", () => {
+    it("YYYY-MM-DD 格式正确解析", () => {
+      const result = parseDate("2024-06-15");
+      expect(result.getFullYear()).toBe(2024);
+      expect(result.getMonth()).toBe(5); // 月份从 0 开始
+      expect(result.getDate()).toBe(15);
+    });
+
+    it("YYYY-MM-DD HH 格式自动补全分钟秒", () => {
+      const result = parseDate("2024-06-15 14");
+      expect(result.getFullYear()).toBe(2024);
+      expect(result.getHours()).toBe(14);
+      expect(result.getMinutes()).toBe(0);
+      expect(result.getSeconds()).toBe(0);
+    });
+
+    it("YYYY-MM-DD HH:mm 格式正确解析", () => {
+      const result = parseDate("2024-06-15 14:30");
+      expect(result.getFullYear()).toBe(2024);
+      expect(result.getHours()).toBe(14);
+      expect(result.getMinutes()).toBe(30);
+    });
+
+    it("YYYY-MM-DD HH:mm:ss 格式正确解析", () => {
+      const result = parseDate("2024-06-15 14:30:45");
+      expect(result.getFullYear()).toBe(2024);
+      expect(result.getHours()).toBe(14);
+      expect(result.getMinutes()).toBe(30);
+      expect(result.getSeconds()).toBe(45);
+    });
+
+    it("ISO 8601 格式正确解析", () => {
+      const result = parseDate("2024-06-15T14:30:45.000Z");
+      expect(result.toISOString()).toBe("2024-06-15T14:30:45.000Z");
+    });
+
+    it("纯数字字符串当作时间戳", () => {
+      const input = "1718452800000";
+      const result = parseDate(input);
+      expect(result.getTime()).toBe(Number(input));
+    });
+
+    it("纯数字字符串（秒级）自动转毫秒", () => {
+      const input = "1718452800";
+      const result = parseDate(input);
+      expect(result.getTime()).toBe(Number(input) * 1000);
+    });
+
+    it("带前后空白的字符串正确解析", () => {
+      const result = parseDate("  2024-06-15  ");
+      expect(result.getFullYear()).toBe(2024);
+    });
+  });
+
+  describe("错误情况", () => {
+    it("空字符串抛出 ParseDateError", () => {
+      expect(() => parseDate("")).toThrow(ParseDateError);
+      try {
+        parseDate("");
+      } catch (err) {
+        expect(err).toBeInstanceOf(ParseDateError);
+        expect((err as ParseDateError).attemptedFormats).toEqual([]);
+      }
+    });
+
+    it("仅空白的字符串抛出 ParseDateError", () => {
+      expect(() => parseDate("   ")).toThrow(ParseDateError);
+    });
+
+    it("无效日期字符串抛出 ParseDateError", () => {
+      expect(() => parseDate("invalid-date")).toThrow(ParseDateError);
+      try {
+        parseDate("invalid-date");
+      } catch (err) {
+        expect(err).toBeInstanceOf(ParseDateError);
+        expect((err as ParseDateError).attemptedFormats).toContain(
+          "ISO 8601 / 浏览器原生 Date.parse",
+        );
+      }
+    });
+
+    it("无效纯数字字符串抛出 ParseDateError", () => {
+      // 超出合理范围的时间戳
+      expect(() => parseDate("99999999999999999999999999")).toThrow(ParseDateError);
+    });
+
+    it("错误信息包含原始输入", () => {
+      const input = "not-a-date";
+      try {
+        parseDate(input);
+      } catch (err) {
+        expect(err).toBeInstanceOf(ParseDateError);
+        expect((err as ParseDateError).rawInput).toBe(input);
+      }
+    });
+  });
+});
+
+/* ─────────────── wrapError ─────────────── */
+
+describe("wrapError", () => {
+  // 测试用的错误类
+  class TestError extends ZiWeiError {
+    constructor(message: string, source: string, options?: { cause?: unknown }) {
+      super(message, source, options);
+      this.name = "TestError";
+    }
+  }
+
+  it("BaseDebugError 子类直接返回", () => {
+    const original = new ZiWeiError("原始错误", "testSource");
+    const wrapped = wrapError("label", original, TestError);
+    expect(wrapped).toBe(original);
+  });
+
+  it("原生 Error 附加来源标签", () => {
+    const original = new Error("原始错误");
+    const wrapped = wrapError("label", original, TestError);
+    expect(wrapped).toBe(original);
+    expect((wrapped as Error).message).toBe("[label] 原始错误");
+  });
+
+  it("原生 Error 已有标签时不重复添加", () => {
+    const original = new Error("[label] 原始错误");
+    const wrapped = wrapError("label", original, TestError);
+    expect((wrapped as Error).message).toBe("[label] 原始错误");
+  });
+
+  it("非 Error 值包装为指定错误类", () => {
+    const wrapped = wrapError("label", "字符串错误", TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+    expect(wrapped.message).toContain("label 执行失败");
+    expect(wrapped.message).toContain("字符串错误");
+  });
+
+  it("非 Error 对象包装时 JSON 序列化到 context", () => {
+    const original = { code: 500, message: "server error" };
+    const wrapped = wrapError("label", original, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+    expect((wrapped as TestError).context.rawError).toBe(JSON.stringify(original));
+  });
+
+  it("非 Error 值保留为 cause", () => {
+    const original = "字符串错误";
+    const wrapped = wrapError("label", original, TestError);
+    expect((wrapped as TestError).cause).toBe(original);
   });
 });

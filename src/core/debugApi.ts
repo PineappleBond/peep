@@ -992,10 +992,8 @@ export async function ZiWei(
  * - YYYY-MM-DD（自动补全 00:00:00）
  * - 纯数字字符串（当作时间戳）
  */
-function parseDate(time: Date | number | string): Date {
-  const attemptedFormats: string[] = [];
-
-  // Date 实例直接返回
+export function parseDate(time: Date | number | string): Date {
+  // 分支 1：Date 实例 → 直接返回或抛出
   if (time instanceof Date) {
     if (isNaN(time.getTime())) {
       throw new ParseDateError(time, ["Date 实例"], "Date 实例的值为 Invalid Date");
@@ -1003,7 +1001,7 @@ function parseDate(time: Date | number | string): Date {
     return time;
   }
 
-  // 数字：时间戳（毫秒或秒）
+  // 分支 2：数字时间戳（毫秒或秒） → 解析或抛出
   if (typeof time === "number") {
     // 小于 1e11 认为是秒级时间戳，自动转毫秒
     const ms = time < 1e11 ? time * 1000 : time;
@@ -1015,15 +1013,14 @@ function parseDate(time: Date | number | string): Date {
     return d;
   }
 
-  // 字符串解析
-  let str = String(time).trim();
+  // 分支 3：字符串解析 → 根据格式走互斥子分支
+  const str = String(time).trim();
   if (!str) {
     throw new ParseDateError(time, [], "输入为空字符串");
   }
 
-  // 尝试 1：纯数字字符串 → 当作时间戳
+  // 子分支 3.1：纯数字字符串 → 当作时间戳
   if (/^\d+$/.test(str)) {
-    attemptedFormats.push("纯数字字符串 (时间戳)");
     const num = Number(str);
     const ms = num < 1e11 ? num * 1000 : num;
     const d = new Date(ms);
@@ -1031,34 +1028,60 @@ function parseDate(time: Date | number | string): Date {
       log("debug", "parseDate", "时间戳字符串解析成功", { input: str, result: d.toISOString() });
       return d;
     }
+    throw new ParseDateError(
+      time,
+      ["纯数字字符串 (时间戳)"],
+      `时间戳字符串 "${str}" 解析为 Invalid Date`,
+    );
   }
 
-  // 尝试 2：YYYY-MM-DD HH（补全分钟和秒）
+  // 子分支 3.2：YYYY-MM-DD HH（补全分钟和秒） → 标准化后继续 ISO 解析
   if (/^\d{4}-\d{2}-\d{2}\s+\d{1,2}$/.test(str)) {
-    attemptedFormats.push("YYYY-MM-DD HH → YYYY-MM-DD HH:00:00");
-    str += ":00:00";
+    const normalized = `${str}:00:00`;
+    const d = new Date(normalized);
+    if (!isNaN(d.getTime())) {
+      log("debug", "parseDate", "YYYY-MM-DD HH 解析成功", { input: str, result: d.toISOString() });
+      return d;
+    }
+    throw new ParseDateError(
+      time,
+      ["YYYY-MM-DD HH → YYYY-MM-DD HH:00:00"],
+      `日期时间字符串 "${str}" 解析为 Invalid Date`,
+    );
   }
 
-  // 尝试 3：YYYY-MM-DD（补全时间部分）
+  // 子分支 3.3：YYYY-MM-DD（补全时间部分） → 标准化后继续 ISO 解析
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    attemptedFormats.push("YYYY-MM-DD → YYYY-MM-DD 00:00:00");
-    str += " 00:00:00";
+    const normalized = `${str} 00:00:00`;
+    const d = new Date(normalized);
+    if (!isNaN(d.getTime())) {
+      log("debug", "parseDate", "YYYY-MM-DD 解析成功", { input: str, result: d.toISOString() });
+      return d;
+    }
+    throw new ParseDateError(
+      time,
+      ["YYYY-MM-DD → YYYY-MM-DD 00:00:00"],
+      `日期字符串 "${str}" 解析为 Invalid Date`,
+    );
   }
 
-  // 尝试 4：ISO 8601 或浏览器原生解析
-  attemptedFormats.push("ISO 8601 / 浏览器原生 Date.parse");
+  // 子分支 3.4：ISO 8601 或浏览器原生解析 → 兜底尝试
   const d = new Date(str);
   if (!isNaN(d.getTime())) {
     log("debug", "parseDate", "字符串解析成功", {
       input: time,
-      format: attemptedFormats[attemptedFormats.length - 1],
+      format: "ISO 8601 / 浏览器原生 Date.parse",
       result: d.toISOString(),
     });
     return d;
   }
 
   // 所有格式均失败
-  throw new ParseDateError(time, attemptedFormats, "所有尝试的格式均无法解析为有效日期");
+  throw new ParseDateError(
+    time,
+    ["ISO 8601 / 浏览器原生 Date.parse"],
+    `字符串 "${str}" 无法解析为有效日期`,
+  );
 }
 
 /**
@@ -2438,7 +2461,7 @@ async function selectPersonAndWait(personId: number): Promise<void> {
  * @param err 原始错误
  * @param ErrorClass 用于包装非 Error 值的错误类构造函数
  */
-function wrapError<T extends BaseDebugError>(
+export function wrapError<T extends BaseDebugError>(
   label: string,
   err: unknown,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

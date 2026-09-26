@@ -13,7 +13,6 @@ import { createRtcAgent, switchLocale, withMeta, z } from "@rtc-agent/component"
 import type { RtcAgentWithLifecycle } from "@rtc-agent/component";
 import { getTheme } from "./theme";
 import type { Locale } from "./i18n";
-import type { Scope } from "./utils";
 import type { BirthInput } from "./useZwds";
 import { DEFAULT_BIRTH_INPUT } from "./useZwds";
 
@@ -84,14 +83,6 @@ function peepOrThrow() {
 }
 
 /**
- * 辅助函数：从 Record<string, unknown> 安全提取指定类型的参数
- * RTC Agent 的 handler 接受 Record<string, unknown>，此函数提供类型安全的访问
- */
-function extractParam<T>(args: Record<string, unknown>, key: string): T | undefined {
-  return args[key] as T | undefined;
-}
-
-/**
  * 参数 Schema：用 Zod 描述每个 Function 的参数，RTC Agent 会据此让 AI 生成正确调用。
  *
  * 约定：
@@ -130,8 +121,10 @@ const personGetFunction = {
       "命主 ID（可选），省略则返回默认人物",
     ),
   }),
-  handler: (args: Record<string, unknown>) =>
-    peepOrThrow().PersonGet(extractParam<number>(args, "personId")),
+  handler: (args: Record<string, unknown>) => {
+    const input = personGetFunction.zodSchema.parse(args);
+    return peepOrThrow().PersonGet(input.personId);
+  },
   returns: {
     schema: {
       type: "object" as const,
@@ -154,8 +147,10 @@ interface BirthInputFields {
   isLeapMonth?: boolean;
 }
 
-/** 将 AI 提供的部分字段合并为完整 BirthInput */
-function mergeBirthInput(partial: BirthInputFields): BirthInput {
+/**
+ * 将 AI 提供的部分字段合并为完整 BirthInput
+ */
+export function mergeBirthInput(partial: BirthInputFields): BirthInput {
   return {
     ...DEFAULT_BIRTH_INPUT,
     ...partial,
@@ -190,7 +185,9 @@ const personCreateFunction = {
       .describe("是否设为默认人物（后续分析默认使用），默认 false"),
   }),
   handler: (args: Record<string, unknown>) => {
-    const input = args as unknown as BirthInputFields & { isDefault?: boolean };
+    const input = personCreateFunction.zodSchema.parse(args) as BirthInputFields & {
+      isDefault?: boolean;
+    };
     return peepOrThrow().PersonCreate(mergeBirthInput(input), input.isDefault);
   },
   returns: {
@@ -218,7 +215,9 @@ const personUpdateFunction = {
       .describe("是否设为默认人物；不传则保持原值"),
   }),
   handler: (args: Record<string, unknown>) => {
-    const input = args as unknown as { personId: number } & BirthInputFields & {
+    const input = personUpdateFunction.zodSchema.parse(args) as {
+      personId: number;
+    } & BirthInputFields & {
         isDefault?: boolean;
       };
     return peepOrThrow().PersonUpdate(input.personId, mergeBirthInput(input), input.isDefault);
@@ -234,7 +233,10 @@ const personDeleteFunction = {
   zodSchema: z.object({
     personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
   }),
-  handler: (args: Record<string, unknown>) => peepOrThrow().PersonDelete(args.personId as number),
+  handler: (args: Record<string, unknown>) => {
+    const input = personDeleteFunction.zodSchema.parse(args);
+    return peepOrThrow().PersonDelete(input.personId);
+  },
   returns: {
     schema: { type: "object" as const, description: "删除结果" },
   },
@@ -272,7 +274,7 @@ const ziweiFunction = {
       ),
   }),
   handler: async (args: Record<string, unknown>) => {
-    const parsedArgs = args as unknown as { personId?: number; scope?: Scope; time?: string };
+    const parsedArgs = ziweiFunction.zodSchema.parse(args);
     // RTC Agent 场景不需要操控 UI，直接走纯计算路径
     return peepOrThrow().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time, {
       skipUI: true,
@@ -313,7 +315,7 @@ const getScopeDataFunction = {
       .describe("命主 ID（可选）；省略则使用默认人物。可先调用 PersonList 获取 ID"),
   }),
   handler: async (args: Record<string, unknown>) => {
-    const parsedArgs = args as unknown as { solarDate: string; personId?: number };
+    const parsedArgs = getScopeDataFunction.zodSchema.parse(args);
     return peepOrThrow().GetScopeData(parsedArgs.solarDate, parsedArgs.personId);
   },
   returns: {
@@ -356,13 +358,7 @@ const daliurenCreateFunction = {
     tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['求财', '合作']"),
   }),
   handler: (args: Record<string, unknown>) => {
-    const parsedArgs = args as unknown as {
-      personId?: number;
-      question: string;
-      note?: string;
-      background?: string;
-      tags?: string[];
-    };
+    const parsedArgs = daliurenCreateFunction.zodSchema.parse(args);
     return peepOrThrow().DaLiuRenCreate(parsedArgs, { skipUI: true });
   },
   returns: {
@@ -398,13 +394,7 @@ const daliurenListFunction = {
       .describe("每页条数，默认 20"),
   }),
   handler: (args: Record<string, unknown>) => {
-    const parsedArgs = args as unknown as {
-      personId?: number;
-      searchText?: string;
-      tags?: string[];
-      page?: number;
-      pageSize?: number;
-    };
+    const parsedArgs = daliurenListFunction.zodSchema.parse(args);
     return peepOrThrow().DaLiuRenList(parsedArgs, { skipUI: true });
   },
   returns: {
@@ -437,7 +427,7 @@ const daliurenViewFunction = {
     ),
   }),
   handler: (args: Record<string, unknown>) => {
-    const parsedArgs = args as unknown as { personId?: number; recordId: number };
+    const parsedArgs = daliurenViewFunction.zodSchema.parse(args);
     return peepOrThrow().DaLiuRenView(parsedArgs, { skipUI: true });
   },
   returns: {
@@ -473,13 +463,7 @@ const wikiListFunction = {
       .describe("每页条数，默认 20"),
   }),
   handler: (args: Record<string, unknown>) => {
-    const parsedArgs = args as unknown as {
-      personId?: number;
-      searchText?: string;
-      tags?: string[];
-      page?: number;
-      pageSize?: number;
-    };
+    const parsedArgs = wikiListFunction.zodSchema.parse(args);
     return peepOrThrow().WikiList(parsedArgs, { skipUI: true });
   },
   returns: {
@@ -518,13 +502,7 @@ const wikiCreateFunction = {
       .describe("关联文档 ID 列表——建立文档间的链接关系，形成知识网络"),
   }),
   handler: (args: Record<string, unknown>) => {
-    const parsedArgs = args as unknown as {
-      personId?: number;
-      title: string;
-      content: string;
-      tags?: string[];
-      linkTargetIds?: number[];
-    };
+    const parsedArgs = wikiCreateFunction.zodSchema.parse(args);
     return peepOrThrow().WikiCreate(parsedArgs, { skipUI: true });
   },
   returns: {
@@ -551,7 +529,7 @@ const wikiViewFunction = {
     ),
   }),
   handler: (args: Record<string, unknown>) => {
-    const parsedArgs = args as unknown as { personId?: number; docId: number };
+    const parsedArgs = wikiViewFunction.zodSchema.parse(args);
     return peepOrThrow().WikiView(parsedArgs, { skipUI: true });
   },
   returns: {
