@@ -340,6 +340,17 @@
   background: rgba(217, 228, 255, 0.04);
 }
 
+.btn-cancel:active {
+  background: rgba(217, 228, 255, 0.08);
+  transform: translateY(0) scale(0.97);
+}
+
+.btn-cancel:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-save {
   padding: 8px 22px;
   border-radius: 9px;
@@ -362,6 +373,18 @@
 .btn-save:hover {
   background: rgba(85, 215, 255, 0.22);
   box-shadow: 0 0 16px rgba(85, 215, 255, 0.4);
+}
+
+.btn-save:active {
+  background: rgba(85, 215, 255, 0.3);
+  transform: translateY(0) scale(0.97);
+}
+
+.btn-save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-danger {
@@ -391,6 +414,20 @@
     0 0 18px rgba(239, 68, 68, 0.45),
     0 0 6px rgba(239, 68, 68, 0.25);
   transform: translateY(-1px);
+}
+
+.btn-danger:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow:
+    0 0 10px rgba(239, 68, 68, 0.35),
+    0 0 4px rgba(239, 68, 68, 0.2);
+}
+
+.btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* ── 确认弹窗 ── */
@@ -803,6 +840,13 @@
 
 .record-new-btn:active {
   transform: translateY(0);
+}
+
+.record-new-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .record-new-btn:focus-visible {
