@@ -32,6 +32,8 @@ type Listener = (items: ToastItem[]) => void;
 
 /** 当前 Toast 队列 */
 let items: ToastItem[] = [];
+/** 缓存的快照引用——仅当 items 变化时更新，避免 useSyncExternalStore 无限循环 */
+let cachedSnapshot: ToastItem[] = [];
 /** 监听器集合 */
 const listeners = new Set<Listener>();
 /** id 生成器 */
@@ -43,10 +45,11 @@ const ERROR_DURATION = 5000;
 
 /** 通知所有监听器 */
 function emit() {
-  const snapshot = items.slice();
+  // 更新缓存快照（新引用），仅在数据实际变化时触发重渲染
+  cachedSnapshot = items.slice();
   for (const l of listeners) {
     try {
-      l(snapshot);
+      l(cachedSnapshot);
     } catch (err) {
       console.error("[toast] 监听器异常", err);
     }
@@ -88,9 +91,9 @@ export function subscribe(listener: Listener): () => void {
   };
 }
 
-/** 获取当前快照 */
+/** 获取当前快照——返回缓存引用，数据未变时引用稳定 */
 export function getSnapshot(): ToastItem[] {
-  return items.slice();
+  return cachedSnapshot;
 }
 
 /** Toast API：对外暴露 */
