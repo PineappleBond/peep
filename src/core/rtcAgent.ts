@@ -393,7 +393,7 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
         // 嵌入式面板模式：禁用拖拽/缩放/气泡按钮，默认最大化，填满父容器
         // （peep-v2 在 App.tsx 用 5:3 双栏布局把 RTC 嵌在右侧侧栏）
         if (_agent) {
-          _agent.windowConfig = { embedded: true };
+          _agent.windowConfig = { embedded: true, defaultMode: "maximized" };
         }
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
