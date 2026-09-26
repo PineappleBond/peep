@@ -11,7 +11,13 @@ import {
   getCurrentVitals,
   getCustomMeasures,
   rateVitals,
+  getDomainMetrics,
+  getDomainMetricSummary,
+  checkPerformanceBudgets,
+  getCacheSnapshots,
   type WebVitals,
+  type DomainMetric,
+  type CacheSnapshot,
 } from "../core/performance";
 import { getRecordedErrors, type ErrorReport } from "../core/errorTracking";
 import { registerShortcut } from "../core/shortcuts";
@@ -255,6 +261,9 @@ export function DevDashboard() {
   const rating = useMemo(() => rateVitals(vitals), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const measures = useMemo(() => getCustomMeasures(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const sysInfo = useSystemInfo(tick);
+  const domainSummary = useMemo(() => getDomainMetricSummary(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cacheSnapshots = useMemo(() => getCacheSnapshots(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const budgetViolations = useMemo(() => checkPerformanceBudgets(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setErrors(getRecordedErrors().slice(-MAX_ERRORS).reverse());
@@ -277,6 +286,9 @@ export function DevDashboard() {
       system: sysInfo,
       measures,
       errors,
+      domainSummary,
+      cacheSnapshots,
+      budgetViolations,
       history: historyRef.current,
     };
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
@@ -286,7 +298,7 @@ export function DevDashboard() {
     a.download = `perf-report-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [vitals, rating, sysInfo, measures, errors]);
+  }, [vitals, rating, sysInfo, measures, errors, domainSummary, cacheSnapshots, budgetViolations]);
 
   const handleClose = useCallback(() => {
     setDashVisible(false);
@@ -346,6 +358,7 @@ export function DevDashboard() {
             <VitalCard label="FCP" value={fmtMs(vitals.fcp)} rate={rating.fcp ?? "unknown"} />
             <VitalCard label="LCP" value={fmtMs(vitals.lcp)} rate={rating.lcp ?? "unknown"} />
             <VitalCard label="FID" value={fmtMs(vitals.fid)} rate={rating.fid ?? "unknown"} />
+            <VitalCard label="INP" value={fmtMs(vitals.inp)} rate={rating.inp ?? "unknown"} />
             <VitalCard
               label="CLS"
               value={vitals.cls !== undefined ? vitals.cls.toFixed(3) : "-"}
@@ -485,6 +498,104 @@ export function DevDashboard() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+
+        {/* 性能预算超标 */}
+        {budgetViolations.length > 0 && (
+          <section className="dev-dash-section">
+            <h3>{t("devDashboard.budgetViolations")}</h3>
+            <ul className="dev-dash-kv">
+              {budgetViolations.map((v, i) => (
+                <li key={i} className="dev-dash-budget-violation">
+                  <span>{v.budget.name}</span>
+                  <strong>
+                    {v.actual.toFixed(1)}
+                    {v.budget.metric === "cls" ? "" : " ms"}
+                    {" > "}
+                    {v.budget.threshold}
+                    {v.budget.metric === "cls" ? "" : " ms"}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* 领域指标摘要 */}
+        <section className="dev-dash-section">
+          <h3>{t("devDashboard.domainMetrics")}</h3>
+          {Object.keys(domainSummary).length === 0 ? (
+            <div className="dev-dash-empty">{t("devDashboard.noDomainMetrics")}</div>
+          ) : (
+            <table className="dev-dash-table">
+              <thead>
+                <tr>
+                  <th>{t("devDashboard.metricName")}</th>
+                  <th>{t("devDashboard.metricCount")}</th>
+                  <th>{t("devDashboard.metricAvg")}</th>
+                  <th>{t("devDashboard.metricP95")}</th>
+                  <th>{t("devDashboard.metricMax")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(domainSummary)
+                  .sort((a, b) => b[1].avg - a[1].avg)
+                  .map(([name, s]) => (
+                    <tr key={name}>
+                      <td>{name}</td>
+                      <td>{s.count}</td>
+                      <td>{s.avg.toFixed(1)} ms</td>
+                      <td>{s.p95.toFixed(1)} ms</td>
+                      <td>{s.max.toFixed(1)} ms</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        {/* 缓存统计 */}
+        <section className="dev-dash-section">
+          <h3>{t("devDashboard.cacheStats")}</h3>
+          {cacheSnapshots.length === 0 ? (
+            <div className="dev-dash-empty">{t("devDashboard.noCacheStats")}</div>
+          ) : (
+            <table className="dev-dash-table">
+              <thead>
+                <tr>
+                  <th>{t("devDashboard.cacheName")}</th>
+                  <th>{t("devDashboard.cacheHitRate")}</th>
+                  <th>{t("devDashboard.cacheHits")}</th>
+                  <th>{t("devDashboard.cacheMisses")}</th>
+                  <th>{t("devDashboard.cacheSize")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cacheSnapshots
+                  .sort((a, b) => b.hitRate - a.hitRate)
+                  .map(c => (
+                    <tr key={c.name}>
+                      <td>{c.name}</td>
+                      <td
+                        style={{
+                          color:
+                            c.hitRate >= 0.8
+                              ? "var(--dev-rate-good, #16a34a)"
+                              : c.hitRate >= 0.5
+                                ? "var(--dev-rate-warn, #d97706)"
+                                : "var(--dev-rate-bad, #dc2626)",
+                        }}
+                      >
+                        {(c.hitRate * 100).toFixed(1)}%
+                      </td>
+                      <td>{c.hits}</td>
+                      <td>{c.misses}</td>
+                      <td>{c.size}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           )}
         </section>
 

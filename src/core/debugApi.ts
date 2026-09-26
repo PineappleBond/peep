@@ -34,6 +34,7 @@ import type { GenderName } from "iztro/lib/i18n";
 import { MUTAGEN_TABLES } from "./utils";
 import { LRUCache, registerCache, getAllCacheStats, clearAllCaches } from "./cache";
 import { buildChartIndex } from "./chartIndex";
+import { recordDomainMetric } from "./performance";
 
 /**
  * computeZiWeiData 返回数据：hbar 运限拨盘 + chart 运限盘面
@@ -354,11 +355,11 @@ function log(level: LogLevel, category: string, message: string, data?: unknown)
 const NOOP = () => {};
 
 /**
- * 性能计时工具——返回一个 stop 函数，调用时打印耗时。
+ * 性能计时工具——返回一个 stop 函数，调用时打印耗时并记录领域指标。
  * 用法：const stop = timer("ZiWei"); ... stop(); // "ZiWei 耗时 23ms"
  *
  * 生产环境直接返回共享的 NOOP 引用（无闭包分配）；
- * 开发环境才创建 start 变量与闭包用于计时。
+ * 开发环境才创建 start 变量与闭包用于计时，并同时记录到领域指标供仪表板展示。
  */
 function timer(category: string): () => void {
   if (!import.meta.env.DEV) return NOOP;
@@ -366,6 +367,8 @@ function timer(category: string): () => void {
   return () => {
     const duration = performance.now() - start;
     log("debug", category, `耗时 ${duration.toFixed(1)}ms`);
+    // 记录到领域指标（供 DevDashboard 性能监控面板展示）
+    recordDomainMetric(category, duration);
   };
 }
 

@@ -7,6 +7,7 @@ import { DEFAULT_BIRTH_INPUT, type BirthInput } from "./useZwds";
 import type { DaLiuRenResult } from "./daliuren/types";
 import { t } from "./i18n";
 import { runMigrations, checkDataIntegrity } from "./migrations";
+import { recordDomainMetric } from "./performance";
 
 /**
  * 人物档案类型：扩展 BirthInput，附加主键 id、保存时间戳、默认标志。
@@ -147,10 +148,18 @@ async function ensureDefault(): Promise<Person> {
 
 /** 获取全部人物列表 */
 export async function listPersons(): Promise<Person[]> {
+  const start = performance.now();
   try {
     await ensureDefault();
-    return await db.persons.orderBy("savedAt").reverse().toArray();
+    const result = await db.persons.orderBy("savedAt").reverse().toArray();
+    recordDomainMetric("db.listPersons", performance.now() - start, {
+      context: { count: result.length },
+    });
+    return result;
   } catch (err) {
+    recordDomainMetric("db.listPersons", performance.now() - start, {
+      tags: ["error"],
+    });
     console.error("[personDb] 获取人物列表失败", err);
     throw new Error(t("db.readPersonListFailed"));
   }
@@ -158,9 +167,17 @@ export async function listPersons(): Promise<Person[]> {
 
 /** 获取单个人物 */
 export async function getPerson(id: number): Promise<Person | undefined> {
+  const start = performance.now();
   try {
-    return await db.persons.get(id);
+    const result = await db.persons.get(id);
+    recordDomainMetric("db.getPerson", performance.now() - start, {
+      context: { id, found: result !== undefined },
+    });
+    return result;
   } catch (err) {
+    recordDomainMetric("db.getPerson", performance.now() - start, {
+      tags: ["error"],
+    });
     console.error("[personDb] 获取人物详情失败", err);
     throw new Error(t("db.readPersonFailed"));
   }
@@ -175,6 +192,7 @@ export async function savePerson(
   input: BirthInput,
   isDefault: boolean,
 ): Promise<Person> {
+  const start = performance.now();
   try {
     const result = await db.transaction("rw", db.persons, async () => {
       if (isDefault) {
@@ -192,8 +210,14 @@ export async function savePerson(
       const newId = await db.persons.add({ ...input, savedAt: now, isDefault });
       return { ...input, id: newId, savedAt: now, isDefault };
     });
+    recordDomainMetric("db.savePerson", performance.now() - start, {
+      context: { id: result.id ?? 0, isNew: id == null },
+    });
     return result;
   } catch (err) {
+    recordDomainMetric("db.savePerson", performance.now() - start, {
+      tags: ["error"],
+    });
     console.error("[personDb] 保存人物失败", err);
     throw new Error(t("db.savePersonFailed"));
   }
@@ -204,6 +228,7 @@ export async function savePerson(
  * 级联删除该人物下的全部关联数据（大六壬记录、Wiki 文档及链接），避免孤立数据。
  */
 export async function deletePerson(id: number): Promise<void> {
+  const start = performance.now();
   try {
     await db.transaction(
       "rw",
@@ -236,7 +261,13 @@ export async function deletePerson(id: number): Promise<void> {
         await db.persons.delete(id);
       },
     );
+    recordDomainMetric("db.deletePerson", performance.now() - start, {
+      context: { id },
+    });
   } catch (err) {
+    recordDomainMetric("db.deletePerson", performance.now() - start, {
+      tags: ["error"],
+    });
     // 保留业务错误（默认人物不可删除），包装其他错误
     if (err instanceof Error && err.message === t("db.defaultCannotDelete")) throw err;
     console.error("[personDb] 删除人物失败", err);

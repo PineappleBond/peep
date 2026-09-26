@@ -10,6 +10,7 @@ import { Spinner } from "./components/Spinner";
 import { ZiweiPage } from "./pages/ZiweiPage";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { DevDashboard } from "./components/DevDashboard";
+import { PerformanceMonitor } from "./components/PerformanceMonitor";
 import { initDebugApi } from "./core/debugApi";
 import { useI18n } from "./core/i18n";
 import { initPlugins } from "./core/pluginLoader";
@@ -121,6 +122,8 @@ function App() {
             </Layout>
             {/* 开发者性能仪表板（仅 DEV 环境渲染） */}
             <DevDashboard />
+            {/* 性能监控悬浮窗（仅 DEV 环境渲染） */}
+            <PerformanceMonitor />
           </BrowserRouter>
         </div>
         <aside className="rtc-layout-side" aria-label="AI 助手">
