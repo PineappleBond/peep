@@ -10,10 +10,10 @@ import { calculateDaLiuRen } from "./calculator";
 /** 运行 PHP 计算器 */
 function runPhp(date: string, time: string): any {
   try {
-    const result = execSync(
-      `cd /tmp/liuren && php cli_calculate.php ${date} ${time}`,
-      { encoding: "utf-8", timeout: 5000 }
-    );
+    const result = execSync(`cd /tmp/liuren && php cli_calculate.php ${date} ${time}`, {
+      encoding: "utf-8",
+      timeout: 5000,
+    });
     return JSON.parse(result);
   } catch (error) {
     console.error("PHP 执行失败:", error);
@@ -103,7 +103,9 @@ function compareResults(php: any, ts: any, caseName: string): void {
   const phpMethod = php.jiuzongmen;
   const tsMethod = ts.threeTransmissions.method;
   // 这里需要映射关系，暂时先记录
-  console.log(`${caseName} 九宗门: PHP=${phpMethod} (${getPhpMethodName(phpMethod)}), TS=${tsMethod}`);
+  console.log(
+    `${caseName} 九宗门: PHP=${phpMethod} (${getPhpMethodName(phpMethod)}), TS=${tsMethod}`
+  );
 
   if (checks.length > 0) {
     console.log(`\n${caseName} 差异:`);
@@ -116,9 +118,28 @@ function compareResults(php: any, ts: any, caseName: string): void {
 /** PHP 九宗门名称映射 */
 function getPhpMethodName(index: number): string {
   const names = [
-    '未知', '元首', '重审', '比用', '比用知一', '涉害', '涉害见机', '涉害察微', '涉害缀瑕',
-    '遥克蒿矢', '遥克弹射', '昴星虎视', '昴星冬蛇掩目', '别责', '八专', '八专独足',
-    '伏吟不虞', '伏吟自任', '伏吟自信', '伏吟杜传', '反吟无依', '反吟无亲'
+    "未知",
+    "元首",
+    "重审",
+    "比用",
+    "比用知一",
+    "涉害",
+    "涉害见机",
+    "涉害察微",
+    "涉害缀瑕",
+    "遥克蒿矢",
+    "遥克弹射",
+    "昴星虎视",
+    "昴星冬蛇掩目",
+    "别责",
+    "八专",
+    "八专独足",
+    "伏吟不虞",
+    "伏吟自任",
+    "伏吟自信",
+    "伏吟杜传",
+    "反吟无依",
+    "反吟无亲",
   ];
   return names[index] || `未知(${index})`;
 }

@@ -45,21 +45,18 @@ function renderInline(text: string): string {
   // 斜体 *text*（排除已处理的粗体）
   text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
   // 链接 [text](url)——仅允许安全协议（http/https/mailto/相对路径），拒绝 javascript: 等
-  text = text.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    (_m, linkText, rawUrl) => {
-      // rawUrl 已被 escapeHtml 转义，需还原后再校验协议
-      const decodedUrl = rawUrl
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&amp;/g, "&");
-      if (!isSafeUrl(decodedUrl)) {
-        // 不安全 URL：仅渲染文本，不生成链接
-        return linkText;
-      }
-      return `<a href="${rawUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, linkText, rawUrl) => {
+    // rawUrl 已被 escapeHtml 转义，需还原后再校验协议
+    const decodedUrl = rawUrl
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");
+    if (!isSafeUrl(decodedUrl)) {
+      // 不安全 URL：仅渲染文本，不生成链接
+      return linkText;
     }
-  );
+    return `<a href="${rawUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+  });
   return text;
 }
 
@@ -87,9 +84,7 @@ export function renderMarkdown(md: string): string {
         i++;
       }
       i++; // 跳过结束的 ```
-      htmlParts.push(
-        `<pre><code>${codeLines.join("\n")}</code></pre>`
-      );
+      htmlParts.push(`<pre><code>${codeLines.join("\n")}</code></pre>`);
       continue;
     }
 
@@ -117,9 +112,7 @@ export function renderMarkdown(md: string): string {
         quoteLines.push(lines[i].slice(5)); // 去掉 &gt; 前缀（5个字符）
         i++;
       }
-      htmlParts.push(
-        `<blockquote>${quoteLines.map(renderInline).join("<br />")}</blockquote>`
-      );
+      htmlParts.push(`<blockquote>${quoteLines.map(renderInline).join("<br />")}</blockquote>`);
       continue;
     }
 
@@ -130,9 +123,7 @@ export function renderMarkdown(md: string): string {
         items.push(renderInline(lines[i].slice(2)));
         i++;
       }
-      htmlParts.push(
-        `<ul>${items.map((t) => `<li>${t}</li>`).join("")}</ul>`
-      );
+      htmlParts.push(`<ul>${items.map(t => `<li>${t}</li>`).join("")}</ul>`);
       continue;
     }
 
@@ -144,9 +135,7 @@ export function renderMarkdown(md: string): string {
         items.push(renderInline(content));
         i++;
       }
-      htmlParts.push(
-        `<ol>${items.map((t) => `<li>${t}</li>`).join("")}</ol>`
-      );
+      htmlParts.push(`<ol>${items.map(t => `<li>${t}</li>`).join("")}</ol>`);
       continue;
     }
 

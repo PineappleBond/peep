@@ -54,16 +54,16 @@ export function filterAndPaginate<T>(opts: FilterPaginateOptions<T>): PaginatedR
   let filtered = sorted;
   if (searchText.trim()) {
     const keyword = searchText.trim().toLowerCase();
-    filtered = filtered.filter((r) =>
-      searchFields.some((f) => String(r[f]).toLowerCase().includes(keyword))
+    filtered = filtered.filter(r =>
+      searchFields.some(f => String(r[f]).toLowerCase().includes(keyword))
     );
   }
 
   // 3. 标签过滤（多值匹配：记录包含任一选中的标签）
   if (tags.length > 0) {
-    filtered = filtered.filter((r) => {
+    filtered = filtered.filter(r => {
       const rTags = (r as unknown as { tags?: string[] }).tags;
-      return Array.isArray(rTags) && rTags.some((t) => tags.includes(t));
+      return Array.isArray(rTags) && rTags.some(t => tags.includes(t));
     });
   }
 

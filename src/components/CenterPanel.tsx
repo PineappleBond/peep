@@ -3,7 +3,12 @@ import { BRANCHES, SCOPES, SCOPE_META, bodyPalaceBranchOf, isYangStem } from "..
 import type { Zwds } from "../core/useZwds";
 import { useI18n } from "../core/i18n";
 
-const PILLAR_LABEL_KEYS = ["center.pillarYear", "center.pillarMonth", "center.pillarDay", "center.pillarHour"];
+const PILLAR_LABEL_KEYS = [
+  "center.pillarYear",
+  "center.pillarMonth",
+  "center.pillarDay",
+  "center.pillarHour",
+];
 
 /**
  * 中宫面板：显示命造信息/五行局/四柱干支/观测点/运限层级切换/飞宫模式开关/自化标记。
@@ -28,8 +33,8 @@ export const CenterPanel = memo(function CenterPanel({
   const zao = a.gender === "女" ? t("center.kunZao") : t("center.qianZao");
   const yinyang = `${isYangStem(yearStem) ? t("center.yang") : t("center.yin")}${a.gender === "男" ? t("common.male") : t("common.female")}`;
   const qiyun = z.decades[0]?.range[0];
-  const allOff = SCOPES.every((s) => !z.visible[s]);
-  const origin = a.palaces.find((p) => p.isOriginalPalace);
+  const allOff = SCOPES.every(s => !z.visible[s]);
+  const origin = a.palaces.find(p => p.isOriginalPalace);
   const ts = z.trueSolar;
 
   return (
@@ -63,9 +68,7 @@ export const CenterPanel = memo(function CenterPanel({
         </div>
         <div className="ci">
           <b>{t("center.time")}</b>
-          <span>
-            {t("center.timeWithRange", { time: a.time, range: a.timeRange })}
-          </span>
+          <span>{t("center.timeWithRange", { time: a.time, range: a.timeRange })}</span>
         </div>
         <div className="ci">
           <b>{t("center.zodiacSign")}</b>
@@ -82,7 +85,13 @@ export const CenterPanel = memo(function CenterPanel({
         {ts && (
           <div className="ci ci-wide">
             <b>{t("center.trueSolar")}</b>
-            <span title={t("center.trueSolarHint", { place: ts.place, longitude: ts.longitude, eot: ts.eotMinutes.toFixed(1) })}>
+            <span
+              title={t("center.trueSolarHint", {
+                place: ts.place,
+                longitude: ts.longitude,
+                eot: ts.eotMinutes.toFixed(1),
+              })}
+            >
               {t("center.trueSolarDetail", {
                 place: ts.place,
                 trueDate: ts.trueDate,
@@ -103,7 +112,8 @@ export const CenterPanel = memo(function CenterPanel({
         <div className="ci">
           <b>{t("center.soulBodyPalace")}</b>
           <span>
-            {a.earthlyBranchOfSoulPalace} · {bodyPalaceBranchOf(a.palaces, a.earthlyBranchOfBodyPalace)}
+            {a.earthlyBranchOfSoulPalace} ·{" "}
+            {bodyPalaceBranchOf(a.palaces, a.earthlyBranchOfBodyPalace)}
           </span>
         </div>
         {origin && (
@@ -129,16 +139,23 @@ export const CenterPanel = memo(function CenterPanel({
       {h && (
         <div className="target-line">
           <span className="tl-tag">{t("center.observe")}</span>
-          {t("center.solarDate")} {h.solarDate} · {t("center.lunarDate")} {h.lunarDate} · {BRANCHES[z.pick.hour]}{t("center.hour")} · {t("center.nominalAge")}
+          {t("center.solarDate")} {h.solarDate} · {t("center.lunarDate")} {h.lunarDate} ·{" "}
+          {BRANCHES[z.pick.hour]}
+          {t("center.hour")} · {t("center.nominalAge")}
           {h.age.nominalAge}
         </div>
       )}
 
       <div className="depth-row">
-        <button className={`db db-natal ${allOff ? "on" : ""}`} onClick={z.actions.showNatal} title={t("center.natalOnly")} aria-pressed={allOff}>
+        <button
+          className={`db db-natal ${allOff ? "on" : ""}`}
+          onClick={z.actions.showNatal}
+          title={t("center.natalOnly")}
+          aria-pressed={allOff}
+        >
           {t("center.natal")}
         </button>
-        {SCOPES.map((s) => (
+        {SCOPES.map(s => (
           <button
             key={s}
             className={`db db-${s} ${z.visible[s] ? "on" : ""}`}
@@ -162,11 +179,7 @@ export const CenterPanel = memo(function CenterPanel({
             {t("center.fly")}
           </button>
         )}
-        <button
-          className="db db-self on"
-          title={t("center.selfMutagenMode")}
-          aria-pressed={true}
-        >
+        <button className="db db-self on" title={t("center.selfMutagenMode")} aria-pressed={true}>
           {t("center.selfMutagen")}
         </button>
       </div>

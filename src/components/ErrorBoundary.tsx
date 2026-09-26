@@ -6,7 +6,8 @@
  *   （原始消息可能包含内部路径、堆栈信息、依赖版本等）
  * - 详细错误仅输出到 console.error，供开发者排查
  */
-import { Component, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Component } from "react";
 import { t } from "../core/i18n";
 
 type Props = {
@@ -42,9 +43,7 @@ export class ErrorBoundary extends Component<Props, { error: Error | null }> {
         <div className="err-box" role="alert" aria-live="assertive">
           {/* 通用提示文案，不泄露内部实现 */}
           <div>{t("errorBoundary.title")}</div>
-          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
-            {t("errorBoundary.hint")}
-          </div>
+          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>{t("errorBoundary.hint")}</div>
           <button
             type="button"
             className="btn-cancel"

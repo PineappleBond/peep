@@ -10,10 +10,10 @@ import { calculateDaLiuRen } from "./calculator";
 /** 运行 PHP 计算器 */
 function runPhp(date: string, time: string): any {
   try {
-    const result = execSync(
-      `cd /tmp/liuren && php cli_calculate.php ${date} ${time}`,
-      { encoding: "utf-8", timeout: 5000 }
-    );
+    const result = execSync(`cd /tmp/liuren && php cli_calculate.php ${date} ${time}`, {
+      encoding: "utf-8",
+      timeout: 5000,
+    });
     return JSON.parse(result);
   } catch (error) {
     console.error("PHP 执行失败:", error);
@@ -33,40 +33,63 @@ function runTs(date: string, time: string): any {
 
 /** PHP 九宗门名称映射 */
 const PHP_JIU_ZONG_MEN_NAMES = [
-  '未知', '元首', '重审', '比用', '比用知一', '涉害', '涉害见机', '涉害察微', '涉害缀瑕',
-  '遥克蒿矢', '遥克弹射', '昴星虎视', '昴星冬蛇掩目', '别责', '八专', '八专独足',
-  '伏吟不虞', '伏吟自任', '伏吟自信', '伏吟杜传', '反吟无依', '反吟无亲'
+  "未知",
+  "元首",
+  "重审",
+  "比用",
+  "比用知一",
+  "涉害",
+  "涉害见机",
+  "涉害察微",
+  "涉害缀瑕",
+  "遥克蒿矢",
+  "遥克弹射",
+  "昴星虎视",
+  "昴星冬蛇掩目",
+  "别责",
+  "八专",
+  "八专独足",
+  "伏吟不虞",
+  "伏吟自任",
+  "伏吟自信",
+  "伏吟杜传",
+  "反吟无依",
+  "反吟无亲",
 ];
 
 /** 对比九宗门取法 */
-function compareJiuZongMen(php: any, ts: any, caseName: string): { match: boolean; details: string } {
+function compareJiuZongMen(
+  php: any,
+  ts: any,
+  caseName: string
+): { match: boolean; details: string } {
   const phpMethod = php.jiuzongmen;
   const phpName = PHP_JIU_ZONG_MEN_NAMES[phpMethod] || `未知(${phpMethod})`;
   const tsMethod = ts.threeTransmissions.method;
 
   // 简单的名称映射检查（实际应该更严格）
   const methodMap: Record<number, string[]> = {
-    1: ['元首'],
-    2: ['重审'],
-    3: ['比用'],
-    4: ['比用知一', '知一'],
-    5: ['涉害'],
-    6: ['涉害见机'],
-    7: ['涉害察微'],
-    8: ['涉害缀瑕'],
-    9: ['遥克蒿矢', '蒿矢'],
-    10: ['遥克弹射', '弹射'],
-    11: ['昴星虎视', '虎视'],
-    12: ['昴星冬蛇掩目', '冬蛇掩目'],
-    13: ['别责'],
-    14: ['八专'],
-    15: ['八专独足', '独足'],
-    16: ['伏吟不虞', '伏吟不遇'],
-    17: ['伏吟自任'],
-    18: ['伏吟自信'],
-    19: ['伏吟杜传'],
-    20: ['反吟无依', '返吟无依'],
-    21: ['反吟无亲', '返吟无亲'],
+    1: ["元首"],
+    2: ["重审"],
+    3: ["比用"],
+    4: ["比用知一", "知一"],
+    5: ["涉害"],
+    6: ["涉害见机"],
+    7: ["涉害察微"],
+    8: ["涉害缀瑕"],
+    9: ["遥克蒿矢", "蒿矢"],
+    10: ["遥克弹射", "弹射"],
+    11: ["昴星虎视", "虎视"],
+    12: ["昴星冬蛇掩目", "冬蛇掩目"],
+    13: ["别责"],
+    14: ["八专"],
+    15: ["八专独足", "独足"],
+    16: ["伏吟不虞", "伏吟不遇"],
+    17: ["伏吟自任"],
+    18: ["伏吟自信"],
+    19: ["伏吟杜传"],
+    20: ["反吟无依", "返吟无依"],
+    21: ["反吟无亲", "返吟无亲"],
   };
 
   const expectedNames = methodMap[phpMethod] || [];
@@ -74,7 +97,7 @@ function compareJiuZongMen(php: any, ts: any, caseName: string): { match: boolea
 
   return {
     match,
-    details: `PHP: ${phpMethod}(${phpName}), TS: ${tsMethod}`
+    details: `PHP: ${phpMethod}(${phpName}), TS: ${tsMethod}`,
   };
 }
 
@@ -161,15 +184,15 @@ describe("九宗门专项对比测试（第 3 轮）", () => {
 
       // 对比九宗门
       const jzm = compareJiuZongMen(phpResult, tsResult, name);
-      console.log(`九宗门: ${jzm.details} ${jzm.match ? '✅' : '❌'}`);
+      console.log(`九宗门: ${jzm.details} ${jzm.match ? "✅" : "❌"}`);
 
       // 对比三传
       const sanchuanChecks = compareSanchuan(phpResult, tsResult);
       if (sanchuanChecks.length > 0) {
-        console.log('三传差异:');
+        console.log("三传差异:");
         sanchuanChecks.forEach(c => console.log(`  - ${c}`));
       } else {
-        console.log('三传: 完全一致 ✅');
+        console.log("三传: 完全一致 ✅");
       }
 
       // 九宗门匹配不是强制要求（因为名称映射可能不完全），但三传必须一致

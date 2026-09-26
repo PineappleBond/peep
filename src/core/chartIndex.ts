@@ -35,7 +35,7 @@ export type ChartIndex = {
  */
 export function starNamesAt(a: Astrolabe, i: number): string[] {
   const p = a.palaces[fixIndex(i)];
-  return [...p.majorStars, ...p.minorStars, ...p.adjectiveStars].map((s) => s.name as string);
+  return [...p.majorStars, ...p.minorStars, ...p.adjectiveStars].map(s => s.name as string);
 }
 
 /**
@@ -58,7 +58,7 @@ export function buildChartIndex(a: Astrolabe): ChartIndex {
   const natal = yearStem ? (util.getMutagensByHeavenlyStem(yearStem as never) as string[]) : [];
   return {
     a,
-    soulIdx: a.palaces.findIndex((p) => p.name === "命宫"),
+    soulIdx: a.palaces.findIndex(p => p.name === "命宫"),
     pos,
     bright,
     natal,

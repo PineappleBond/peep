@@ -5,13 +5,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
-import {
-  BRANCHES,
-  MUTAGEN_TABLES,
-  MutagenTableKey,
-  Scope,
-  applyTrueSolar,
-} from "./utils";
+import type { MutagenTableKey, Scope } from "./utils";
+import { BRANCHES, MUTAGEN_TABLES, applyTrueSolar } from "./utils";
 import {
   daysInLunarMonth,
   fmtSolar,
@@ -338,39 +333,46 @@ export function useZwds(input: BirthInput) {
     }
   }, [astrolabe, targetSolar, pick.hour]);
 
-  const show = (s: Scope) => setVisible((v) => (v[s] ? v : { ...v, [s]: true }));
+  const show = (s: Scope) => setVisible(v => (v[s] ? v : { ...v, [s]: true }));
 
   const actions = {
     pickDecade(i: number) {
-      const y = i === -1 ? childhood?.startYear ?? birthLunarYear : decades[i]?.startYear;
-      if (y != null) setPick((p) => ({ ...p, year: y }));
+      const y = i === -1 ? (childhood?.startYear ?? birthLunarYear) : decades[i]?.startYear;
+      if (y != null) setPick(p => ({ ...p, year: y }));
       show("decadal");
     },
     pickYear(y: number) {
-      setPick((p) => ({ ...p, year: y }));
+      setPick(p => ({ ...p, year: y }));
       show("yearly");
     },
     pickMonth(m: number, leap = false) {
-      setPick((p) => ({ ...p, month: m, leap }));
+      setPick(p => ({ ...p, month: m, leap }));
       show("monthly");
     },
     pickDay(d: number) {
-      setPick((p) => ({ ...p, day: d }));
+      setPick(p => ({ ...p, day: d }));
       show("daily");
     },
     pickHour(h: number) {
-      setPick((p) => ({ ...p, hour: h }));
+      setPick(p => ({ ...p, hour: h }));
       show("hourly");
     },
     resetToday() {
       setPick(clampPick(initPick(), birthLunarYear));
     },
     toggleScope(s: Scope) {
-      setVisible((v) => ({ ...v, [s]: !v[s] }));
+      setVisible(v => ({ ...v, [s]: !v[s] }));
     },
     /** 只显示指定 scope，其他全部关闭 */
     showScope(s: Scope) {
-      setVisible({ decadal: false, yearly: false, monthly: false, daily: false, hourly: false, [s]: true });
+      setVisible({
+        decadal: false,
+        yearly: false,
+        monthly: false,
+        daily: false,
+        hourly: false,
+        [s]: true,
+      });
     },
     showNatal() {
       setVisible({ decadal: false, yearly: false, monthly: false, daily: false, hourly: false });
@@ -379,7 +381,7 @@ export function useZwds(input: BirthInput) {
 
   /** 本命命宫索引 */
   const soulPalaceIndex = useMemo(
-    () => astrolabe?.palaces.findIndex((p) => p.name === "命宫") ?? -1,
+    () => astrolabe?.palaces.findIndex(p => p.name === "命宫") ?? -1,
     [astrolabe]
   );
 

@@ -10,10 +10,10 @@ import { calculateDaLiuRen } from "./calculator";
 /** 运行 PHP 计算器 */
 function runPhp(date: string, time: string): any {
   try {
-    const result = execSync(
-      `cd /tmp/liuren && php cli_calculate.php ${date} ${time}`,
-      { encoding: "utf-8", timeout: 5000 }
-    );
+    const result = execSync(`cd /tmp/liuren && php cli_calculate.php ${date} ${time}`, {
+      encoding: "utf-8",
+      timeout: 5000,
+    });
     return JSON.parse(result);
   } catch (error) {
     console.error("PHP 执行失败:", error);
@@ -126,7 +126,7 @@ describe("大规模随机对比测试（100 个案例）", () => {
     { date: "2024-06-21", time: "12:00" }, // 夏至
     { date: "2024-12-21", time: "12:00" }, // 冬至
     { date: "2024-03-20", time: "12:00" }, // 春分
-    { date: "2024-09-23", time: "12:00" }, // 秋分
+    { date: "2024-09-23", time: "12:00" } // 秋分
   );
 
   testCases.forEach(({ date, time }, idx) => {

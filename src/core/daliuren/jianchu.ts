@@ -9,18 +9,7 @@
 
 /** 建除十二直类型 */
 export type JianChuType =
-  | "建"
-  | "除"
-  | "满"
-  | "平"
-  | "定"
-  | "执"
-  | "破"
-  | "危"
-  | "成"
-  | "收"
-  | "开"
-  | "闭";
+  "建" | "除" | "满" | "平" | "定" | "执" | "破" | "危" | "成" | "收" | "开" | "闭";
 
 /** 十二直顺序（从月建起） */
 const JIAN_CHU_ORDER: readonly JianChuType[] = [
@@ -45,12 +34,9 @@ const JIAN_CHU_ORDER: readonly JianChuType[] = [
  * @param targetBranch 目标地支索引（0-11）
  * @returns 建除类型
  */
-export function getJianChu(
-  monthBranch: number,
-  targetBranch: number
-): JianChuType {
+export function getJianChu(monthBranch: number, targetBranch: number): JianChuType {
   // 从月建起"建"，顺排：目标与月建的偏移决定第几个直
-  const offset = ((targetBranch - monthBranch) % 12 + 12) % 12;
+  const offset = (((targetBranch - monthBranch) % 12) + 12) % 12;
   return JIAN_CHU_ORDER[offset];
 }
 
@@ -60,9 +46,7 @@ export function getJianChu(
  * @param monthBranch 月建（月支）索引
  * @returns Record<number, JianChuType>，key 为地支索引，value 为建除类型
  */
-export function getMonthJianChu(
-  monthBranch: number
-): Record<number, JianChuType> {
+export function getMonthJianChu(monthBranch: number): Record<number, JianChuType> {
   const result: Record<number, JianChuType> = {};
   for (let i = 0; i < 12; i++) {
     result[i] = getJianChu(monthBranch, i);

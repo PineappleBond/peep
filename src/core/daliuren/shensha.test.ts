@@ -29,38 +29,38 @@ describe("神煞计算", () => {
   });
 
   it("岁破在年支对冲位（辰→戌）", () => {
-    const suiPo = shas.find((s) => s.name === "岁破");
+    const suiPo = shas.find(s => s.name === "岁破");
     expect(suiPo).toBeDefined();
     expect(suiPo!.branch).toBe(10); // 戌
   });
 
   it("驿马在日支三合长生对冲（子→申子辰→马在寅）", () => {
-    const yiMa = shas.find((s) => s.name === "驿马");
+    const yiMa = shas.find(s => s.name === "驿马");
     expect(yiMa).toBeDefined();
     expect(yiMa!.branch).toBe(2); // 寅
   });
 
   it("将星在日支三合帝旺位（子→申子辰→帝旺在子）", () => {
-    const jiangXing = shas.find((s) => s.name === "将星");
+    const jiangXing = shas.find(s => s.name === "将星");
     expect(jiangXing).toBeDefined();
     expect(jiangXing!.branch).toBe(0); // 子
   });
 
   it("华盖在日支三合墓库位（子→申子辰→墓在辰）", () => {
-    const huaGai = shas.find((s) => s.name === "华盖");
+    const huaGai = shas.find(s => s.name === "华盖");
     expect(huaGai).toBeDefined();
     expect(huaGai!.branch).toBe(4); // 辰
   });
 
   it("禄神在日干临官位（甲→寅）", () => {
-    const luShen = shas.find((s) => s.name === "禄神");
+    const luShen = shas.find(s => s.name === "禄神");
     expect(luShen).toBeDefined();
     expect(luShen!.branch).toBe(2); // 寅
   });
 
   it("吉煞与凶煞数量均不为零", () => {
-    const jiCount = shas.filter((s) => s.type === "吉").length;
-    const xiongCount = shas.filter((s) => s.type === "凶").length;
+    const jiCount = shas.filter(s => s.type === "吉").length;
+    const xiongCount = shas.filter(s => s.type === "凶").length;
     expect(jiCount).toBeGreaterThan(0);
     expect(xiongCount).toBeGreaterThan(0);
   });
@@ -69,8 +69,8 @@ describe("神煞计算", () => {
     // 申子辰→马在寅，寅午戌→马在申
     const sha1 = calculateShenSha(4, 2, 0, 0, 6); // 子日
     const sha2 = calculateShenSha(4, 2, 0, 6, 6); // 午日
-    const ma1 = sha1.find((s) => s.name === "驿马")!.branch;
-    const ma2 = sha2.find((s) => s.name === "驿马")!.branch;
+    const ma1 = sha1.find(s => s.name === "驿马")!.branch;
+    const ma2 = sha2.find(s => s.name === "驿马")!.branch;
     expect(ma1).not.toBe(ma2);
   });
 });

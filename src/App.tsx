@@ -13,11 +13,9 @@ import { useI18n } from "./core/i18n";
 
 // 大六壬 / Wiki 页面仅在访问时按需加载，降低首屏 bundle 体积
 const DaLiuRenPage = lazy(() =>
-  import("./pages/DaLiuRenPage").then((m) => ({ default: m.DaLiuRenPage }))
+  import("./pages/DaLiuRenPage").then(m => ({ default: m.DaLiuRenPage }))
 );
-const WikiPage = lazy(() =>
-  import("./pages/WikiPage").then((m) => ({ default: m.WikiPage }))
-);
+const WikiPage = lazy(() => import("./pages/WikiPage").then(m => ({ default: m.WikiPage })));
 
 // 初始化调试 API
 initDebugApi();
@@ -35,7 +33,11 @@ try {
 /** 懒加载路由的占位加载指示器 */
 function LazyFallback() {
   const { t } = useI18n();
-  return <div className="lazy-loading" role="status" aria-live="polite">{t("app.loading")}</div>;
+  return (
+    <div className="lazy-loading" role="status" aria-live="polite">
+      {t("app.loading")}
+    </div>
+  );
 }
 
 /** 404 未找到路由：重定向到首页 */

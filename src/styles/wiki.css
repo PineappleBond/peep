@@ -11,8 +11,14 @@
 }
 
 @keyframes wikiFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* wiki-loading 已合并到上方 .liuren-loading 分组选择器 */
@@ -33,12 +39,14 @@
   left: 4px;
   right: 4px;
   height: 1px;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     var(--line-strong) 20%,
     var(--gold-deep) 50%,
     var(--line-strong) 80%,
-    transparent 100%);
+    transparent 100%
+  );
   opacity: 0.5;
 }
 
@@ -74,7 +82,9 @@
 .wiki-export-btn:hover {
   color: var(--cyan);
   border-color: var(--cyan);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.15), inset 0 0 6px rgba(85, 215, 255, 0.05);
+  box-shadow:
+    0 0 10px rgba(85, 215, 255, 0.15),
+    inset 0 0 6px rgba(85, 215, 255, 0.05);
 }
 
 .wiki-export-btn:hover::before {
@@ -137,7 +147,6 @@
   }
 }
 
-
 /* ========================================
  * Wiki 编辑器样式
  * ======================================== */
@@ -162,7 +171,7 @@
 /* ── 错误提示 ── */
 .wiki-editor-error {
   padding: 10px 14px 10px 36px;
-  background: rgba(227, 91, 91, 0.10);
+  background: rgba(227, 91, 91, 0.1);
   border: 1px solid rgba(227, 91, 91, 0.35);
   border-radius: 8px;
   color: var(--danger);
@@ -250,7 +259,9 @@
 
 .wiki-editor-textarea:focus {
   border-color: var(--cyan);
-  box-shadow: 0 0 0 2px rgba(85, 215, 255, 0.12), 0 0 14px rgba(85, 215, 255, 0.15);
+  box-shadow:
+    0 0 0 2px rgba(85, 215, 255, 0.12),
+    0 0 14px rgba(85, 215, 255, 0.15);
 }
 
 /* 标签 chip（WikiReader 展示用） */
@@ -297,7 +308,9 @@
 
 .wiki-editor-link-search:focus {
   border-color: var(--cyan);
-  box-shadow: 0 0 0 2px rgba(85, 215, 255, 0.12), 0 0 14px rgba(85, 215, 255, 0.15);
+  box-shadow:
+    0 0 0 2px rgba(85, 215, 255, 0.12),
+    0 0 14px rgba(85, 215, 255, 0.15);
 }
 
 /* 搜索结果浮层 */
@@ -323,8 +336,7 @@
   padding: 8px 12px;
   cursor: pointer;
   border-radius: 7px;
-  transition:
-    background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .wiki-link-search-item:hover {
@@ -365,7 +377,7 @@
   gap: 5px;
   padding: 4px 10px;
   background: linear-gradient(135deg, rgba(243, 201, 107, 0.12), rgba(219, 166, 60, 0.05));
-  border: 1px solid rgba(243, 201, 107, 0.30);
+  border: 1px solid rgba(243, 201, 107, 0.3);
   border-radius: 10px;
   font-size: 0.78rem;
   color: var(--gold);
@@ -381,7 +393,9 @@
   line-height: 1;
   padding: 0;
   opacity: 0.55;
-  transition: opacity 0.18s, color 0.18s;
+  transition:
+    opacity 0.18s,
+    color 0.18s;
 }
 
 .wiki-link-remove:hover {
@@ -406,10 +420,12 @@
   right: 0;
   top: -1px;
   height: 1px;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     rgba(243, 201, 107, 0.3) 50%,
-    transparent 100%);
+    transparent 100%
+  );
   pointer-events: none;
 }
 
@@ -419,14 +435,20 @@
   padding: 8px 22px;
   border-radius: 9px;
   border: 1px solid rgba(243, 201, 107, 0.5);
-  background: linear-gradient(135deg, rgba(243, 201, 107, 0.18), rgba(219, 166, 60, 0.10));
+  background: linear-gradient(135deg, rgba(243, 201, 107, 0.18), rgba(219, 166, 60, 0.1));
   color: var(--gold);
   font-size: 0.82rem;
   font-family: inherit;
   letter-spacing: 1.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: color .22s cubic-bezier(.4,0,.2,1), background .22s cubic-bezier(.4,0,.2,1), border-color .22s cubic-bezier(.4,0,.2,1), box-shadow .22s cubic-bezier(.4,0,.2,1), opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1);
+  transition:
+    color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .wiki-editor-footer .btn-primary:hover,
@@ -451,7 +473,6 @@
   transform: none;
   box-shadow: none;
 }
-
 
 /* ========================================
  * Wiki 列表样式（对齐大六壬列表设计语言）
@@ -526,8 +547,15 @@
 }
 
 @keyframes wiki-empty-float {
-  0%, 100% { transform: translateY(0); opacity: 0.5; }
-  50% { transform: translateY(-6px); opacity: 0.7; }
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 0.7;
+  }
 }
 
 .wiki-empty-hint::after {
@@ -542,8 +570,15 @@
 }
 
 @keyframes wiki-empty-sparkle {
-  0%, 100% { opacity: 0.3; transform: scale(1) rotate(0deg); }
-  50% { opacity: 0.6; transform: scale(1.2) rotate(180deg); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2) rotate(180deg);
+  }
 }
 
 /* ── 文档头部 ── */
@@ -565,10 +600,12 @@
   right: 0;
   bottom: -1px;
   height: 1px;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     rgba(243, 201, 107, 0.4) 50%,
-    transparent 100%);
+    transparent 100%
+  );
   pointer-events: none;
 }
 
@@ -780,9 +817,7 @@
   margin: 1.2em 0;
   padding: 12px 18px;
   border-left: 3px solid var(--gold-deep);
-  background: linear-gradient(90deg,
-    rgba(201, 153, 46, 0.06) 0%,
-    rgba(10, 16, 34, 0.3) 100%);
+  background: linear-gradient(90deg, rgba(201, 153, 46, 0.06) 0%, rgba(10, 16, 34, 0.3) 100%);
   border-radius: 0 8px 8px 0;
   color: rgba(217, 228, 255, 0.88);
   font-family: var(--font-display);
@@ -912,10 +947,7 @@
   margin: 1.8em 0;
   border: none;
   height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    var(--line-strong) 50%,
-    transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, var(--line-strong) 50%, transparent 100%);
   position: relative;
 }
 
@@ -963,10 +995,12 @@
   right: 0;
   top: -1px;
   height: 1px;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     rgba(85, 215, 255, 0.35) 50%,
-    transparent 100%);
+    transparent 100%
+  );
   pointer-events: none;
 }
 
@@ -1020,4 +1054,3 @@
   transform: translateX(3px);
   text-shadow: 0 0 8px rgba(85, 215, 255, 0.4);
 }
-

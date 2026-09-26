@@ -65,7 +65,7 @@ export function makeZwdsFixture(): Zwds {
   const horoscope = a.horoscope(targetSolar, pick.hour);
 
   const age = pick.year - birthLunarYear + 1;
-  const activeDecadeIdx = decades.findIndex((d) => age >= d.range[0] && age <= d.range[1]);
+  const activeDecadeIdx = decades.findIndex(d => age >= d.range[0] && age <= d.range[1]);
   const dec = decades[activeDecadeIdx];
   const years = Array.from({ length: 10 }, (_, i) => {
     const y = dec.startYear + i;
@@ -91,7 +91,7 @@ export function makeZwdsFixture(): Zwds {
     visible: { decadal: true, yearly: true, monthly: false, daily: false, hourly: false },
     targetSolar,
     trueSolar: null,
-    soulPalaceIndex: a.palaces.findIndex((p) => p.name === "命宫"),
+    soulPalaceIndex: a.palaces.findIndex(p => p.name === "命宫"),
     lifeKline: buildLifeKline(a, decades, birthLunarYear),
     analysis: analyzeChart(a),
     actions: {},

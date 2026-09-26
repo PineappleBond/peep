@@ -9,13 +9,7 @@ import { util } from "iztro";
 import { getHoroscopeStar } from "iztro/lib/star/horoscopeStar";
 import type { Astrolabe } from "./useZwds";
 import { BRANCH_LIUHE, fixIndex } from "./utils";
-import {
-  SHA_STARS,
-  buildChartIndex,
-  sanfangIdx,
-  starNamesAt,
-  type ChartIndex,
-} from "./chartIndex";
+import { SHA_STARS, buildChartIndex, sanfangIdx, starNamesAt, type ChartIndex } from "./chartIndex";
 
 /* ─────────────── 五、格局检测 ─────────────── */
 
@@ -45,10 +39,10 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
 
   const soul = a.palaces[S];
   const soulBranch = soul.earthlyBranch as string;
-  const soulMajors = new Set(soul.majorStars.map((s) => s.name as string));
+  const soulMajors = new Set(soul.majorStars.map(s => s.name as string));
   const soulAll = new Set(starNamesAt(a, S));
   const sfIdx = sanfangIdx(S);
-  const sfStars = new Set<string>(sfIdx.flatMap((q) => starNamesAt(a, q)));
+  const sfStars = new Set<string>(sfIdx.flatMap(q => starNamesAt(a, q)));
   const prevSet = new Set(starNamesAt(a, S - 1));
   const nextSet = new Set(starNamesAt(a, S + 1));
 
@@ -98,7 +92,12 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
     });
   }
 
-  if (!soulMajors.has("天府") && !soulMajors.has("天相") && sfStars.has("天府") && sfStars.has("天相")) {
+  if (
+    !soulMajors.has("天府") &&
+    !soulMajors.has("天相") &&
+    sfStars.has("天府") &&
+    sfStars.has("天相")
+  ) {
     addSoulGood({
       name: "府相朝垣",
       basis: `天府在${at("天府")}、天相在${at("天相")}，朝拱命宫`,
@@ -116,7 +115,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
     });
   }
 
-  if (["天机", "太阴", "天同", "天梁"].every((s) => sfStars.has(s))) {
+  if (["天机", "太阴", "天同", "天梁"].every(s => sfStars.has(s))) {
     addSoulGood({
       name: "机月同梁",
       basis: "天机、太阴、天同、天梁齐会命宫三方四正",
@@ -125,13 +124,13 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
     });
   }
 
-  const sblStar = ["七杀", "破军", "贪狼"].find((s) => soulMajors.has(s));
+  const sblStar = ["七杀", "破军", "贪狼"].find(s => soulMajors.has(s));
   if (sblStar) {
     add({
       name: "杀破狼",
       kind: "注意",
       where: soulWhere,
-      basis: `命坐${sblStar}，三方必会${["七杀", "破军", "贪狼"].filter((s) => s !== sblStar).join("、")}`,
+      basis: `命坐${sblStar}，三方必会${["七杀", "破军", "贪狼"].filter(s => s !== sblStar).join("、")}`,
       meaning: "人生主变动开创、大起大落，宜武职/创业/技术攻坚，忌守成",
     });
   }
@@ -142,13 +141,17 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
       name: "命无正曜",
       kind: "注意",
       where: soulWhere,
-      basis: `命宫无主星，借对宫【${opp.name}】${opp.majorStars.map((s) => s.name).join("、") || "（对宫亦空）"}论`,
+      basis: `命宫无主星，借对宫【${opp.name}】${opp.majorStars.map(s => s.name).join("、") || "（对宫亦空）"}论`,
       meaning: "个性随环境塑造、可塑性强，吉凶随借星与会照而定",
     });
   }
 
   /* —— 特定星+宫位 —— */
-  const soulSeat = (star: string, branches: string[], p: Omit<Pattern, "kind" | "where" | "flaw">) => {
+  const soulSeat = (
+    star: string,
+    branches: string[],
+    p: Omit<Pattern, "kind" | "where" | "flaw">
+  ) => {
     if (soulMajors.has(star) && branches.includes(soulBranch)) addSoulGood(p);
   };
 
@@ -171,7 +174,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
         classic: "「巨機同宮，公卿之位」——《紫微斗数全书·骨髓赋》",
       });
     } else {
-      const hua = ["巨门", "天机"].filter((s) => ix.natal.slice(0, 3).includes(s));
+      const hua = ["巨门", "天机"].filter(s => ix.natal.slice(0, 3).includes(s));
       add({
         name: "巨机化酉",
         kind: "注意",
@@ -278,7 +281,12 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
   // 日月并明 / 反背 / 夹命
   const sunB = brightOf("太阳");
   const moonB = brightOf("太阴");
-  if (sfStars.has("太阳") && sfStars.has("太阴") && ["庙", "旺"].includes(sunB) && ["庙", "旺"].includes(moonB)) {
+  if (
+    sfStars.has("太阳") &&
+    sfStars.has("太阴") &&
+    ["庙", "旺"].includes(sunB) &&
+    ["庙", "旺"].includes(moonB)
+  ) {
     addSoulGood({
       name: "日月并明",
       basis: `太阳(${sunB})在${at("太阳")}、太阴(${moonB})在${at("太阴")}，俱旺会照命宫`,
@@ -295,7 +303,10 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
       meaning: "日月失辉，早年辛劳、离乡背井反可成；忌自怨自艾",
     });
   }
-  if ((prevSet.has("太阳") && nextSet.has("太阴")) || (prevSet.has("太阴") && nextSet.has("太阳"))) {
+  if (
+    (prevSet.has("太阳") && nextSet.has("太阴")) ||
+    (prevSet.has("太阴") && nextSet.has("太阳"))
+  ) {
     addSoulGood({
       name: "日月夹命",
       basis: "太阳、太阴分居命宫两邻相夹",
@@ -306,7 +317,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
 
   /* —— 吉助会照 —— */
   if (ix.natal[0] && ix.natal[1] && ix.natal[2]) {
-    const hit = [0, 1, 2].every((k) => sfStars.has(ix.natal[k]));
+    const hit = [0, 1, 2].every(k => sfStars.has(ix.natal[k]));
     if (hit) {
       addSoulGood({
         name: "三奇加会",
@@ -345,7 +356,10 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
       });
     }
   }
-  if (["太阳", "天梁", "文昌"].every((s) => sfStars.has(s)) && (sfStars.has("禄存") || (luStar && sfStars.has(luStar)))) {
+  if (
+    ["太阳", "天梁", "文昌"].every(s => sfStars.has(s)) &&
+    (sfStars.has("禄存") || (luStar && sfStars.has(luStar)))
+  ) {
     addSoulGood({
       name: "阳梁昌禄",
       basis: `太阳(${at("太阳")})、天梁(${at("天梁")})、文昌(${at("文昌")})与禄会于命宫三方`,
@@ -354,10 +368,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
     });
   }
   const oppSet = new Set(starNamesAt(a, S + 6));
-  if (
-    (soulAll.has("天魁") && oppSet.has("天钺")) ||
-    (soulAll.has("天钺") && oppSet.has("天魁"))
-  ) {
+  if ((soulAll.has("天魁") && oppSet.has("天钺")) || (soulAll.has("天钺") && oppSet.has("天魁"))) {
     addSoulGood({
       name: "坐贵向贵",
       basis: "天魁、天钺一坐命宫一居对宫相向",
@@ -365,21 +376,30 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
       classic: "「魁钺命身多折桂」——《紫微斗数全书》",
     });
   }
-  if (prevSet.has("天魁") && nextSet.has("天钺") || prevSet.has("天钺") && nextSet.has("天魁")) {
+  if (
+    (prevSet.has("天魁") && nextSet.has("天钺")) ||
+    (prevSet.has("天钺") && nextSet.has("天魁"))
+  ) {
     addSoulGood({
       name: "魁钺夹命",
       basis: "天魁、天钺夹命宫",
       meaning: "贵人相夹，暗中多助力",
     });
   }
-  if ((prevSet.has("文昌") && nextSet.has("文曲")) || (prevSet.has("文曲") && nextSet.has("文昌"))) {
+  if (
+    (prevSet.has("文昌") && nextSet.has("文曲")) ||
+    (prevSet.has("文曲") && nextSet.has("文昌"))
+  ) {
     addSoulGood({
       name: "昌曲夹命",
       basis: "文昌、文曲夹命宫",
       meaning: "文星相夹，聪慧儒雅、利文途",
     });
   }
-  if ((prevSet.has("左辅") && nextSet.has("右弼")) || (prevSet.has("右弼") && nextSet.has("左辅"))) {
+  if (
+    (prevSet.has("左辅") && nextSet.has("右弼")) ||
+    (prevSet.has("右弼") && nextSet.has("左辅"))
+  ) {
     addSoulGood({
       name: "左右夹命",
       basis: "左辅、右弼夹命宫",
@@ -414,7 +434,10 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
       classic: "「羊陀夹忌为败局」——《紫微斗数全书·骨髓赋》",
     });
   }
-  if ((prevSet.has("火星") && nextSet.has("铃星")) || (prevSet.has("铃星") && nextSet.has("火星"))) {
+  if (
+    (prevSet.has("火星") && nextSet.has("铃星")) ||
+    (prevSet.has("铃星") && nextSet.has("火星"))
+  ) {
     add({
       name: "火铃夹命",
       kind: "凶",
@@ -424,7 +447,10 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
       classic: "「火铃夹命为败局」——《紫微斗数全书·骨髓赋》",
     });
   }
-  if ((prevSet.has("地空") && nextSet.has("地劫")) || (prevSet.has("地劫") && nextSet.has("地空"))) {
+  if (
+    (prevSet.has("地空") && nextSet.has("地劫")) ||
+    (prevSet.has("地劫") && nextSet.has("地空"))
+  ) {
     add({
       name: "空劫夹命",
       kind: "凶",
@@ -439,7 +465,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
       name: "命里逢空",
       kind: "注意",
       where: soulWhere,
-      basis: `${["地空", "地劫"].filter((s) => soulAll.has(s)).join("、")}坐命${both ? "（空劫同坐，力重）" : ""}`,
+      basis: `${["地空", "地劫"].filter(s => soulAll.has(s)).join("、")}坐命${both ? "（空劫同坐，力重）" : ""}`,
       meaning: "精神性强、不重物欲，宜创意/玄学/技术，理财宜保守",
     });
   }
@@ -511,12 +537,13 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
   // 禄逢冲破
   const luPositions: { star: string; idx: number }[] = [];
   if (luCunPos != null) luPositions.push({ star: "禄存", idx: luCunPos });
-  if (luStar && ix.pos.get(luStar) != null) luPositions.push({ star: `化禄星${luStar}`, idx: ix.pos.get(luStar)! });
+  if (luStar && ix.pos.get(luStar) != null)
+    luPositions.push({ star: `化禄星${luStar}`, idx: ix.pos.get(luStar)! });
   for (const lp of luPositions) {
     if (!jiStar) break;
     const sameJi = starNamesAt(a, lp.idx).includes(jiStar);
     const oppJi = starNamesAt(a, lp.idx + 6).includes(jiStar);
-    const kongJie = starNamesAt(a, lp.idx).filter((n) => n === "地空" || n === "地劫");
+    const kongJie = starNamesAt(a, lp.idx).filter(n => n === "地空" || n === "地劫");
     if (sameJi || oppJi || kongJie.length) {
       add({
         name: "禄逢冲破",
@@ -545,9 +572,13 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
 
   // 明禄暗禄：命坐禄（禄存/生年禄星），命宫地支的六合宫再见另一禄
   {
-    const mingLu = soulAll.has("禄存") ? "禄存" : luStar && soulAll.has(luStar) ? `化禄星${luStar}` : null;
+    const mingLu = soulAll.has("禄存")
+      ? "禄存"
+      : luStar && soulAll.has(luStar)
+        ? `化禄星${luStar}`
+        : null;
     const anBranch = BRANCH_LIUHE[soulBranch];
-    const anSeat = a.palaces.find((p) => p.earthlyBranch === anBranch);
+    const anSeat = a.palaces.find(p => p.earthlyBranch === anBranch);
     if (mingLu && anSeat) {
       const anStars = starNamesAt(a, anSeat.index);
       const anLu = anStars.includes("禄存")
@@ -599,7 +630,10 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
     });
   }
 
-  if ((prevSet.has("紫微") && nextSet.has("天府")) || (prevSet.has("天府") && nextSet.has("紫微"))) {
+  if (
+    (prevSet.has("紫微") && nextSet.has("天府")) ||
+    (prevSet.has("天府") && nextSet.has("紫微"))
+  ) {
     addSoulGood({
       name: "紫府夹命",
       basis: "紫微、天府分居命宫两邻相夹",
@@ -624,7 +658,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
   }
 
   if (soulMajors.has("巨门")) {
-    const shaHit = ["擎羊", "陀罗", "火星", "铃星"].filter((s) => sfStars.has(s));
+    const shaHit = ["擎羊", "陀罗", "火星", "铃星"].filter(s => sfStars.has(s));
     if (shaHit.length >= 2) {
       add({
         name: "巨逢四煞",
@@ -686,11 +720,11 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
 
   // 月生沧海：太阴在子宫守田宅（田宅富局，不以命宫论）
   {
-    const tian = a.palaces.find((p) => (p.name as string) === "田宅");
+    const tian = a.palaces.find(p => (p.name as string) === "田宅");
     if (
       tian &&
       (tian.earthlyBranch as string) === "子" &&
-      tian.majorStars.some((s) => (s.name as string) === "太阴")
+      tian.majorStars.some(s => (s.name as string) === "太阴")
     ) {
       add({
         name: "月生沧海",
@@ -705,10 +739,10 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
 
   // 铃昌陀武：铃星文昌陀罗武曲四星交会于辰戌三方（本命结构，行限引动最凶）
   for (const br of ["辰", "戌"] as const) {
-    const P = a.palaces.findIndex((p) => (p.earthlyBranch as string) === br);
+    const P = a.palaces.findIndex(p => (p.earthlyBranch as string) === br);
     if (P < 0) continue;
-    const stars = new Set(sanfangIdx(P).flatMap((q) => starNamesAt(a, q)));
-    if (["铃星", "文昌", "陀罗", "武曲"].every((s) => stars.has(s))) {
+    const stars = new Set(sanfangIdx(P).flatMap(q => starNamesAt(a, q)));
+    if (["铃星", "文昌", "陀罗", "武曲"].every(s => stars.has(s))) {
       add({
         name: "铃昌陀武",
         kind: "凶",
@@ -723,7 +757,7 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
 
   // 廉贞七杀同位：同守命宫（丑未），加煞忌则凶
   if (soulMajors.has("廉贞") && soulMajors.has("七杀")) {
-    const sha = ["擎羊", "陀罗", "火星", "铃星"].filter((s) => soulAll.has(s));
+    const sha = ["擎羊", "陀罗", "火星", "铃星"].filter(s => soulAll.has(s));
     const withJi = !!jiStar && soulAll.has(jiStar);
     const bad = sha.length > 0 || withJi;
     add({
@@ -742,9 +776,9 @@ export function detectPatterns(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)
 
   // 财与囚仇：武曲（财）与廉贞（囚）分守身命
   {
-    const bodyIdx = a.palaces.findIndex((p) => p.isBodyPalace);
+    const bodyIdx = a.palaces.findIndex(p => p.isBodyPalace);
     if (bodyIdx >= 0 && bodyIdx !== S) {
-      const bodyMajors = new Set(a.palaces[bodyIdx].majorStars.map((s) => s.name as string));
+      const bodyMajors = new Set(a.palaces[bodyIdx].majorStars.map(s => s.name as string));
       if (
         (soulMajors.has("武曲") && bodyMajors.has("廉贞")) ||
         (soulMajors.has("廉贞") && bodyMajors.has("武曲"))
@@ -793,7 +827,7 @@ export function detectHoroscopePatterns(
   const S = fixIndex(soulIdxOfScope);
   const sf = sanfangIdx(S);
   const sfSet = new Set(sf);
-  const sfStars = new Set<string>(sf.flatMap((q) => starNamesAt(a, q)));
+  const sfStars = new Set<string>(sf.flatMap(q => starNamesAt(a, q)));
   const tag = scope === "decadal" ? "大限" : scope === "yearly" ? "流年" : "流月";
   /* 流曜名前缀随层级（iztro 实名：运昌/流昌/月昌） */
   const fp = scope === "decadal" ? "运" : scope === "yearly" ? "流" : "月";
@@ -830,7 +864,9 @@ export function detectHoroscopePatterns(
 
   // 双禄交会：运限化禄会照 + 本命禄存/生年禄星亦在三方（非同星）
   if (mutInSf(0)) {
-    const natalLuHere = sfStars.has("禄存") || (ix.natal[0] !== mutStars[0] && ix.natal[0] && sfStars.has(ix.natal[0]));
+    const natalLuHere =
+      sfStars.has("禄存") ||
+      (ix.natal[0] !== mutStars[0] && ix.natal[0] && sfStars.has(ix.natal[0]));
     if (natalLuHere) {
       add(
         "双禄交会（运限）",
@@ -907,7 +943,9 @@ export function detectHoroscopePatterns(
 
   // 杀破狼运：运限命宫坐杀破狼
   {
-    const sbl = a.palaces[S].majorStars.find((s) => ["七杀", "破军", "贪狼"].includes(s.name as string));
+    const sbl = a.palaces[S].majorStars.find(s =>
+      ["七杀", "破军", "贪狼"].includes(s.name as string)
+    );
     if (sbl) {
       add(
         "杀破狼运",
@@ -923,7 +961,7 @@ export function detectHoroscopePatterns(
     const tanPos = ix.pos.get("贪狼");
     if (tanPos != null && sfSet.has(tanPos)) {
       const mates = starNamesAt(a, tanPos);
-      const fire = ["火星", "铃星"].find((f) => mates.includes(f));
+      const fire = ["火星", "铃星"].find(f => mates.includes(f));
       const trigged = mutStars[0] === "贪狼" || mutStars[1] === "贪狼" || mutStars[3] === "贪狼";
       if (fire && trigged) {
         add(
@@ -938,7 +976,6 @@ export function detectHoroscopePatterns(
 
   return out;
 }
-
 
 /**
  * 当前大限+流年+流月三 scope 一次扫描（共享索引）。

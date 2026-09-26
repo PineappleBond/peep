@@ -42,7 +42,7 @@ export function LiurenCreateDialog({
   const [error, setError] = useState<string | null>(null);
 
   const updateValues = (patch: Partial<LiurenFormValues>) => {
-    setValues((prev) => ({ ...prev, ...patch }));
+    setValues(prev => ({ ...prev, ...patch }));
   };
 
   // 当 Dialog 打开且有 initialData 时，预填充表单
@@ -60,7 +60,12 @@ export function LiurenCreateDialog({
   // 调试 API：当 submitTrigger 变化时，自动提交
   const prevSubmitTriggerRef = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (submitTrigger !== undefined && submitTrigger !== prevSubmitTriggerRef.current && open && !saving) {
+    if (
+      submitTrigger !== undefined &&
+      submitTrigger !== prevSubmitTriggerRef.current &&
+      open &&
+      !saving
+    ) {
       prevSubmitTriggerRef.current = submitTrigger;
       // 延迟一帧，确保 initialData 触发的表单状态更新已生效
       setTimeout(() => {
@@ -144,7 +149,11 @@ export function LiurenCreateDialog({
       }
     >
       <div className="liuren-dialog-form">
-        {error && <div className="liuren-form-error" role="alert">{error}</div>}
+        {error && (
+          <div className="liuren-form-error" role="alert">
+            {error}
+          </div>
+        )}
         <LiurenFormFields values={values} onChange={updateValues} disabled={saving} />
       </div>
     </Dialog>

@@ -209,7 +209,7 @@ export function buildHeavenEarthBoards(
 ): HeavenEarthBoards {
   const earth: number[] = [];
   const heaven: number[] = [];
-  const offset = ((monthGeneralBranch - hourBranch) % 12 + 12) % 12;
+  const offset = (((monthGeneralBranch - hourBranch) % 12) + 12) % 12;
   for (let i = 0; i < 12; i++) {
     earth.push(i);
     heaven.push((i + offset) % 12);
@@ -298,7 +298,7 @@ export function calculateDaLiuRen(
   }
 
   // 解析时间
-  const dateParts = dateStr.split(/[\/-]/).map(Number);
+  const dateParts = dateStr.split(/[/\\-]/).map(Number);
   const year = dateParts[0];
   const month = dateParts[1];
   const day = dateParts[2];
@@ -363,23 +363,13 @@ export function calculateDaLiuRen(
   const monthGeneral = calculateMonthGeneral(solar);
 
   // 天地盘（月将加占时）
-  const boards = buildHeavenEarthBoards(
-    monthGeneral.branch,
-    fourPillars.hourBranch
-  );
+  const boards = buildHeavenEarthBoards(monthGeneral.branch, fourPillars.hourBranch);
 
   // 四课
-  const fourLessons = extractFourLessons(
-    fourPillars.dayStem,
-    fourPillars.dayBranch,
-    boards.heaven
-  );
+  const fourLessons = extractFourLessons(fourPillars.dayStem, fourPillars.dayBranch, boards.heaven);
 
   // 旬空
-  const xunKong = calculateXunKong(
-    fourPillars.dayStem,
-    fourPillars.dayBranch
-  );
+  const xunKong = calculateXunKong(fourPillars.dayStem, fourPillars.dayBranch);
 
   // 三传（九宗门）
   const threeTransmissions = calculateThreeTransmissions(
@@ -409,11 +399,7 @@ export function calculateDaLiuRen(
   const liuQin = getAllLiuQin(fourPillars.dayStem);
 
   // 旬遁
-  const xunDunMap = calculateXunDun(
-    fourPillars.dayStem,
-    fourPillars.dayBranch,
-    boards.heaven
-  );
+  const xunDunMap = calculateXunDun(fourPillars.dayStem, fourPillars.dayBranch, boards.heaven);
   const xunDun: Record<number, string> = {};
   xunDunMap.forEach((v, k) => {
     xunDun[k] = v;
@@ -433,8 +419,8 @@ export function calculateDaLiuRen(
 
   // 刑冲破害（四课 + 三传的所有地支）
   const allBranches = [
-    ...fourLessons.map((l) => l.upper),
-    ...fourLessons.map((l) => l.lower),
+    ...fourLessons.map(l => l.upper),
+    ...fourLessons.map(l => l.lower),
     threeTransmissions.initial,
     threeTransmissions.middle,
     threeTransmissions.final,
@@ -448,7 +434,7 @@ export function calculateDaLiuRen(
   // 合并追踪记录
   const calculationTrace = [
     ...threeTransmissions.trace,
-    `天将: ${twelveGenerals.map((g) => g.name).join(",")}`,
+    `天将: ${twelveGenerals.map(g => g.name).join(",")}`,
   ];
 
   // ── 阶段四新增：课经、建除、纳音、命宫行年 ──
@@ -492,7 +478,7 @@ export function calculateDaLiuRen(
   // 命宫行年（可选）
   let fate: FateInfo | undefined;
   if (fateInput) {
-    const [currentYear] = dateStr.split(/[\/-]/).map(Number);
+    const [currentYear] = dateStr.split(/[/\\-]/).map(Number);
     fate = calculateFate(fateInput.birthYear, fateInput.gender, currentYear);
   }
 

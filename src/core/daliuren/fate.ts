@@ -44,14 +44,14 @@ export function calculateFate(
   // 计算生年和当前年的六十甲子序号（简化：以立春分界，此处用公历年近似）
   // 甲子年如 1984 = (1984 - JIAZI_OFFSET) % 60 = 0
   // JIAZI_OFFSET = 4（公元 4 年为甲子年）
-  const birthYearStem = ((birthYear - JIAZI_OFFSET) % 10 + 10) % 10;
-  const birthYearBranch = ((birthYear - JIAZI_OFFSET) % 12 + 12) % 12;
-  const currentYearStem = ((currentYear - JIAZI_OFFSET) % 10 + 10) % 10;
-  const currentYearBranch = ((currentYear - JIAZI_OFFSET) % 12 + 12) % 12;
+  const birthYearStem = (((birthYear - JIAZI_OFFSET) % 10) + 10) % 10;
+  const birthYearBranch = (((birthYear - JIAZI_OFFSET) % 12) + 12) % 12;
+  const currentYearStem = (((currentYear - JIAZI_OFFSET) % 10) + 10) % 10;
+  const currentYearBranch = (((currentYear - JIAZI_OFFSET) % 12) + 12) % 12;
 
   // 六十甲子序号
-  const birthYearIndex = ((6 * birthYearStem - 5 * birthYearBranch) % 60 + 60) % 60;
-  const currentYearIndex = ((6 * currentYearStem - 5 * currentYearBranch) % 60 + 60) % 60;
+  const birthYearIndex = (((6 * birthYearStem - 5 * birthYearBranch) % 60) + 60) % 60;
+  const currentYearIndex = (((6 * currentYearStem - 5 * currentYearBranch) % 60) + 60) % 60;
 
   // 行年偏移量（以六十甲子步数计）
   const delta = (currentYearIndex - birthYearIndex + 60) % 60;
@@ -63,7 +63,7 @@ export function calculateFate(
     xingNianIndex = (2 + delta) % 60;
   } else {
     // 女命：一岁起壬申（索引 8），逆行
-    xingNianIndex = ((8 - delta) % 60 + 60) % 60;
+    xingNianIndex = (((8 - delta) % 60) + 60) % 60;
   }
 
   // 命宫地支 = 生年地支

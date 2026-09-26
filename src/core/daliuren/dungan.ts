@@ -110,7 +110,10 @@ export function calculateXunDun(
  * @param dayBranch 日支
  * @returns 旬首地支索引和旬首名称
  */
-export function getXunInfo(dayStem: number, dayBranch: number): {
+export function getXunInfo(
+  dayStem: number,
+  dayBranch: number
+): {
   xunHead: number;
   xunName: string;
 } {

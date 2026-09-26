@@ -40,9 +40,9 @@ export const PalaceDetail = memo(function PalaceDetail({
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
-      const focusable = Array.from(
-        panel.querySelectorAll<HTMLElement>(focusableSelector)
-      ).filter((el) => el.offsetParent !== null); // 仅可见元素
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        el => el.offsetParent !== null
+      ); // 仅可见元素
       if (focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -77,11 +77,11 @@ export const PalaceDetail = memo(function PalaceDetail({
   const scopeSelfMarks = useMemo(() => {
     if (!a || !z.horoscope) return [];
     const chartIndex = buildChartIndex(a);
-    const visibleScopes = SCOPES.filter((s) => {
+    const visibleScopes = SCOPES.filter(s => {
       if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
       return z.visible[s];
     });
-    return visibleScopes.map((scope) => {
+    return visibleScopes.map(scope => {
       const palaceIdx = z.horoscope![scope].index;
       const stem = z.horoscope![scope].heavenlyStem as string;
       const marks = getSelfMarksForScope(palaceIdx, stem, a, chartIndex);
@@ -93,16 +93,16 @@ export const PalaceDetail = memo(function PalaceDetail({
   const palace = a.palaces[index];
   if (!palace) return null;
 
-  const snap = an.sanfang.find((s) => s.palaceIndex === index);
-  const fly = an.flyMatrix.palaces.find((p) => p.palaceIndex === index);
-  const jiChain = an.mutagenChains.ji.find((c) => c.headIndex === index);
-  const luChain = an.mutagenChains.lu.find((c) => c.headIndex === index);
-  const jia = an.jiaGong.filter((j) => j.palaceIndex === index);
+  const snap = an.sanfang.find(s => s.palaceIndex === index);
+  const fly = an.flyMatrix.palaces.find(p => p.palaceIndex === index);
+  const jiChain = an.mutagenChains.ji.find(c => c.headIndex === index);
+  const luChain = an.mutagenChains.lu.find(c => c.headIndex === index);
+  const jia = an.jiaGong.filter(j => j.palaceIndex === index);
   // 该宫格局；全盘级格局（如日月反背，where 不以任何宫名开头）兜底归入命宫弹层
-  const patterns = an.patterns.filter((p) => {
+  const patterns = an.patterns.filter(p => {
     if (p.where.startsWith(`${palace.name}(`)) return true;
     if (palace.name === "命宫") {
-      return !a.palaces.some((x) => p.where.startsWith(`${x.name}(`));
+      return !a.palaces.some(x => p.where.startsWith(`${x.name}(`));
     }
     return false;
   });
@@ -115,11 +115,7 @@ export const PalaceDetail = memo(function PalaceDetail({
       aria-labelledby={titleId}
       onClick={onClose}
     >
-      <div
-        className="pd-panel"
-        ref={panelRef}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="pd-panel" ref={panelRef} onClick={e => e.stopPropagation()}>
         <div className="pd-head">
           <b id={titleId} tabIndex={-1}>
             {palace.name}
@@ -149,9 +145,7 @@ export const PalaceDetail = memo(function PalaceDetail({
                   <i className={`pd-role pd-role-${k === 0 ? "self" : k === 1 ? "opp" : "trine"}`}>
                     {s.role}
                   </i>
-                  <b>
-                    {t("center.nameWithBranch", { name: s.palaceName, branch: s.branch })}
-                  </b>
+                  <b>{t("center.nameWithBranch", { name: s.palaceName, branch: s.branch })}</b>
                   <span>{s.majors}</span>
                 </li>
               ))}
@@ -178,7 +172,7 @@ export const PalaceDetail = memo(function PalaceDetail({
           <section>
             <h4>{t("detail.flyMutagens", { stem: fly.stem })}</h4>
             <ul className="pd-flies">
-              {fly.flies.map((f) => (
+              {fly.flies.map(f => (
                 <li key={f.mutagen}>
                   <i className="pd-mut" data-m={f.mutagen}>
                     {f.mutagen}
@@ -191,7 +185,12 @@ export const PalaceDetail = memo(function PalaceDetail({
               ))}
             </ul>
             {fly.selfInward.length > 0 && (
-              <p className="pd-inward">{t("common.labelValue", { label: t("detail.inwardSelf"), value: fly.selfInward.join(t("common.listSep")) })}</p>
+              <p className="pd-inward">
+                {t("common.labelValue", {
+                  label: t("detail.inwardSelf"),
+                  value: fly.selfInward.join(t("common.listSep")),
+                })}
+              </p>
             )}
           </section>
         )}
@@ -237,7 +236,9 @@ export const PalaceDetail = memo(function PalaceDetail({
             <h4>{t("detail.flanking")}</h4>
             {jia.map((j, k) => (
               <p key={k} className="pd-jia">
-                <i className={`pd-kind pd-kind-${j.good ? t("detail.good") : t("detail.bad")}`}>{j.kind}</i>
+                <i className={`pd-kind pd-kind-${j.good ? t("detail.good") : t("detail.bad")}`}>
+                  {j.kind}
+                </i>
                 {j.detail}
               </p>
             ))}
@@ -247,12 +248,28 @@ export const PalaceDetail = memo(function PalaceDetail({
         {scopeSelfMarks.length > 0 && (
           <section>
             <h4>{t("detail.decadalSelf")}</h4>
-            {scopeSelfMarks.map((s) => (
+            {scopeSelfMarks.map(s => (
               <p key={s.scope}>
-                <span className={`pat-scope pat-scope-${s.scope}`}>{SCOPE_META[s.scope].rowLabel}</span>
-                {t("common.labelValue", { label: t("detail.outwardLabel"), value: s.outward.length ? s.outward.map((m) => `${m.star}${t("common.huaChar")}${m.char}`).join(t("common.listSep")) : t("common.none") })}
+                <span className={`pat-scope pat-scope-${s.scope}`}>
+                  {SCOPE_META[s.scope].rowLabel}
+                </span>
+                {t("common.labelValue", {
+                  label: t("detail.outwardLabel"),
+                  value: s.outward.length
+                    ? s.outward
+                        .map(m => `${m.star}${t("common.huaChar")}${m.char}`)
+                        .join(t("common.listSep"))
+                    : t("common.none"),
+                })}
                 {" / "}
-                {t("common.labelValue", { label: t("detail.inwardLabel"), value: s.inward.length ? s.inward.map((m) => `${m.star}${t("common.huaChar")}${m.char}`).join(t("common.listSep")) : t("common.none") })}
+                {t("common.labelValue", {
+                  label: t("detail.inwardLabel"),
+                  value: s.inward.length
+                    ? s.inward
+                        .map(m => `${m.star}${t("common.huaChar")}${m.char}`)
+                        .join(t("common.listSep"))
+                    : t("common.none"),
+                })}
               </p>
             ))}
           </section>

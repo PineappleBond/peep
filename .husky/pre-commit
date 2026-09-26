@@ -1,0 +1,4 @@
+# pre-commit 钩子——提交前自动跑类型检查、ESLint、Prettier。
+# 仅处理 git add 进来的文件（由 lint-staged 控制范围）。
+# 完整测试套件仍由 npm test / CI 负责，避免每次提交等待过长。
+npx lint-staged

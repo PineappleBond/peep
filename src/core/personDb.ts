@@ -127,12 +127,12 @@ function ensureDefault(): Promise<Person> {
   if (!defaultPromise) {
     defaultPromise = (async () => {
       try {
-        const defaults = await db.persons.filter((p) => p.isDefault).toArray();
+        const defaults = await db.persons.filter(p => p.isDefault).toArray();
         if (defaults.length > 1) {
           // 去重：保留最早的一条（id 最小），删除其余
           defaults.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
           const [keep, ...dupes] = defaults;
-          await db.persons.bulkDelete(dupes.map((d) => d.id!));
+          await db.persons.bulkDelete(dupes.map(d => d.id!));
           return keep;
         }
         if (defaults.length === 1) return defaults[0];
@@ -183,7 +183,7 @@ export async function savePerson(
     return await db.transaction("rw", db.persons, async () => {
       if (isDefault) {
         // 事务内清除所有现有默认标记
-        const currentDefaults = await db.persons.filter((p) => p.isDefault).toArray();
+        const currentDefaults = await db.persons.filter(p => p.isDefault).toArray();
         for (const d of currentDefaults) {
           if (d.id != null && d.id !== id) await db.persons.update(d.id, { isDefault: false });
         }

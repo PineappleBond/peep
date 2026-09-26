@@ -64,11 +64,7 @@ function isXiaZeiShang(lesson: FourLesson, dayStem: number): boolean {
  * @param heavenBoard 天盘
  * @param isZei 是否为贼关系（下贼上）。true 则检查"地盘克上神"，false 则检查"上神克地盘"
  */
-function calcShehaiDepth(
-  upper: number,
-  heavenBoard: number[],
-  isZei: boolean
-): number {
+function calcShehaiDepth(upper: number, heavenBoard: number[], isZei: boolean): number {
   // 天盘 upper 所在地盘宫位
   const earthPos = heavenBoard.indexOf(upper);
   if (earthPos === upper) return 0; // 上神在本位，无涉害
@@ -146,8 +142,7 @@ export function calculateThreeTransmissions(
   const uniqueLessons: { idx: number; lesson: FourLesson }[] = [];
   const seen = new Set<string>();
   fourLessons.forEach((lesson, i) => {
-    const lowerElem =
-      lesson.lowerType === "stem" ? elemS(dayStem) : elemB(lesson.lower);
+    const lowerElem = lesson.lowerType === "stem" ? elemS(dayStem) : elemB(lesson.lower);
     const sig = `${lesson.upper}_${lowerElem}`;
     if (!seen.has(sig)) {
       seen.add(sig);
@@ -168,7 +163,7 @@ export function calculateThreeTransmissions(
     `四课: ${fourLessons.map((l, idx) => `[${idx + 1}]${DI_ZHI[l.upper]}←${DI_ZHI[l.lower]}`).join(" ")}`
   );
   trace.push(
-    `贼(${xiaZeiShangIdx.map((i) => i + 1).join(",") || "无"}) 克(${shangKeXiaIdx.map((i) => i + 1).join(",") || "无"})`
+    `贼(${xiaZeiShangIdx.map(i => i + 1).join(",") || "无"}) 克(${shangKeXiaIdx.map(i => i + 1).join(",") || "无"})`
   );
 
   // 盘面检测
@@ -209,13 +204,7 @@ export function calculateThreeTransmissions(
   // 返吟覆盖中末传为冲链，初传保留标准九宗门结果；
   // 仅"无亲格"特殊处理初传。
   if (isFanyin && !isDingWei && !isJiWei) {
-    return applyFanyinOverride(
-      standard,
-      fourLessons,
-      dayStem,
-      dayBranch,
-      trace
-    );
+    return applyFanyinOverride(standard, fourLessons, dayStem, dayBranch, trace);
   }
 
   return standard;
@@ -275,12 +264,8 @@ function computeStandardJiuZongMen(
   shangKeXiaIdx: number[],
   trace: string[]
 ): ThreeTransmissionsResult {
-
   // ── 3. 贼克：单一克取克者 ──
-  if (
-    xiaZeiShangIdx.length === 1 ||
-    (xiaZeiShangIdx.length === 0 && shangKeXiaIdx.length === 1)
-  ) {
+  if (xiaZeiShangIdx.length === 1 || (xiaZeiShangIdx.length === 0 && shangKeXiaIdx.length === 1)) {
     if (xiaZeiShangIdx.length === 1) {
       const idx = xiaZeiShangIdx[0];
       const initial = fourLessons[idx].upper;
@@ -322,7 +307,9 @@ function computeStandardJiuZongMen(
       const initial = fourLessons[idx].upper;
       const { middle, final } = standardMiddleFinal(initial, heavenBoard);
       const methodName = isZei ? "比用" : "知一";
-      trace.push(`${methodName}：${candidates.length}个${isZei ? "贼" : "克"}，取阴阳同者第${idx + 1}课`);
+      trace.push(
+        `${methodName}：${candidates.length}个${isZei ? "贼" : "克"}，取阴阳同者第${idx + 1}课`
+      );
       return { initial, middle, final, method: methodName, trace };
     }
 
@@ -350,7 +337,13 @@ function computeStandardJiuZongMen(
   if (!noKe) {
     // 不应发生（前面的分支已覆盖所有有克情况），兜底
     trace.push("兜底：未匹配任何九宗门");
-    return { initial: 0, middle: heavenBoard[0], final: heavenBoard[heavenBoard[0]], method: "未知", trace };
+    return {
+      initial: 0,
+      middle: heavenBoard[0],
+      final: heavenBoard[heavenBoard[0]],
+      method: "未知",
+      trace,
+    };
   }
 
   // 四课上课值
@@ -389,7 +382,13 @@ function computeStandardJiuZongMen(
 
   // 兜底
   trace.push("兜底：未匹配任何九宗门");
-  return { initial: 0, middle: heavenBoard[0], final: heavenBoard[heavenBoard[0]], method: "未知", trace };
+  return {
+    initial: 0,
+    middle: heavenBoard[0],
+    final: heavenBoard[heavenBoard[0]],
+    method: "未知",
+    trace,
+  };
 }
 
 // ─── 伏吟处理 ──────────────────────────────────────
@@ -507,9 +506,7 @@ function handleShehai(
   for (const idx of shehaiArr) {
     const depth = calcShehaiDepth(fourLessons[idx].upper, heavenBoard, isZei);
     depths.set(idx, depth);
-    trace.push(
-      `涉害：第${idx + 1}课 ${DI_ZHI[fourLessons[idx].upper]} 深度=${depth}`
-    );
+    trace.push(`涉害：第${idx + 1}课 ${DI_ZHI[fourLessons[idx].upper]} 深度=${depth}`);
   }
 
   const uniqueDepths = new Set(depths.values());
@@ -519,20 +516,22 @@ function handleShehai(
   if (uniqueDepths.size === 1) {
     // 所有深度相同 → 孟仲季 tiebreaker（应用于所有候选的 lower 位置）
     // PHP 用 sikeXia（各候选的"下"地盘位）与四孟四仲求交集
-    const lowerGrounds = shehaiArr.map((idx) => {
+    const lowerGrounds = shehaiArr.map(idx => {
       const lesson = fourLessons[idx];
       return lesson.lowerType === "stem" ? STEM_LODGING[dayStem] : lesson.lower;
     });
 
-    const mengHits = lowerGrounds.filter((lg) => SI_MENG.has(lg));
-    const zhongHits = lowerGrounds.filter((lg) => SI_ZHONG.has(lg));
+    const mengHits = lowerGrounds.filter(lg => SI_MENG.has(lg));
+    const zhongHits = lowerGrounds.filter(lg => SI_ZHONG.has(lg));
 
     if (mengHits.length > 0 && mengHits.length < lowerGrounds.length) {
       // 见机格：有孟且不全为孟 → 取孟
       const mengIdx = shehaiArr[lowerGrounds.indexOf(mengHits[0])];
       const initial = fourLessons[mengIdx].upper;
       const { middle, final } = standardMiddleFinal(initial, heavenBoard);
-      trace.push(`涉害见机：取孟下${DI_ZHI[mengHits[0]]}对应第${mengIdx + 1}课上神${DI_ZHI[initial]}`);
+      trace.push(
+        `涉害见机：取孟下${DI_ZHI[mengHits[0]]}对应第${mengIdx + 1}课上神${DI_ZHI[initial]}`
+      );
       return { initial, middle, final, method: "涉害见机", trace };
     }
 
@@ -541,7 +540,9 @@ function handleShehai(
       const zhongIdx = shehaiArr[lowerGrounds.indexOf(zhongHits[0])];
       const initial = fourLessons[zhongIdx].upper;
       const { middle, final } = standardMiddleFinal(initial, heavenBoard);
-      trace.push(`涉害察微：取仲下${DI_ZHI[zhongHits[0]]}对应第${zhongIdx + 1}课上神${DI_ZHI[initial]}`);
+      trace.push(
+        `涉害察微：取仲下${DI_ZHI[zhongHits[0]]}对应第${zhongIdx + 1}课上神${DI_ZHI[initial]}`
+      );
       return { initial, middle, final, method: "涉害察微", trace };
     }
 
@@ -549,13 +550,15 @@ function handleShehai(
     const isYang = STEM_YIN_YANG[dayStem] === 1;
     const initial = isYang ? fourLessons[0].upper : fourLessons[2].upper;
     const { middle, final } = standardMiddleFinal(initial, heavenBoard);
-    trace.push(`涉害缀瑕：${isYang ? "阳" : "阴"}日取${isYang ? "干" : "支"}上课${DI_ZHI[initial]}`);
+    trace.push(
+      `涉害缀瑕：${isYang ? "阳" : "阴"}日取${isYang ? "干" : "支"}上课${DI_ZHI[initial]}`
+    );
     return { initial, middle, final, method: "涉害缀瑕", trace };
   }
 
   // 深度不同 → 取最深者
   const maxDepth = Math.max(...depths.values());
-  const deepestIdx = shehaiArr.find((idx) => depths.get(idx) === maxDepth)!;
+  const deepestIdx = shehaiArr.find(idx => depths.get(idx) === maxDepth)!;
   const initial = fourLessons[deepestIdx].upper;
   const { middle, final } = standardMiddleFinal(initial, heavenBoard);
   trace.push(`涉害：取最深层第${deepestIdx + 1}，初传${DI_ZHI[initial]}`);
@@ -710,7 +713,7 @@ function handleBazhuan(
     trace.push(`八专：阳日干上神顺数2位${DI_ZHI[initial]}`);
   } else {
     // 阴日：支上神（第四课上神）逆数 2 位
-    initial = ((fourLessons[3].upper - 2) % 12 + 12) % 12;
+    initial = (((fourLessons[3].upper - 2) % 12) + 12) % 12;
     trace.push(`八专：阴日支上神逆数2位${DI_ZHI[initial]}`);
   }
 

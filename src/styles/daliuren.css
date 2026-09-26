@@ -10,10 +10,15 @@
 }
 
 @keyframes liurenFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-
 
 /* ── 大六壬响应式：≤900px 左右堆叠 ── */
 @media (max-width: 900px) {
@@ -68,7 +73,6 @@
   }
 }
 
-
 /* ── 大六壬列表特有样式 ── */
 .record-list-empty.liuren-empty::before {
   content: "☰";
@@ -76,8 +80,15 @@
 }
 
 @keyframes liurenEmptyFloat {
-  0%, 100% { transform: translateY(0); opacity: 0.3; }
-  50%      { transform: translateY(-6px); opacity: 0.5; }
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 0.5;
+  }
 }
 
 /* ── 右侧盘面区 ── */
@@ -116,8 +127,15 @@
 }
 
 @keyframes liurenEmptyIconFloat {
-  0%, 100% { transform: translateY(0); opacity: 0.5; }
-  50%      { transform: translateY(-6px); opacity: 0.7; }
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 0.7;
+  }
 }
 
 .liuren-chart-empty-title {
@@ -185,14 +203,20 @@
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.15));
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
   text-shadow: 0 0 8px rgba(85, 215, 255, 0.1);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .liuren-pillar:hover .liuren-pillar-value {
   border-color: rgba(243, 201, 107, 0.3);
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2), 0 0 8px rgba(243, 201, 107, 0.12);
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.2),
+    0 0 8px rgba(243, 201, 107, 0.12);
 }
 
 /* 月将 */
@@ -220,7 +244,10 @@
   border-radius: 6px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
   font-size: 0.7rem;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
 }
 
 .liuren-board-cell:hover {
@@ -284,7 +311,9 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .liuren-lesson:hover {
@@ -358,7 +387,9 @@
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.15));
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
   text-shadow: 0 0 8px rgba(243, 201, 107, 0.1);
 }
 
@@ -475,7 +506,9 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.08));
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .liuren-kejing-item:hover {
@@ -520,7 +553,9 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.08));
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .liuren-bifa-item:hover {
@@ -642,7 +677,6 @@
   letter-spacing: 0.1em;
 }
 
-
 /* ============ 大六壬 Dialog 表单样式 ============ */
 
 .liuren-dialog-form {
@@ -653,7 +687,7 @@
 
 .liuren-form-error {
   padding: 10px 14px 10px 36px;
-  background: rgba(227, 91, 91, 0.10);
+  background: rgba(227, 91, 91, 0.1);
   border: 1px solid rgba(227, 91, 91, 0.35);
   border-radius: 8px;
   color: var(--danger);
@@ -705,7 +739,9 @@
 .liuren-form-field textarea:focus {
   outline: none;
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px rgba(243, 201, 107, 0.10), 0 0 10px rgba(243, 201, 107, 0.18);
+  box-shadow:
+    0 0 0 2px rgba(243, 201, 107, 0.1),
+    0 0 10px rgba(243, 201, 107, 0.18);
   background: rgba(0, 0, 0, 0.38);
 }
 
@@ -818,7 +854,9 @@
 
 .tag-input-tags:focus-within {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px rgba(243, 201, 107, 0.10), 0 0 10px rgba(243, 201, 107, 0.18);
+  box-shadow:
+    0 0 0 2px rgba(243, 201, 107, 0.1),
+    0 0 10px rgba(243, 201, 107, 0.18);
 }
 
 .tag-input-tag {
@@ -906,12 +944,10 @@
 }
 
 .tag-input-suggestion-item:hover {
-  background: rgba(85, 215, 255, 0.10);
+  background: rgba(85, 215, 255, 0.1);
   color: var(--cyan);
 }
-
 
 /* ========================================
  * Wiki 页面布局样式
  * ======================================== */
-

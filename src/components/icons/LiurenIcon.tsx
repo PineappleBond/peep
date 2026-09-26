@@ -31,18 +31,8 @@ export function LiurenIcon(props: SVGAttributes<SVGSVGElement>) {
       {/* 中心点 */}
       <circle cx="12" cy="12" r="1.5" fill="currentColor" />
       {/* 天地盘连线（表示旋转关系） */}
-      <path
-        d="M12 6 L12 3"
-        stroke="currentColor"
-        strokeWidth="0.6"
-        opacity="0.5"
-      />
-      <path
-        d="M12 18 L12 21"
-        stroke="currentColor"
-        strokeWidth="0.6"
-        opacity="0.5"
-      />
+      <path d="M12 6 L12 3" stroke="currentColor" strokeWidth="0.6" opacity="0.5" />
+      <path d="M12 18 L12 21" stroke="currentColor" strokeWidth="0.6" opacity="0.5" />
     </svg>
   );
 }

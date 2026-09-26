@@ -10,10 +10,10 @@ import { calculateDaLiuRen } from "./calculator";
 /** 运行 PHP 计算器 */
 function runPhp(date: string, time: string): any {
   try {
-    const result = execSync(
-      `cd /tmp/liuren && php cli_calculate.php ${date} ${time}`,
-      { encoding: "utf-8", timeout: 5000 }
-    );
+    const result = execSync(`cd /tmp/liuren && php cli_calculate.php ${date} ${time}`, {
+      encoding: "utf-8",
+      timeout: 5000,
+    });
     return JSON.parse(result);
   } catch (error) {
     console.error("PHP 执行失败:", error);
@@ -33,8 +33,18 @@ function runTs(date: string, time: string): any {
 
 /** PHP 天将名称映射 */
 const PHP_TIAN_JIANG_NAMES = [
-  '贵人', '螣蛇', '朱雀', '六合', '勾陈', '青龙',
-  '天空', '白虎', '太常', '玄武', '太阴', '天后'
+  "贵人",
+  "螣蛇",
+  "朱雀",
+  "六合",
+  "勾陈",
+  "青龙",
+  "天空",
+  "白虎",
+  "太常",
+  "玄武",
+  "太阴",
+  "天后",
 ];
 
 /** 对比十二天将 */
@@ -140,16 +150,18 @@ describe("辅助计算专项对比测试（第 4 轮）", () => {
       console.log(`日期时间: ${date} ${time}`);
       console.log(`日干: PHP=${phpResult.rigan}, TS=${tsResult.fourPillars.dayStem}`);
       console.log(`时支: PHP=${phpResult.shizhi}, TS=${tsResult.fourPillars.hourBranch}`);
-      console.log(`天盘: PHP=${JSON.stringify(phpResult.tianpan)}, TS=${JSON.stringify(tsResult.heavenBoard)}`);
+      console.log(
+        `天盘: PHP=${JSON.stringify(phpResult.tianpan)}, TS=${JSON.stringify(tsResult.heavenBoard)}`
+      );
       console.log(`昼夜: PHP=${phpResult.guirenPeriod}, shunni=${phpResult.shunni}`);
 
       // 对比十二天将
       const tianjiangChecks = compareTianJiang(phpResult, tsResult);
       if (tianjiangChecks.length > 0) {
-        console.log('十二天将差异:');
+        console.log("十二天将差异:");
         tianjiangChecks.forEach(c => console.log(`  - ${c}`));
       } else {
-        console.log('十二天将: 完全一致 ✅');
+        console.log("十二天将: 完全一致 ✅");
       }
 
       // 其他辅助计算（旬空、遁干等）在 TS 中有但 PHP 没有直接输出，跳过对比

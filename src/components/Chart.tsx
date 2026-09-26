@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, memo } from "react";
-import { MUTAGEN_CHARS, fixIndex, type Scope, type MutagenChar } from "../core/utils";
+import type { MUTAGEN_CHARS } from "../core/utils";
+import { fixIndex, type Scope, type MutagenChar } from "../core/utils";
 import { getChartDataForScope } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 import { PalaceCard } from "./Palace";
@@ -12,10 +13,18 @@ const FOCUS_ORDER: Scope[] = ["hourly", "daily", "monthly", "yearly", "decadal"]
 
 /** 各宫位在 4×4 栅格中的 [列, 行] */
 const GRID_POS: Record<number, [number, number]> = {
-  3: [0, 0], 4: [1, 0], 5: [2, 0], 6: [3, 0],
-  2: [0, 1], 7: [3, 1],
-  1: [0, 2], 8: [3, 2],
-  0: [0, 3], 11: [1, 3], 10: [2, 3], 9: [3, 3],
+  3: [0, 0],
+  4: [1, 0],
+  5: [2, 0],
+  6: [3, 0],
+  2: [0, 1],
+  7: [3, 1],
+  1: [0, 2],
+  8: [3, 2],
+  0: [0, 3],
+  11: [1, 3],
+  10: [2, 3],
+  9: [3, 3],
 };
 
 /** 宫位朝向中宫的锚点（viewBox 0~400） */
@@ -80,11 +89,8 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
 
   const focus = userFocus ?? autoFocus;
   // 使用 useCallback 避免每次渲染重建函数导致 PalaceCard memo 失效
-  const handleFocus = useCallback(
-    (i: number) => setUserFocus((prev) => (prev === i ? null : i)),
-    []
-  );
-  const handleToggleFly = useCallback(() => setFlyMode((v) => !v), []);
+  const handleFocus = useCallback((i: number) => setUserFocus(prev => (prev === i ? null : i)), []);
+  const handleToggleFly = useCallback(() => setFlyMode(v => !v), []);
   const handleCloseDetail = useCallback(() => setDetailIdx(null), []);
 
   /* 三方四正连线（飞宫模式关闭时） */
@@ -96,13 +102,13 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
       { i: fixIndex(focus - 4), opp: false },
       { i: fixIndex(focus + 6), opp: true },
     ];
-    return targets.map((t) => ({ from, to: anchor(t.i), opp: t.opp }));
+    return targets.map(t => ({ from, to: anchor(t.i), opp: t.opp }));
   }, [focus, flyMode]);
 
   /* 飞宫四化连线：同目标多化按垂直向量平行错开 */
   const flyLines = useMemo<FlyLine[]>(() => {
     if (!flyMode || focus < 0 || !z.analysis) return [];
-    const pf = z.analysis.flyMatrix.palaces.find((p) => p.palaceIndex === focus);
+    const pf = z.analysis.flyMatrix.palaces.find(p => p.palaceIndex === focus);
     if (!pf) return [];
     const from = anchor(focus);
     const byTarget = new Map<number, typeof pf.flies>();
@@ -157,11 +163,13 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
   const scopeResults = useMemo(() => {
     if (!z.horoscope || !z.astrolabe) return [];
     const astrolabe = z.astrolabe; // 缓存引用，避免 TS 推断为可能 null
-    const effectiveScopes = (["decadal", "yearly", "monthly", "daily", "hourly"] as Scope[]).filter((s) => {
-      if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
-      return z.visible[s];
-    });
-    return effectiveScopes.map((s) =>
+    const effectiveScopes = (["decadal", "yearly", "monthly", "daily", "hourly"] as Scope[]).filter(
+      s => {
+        if (s === "decadal" && z.activeDecadeIdx === -1) return false; // 童限跳过
+        return z.visible[s];
+      }
+    );
+    return effectiveScopes.map(s =>
       getChartDataForScope({ astrolabe, horoscope: z.horoscope, scope: s })
     );
   }, [z.astrolabe, z.horoscope, z.visible, z.activeDecadeIdx]);
@@ -199,7 +207,7 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
     <div className="chart-outer" role="region" aria-label={t("center.title")}>
       <div className="chart-wrap">
         <div className={`chart ${flyMode ? "chart-flymode" : ""} chart-selfmode`}>
-          {a.palaces.map((p) => (
+          {a.palaces.map(p => (
             <PalaceCard
               key={p.index}
               palace={p}
@@ -210,11 +218,7 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
               scopeData={perPalaceScopeData[p.index] ?? []}
             />
           ))}
-          <CenterPanel
-            z={z}
-            flyMode={flyMode}
-            onToggleFly={handleToggleFly}
-          />
+          <CenterPanel z={z} flyMode={flyMode} onToggleFly={handleToggleFly} />
           <svg
             className="chart-lines"
             viewBox="0 0 400 400"
@@ -239,16 +243,28 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
                   x2={l.to.x}
                   y2={l.to.y}
                 />
-                <circle className={l.opp ? "sdot sdot-opp" : "sdot"} cx={l.to.x} cy={l.to.y} r="3.4" />
+                <circle
+                  className={l.opp ? "sdot sdot-opp" : "sdot"}
+                  cx={l.to.x}
+                  cy={l.to.y}
+                  r="3.4"
+                />
               </g>
             ))}
             {flyLines.map((f, k) =>
               f.self ? (
                 <g key={k} filter="url(#lglow)">
                   <text className="fly-label" data-m={f.mutagen} x={f.label.x} y={f.label.y}>
-                    {t("detail.selfPrefix")}{f.mutagen}
+                    {t("detail.selfPrefix")}
+                    {f.mutagen}
                   </text>
-                  <circle className="fly-selfdot" data-m={f.mutagen} cx={f.from.x} cy={f.from.y} r={5 + k * 2.5} />
+                  <circle
+                    className="fly-selfdot"
+                    data-m={f.mutagen}
+                    cx={f.from.x}
+                    cy={f.from.y}
+                    r={5 + k * 2.5}
+                  />
                 </g>
               ) : (
                 <g key={k} filter="url(#lglow)">

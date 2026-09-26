@@ -40,12 +40,12 @@ describe("analysis 结构分析层", () => {
     expect(snaps).toHaveLength(12);
     for (const s of snaps) {
       expect(s.seats).toHaveLength(4);
-      expect(s.seats.map((x) => x.role)).toEqual(["本宫", "对宫", "三合", "三合"]);
+      expect(s.seats.map(x => x.role)).toEqual(["本宫", "对宫", "三合", "三合"]);
       // 对宫 = +6，三合 = ±4
       const opp = a.palaces[fixIndex(s.palaceIndex + 6)];
       expect(s.seats[1].palaceName).toBe(opp.name);
       const trines = [fixIndex(s.palaceIndex + 4), fixIndex(s.palaceIndex - 4)].map(
-        (i) => a.palaces[i].name
+        i => a.palaces[i].name
       );
       expect(trines).toContain(s.seats[2].palaceName);
       expect(trines).toContain(s.seats[3].palaceName);
@@ -67,7 +67,7 @@ describe("analysis 结构分析层", () => {
     for (const pf of fm.palaces) {
       expect(pf.flies).toHaveLength(4);
       const expectStars = util.getMutagensByHeavenlyStem(pf.stem as never) as string[];
-      expect(pf.flies.map((f) => f.star)).toEqual(expectStars);
+      expect(pf.flies.map(f => f.star)).toEqual(expectStars);
       for (const f of pf.flies) {
         if (f.toIndex >= 0) {
           expect(pos.get(f.star)).toBe(f.toIndex);
@@ -77,11 +77,11 @@ describe("analysis 结构分析层", () => {
       }
       // 离心自化列表 = isSelf 的飞化
       expect(pf.selfOutward).toEqual(
-        pf.flies.filter((f) => f.isSelf).map((f) => `${f.star}化${f.mutagen}`)
+        pf.flies.filter(f => f.isSelf).map(f => `${f.star}化${f.mutagen}`)
       );
       // 向心自化 = 对宫飞入本宫
-      const opp = fm.palaces.find((x) => x.palaceIndex === fixIndex(pf.palaceIndex + 6))!;
-      expect(pf.selfInward.length).toBe(opp.flies.filter((f) => f.toIndex === pf.palaceIndex).length);
+      const opp = fm.palaces.find(x => x.palaceIndex === fixIndex(pf.palaceIndex + 6))!;
+      expect(pf.selfInward.length).toBe(opp.flies.filter(f => f.toIndex === pf.palaceIndex).length);
     }
   });
 
@@ -112,7 +112,7 @@ describe("analysis 结构分析层", () => {
         if (c.end === "自化") expect(last.isSelf).toBe(true);
         if (c.end === "回头") expect(last.toIndex).toBe(c.headIndex);
         // 首步与飞宫矩阵同一口径
-        const pf = fm.palaces.find((x) => x.palaceIndex === c.headIndex)!;
+        const pf = fm.palaces.find(x => x.palaceIndex === c.headIndex)!;
         const f = pf.flies[c.kind === "禄" ? 0 : 3];
         expect(c.steps[0].star).toBe(f.star);
         expect(c.steps[0].toIndex).toBe(f.toIndex);
@@ -122,21 +122,21 @@ describe("analysis 结构分析层", () => {
 
   it("四化传导链：演示盘已知链路（三转止/自化终止）", () => {
     const mc = traceMutagenChains(a);
-    const idxOf = (name: string) => a.palaces.findIndex((p) => p.name === name);
-    expect(mc.ji.find((c) => c.headIndex === idxOf("命宫"))!.text).toBe(
+    const idxOf = (name: string) => a.palaces.findIndex(p => p.name === name);
+    expect(mc.ji.find(c => c.headIndex === idxOf("命宫"))!.text).toBe(
       "命宫(壬)武曲忌入财帛 → 财帛(戊)天机忌入兄弟 → 兄弟(辛)文昌忌入福德【三转止】"
     );
-    const guanJi = mc.ji.find((c) => c.headIndex === idxOf("官禄"))!;
+    const guanJi = mc.ji.find(c => c.headIndex === idxOf("官禄"))!;
     expect(guanJi.text).toBe("官禄(丙)廉贞忌入本宫【自化忌】");
     expect(guanJi.end).toBe("自化");
-    expect(mc.lu.find((c) => c.headIndex === idxOf("迁移"))!.text).toBe(
+    expect(mc.lu.find(c => c.headIndex === idxOf("迁移"))!.text).toBe(
       "迁移(戊)贪狼禄入本宫【自化禄】"
     );
   });
 
   it("四化传导链：回头链样例（忌链缠回链首宫）", () => {
     const c84 = makeChart("1984-03-15", 0, "男");
-    const backs = traceMutagenChains(c84).ji.filter((c) => c.end === "回头");
+    const backs = traceMutagenChains(c84).ji.filter(c => c.end === "回头");
     expect(backs.length).toBeGreaterThanOrEqual(3);
     for (const c of backs) {
       expect(c.steps[c.steps.length - 1].toIndex).toBe(c.headIndex);
@@ -159,14 +159,14 @@ describe("analysis 结构分析层", () => {
       expect(p.basis).toBeTruthy();
       expect(p.meaning).toBeTruthy();
     }
-    const soul = a.palaces.find((p) => p.name === "命宫")!;
-    const hasSbl = soul.majorStars.some((s) => ["七杀", "破军", "贪狼"].includes(s.name as string));
-    expect(pats.some((p) => p.name === "杀破狼")).toBe(hasSbl);
+    const soul = a.palaces.find(p => p.name === "命宫")!;
+    const hasSbl = soul.majorStars.some(s => ["七杀", "破军", "贪狼"].includes(s.name as string));
+    expect(pats.some(p => p.name === "杀破狼")).toBe(hasSbl);
   });
 
   it("空宫借星：与各宫主星有无一致", () => {
     const borrowed = getBorrowedStars(a);
-    const emptyCount = a.palaces.filter((p) => !p.majorStars.length).length;
+    const emptyCount = a.palaces.filter(p => !p.majorStars.length).length;
     expect(borrowed).toHaveLength(emptyCount);
     for (const b of borrowed) {
       expect(a.palaces[b.palaceIndex].majorStars).toHaveLength(0);
@@ -183,22 +183,26 @@ describe("analysis 结构分析层", () => {
     ];
     for (const [ds, t, g] of samples) {
       const c = makeChart(ds, t, g);
-      const soul = c.palaces.find((p) => p.name === "命宫")!;
+      const soul = c.palaces.find(p => p.name === "命宫")!;
       const br = soul.earthlyBranch as string;
       const all = new Set(
-        [...soul.majorStars, ...soul.minorStars, ...soul.adjectiveStars].map((s) => s.name as string)
+        [...soul.majorStars, ...soul.minorStars, ...soul.adjectiveStars].map(s => s.name as string)
       );
-      const names = detectPatterns(c).map((p) => p.name);
-      expect(names.includes("擎羊入庙")).toBe(all.has("擎羊") && ["辰", "戌", "丑", "未"].includes(br));
+      const names = detectPatterns(c).map(p => p.name);
+      expect(names.includes("擎羊入庙")).toBe(
+        all.has("擎羊") && ["辰", "戌", "丑", "未"].includes(br)
+      );
       expect(names.includes("雄宿朝元")).toBe(
-        soul.majorStars.some((s) => s.name === "廉贞") && ["寅", "申"].includes(br)
+        soul.majorStars.some(s => s.name === "廉贞") && ["寅", "申"].includes(br)
       );
-      expect(names.includes("寿星入庙")).toBe(soul.majorStars.some((s) => s.name === "天梁") && br === "午");
+      expect(names.includes("寿星入庙")).toBe(
+        soul.majorStars.some(s => s.name === "天梁") && br === "午"
+      );
       const prev = new Set(
-        [...c.palaces[fixIndex(soul.index - 1)].majorStars].map((s) => s.name as string)
+        [...c.palaces[fixIndex(soul.index - 1)].majorStars].map(s => s.name as string)
       );
       const next = new Set(
-        [...c.palaces[fixIndex(soul.index + 1)].majorStars].map((s) => s.name as string)
+        [...c.palaces[fixIndex(soul.index + 1)].majorStars].map(s => s.name as string)
       );
       expect(names.includes("紫府夹命")).toBe(
         (prev.has("紫微") && next.has("天府")) || (prev.has("天府") && next.has("紫微"))
@@ -210,55 +214,55 @@ describe("analysis 结构分析层", () => {
     // 极向离明：紫微守命于午
     {
       const c = makeChart("1954-02-15", 8);
-      const soul = c.palaces.find((p) => p.name === "命宫")!;
+      const soul = c.palaces.find(p => p.name === "命宫")!;
       expect(soul.earthlyBranch).toBe("午");
-      expect(soul.majorStars.some((s) => s.name === "紫微")).toBe(true);
-      expect(detectPatterns(c).map((p) => p.name)).toContain("极向离明");
+      expect(soul.majorStars.some(s => s.name === "紫微")).toBe(true);
+      expect(detectPatterns(c).map(p => p.name)).toContain("极向离明");
     }
     // 禄合鸳鸯：禄存与生年化禄星同守命宫
-    expect(detectPatterns(makeChart("1974-07-15", 4)).map((p) => p.name)).toContain("禄合鸳鸯");
+    expect(detectPatterns(makeChart("1974-07-15", 4)).map(p => p.name)).toContain("禄合鸳鸯");
     // 财禄夹马：天马守命，武禄相夹
     {
       const c = makeChart("1959-08-16", 3);
-      const soul = c.palaces.find((p) => p.name === "命宫")!;
+      const soul = c.palaces.find(p => p.name === "命宫")!;
       const all = [...soul.majorStars, ...soul.minorStars, ...soul.adjectiveStars].map(
-        (s) => s.name as string
+        s => s.name as string
       );
       expect(all).toContain("天马");
-      expect(detectPatterns(c).map((p) => p.name)).toContain("财禄夹马");
+      expect(detectPatterns(c).map(p => p.name)).toContain("财禄夹马");
     }
     // 月生沧海：太阴在子守田宅
     {
       const c = makeChart("1954-07-15", 10);
-      const tian = c.palaces.find((p) => (p.name as string) === "田宅")!;
+      const tian = c.palaces.find(p => (p.name as string) === "田宅")!;
       expect(tian.earthlyBranch).toBe("子");
-      expect(tian.majorStars.some((s) => s.name === "太阴")).toBe(true);
-      expect(detectPatterns(c).map((p) => p.name)).toContain("月生沧海");
+      expect(tian.majorStars.some(s => s.name === "太阴")).toBe(true);
+      expect(detectPatterns(c).map(p => p.name)).toContain("月生沧海");
     }
     // 铃昌陀武：四星交会辰戌三方
-    expect(detectPatterns(makeChart("1982-01-15", 2)).map((p) => p.name)).toContain("铃昌陀武");
+    expect(detectPatterns(makeChart("1982-01-15", 2)).map(p => p.name)).toContain("铃昌陀武");
     // 廉贞七杀：加煞升凶
     {
-      const hit = detectPatterns(makeChart("1954-07-15", 6)).find((p) => p.name === "廉贞七杀")!;
+      const hit = detectPatterns(makeChart("1954-07-15", 6)).find(p => p.name === "廉贞七杀")!;
       expect(hit).toBeTruthy();
       expect(hit.kind).toBe("凶");
     }
     // 财与囚仇：武曲廉贞分守身命（独立复核）
     {
       const c = makeChart("1954-02-15", 10);
-      const soul = c.palaces.find((p) => p.name === "命宫")!;
-      const body = c.palaces.find((p) => p.isBodyPalace)!;
-      const sm = soul.majorStars.map((s) => s.name as string);
-      const bm = body.majorStars.map((s) => s.name as string);
+      const soul = c.palaces.find(p => p.name === "命宫")!;
+      const body = c.palaces.find(p => p.isBodyPalace)!;
+      const sm = soul.majorStars.map(s => s.name as string);
+      const bm = body.majorStars.map(s => s.name as string);
       expect(
         (sm.includes("武曲") && bm.includes("廉贞")) || (sm.includes("廉贞") && bm.includes("武曲"))
       ).toBe(true);
-      expect(detectPatterns(c).map((p) => p.name)).toContain("财与囚仇");
+      expect(detectPatterns(c).map(p => p.name)).toContain("财与囚仇");
     }
     // 巨机居卯为吉格、居酉为注意格，两名互斥
-    expect(detectPatterns(makeChart("1962-05-15", 2)).map((p) => p.name)).toContain("巨机同临");
+    expect(detectPatterns(makeChart("1962-05-15", 2)).map(p => p.name)).toContain("巨机同临");
     {
-      const names = detectPatterns(makeChart("1958-04-15", 6)).map((p) => p.name);
+      const names = detectPatterns(makeChart("1958-04-15", 6)).map(p => p.name);
       expect(names).toContain("巨机化酉");
       expect(names).not.toContain("巨机同临");
     }
@@ -285,7 +289,7 @@ describe("analysis 结构分析层", () => {
     }
     // 一甲子内应出现多种运限格局（杀破狼运/忌入·忌冲/双禄等）
     expect(seen.size).toBeGreaterThanOrEqual(3);
-    expect([...seen].some((n) => n.includes("杀破狼") || n.includes("忌"))).toBe(true);
+    expect([...seen].some(n => n.includes("杀破狼") || n.includes("忌"))).toBe(true);
   });
 
   it("运限格局扫描：流月层十二个月结构自洽（流月命宫一年转遍十二宫）", () => {
@@ -379,7 +383,7 @@ describe("analysis 结构分析层", () => {
   });
 
   it("getSelfMarksForScope 自化标记：离心与向心列表", () => {
-    const soulIdx = a.palaces.findIndex((p) => p.name === "命宫");
+    const soulIdx = a.palaces.findIndex(p => p.name === "命宫");
     const soulStem = a.palaces[soulIdx].heavenlyStem as string;
     const marks = getSelfMarksForScope(soulIdx, soulStem, a);
     expect(Array.isArray(marks.outward)).toBe(true);

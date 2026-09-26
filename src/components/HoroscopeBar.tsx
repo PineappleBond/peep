@@ -1,4 +1,5 @@
-import { ReactNode, useEffect, useRef, memo } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useRef, memo } from "react";
 import type { Scope } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
 import { useI18n } from "../core/i18n";
@@ -69,7 +70,12 @@ function Cell({
   title?: string;
 }) {
   return (
-    <button className={`hcell ${active ? `on on-${scope}` : ""}`} onClick={onClick} title={title} aria-selected={active}>
+    <button
+      className={`hcell ${active ? `on on-${scope}` : ""}`}
+      onClick={onClick}
+      title={title}
+      aria-selected={active}
+    >
       <b>{main}</b>
       {sub ? <i>{sub}</i> : null}
     </button>
@@ -78,7 +84,20 @@ function Cell({
 
 export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
   const { t } = useI18n();
-  const { decades, childhood, activeDecadeIdx, years, months, days, hours, pick, clampedDay, effLeap, visible, actions } = z;
+  const {
+    decades,
+    childhood,
+    activeDecadeIdx,
+    years,
+    months,
+    days,
+    hours,
+    pick,
+    clampedDay,
+    effLeap,
+    visible,
+    actions,
+  } = z;
 
   return (
     <section className="hbar" aria-label={t("hbar.label")}>
@@ -121,7 +140,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         activeKey={pick.year}
         toggleTitle={visible.yearly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
-        {years.map((y) => (
+        {years.map(y => (
           <Cell
             key={y.year}
             main={`${y.year}`}
@@ -141,7 +160,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         activeKey={`${pick.month}${effLeap ? "L" : ""}`}
         toggleTitle={visible.monthly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
-        {months.map((m) => (
+        {months.map(m => (
           <Cell
             key={`${m.month}${m.leap ? "L" : ""}`}
             main={m.label}
@@ -163,7 +182,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         wrap
         toggleTitle={visible.daily ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
-        {days.map((d) => (
+        {days.map(d => (
           <Cell
             key={d.day}
             main={d.label}
@@ -184,7 +203,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         activeKey={pick.hour}
         toggleTitle={visible.hourly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
-        {hours.map((h) => (
+        {hours.map(h => (
           <Cell
             key={h.hour}
             main={h.label}

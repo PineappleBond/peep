@@ -43,7 +43,10 @@ export type BorrowedInfo = {
  * @param ix - 共享索引（可选，默认新建）
  * @returns 空宫列表，每项含借入的对宫主星
  */
-export function getBorrowedStars(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): BorrowedInfo[] {
+export function getBorrowedStars(
+  a: Astrolabe,
+  ix: ChartIndex = buildChartIndex(a)
+): BorrowedInfo[] {
   const out: BorrowedInfo[] = [];
   for (const p of a.palaces) {
     if (p.majorStars.length) continue;
@@ -52,7 +55,7 @@ export function getBorrowedStars(a: Astrolabe, ix: ChartIndex = buildChartIndex(
       palaceIndex: p.index,
       palaceName: p.name,
       branch: p.earthlyBranch as string,
-      borrowed: opp.majorStars.map((s) => starTxt(ix, s.name as string)),
+      borrowed: opp.majorStars.map(s => starTxt(ix, s.name as string)),
       oppositeName: opp.name,
     });
   }
@@ -94,8 +97,11 @@ export type SanfangSnapshot = {
  * @param ix - 共享索引（可选，默认新建）
  * @returns 十二宫的三方四正快照数组
  */
-export function getSanfangSnapshots(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): SanfangSnapshot[] {
-  return a.palaces.map((p) => {
+export function getSanfangSnapshots(
+  a: Astrolabe,
+  ix: ChartIndex = buildChartIndex(a)
+): SanfangSnapshot[] {
+  return a.palaces.map(p => {
     const idxs = sanfangIdx(p.index);
     const seats: SanfangSeat[] = idxs.map((q, k) => {
       const t = a.palaces[q];
@@ -103,7 +109,7 @@ export function getSanfangSnapshots(a: Astrolabe, ix: ChartIndex = buildChartInd
         role: SEAT_ROLES[k],
         palaceName: t.name,
         branch: t.earthlyBranch as string,
-        majors: t.majorStars.map((s) => starTxt(ix, s.name as string)).join("、") || "无主星",
+        majors: t.majorStars.map(s => starTxt(ix, s.name as string)).join("、") || "无主星",
       };
     });
     const locTag = (q: number, k: number) =>
@@ -128,7 +134,7 @@ export function getSanfangSnapshots(a: Astrolabe, ix: ChartIndex = buildChartInd
     const borrowed =
       p.majorStars.length === 0
         ? `本宫无主星，借对宫【${opp.name}】${
-            opp.majorStars.map((s) => starTxt(ix, s.name as string)).join("、") || "（对宫亦无主星）"
+            opp.majorStars.map(s => starTxt(ix, s.name as string)).join("、") || "（对宫亦无主星）"
           }`
         : null;
     return {
@@ -205,7 +211,7 @@ export function getFlyMatrix(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)):
       };
     });
   };
-  const palaces: PalaceFly[] = a.palaces.map((p) => {
+  const palaces: PalaceFly[] = a.palaces.map(p => {
     const flies = rawFlies(p.index);
     const oppFlies = rawFlies(fixIndex(p.index + 6));
     return {
@@ -214,14 +220,14 @@ export function getFlyMatrix(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)):
       branch: p.earthlyBranch as string,
       stem: p.heavenlyStem as string,
       flies,
-      selfOutward: flies.filter((f) => f.isSelf).map((f) => `${f.star}化${f.mutagen}`),
+      selfOutward: flies.filter(f => f.isSelf).map(f => `${f.star}化${f.mutagen}`),
       selfInward: oppFlies
-        .filter((f) => f.toIndex === p.index)
-        .map((f) => `${f.star}化${f.mutagen}（来自对宫宫干）`),
+        .filter(f => f.toIndex === p.index)
+        .map(f => `${f.star}化${f.mutagen}（来自对宫宫干）`),
     };
   });
-  const sentences = palaces.map((pf) => {
-    const parts = pf.flies.map((f) =>
+  const sentences = palaces.map(pf => {
+    const parts = pf.flies.map(f =>
       f.isSelf
         ? `化${f.mutagen}=${f.star}→本宫（自化${f.mutagen}·离心）`
         : `化${f.mutagen}=${f.star}→${f.toName}`
@@ -252,7 +258,13 @@ const JIA_PAIRS: { kind: string; s1: string; s2: string; good: boolean; note: st
   { kind: "昌曲夹", s1: "文昌", s2: "文曲", good: true, note: "文星辅佑，利科名" },
   { kind: "魁钺夹", s1: "天魁", s2: "天钺", good: true, note: "贵人夹命，机遇多" },
   { kind: "日月夹", s1: "太阳", s2: "太阴", good: true, note: "日月夹辅，不权则富" },
-  { kind: "羊陀夹", s1: "擎羊", s2: "陀罗", good: false, note: "羊陀相夹（本宫必坐禄存），束缚牵制" },
+  {
+    kind: "羊陀夹",
+    s1: "擎羊",
+    s2: "陀罗",
+    good: false,
+    note: "羊陀相夹（本宫必坐禄存），束缚牵制",
+  },
   { kind: "火铃夹", s1: "火星", s2: "铃星", good: false, note: "火铃夹制，急躁受迫" },
   { kind: "空劫夹", s1: "地空", s2: "地劫", good: false, note: "空劫相夹，财福易漏" },
 ];
@@ -268,7 +280,8 @@ export function getJiaGong(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): J
   for (const p of a.palaces) {
     const prev = new Set(starNamesAt(a, p.index - 1));
     const next = new Set(starNamesAt(a, p.index + 1));
-    const both = (x: string, y: string) => (prev.has(x) && next.has(y)) || (prev.has(y) && next.has(x));
+    const both = (x: string, y: string) =>
+      (prev.has(x) && next.has(y)) || (prev.has(y) && next.has(x));
     for (const pair of JIA_PAIRS) {
       if (both(pair.s1, pair.s2)) {
         out.push({
@@ -285,7 +298,7 @@ export function getJiaGong(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): J
     const luSet = ["禄存", ix.natal[0]].filter(Boolean) as string[];
     const jiStar = ix.natal[3];
     if (jiStar) {
-      const hasLu = (s: Set<string>) => luSet.some((n) => s.has(n));
+      const hasLu = (s: Set<string>) => luSet.some(n => s.has(n));
       if ((hasLu(prev) && next.has(jiStar)) || (hasLu(next) && prev.has(jiStar))) {
         out.push({
           palaceIndex: p.index,
@@ -383,7 +396,7 @@ function traceOne(a: Astrolabe, ix: ChartIndex, head: number, kind: "禄" | "忌
   const text =
     steps
       .map(
-        (s) =>
+        s =>
           `${s.fromName}(${s.stem})${s.star}${kind}入${s.isSelf ? "本宫" : s.toName}${
             s.luJiTogether ? "（禄忌同途）" : ""
           }`
@@ -399,10 +412,13 @@ function traceOne(a: Astrolabe, ix: ChartIndex, head: number, kind: "禄" | "忌
  * @param ix - 共享索引（可选，默认新建）
  * @returns 全部禄链与忌链的汇总
  */
-export function traceMutagenChains(a: Astrolabe, ix: ChartIndex = buildChartIndex(a)): MutagenChains {
+export function traceMutagenChains(
+  a: Astrolabe,
+  ix: ChartIndex = buildChartIndex(a)
+): MutagenChains {
   return {
-    ji: a.palaces.map((p) => traceOne(a, ix, p.index, "忌")),
-    lu: a.palaces.map((p) => traceOne(a, ix, p.index, "禄")),
+    ji: a.palaces.map(p => traceOne(a, ix, p.index, "忌")),
+    lu: a.palaces.map(p => traceOne(a, ix, p.index, "禄")),
     note: "宫干四化逐级串联（最多三转，遇自化/回头/成环即止）：忌链=破耗与责任的传导路径，链尾宫为最终沉淀处；禄链=福泽输送路径，看福最终归于何事。【自化X】=链在该宫泄出不聚；【回头】=缠回链首宫（因果回身）；【成环】=链中两宫互缠；（禄忌同途）=该宫禄忌俱入同一宫，吉中藏耗。",
   };
 }
@@ -583,7 +599,7 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
   const rawMarks = getSelfMarksForScope(scopePalaceIdx, scopeStem, astrolabe, ix);
 
   // 构建 12 宫完整数据
-  const palaces = astrolabe.palaces.map((palace) => {
+  const palaces = astrolabe.palaces.map(palace => {
     // 本命四化（生年天干）
     const pillars = astrolabe.chineseDate.split(" ");
     const natalStem = pillars[0]?.charAt(0) ?? "";
@@ -609,12 +625,18 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
     const selfMutagens = selfMutagenStars
       .map((star, k) => {
         const pos = ix.pos.get(star) ?? -1;
-        return pos === palace.index ? { star, char: MUTAGEN_CHARS[k], direction: "outward" as const } : null;
+        return pos === palace.index
+          ? { star, char: MUTAGEN_CHARS[k], direction: "outward" as const }
+          : null;
       })
       .filter((m): m is { star: string; char: MutagenChar; direction: "outward" } => m !== null);
 
     // 运限自化（离心 + 向心）
-    const scopeSelfMutagens: Array<{ star: string; char: MutagenChar; direction: "outward" | "inward" }> = [];
+    const scopeSelfMutagens: Array<{
+      star: string;
+      char: MutagenChar;
+      direction: "outward" | "inward";
+    }> = [];
     if (palace.index === scopePalaceIdx) {
       for (const m of rawMarks.outward) {
         scopeSelfMutagens.push({ star: m.star, char: m.char, direction: "outward" });
@@ -628,24 +650,24 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
     const scopePalaceName = scopeData.palaceNames[palace.index] || palace.name;
 
     // 运限星曜（通过安全访问器取数据）
-    const scopeStars = scopeData.stars?.[palace.index]?.map((s) => ({ name: s.name })) || [];
+    const scopeStars = scopeData.stars?.[palace.index]?.map(s => ({ name: s.name })) || [];
 
     return {
       palaceIndex: palace.index,
       palaceName: palace.name,
       branch: palace.earthlyBranch as string,
       heavenlyStem: palace.heavenlyStem as string,
-      majorStars: palace.majorStars.map((s) => ({
+      majorStars: palace.majorStars.map(s => ({
         name: s.name,
         brightness: s.brightness || "",
         mutagen: s.mutagen,
       })),
-      minorStars: palace.minorStars.map((s) => ({
+      minorStars: palace.minorStars.map(s => ({
         name: s.name,
         brightness: s.brightness || "",
         mutagen: s.mutagen,
       })),
-      adjectiveStars: palace.adjectiveStars.map((s) => ({ name: s.name })),
+      adjectiveStars: palace.adjectiveStars.map(s => ({ name: s.name })),
       scopePalaceName,
       scopeStars,
       natalMutagens,
@@ -664,7 +686,7 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
   });
 
   // 飞星数据
-  const flyMatrix = astrolabe.palaces.map((palace) => {
+  const flyMatrix = astrolabe.palaces.map(palace => {
     const stem = palace.heavenlyStem as string;
     const flyStars = util.getMutagensByHeavenlyStem(stem as never) as string[];
     const flies = flyStars.map((star, k) => {
@@ -690,7 +712,7 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
   // 自化连线数据
   const oppIdx = fixIndex(scopePalaceIdx + 6);
   const selfLinks = [
-    ...rawMarks.outward.map((m) => ({
+    ...rawMarks.outward.map(m => ({
       fromIndex: scopePalaceIdx,
       toIndex: scopePalaceIdx,
       isSelfLoop: true,
@@ -698,7 +720,7 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
       direction: "outward" as const,
       star: m.star,
     })),
-    ...rawMarks.inward.map((m) => ({
+    ...rawMarks.inward.map(m => ({
       fromIndex: oppIdx,
       toIndex: scopePalaceIdx,
       isSelfLoop: false,

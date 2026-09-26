@@ -76,7 +76,9 @@ export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
           className="lang-toggle"
           onClick={toggleLocale}
           title={locale === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")}
-          aria-label={locale === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")}
+          aria-label={
+            locale === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")
+          }
         >
           {locale === "zh-CN" ? "EN" : "中"}
         </button>

@@ -3,19 +3,69 @@
 /** 天干（十天干） */
 export const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
 /** 地支（十二地支） */
-export const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"] as const;
+export const BRANCHES = [
+  "子",
+  "丑",
+  "寅",
+  "卯",
+  "辰",
+  "巳",
+  "午",
+  "未",
+  "申",
+  "酉",
+  "戌",
+  "亥",
+] as const;
 
 /** 农历月份名称（正月至腊月） */
 export const LUNAR_MONTHS = [
-  "正月", "二月", "三月", "四月", "五月", "六月",
-  "七月", "八月", "九月", "十月", "冬月", "腊月",
+  "正月",
+  "二月",
+  "三月",
+  "四月",
+  "五月",
+  "六月",
+  "七月",
+  "八月",
+  "九月",
+  "十月",
+  "冬月",
+  "腊月",
 ] as const;
 
 /** 农历日期名称（初一至三十） */
 export const LUNAR_DAYS = [
-  "初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十",
-  "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十",
-  "廿一", "廿二", "廿三", "廿四", "廿五", "廿六", "廿七", "廿八", "廿九", "三十",
+  "初一",
+  "初二",
+  "初三",
+  "初四",
+  "初五",
+  "初六",
+  "初七",
+  "初八",
+  "初九",
+  "初十",
+  "十一",
+  "十二",
+  "十三",
+  "十四",
+  "十五",
+  "十六",
+  "十七",
+  "十八",
+  "十九",
+  "二十",
+  "廿一",
+  "廿二",
+  "廿三",
+  "廿四",
+  "廿五",
+  "廿六",
+  "廿七",
+  "廿八",
+  "廿九",
+  "三十",
 ] as const;
 
 /** 时辰选项（对应 iztro timeIndex 0~12） */
@@ -47,35 +97,78 @@ export const oppositeIndex = (i: number) => fixIndex(i + 6);
 
 /** 六冲 */
 export const BRANCH_CHONG: Record<string, string> = {
-  子: "午", 午: "子", 丑: "未", 未: "丑", 寅: "申", 申: "寅",
-  卯: "酉", 酉: "卯", 辰: "戌", 戌: "辰", 巳: "亥", 亥: "巳",
+  子: "午",
+  午: "子",
+  丑: "未",
+  未: "丑",
+  寅: "申",
+  申: "寅",
+  卯: "酉",
+  酉: "卯",
+  辰: "戌",
+  戌: "辰",
+  巳: "亥",
+  亥: "巳",
 };
 
 /** 六合 */
 export const BRANCH_LIUHE: Record<string, string> = {
-  子: "丑", 丑: "子", 寅: "亥", 亥: "寅", 卯: "戌", 戌: "卯",
-  辰: "酉", 酉: "辰", 巳: "申", 申: "巳", 午: "未", 未: "午",
+  子: "丑",
+  丑: "子",
+  寅: "亥",
+  亥: "寅",
+  卯: "戌",
+  戌: "卯",
+  辰: "酉",
+  酉: "辰",
+  巳: "申",
+  申: "巳",
+  午: "未",
+  未: "午",
 };
 
 /** 三合局（同组两支即为三合） */
 export const BRANCH_SANHE_GROUP: Record<string, string> = {
-  申: "水", 子: "水", 辰: "水",
-  亥: "木", 卯: "木", 未: "木",
-  寅: "火", 午: "火", 戌: "火",
-  巳: "金", 酉: "金", 丑: "金",
+  申: "水",
+  子: "水",
+  辰: "水",
+  亥: "木",
+  卯: "木",
+  未: "木",
+  寅: "火",
+  午: "火",
+  戌: "火",
+  巳: "金",
+  酉: "金",
+  丑: "金",
 };
 
 /** 六害 */
 export const BRANCH_HAI: Record<string, string> = {
-  子: "未", 未: "子", 丑: "午", 午: "丑", 寅: "巳", 巳: "寅",
-  卯: "辰", 辰: "卯", 申: "亥", 亥: "申", 酉: "戌", 戌: "酉",
+  子: "未",
+  未: "子",
+  丑: "午",
+  午: "丑",
+  寅: "巳",
+  巳: "寅",
+  卯: "辰",
+  辰: "卯",
+  申: "亥",
+  亥: "申",
+  酉: "戌",
+  戌: "酉",
 };
 
 /** 相刑（无恩/恃势/无礼，双向展开）；辰午酉亥为自刑（同支论） */
 export const BRANCH_XING: Record<string, string[]> = {
-  寅: ["巳", "申"], 巳: ["申", "寅"], 申: ["寅", "巳"],
-  丑: ["戌", "未"], 戌: ["未", "丑"], 未: ["丑", "戌"],
-  子: ["卯"], 卯: ["子"],
+  寅: ["巳", "申"],
+  巳: ["申", "寅"],
+  申: ["寅", "巳"],
+  丑: ["戌", "未"],
+  戌: ["未", "丑"],
+  未: ["丑", "戌"],
+  子: ["卯"],
+  卯: ["子"],
 };
 
 export const BRANCH_SELF_XING = new Set(["辰", "午", "酉", "亥"]);
@@ -86,7 +179,8 @@ export function branchRelation(
   y: string
 ): "六合" | "三合" | "对冲" | "相刑" | "相害" | "自刑" | "同支" | "无" {
   if (BRANCH_LIUHE[x] === y) return "六合";
-  if (x !== y && BRANCH_SANHE_GROUP[x] && BRANCH_SANHE_GROUP[x] === BRANCH_SANHE_GROUP[y]) return "三合";
+  if (x !== y && BRANCH_SANHE_GROUP[x] && BRANCH_SANHE_GROUP[x] === BRANCH_SANHE_GROUP[y])
+    return "三合";
   if (BRANCH_CHONG[x] === y) return "对冲";
   if (BRANCH_XING[x]?.includes(y)) return "相刑";
   if (BRANCH_HAI[x] === y) return "相害";
@@ -122,9 +216,20 @@ export function hourGanZhi(dayStem: string, hourIdx: number): string {
 
 /** 宫名缩写：命宫→命、官禄→官…… */
 const PALACE_ABBR: Record<string, string> = {
-  命宫: "命", 兄弟: "兄", 夫妻: "夫", 子女: "子", 财帛: "财", 疾厄: "疾",
-  迁移: "迁", 仆役: "友", 交友: "友", 官禄: "官", 事业: "官", 田宅: "田",
-  福德: "福", 父母: "父",
+  命宫: "命",
+  兄弟: "兄",
+  夫妻: "夫",
+  子女: "子",
+  财帛: "财",
+  疾厄: "疾",
+  迁移: "迁",
+  仆役: "友",
+  交友: "友",
+  官禄: "官",
+  事业: "官",
+  田宅: "田",
+  福德: "福",
+  父母: "父",
 };
 export function abbrPalace(name: string | undefined): string {
   if (!name) return "";
@@ -231,7 +336,7 @@ export function bodyPalaceBranchOf(
   palaces: readonly { isBodyPalace: boolean; earthlyBranch: string }[],
   fallback: string
 ): string {
-  return palaces.find((p) => p.isBodyPalace)?.earthlyBranch ?? fallback;
+  return palaces.find(p => p.isBodyPalace)?.earthlyBranch ?? fallback;
 }
 
 /** 钟表小时 → iztro timeIndex（23 点为晚子时 12） */

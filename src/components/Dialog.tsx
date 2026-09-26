@@ -115,10 +115,12 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
         aria-modal="true"
         aria-labelledby={titleId.current}
         tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="dlg-head">
-          <h2 className="dlg-title" id={titleId.current}>{title}</h2>
+          <h2 className="dlg-title" id={titleId.current}>
+            {title}
+          </h2>
           <button className="dlg-close" onClick={onClose} aria-label={t("dialog.close")}>
             ✕
           </button>

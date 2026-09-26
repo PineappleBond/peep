@@ -24,8 +24,22 @@ describe("knowledge 知识库", () => {
     });
 
     it("覆盖十四主星", () => {
-      const stars = ["紫微", "天机", "太阳", "武曲", "天同", "廉贞", "天府",
-        "太阴", "贪狼", "巨门", "天相", "天梁", "七杀", "破军"];
+      const stars = [
+        "紫微",
+        "天机",
+        "太阳",
+        "武曲",
+        "天同",
+        "廉贞",
+        "天府",
+        "太阴",
+        "贪狼",
+        "巨门",
+        "天相",
+        "天梁",
+        "七杀",
+        "破军",
+      ];
       for (const star of stars) {
         expect(STAR_MUTAGEN_MD).toContain(star);
       }
@@ -34,7 +48,7 @@ describe("knowledge 知识库", () => {
 
   describe("TOPIC_GUIDES 分主题推理指引", () => {
     it("含事业/财运/婚姻/健康/子女/应期六大主题", () => {
-      const keys = TOPIC_GUIDES.map((t) => t.key);
+      const keys = TOPIC_GUIDES.map(t => t.key);
       expect(keys).toContain("career");
       expect(keys).toContain("wealth");
       expect(keys).toContain("love");

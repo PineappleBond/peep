@@ -9,8 +9,7 @@ import { t } from "./i18n";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
 const tagCache = createTagCache(
-  (personId: number) =>
-    db.wikiDocs.where("personId").equals(personId).toArray(),
+  (personId: number) => db.wikiDocs.where("personId").equals(personId).toArray(),
   (d: WikiDocument) => d.tags
 );
 
@@ -52,10 +51,7 @@ export async function listWikiDocs(
   filters: WikiListFilters = {}
 ): Promise<WikiListResult> {
   try {
-    const allDocs = await db.wikiDocs
-      .where("personId")
-      .equals(personId)
-      .toArray();
+    const allDocs = await db.wikiDocs.where("personId").equals(personId).toArray();
 
     const result = filterAndPaginate<WikiDocument>({
       records: allDocs,
@@ -64,7 +60,12 @@ export async function listWikiDocs(
       filters,
     });
 
-    return { docs: result.items, total: result.total, page: result.page, pageSize: result.pageSize };
+    return {
+      docs: result.items,
+      total: result.total,
+      page: result.page,
+      pageSize: result.pageSize,
+    };
   } catch (err) {
     console.error("[wikiDb] 查询文档列表失败", err);
     throw new Error(t("db.readWikiListFailed"));
@@ -114,14 +115,8 @@ export async function deleteWikiDoc(id: number): Promise<void> {
   try {
     return await db.transaction("rw", db.wikiDocs, db.wikiLinks, async () => {
       // 删除以该文档为源或目标的链接
-      await db.wikiLinks
-        .where("sourceDocId")
-        .equals(id)
-        .delete();
-      await db.wikiLinks
-        .where("targetDocId")
-        .equals(id)
-        .delete();
+      await db.wikiLinks.where("sourceDocId").equals(id).delete();
+      await db.wikiLinks.where("targetDocId").equals(id).delete();
       // 删除文档本身
       await db.wikiDocs.delete(id);
     });
@@ -153,11 +148,8 @@ export async function getAllWikiTags(personId: number): Promise<string[]> {
  */
 export async function getWikiLinks(docId: number): Promise<number[]> {
   try {
-    const links = await db.wikiLinks
-      .where("sourceDocId")
-      .equals(docId)
-      .toArray();
-    return links.map((l) => l.targetDocId);
+    const links = await db.wikiLinks.where("sourceDocId").equals(docId).toArray();
+    return links.map(l => l.targetDocId);
   } catch (err) {
     console.error("[wikiDb] 获取文档链接失败", err);
     return [];
@@ -171,11 +163,8 @@ export async function getWikiLinks(docId: number): Promise<number[]> {
  */
 export async function getWikiBacklinks(docId: number): Promise<number[]> {
   try {
-    const links = await db.wikiLinks
-      .where("targetDocId")
-      .equals(docId)
-      .toArray();
-    return links.map((l) => l.sourceDocId);
+    const links = await db.wikiLinks.where("targetDocId").equals(docId).toArray();
+    return links.map(l => l.sourceDocId);
   } catch (err) {
     console.error("[wikiDb] 获取反向链接失败", err);
     return [];
@@ -187,20 +176,14 @@ export async function getWikiBacklinks(docId: number): Promise<number[]> {
  * @param sourceDocId 源文档 ID
  * @param targetDocIds 目标文档 ID 数组
  */
-export async function saveWikiLinks(
-  sourceDocId: number,
-  targetDocIds: number[]
-): Promise<void> {
+export async function saveWikiLinks(sourceDocId: number, targetDocIds: number[]): Promise<void> {
   try {
     return await db.transaction("rw", db.wikiLinks, async () => {
       // 删除该源文档的所有旧链接
-      await db.wikiLinks
-        .where("sourceDocId")
-        .equals(sourceDocId)
-        .delete();
+      await db.wikiLinks.where("sourceDocId").equals(sourceDocId).delete();
       // 插入新链接
       if (targetDocIds.length > 0) {
-        const newLinks: WikiLink[] = targetDocIds.map((targetDocId) => ({
+        const newLinks: WikiLink[] = targetDocIds.map(targetDocId => ({
           sourceDocId,
           targetDocId,
         }));

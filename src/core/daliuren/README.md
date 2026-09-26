@@ -20,20 +20,20 @@
 
 ```js
 // 全局方法（已在 peep 应用中注册）
-await peep.DaLiuRen("2024-06-15", "12:00")
+await peep.DaLiuRen("2024-06-15", "12:00");
 
 // 带命宫行年
-await peep.DaLiuRen("2024-06-15", "12:00", { birthYear: 1990, gender: "男" })
+await peep.DaLiuRen("2024-06-15", "12:00", { birthYear: 1990, gender: "男" });
 ```
 
 ### TypeScript/JavaScript 导入
 
 ```typescript
-import { calculateDaLiuRen } from "./daliuren/calculator"
+import { calculateDaLiuRen } from "./daliuren/calculator";
 
-const result = calculateDaLiuRen("2024-06-15", "12:00")
-console.log(result.fourPillars.dayPillar)    // "丙午"
-console.log(result.threeTransmissions.method) // "元首"
+const result = calculateDaLiuRen("2024-06-15", "12:00");
+console.log(result.fourPillars.dayPillar); // "丙午"
+console.log(result.threeTransmissions.method); // "元首"
 ```
 
 ---
@@ -46,11 +46,11 @@ console.log(result.threeTransmissions.method) // "元首"
 
 **参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `date` | `string` | 是 | 公历日期，格式 `YYYY-MM-DD` 或 `YYYY/MM/DD` |
-| `time` | `string` | 是 | 时间，格式 `HH:mm` 或 `HH:mm:ss` |
-| `fateInput` | `{ birthYear: number; gender: "男" \| "女" }` | 否 | 生年与性别，用于计算命宫行年 |
+| 参数        | 类型                                          | 必填 | 说明                                        |
+| ----------- | --------------------------------------------- | ---- | ------------------------------------------- |
+| `date`      | `string`                                      | 是   | 公历日期，格式 `YYYY-MM-DD` 或 `YYYY/MM/DD` |
+| `time`      | `string`                                      | 是   | 时间，格式 `HH:mm` 或 `HH:mm:ss`            |
+| `fateInput` | `{ birthYear: number; gender: "男" \| "女" }` | 否   | 生年与性别，用于计算命宫行年                |
 
 **返回值：** `DaLiuRenResult`
 
@@ -61,47 +61,47 @@ console.log(result.threeTransmissions.method) // "元首"
 ```typescript
 interface DaLiuRenResult {
   /** 起课时间字符串（YYYY-MM-DD HH:mm:ss） */
-  calculationTime: string
+  calculationTime: string;
   /** 四柱（年月日时干支） */
-  fourPillars: FourPillars
+  fourPillars: FourPillars;
   /** 月将 */
-  monthGeneral: MonthGeneral
+  monthGeneral: MonthGeneral;
   /** 地盘（恒为 [0,1,...,11] 即子至亥） */
-  earthBoard: number[]
+  earthBoard: number[];
   /** 天盘（月将加时后的十二支） */
-  heavenBoard: number[]
+  heavenBoard: number[];
   /** 四课 */
-  fourLessons: FourLesson[]
+  fourLessons: FourLesson[];
   /** 旬空 */
-  xunKong: XunKong
+  xunKong: XunKong;
   /** 三传（含取法名称和追踪） */
-  threeTransmissions: ThreeTransmissionsResult
+  threeTransmissions: ThreeTransmissionsResult;
   /** 十二天将（按地盘子至亥排列） */
-  twelveGenerals: TwelveGeneral[]
+  twelveGenerals: TwelveGeneral[];
   /** 旺相休囚死（每个天盘地支的状态） */
-  wangXiang: Record<number, "旺" | "相" | "休" | "囚" | "死">
+  wangXiang: Record<number, "旺" | "相" | "休" | "囚" | "死">;
   /** 六亲（每个天盘地支的六亲关系） */
-  liuQin: Record<number, "父母" | "兄弟" | "子孙" | "妻财" | "官鬼">
+  liuQin: Record<number, "父母" | "兄弟" | "子孙" | "妻财" | "官鬼">;
   /** 遁干（旬遁结果，地盘宫位 → 遁干） */
-  xunDun: Record<number, string>
+  xunDun: Record<number, string>;
   /** 日遁（五子元遁，12 个时辰的天干） */
-  riDun: string[]
+  riDun: string[];
   /** 神煞列表 */
-  shenSha: ShenSha[]
+  shenSha: ShenSha[];
   /** 刑冲破害关系 */
-  relations: BranchRelation[]
+  relations: BranchRelation[];
   /** 课经规则匹配 */
-  keJing: KeJingMatch[]
+  keJing: KeJingMatch[];
   /** 毕法规则匹配 */
-  biFa: BiFaMatch[]
+  biFa: BiFaMatch[];
   /** 命宫行年（需传入生年和性别，否则为 undefined） */
-  fate?: FateInfo
+  fate?: FateInfo;
   /** 建除十二直（每个地支的建除类型） */
-  jianChu: Record<number, JianChuType>
+  jianChu: Record<number, JianChuType>;
   /** 纳音（每个地支的纳音） */
-  naYin: Record<number, string>
+  naYin: Record<number, string>;
   /** 计算追踪记录 */
-  calculationTrace: string[]
+  calculationTrace: string[];
 }
 ```
 
@@ -111,18 +111,18 @@ interface DaLiuRenResult {
 
 ```typescript
 interface FourPillars {
-  yearStem: number      // 年干索引（0-9，甲=0）
-  yearBranch: number    // 年支索引（0-11，子=0）
-  monthStem: number     // 月干索引
-  monthBranch: number   // 月支索引
-  dayStem: number       // 日干索引
-  dayBranch: number     // 日支索引
-  hourStem: number      // 时干索引
-  hourBranch: number    // 时支索引
-  yearPillar: string    // 年柱字符串（如"甲子"）
-  monthPillar: string   // 月柱字符串
-  dayPillar: string     // 日柱字符串
-  hourPillar: string    // 时柱字符串
+  yearStem: number; // 年干索引（0-9，甲=0）
+  yearBranch: number; // 年支索引（0-11，子=0）
+  monthStem: number; // 月干索引
+  monthBranch: number; // 月支索引
+  dayStem: number; // 日干索引
+  dayBranch: number; // 日支索引
+  hourStem: number; // 时干索引
+  hourBranch: number; // 时支索引
+  yearPillar: string; // 年柱字符串（如"甲子"）
+  monthPillar: string; // 月柱字符串
+  dayPillar: string; // 日柱字符串
+  hourPillar: string; // 时柱字符串
 }
 ```
 
@@ -130,8 +130,8 @@ interface FourPillars {
 
 ```typescript
 interface MonthGeneral {
-  branch: number  // 月将地支索引（0-11）
-  name: string    // 月将名称（如"登明"）
+  branch: number; // 月将地支索引（0-11）
+  name: string; // 月将名称（如"登明"）
 }
 ```
 
@@ -141,13 +141,14 @@ interface MonthGeneral {
 
 ```typescript
 interface FourLesson {
-  upper: number              // 上课（天盘侧）地支索引
-  lower: number              // 下课（地盘侧）地支索引
-  lowerType: "stem" | "branch"  // 下课类型：stem=日干寄宫，branch=日支本位或上神传递
+  upper: number; // 上课（天盘侧）地支索引
+  lower: number; // 下课（地盘侧）地支索引
+  lowerType: "stem" | "branch"; // 下课类型：stem=日干寄宫，branch=日支本位或上神传递
 }
 ```
 
 四课推导规则：
+
 - 第一课：日干寄宫 → 干上神（天盘）
 - 第二课：干上神 → 上神再临天盘
 - 第三课：日支 → 支上神（天盘）
@@ -157,9 +158,9 @@ interface FourLesson {
 
 ```typescript
 interface XunKong {
-  xunHead: number  // 旬首地支索引
-  void1: number    // 空亡地支 1
-  void2: number    // 空亡地支 2
+  xunHead: number; // 旬首地支索引
+  void1: number; // 空亡地支 1
+  void2: number; // 空亡地支 2
 }
 ```
 
@@ -167,47 +168,47 @@ interface XunKong {
 
 ```typescript
 interface ThreeTransmissionsResult {
-  initial: number  // 初传地支索引
-  middle: number   // 中传地支索引
-  final: number    // 末传地支索引
-  method: string   // 九宗门取法名称（如"元首""重审""涉害见机"等）
-  trace: string[]  // 计算追踪（每步推导记录）
+  initial: number; // 初传地支索引
+  middle: number; // 中传地支索引
+  final: number; // 末传地支索引
+  method: string; // 九宗门取法名称（如"元首""重审""涉害见机"等）
+  trace: string[]; // 计算追踪（每步推导记录）
 }
 ```
 
 `method` 可能的取值：
 
-| 取法 | method 值 | 说明 |
-|------|-----------|------|
-| 元首 | `"元首"` | 一课上克下，无上克下 |
-| 重审 | `"重审"` | 一课下贼上，无上克下 |
-| 比用 | `"比用"` | 多克，取与日干阴阳同者 |
-| 知一 | `"知一"` | 多克（无贼），取与日干阴阳同者 |
-| 涉害 | `"涉害"` | 多克，比涉害深度取最深者 |
-| 涉害见机 | `"涉害见机"` | 涉害深度相同，取孟下 |
-| 涉害察微 | `"涉害察微"` | 涉害深度相同，取仲下 |
-| 涉害缀瑕 | `"涉害缀瑕"` | 孟仲季俱同，阳取干上/阴取支上 |
-| 蒿矢 | `"蒿矢"` | 四课无克，上神遥克日干 |
-| 弹射 | `"弹射"` | 四课无克，日干遥克上神 |
-| 昴星虎视 | `"昴星虎视"` | 无克无遥，阳日取酉上神 |
-| 昴星冬蛇掩目 | `"昴星冬蛇掩目"` | 无克无遥，阴日取酉下神 |
-| 别责 | `"别责"` | 四课不备，取干合/支合 |
-| 八专 | `"八专"` | 干支同位，阳顺阴逆 |
-| 八专独足 | `"八专独足"` | 三传俱同 |
-| 伏吟不虞 | `"伏吟不虞"` | 伏吟盘有克 |
-| 伏吟自任 | `"伏吟自任"` | 伏吟盘无克，阳日 |
-| 伏吟自信 | `"伏吟自信"` | 伏吟盘无克，阴日 |
-| 伏吟杜传 | `"伏吟杜传"` | 伏吟盘初传自刑 |
-| 返吟无依 | `"返吟无依"` | 返吟盘，初传用九宗门，中末用冲链 |
-| 返吟无亲 | `"返吟无亲"` | 返吟盘特殊日 |
+| 取法         | method 值        | 说明                             |
+| ------------ | ---------------- | -------------------------------- |
+| 元首         | `"元首"`         | 一课上克下，无上克下             |
+| 重审         | `"重审"`         | 一课下贼上，无上克下             |
+| 比用         | `"比用"`         | 多克，取与日干阴阳同者           |
+| 知一         | `"知一"`         | 多克（无贼），取与日干阴阳同者   |
+| 涉害         | `"涉害"`         | 多克，比涉害深度取最深者         |
+| 涉害见机     | `"涉害见机"`     | 涉害深度相同，取孟下             |
+| 涉害察微     | `"涉害察微"`     | 涉害深度相同，取仲下             |
+| 涉害缀瑕     | `"涉害缀瑕"`     | 孟仲季俱同，阳取干上/阴取支上    |
+| 蒿矢         | `"蒿矢"`         | 四课无克，上神遥克日干           |
+| 弹射         | `"弹射"`         | 四课无克，日干遥克上神           |
+| 昴星虎视     | `"昴星虎视"`     | 无克无遥，阳日取酉上神           |
+| 昴星冬蛇掩目 | `"昴星冬蛇掩目"` | 无克无遥，阴日取酉下神           |
+| 别责         | `"别责"`         | 四课不备，取干合/支合            |
+| 八专         | `"八专"`         | 干支同位，阳顺阴逆               |
+| 八专独足     | `"八专独足"`     | 三传俱同                         |
+| 伏吟不虞     | `"伏吟不虞"`     | 伏吟盘有克                       |
+| 伏吟自任     | `"伏吟自任"`     | 伏吟盘无克，阳日                 |
+| 伏吟自信     | `"伏吟自信"`     | 伏吟盘无克，阴日                 |
+| 伏吟杜传     | `"伏吟杜传"`     | 伏吟盘初传自刑                   |
+| 返吟无依     | `"返吟无依"`     | 返吟盘，初传用九宗门，中末用冲链 |
+| 返吟无亲     | `"返吟无亲"`     | 返吟盘特殊日                     |
 
 #### TwelveGeneral — 十二天将
 
 ```typescript
 interface TwelveGeneral {
-  position: number  // 地盘宫位地支索引（0-11）
-  general: number   // 天将编号（0-11）
-  name: string      // 天将名称
+  position: number; // 地盘宫位地支索引（0-11）
+  general: number; // 天将编号（0-11）
+  name: string; // 天将名称
 }
 ```
 
@@ -217,10 +218,10 @@ interface TwelveGeneral {
 
 ```typescript
 interface ShenSha {
-  name: string          // 神煞名称
-  branch: number        // 落宫地支索引
-  type: "吉" | "凶"     // 吉凶属性
-  description: string   // 说明
+  name: string; // 神煞名称
+  branch: number; // 落宫地支索引
+  type: "吉" | "凶"; // 吉凶属性
+  description: string; // 说明
 }
 ```
 
@@ -228,9 +229,9 @@ interface ShenSha {
 
 ```typescript
 interface BranchRelation {
-  type: "冲" | "刑" | "破" | "害" | "合"
-  branches: [number, number]
-  description: string
+  type: "冲" | "刑" | "破" | "害" | "合";
+  branches: [number, number];
+  description: string;
 }
 ```
 
@@ -238,8 +239,8 @@ interface BranchRelation {
 
 ```typescript
 interface KeJingMatch {
-  rule: KeJingRule     // 匹配到的规则
-  evidence: string[]   // 匹配证据（人可读的字符串列表）
+  rule: KeJingRule; // 匹配到的规则
+  evidence: string[]; // 匹配证据（人可读的字符串列表）
 }
 ```
 
@@ -247,8 +248,8 @@ interface KeJingMatch {
 
 ```typescript
 interface BiFaMatch {
-  rule: BiFaRule       // 匹配到的规则
-  evidence: string[]   // 匹配证据
+  rule: BiFaRule; // 匹配到的规则
+  evidence: string[]; // 匹配证据
 }
 ```
 
@@ -256,18 +257,19 @@ interface BiFaMatch {
 
 ```typescript
 interface FateInfo {
-  mingGong: number       // 命宫地支（生年地支）
-  xingNian: number       // 行年地支
-  xingNianStem: number   // 行年天干
-  xingNianIndex: number  // 行年六十甲子序号
-  age: number            // 虚岁
+  mingGong: number; // 命宫地支（生年地支）
+  xingNian: number; // 行年地支
+  xingNianStem: number; // 行年天干
+  xingNianIndex: number; // 行年六十甲子序号
+  age: number; // 虚岁
 }
 ```
 
 #### JianChuType — 建除十二直
 
 ```typescript
-type JianChuType = "建" | "除" | "满" | "平" | "定" | "执" | "破" | "危" | "成" | "收" | "开" | "闭"
+type JianChuType =
+  "建" | "除" | "满" | "平" | "定" | "执" | "破" | "危" | "成" | "收" | "开" | "闭";
 ```
 
 ---
@@ -277,37 +279,37 @@ type JianChuType = "建" | "除" | "满" | "平" | "定" | "执" | "破" | "危"
 ### 基本排盘
 
 ```typescript
-import { calculateDaLiuRen } from "./daliuren/calculator"
+import { calculateDaLiuRen } from "./daliuren/calculator";
 
-const result = calculateDaLiuRen("2024-06-15", "12:00")
+const result = calculateDaLiuRen("2024-06-15", "12:00");
 
 // 四柱
-console.log(result.fourPillars.dayPillar)       // "丙午"
-console.log(result.fourPillars.hourPillar)      // "甲午"
+console.log(result.fourPillars.dayPillar); // "丙午"
+console.log(result.fourPillars.hourPillar); // "甲午"
 
 // 月将
-console.log(result.monthGeneral.name)           // 月将名称
+console.log(result.monthGeneral.name); // 月将名称
 
 // 天地盘
-console.log(result.heavenBoard.map(b => "子丑寅卯辰巳午未申酉戌亥"[b]).join(" "))
+console.log(result.heavenBoard.map(b => "子丑寅卯辰巳午未申酉戌亥"[b]).join(" "));
 
 // 四课
 result.fourLessons.forEach((lesson, i) => {
-  const upper = "子丑寅卯辰巳午未申酉戌亥"[lesson.upper]
-  const lower = "子丑寅卯辰巳午未申酉戌亥"[lesson.lower]
-  console.log(`第${i+1}课: ${upper}←${lower}`)
-})
+  const upper = "子丑寅卯辰巳午未申酉戌亥"[lesson.upper];
+  const lower = "子丑寅卯辰巳午未申酉戌亥"[lesson.lower];
+  console.log(`第${i + 1}课: ${upper}←${lower}`);
+});
 
 // 三传
-const { initial, middle, final, method } = result.threeTransmissions
-const dz = "子丑寅卯辰巳午未申酉戌亥"
-console.log(`取法: ${method}`)
-console.log(`三传: ${dz[initial]}→${dz[middle]}→${dz[final]}`)
+const { initial, middle, final, method } = result.threeTransmissions;
+const dz = "子丑寅卯辰巳午未申酉戌亥";
+console.log(`取法: ${method}`);
+console.log(`三传: ${dz[initial]}→${dz[middle]}→${dz[final]}`);
 
 // 十二天将
 result.twelveGenerals.forEach(g => {
-  console.log(`${"子丑寅卯辰巳午未申酉戌亥"[g.position]}: ${g.name}`)
-})
+  console.log(`${"子丑寅卯辰巳午未申酉戌亥"[g.position]}: ${g.name}`);
+});
 ```
 
 ### 带命宫行年
@@ -315,74 +317,74 @@ result.twelveGenerals.forEach(g => {
 ```typescript
 const result = calculateDaLiuRen("2024-06-15", "12:00", {
   birthYear: 1990,
-  gender: "男"
-})
+  gender: "男",
+});
 
-console.log(result.fate?.mingGong)   // 命宫地支
-console.log(result.fate?.xingNian)   // 行年地支
-console.log(result.fate?.age)        // 虚岁
+console.log(result.fate?.mingGong); // 命宫地支
+console.log(result.fate?.xingNian); // 行年地支
+console.log(result.fate?.age); // 虚岁
 ```
 
 ### 课经与毕法
 
 ```typescript
-const result = calculateDaLiuRen("2024-01-01", "08:00")
+const result = calculateDaLiuRen("2024-01-01", "08:00");
 
 // 课经
 result.keJing.forEach(match => {
-  console.log(`${match.rule.name}（${match.rule.group}）: ${match.rule.description}`)
-  console.log(`  证据: ${match.evidence.join("; ")}`)
-})
+  console.log(`${match.rule.name}（${match.rule.group}）: ${match.rule.description}`);
+  console.log(`  证据: ${match.evidence.join("; ")}`);
+});
 
 // 毕法
 result.biFa.forEach(match => {
-  console.log(`${match.rule.name}: ${match.evidence.join("; ")}`)
-})
+  console.log(`${match.rule.name}: ${match.evidence.join("; ")}`);
+});
 ```
 
 ### 神煞与地支关系
 
 ```typescript
-const result = calculateDaLiuRen("2024-06-15", "12:00")
-const dz = "子丑寅卯辰巳午未申酉戌亥"
+const result = calculateDaLiuRen("2024-06-15", "12:00");
+const dz = "子丑寅卯辰巳午未申酉戌亥";
 
 // 吉神
 result.shenSha
   .filter(s => s.type === "吉")
-  .forEach(s => console.log(`${s.name}(${dz[s.branch]}) - ${s.description}`))
+  .forEach(s => console.log(`${s.name}(${dz[s.branch]}) - ${s.description}`));
 
 // 凶煞
 result.shenSha
   .filter(s => s.type === "凶")
-  .forEach(s => console.log(`${s.name}(${dz[s.branch]}) - ${s.description}`))
+  .forEach(s => console.log(`${s.name}(${dz[s.branch]}) - ${s.description}`));
 
 // 刑冲破害
 result.relations.forEach(r => {
-  console.log(`${r.type}: ${dz[r.branches[0]]}${dz[r.branches[1]]} — ${r.description}`)
-})
+  console.log(`${r.type}: ${dz[r.branches[0]]}${dz[r.branches[1]]} — ${r.description}`);
+});
 ```
 
 ### 单独调用子模块
 
 ```typescript
-import { getWangXiang } from "./daliuren/wangshuai"
-import { getLiuQin } from "./daliuren/liuqin"
-import { getNaYin } from "./daliuren/nayin"
-import { getJianChu } from "./daliuren/jianchu"
+import { getWangXiang } from "./daliuren/wangshuai";
+import { getLiuQin } from "./daliuren/liuqin";
+import { getNaYin } from "./daliuren/nayin";
+import { getJianChu } from "./daliuren/jianchu";
 
 // 旺相休囚死
-console.log(getWangXiang(2, 2))  // 寅月寅支 → "旺"
-console.log(getWangXiang(2, 5))  // 寅月巳支 → "相"
+console.log(getWangXiang(2, 2)); // 寅月寅支 → "旺"
+console.log(getWangXiang(2, 5)); // 寅月巳支 → "相"
 
 // 六亲（甲日，子支）
-console.log(getLiuQin(0, 0))     // 甲(木)日子(水) → "父母"
+console.log(getLiuQin(0, 0)); // 甲(木)日子(水) → "父母"
 
 // 纳音
-console.log(getNaYin(0, 0))      // 甲子 → "海中金"
+console.log(getNaYin(0, 0)); // 甲子 → "海中金"
 
 // 建除
-console.log(getJianChu(2, 2))    // 寅月寅日 → "建"
-console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
+console.log(getJianChu(2, 2)); // 寅月寅日 → "建"
+console.log(getJianChu(2, 3)); // 寅月卯日 → "除"
 ```
 
 ---
@@ -393,22 +395,23 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 排盘主流程，协调所有子模块。导出 `calculateDaLiuRen` 主函数及辅助函数：
 
-| 导出函数 | 说明 |
-|---------|------|
-| `calculateDaLiuRen(date, time, fateInput?)` | 主入口，返回完整盘面 |
-| `calculateFourPillars(solar)` | 计算四柱 |
-| `calculateMonthGeneral(solar)` | 计算月将（中气换将） |
-| `buildHeavenEarthBoards(monthGeneralBranch, hourBranch)` | 构建天地盘 |
-| `extractFourLessons(dayStem, dayBranch, heavenBoard)` | 提取四课 |
-| `calculateXunKong(dayStem, dayBranch)` | 计算旬空 |
-| `hourToBranch(hour)` | 小时转时辰地支 |
-| `calculateSexagenaryIndex(stem, branch)` | 计算六十甲子序号 |
+| 导出函数                                                 | 说明                 |
+| -------------------------------------------------------- | -------------------- |
+| `calculateDaLiuRen(date, time, fateInput?)`              | 主入口，返回完整盘面 |
+| `calculateFourPillars(solar)`                            | 计算四柱             |
+| `calculateMonthGeneral(solar)`                           | 计算月将（中气换将） |
+| `buildHeavenEarthBoards(monthGeneralBranch, hourBranch)` | 构建天地盘           |
+| `extractFourLessons(dayStem, dayBranch, heavenBoard)`    | 提取四课             |
+| `calculateXunKong(dayStem, dayBranch)`                   | 计算旬空             |
+| `hourToBranch(hour)`                                     | 小时转时辰地支       |
+| `calculateSexagenaryIndex(stem, branch)`                 | 计算六十甲子序号     |
 
 ### sanchuan.ts — 九宗门三传
 
 实现九宗门取传法，按优先级链式判断：
 
 **优先级：**
+
 1. **伏吟**（天地盘重合）→ 不虞/自任/自信/杜传
 2. **贼克** → 元首（上克下单一）/ 重审（下贼上单一）
 3. **比用/知一** → 多克时取与日干阴阳同者
@@ -419,8 +422,8 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 8. **八专** → 干支同位（四课仅二）
 9. **返吟**（天地盘对冲）→ 覆盖中末传为冲链，特殊日走无亲格
 
-| 导出函数 | 说明 |
-|---------|------|
+| 导出函数                                                                    | 说明                                        |
+| --------------------------------------------------------------------------- | ------------------------------------------- |
 | `calculateThreeTransmissions(fourLessons, dayStem, dayBranch, heavenBoard)` | 计算三传，返回含 method 和 trace 的完整结果 |
 
 ### tianjiang.ts — 十二天将
@@ -428,6 +431,7 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 根据昼夜贵人和顺逆行排列十二天将。
 
 **昼夜贵人口诀**（"甲戊庚牛羊"）：
+
 - 甲戊庚：昼贵丑、夜贵未
 - 乙己：昼贵子、夜贵申
 - 丙丁：昼贵亥、夜贵酉
@@ -438,10 +442,10 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 **昼夜判定**：卯时至申时（时辰索引 3-8）为昼，其余为夜。
 
-| 导出函数 | 说明 |
-|---------|------|
-| `calculateTwelveGenerals(dayStem, hourBranch, heavenBoard, earthBoard)` | 计算十二天将 |
-| `isDaytime(hourBranch)` | 判断是否为昼占 |
+| 导出函数                                                                | 说明           |
+| ----------------------------------------------------------------------- | -------------- |
+| `calculateTwelveGenerals(dayStem, hourBranch, heavenBoard, earthBoard)` | 计算十二天将   |
+| `isDaytime(hourBranch)`                                                 | 判断是否为昼占 |
 
 ### kejing.ts — 课经规则
 
@@ -455,32 +459,32 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 **特殊类：** 天祸课、九丑课、伏殃课、玄关课、天心课、天目课、天耳课、金华课、玉堂课、进儒课、退儒课、天罗地网课
 
-| 导出函数/类型 | 说明 |
-|---------|------|
-| `evaluateKeJing(result)` | 评估盘面匹配哪些课经 |
-| `getAllKeJingRules()` | 获取所有已注册课经规则 |
-| `KeJingRule` | 课经规则接口 |
-| `KeJingMatch` | 课经匹配结果接口 |
+| 导出函数/类型            | 说明                   |
+| ------------------------ | ---------------------- |
+| `evaluateKeJing(result)` | 评估盘面匹配哪些课经   |
+| `getAllKeJingRules()`    | 获取所有已注册课经规则 |
+| `KeJingRule`             | 课经规则接口           |
+| `KeJingMatch`            | 课经匹配结果接口       |
 
 ### bifa.ts — 毕法赋
 
 实现《六壬大全·毕法赋》前六法判断：
 
-| 编号 | 规则名称 | 说明 |
-|------|---------|------|
+| 编号    | 规则名称       | 说明                                |
+| ------- | -------------- | ----------------------------------- |
 | bifa.01 | 前后引从升迁吉 | 初末传分临日干/日支前后宫，前引后从 |
 | bifa.02 | 首尾相见始终宜 | 旬首旬尾临干支，或四建/三传尽入四课 |
-| bifa.03 | 帘幕贵人高甲第 | 帘幕贵人临干年命，或德入天门 |
-| bifa.04 | 催官使者赴官期 | 官星乘白虎临日干，或三传合局生官星 |
-| bifa.05 | 六阳数足须公用 | 四课上神与中末传六位全阳或五阳 |
-| bifa.06 | 六阴相继尽昏迷 | 四课上神与中末传六位全阴或五阴 |
+| bifa.03 | 帘幕贵人高甲第 | 帘幕贵人临干年命，或德入天门        |
+| bifa.04 | 催官使者赴官期 | 官星乘白虎临日干，或三传合局生官星  |
+| bifa.05 | 六阳数足须公用 | 四课上神与中末传六位全阳或五阳      |
+| bifa.06 | 六阴相继尽昏迷 | 四课上神与中末传六位全阴或五阴      |
 
-| 导出函数/类型 | 说明 |
-|---------|------|
+| 导出函数/类型          | 说明                     |
+| ---------------------- | ------------------------ |
 | `evaluateBiFa(result)` | 评估盘面匹配哪些毕法规则 |
-| `getAllBiFaRules()` | 获取所有已注册毕法规则 |
-| `BiFaRule` | 毕法规则接口 |
-| `BiFaMatch` | 毕法匹配结果接口 |
+| `getAllBiFaRules()`    | 获取所有已注册毕法规则   |
+| `BiFaRule`             | 毕法规则接口             |
+| `BiFaMatch`            | 毕法匹配结果接口         |
 
 ### shensha.ts — 神煞
 
@@ -494,16 +498,17 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 **补充神煞（14 种）：** 天德合、月德合、天恩、天赦、圣心、皇恩、天成、天官、天福、天财、禄神、天罗、地网
 
-| 导出函数/类型 | 说明 |
-|---------|------|
+| 导出函数/类型                                                               | 说明             |
+| --------------------------------------------------------------------------- | ---------------- |
 | `calculateShenSha(yearBranch, monthBranch, dayStem, dayBranch, hourBranch)` | 计算全部常用神煞 |
-| `ShenSha` | 神煞接口 |
+| `ShenSha`                                                                   | 神煞接口         |
 
 ### wangshuai.ts — 旺相休囚死
 
 根据月支确定当令五行，判断各地支五行的旺衰状态。
 
 **规则：**
+
 - 同五行 → 旺
 - 当令生目标 → 相
 - 目标生当令 → 休
@@ -511,33 +516,34 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 - 当令克目标 → 死
 
 **月支 → 当令五行：**
+
 - 寅卯月 → 木旺
 - 巳午月 → 火旺
 - 申酉月 → 金旺
 - 亥子月 → 水旺
 - 辰戌丑未月 → 土旺
 
-| 导出函数 | 说明 |
-|---------|------|
-| `getWangXiang(monthBranch, targetBranch)` | 获取单个地支的旺衰状态 |
-| `getAllWangXiang(monthBranch)` | 获取全部 12 地支的旺衰状态 |
+| 导出函数                                  | 说明                       |
+| ----------------------------------------- | -------------------------- |
+| `getWangXiang(monthBranch, targetBranch)` | 获取单个地支的旺衰状态     |
+| `getAllWangXiang(monthBranch)`            | 获取全部 12 地支的旺衰状态 |
 
 ### liuqin.ts — 六亲
 
 以日干五行为"我"，判断目标地支的六亲关系：
 
-| 关系 | 五行条件 |
-|------|---------|
-| 父母 | 生我者（目标五行生我） |
+| 关系 | 五行条件                   |
+| ---- | -------------------------- |
+| 父母 | 生我者（目标五行生我）     |
 | 兄弟 | 同我者（目标五行与我相同） |
-| 子孙 | 我生者（我生目标五行） |
-| 妻财 | 我克者（我克目标五行） |
-| 官鬼 | 克我者（目标五行克我） |
+| 子孙 | 我生者（我生目标五行）     |
+| 妻财 | 我克者（我克目标五行）     |
+| 官鬼 | 克我者（目标五行克我）     |
 
-| 导出函数 | 说明 |
-|---------|------|
-| `getLiuQin(dayStem, targetBranch)` | 获取单个地支的六亲 |
-| `getAllLiuQin(dayStem)` | 获取全部 12 地支的六亲 |
+| 导出函数                           | 说明                   |
+| ---------------------------------- | ---------------------- |
+| `getLiuQin(dayStem, targetBranch)` | 获取单个地支的六亲     |
+| `getAllLiuQin(dayStem)`            | 获取全部 12 地支的六亲 |
 
 ### dungan.ts — 遁干
 
@@ -546,18 +552,19 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 **旬遁**：按日柱所在旬的旬首（恒为甲），在地盘上从旬首位置起甲，顺次遁出甲乙丙丁……
 
 **日遁（五子元遁）**：按日干决定子时起何干，顺推十二时辰天干。口诀：
+
 - 甲己日起甲子时
 - 乙庚日起丙子时
 - 丙辛日起戊子时
 - 丁壬日起庚子时
 - 戊癸日起壬子时
 
-| 导出函数 | 说明 |
-|---------|------|
-| `calculateXunDun(dayStem, dayBranch, heavenBoard)` | 计算旬遁，返回 Map<宫位, 天干> |
-| `calculateRiDun(dayStem)` | 计算日遁，返回 12 个时辰的天干数组 |
-| `getRiDunStem(dayStem, hourBranch)` | 获取某时辰的遁干 |
-| `getXunInfo(dayStem, dayBranch)` | 获取旬首信息（旬首地支和旬名） |
+| 导出函数                                           | 说明                               |
+| -------------------------------------------------- | ---------------------------------- |
+| `calculateXunDun(dayStem, dayBranch, heavenBoard)` | 计算旬遁，返回 Map<宫位, 天干>     |
+| `calculateRiDun(dayStem)`                          | 计算日遁，返回 12 个时辰的天干数组 |
+| `getRiDunStem(dayStem, hourBranch)`                | 获取某时辰的遁干                   |
+| `getXunInfo(dayStem, dayBranch)`                   | 获取旬首信息（旬首地支和旬名）     |
 
 ### relations.ts — 刑冲破害合
 
@@ -566,6 +573,7 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 **六冲：** 子午、丑未、寅申、卯酉、辰戌、巳亥
 
 **三刑：**
+
 - 寅巳申（无恩之刑）
 - 丑戌未（恃势之刑）
 - 子卯（无礼之刑）
@@ -577,25 +585,26 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 **六合：** 子丑、寅亥、卯戌、辰酉、巳申、午未
 
-| 导出函数/类型 | 说明 |
-|---------|------|
+| 导出函数/类型                   | 说明                           |
+| ------------------------------- | ------------------------------ |
 | `findBranchRelations(branches)` | 检测给定地支列表中所有两两关系 |
-| `BranchRelation` | 关系接口 |
+| `BranchRelation`                | 关系接口                       |
 
 ### fate.ts — 命宫行年
 
 **命宫**：生年地支即为命宫。
 
 **行年**：
+
 - 男命：一岁起丙寅（甲子序号 2），顺行
 - 女命：一岁起壬申（甲子序号 8），逆行
 
 **虚岁** = 当前年 - 生年 + 1
 
-| 导出函数/类型 | 说明 |
-|---------|------|
-| `calculateFate(birthYear, gender, currentYear)` | 计算命宫行年 |
-| `FateInfo` | 命宫行年信息接口 |
+| 导出函数/类型                                   | 说明             |
+| ----------------------------------------------- | ---------------- |
+| `calculateFate(birthYear, gender, currentYear)` | 计算命宫行年     |
+| `FateInfo`                                      | 命宫行年信息接口 |
 
 ### jianchu.ts — 建除十二直
 
@@ -605,11 +614,11 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 **吉凶参考：** 建(吉)、除(吉)、满(凶)、平(吉)、定(凶)、执(凶)、破(凶)、危(凶)、成(吉)、收(凶)、开(吉)、闭(凶)
 
-| 导出函数/类型 | 说明 |
-|---------|------|
-| `getJianChu(monthBranch, targetBranch)` | 获取单个地支的建除类型 |
-| `getMonthJianChu(monthBranch)` | 获取当月全部 12 地支的建除类型 |
-| `JianChuType` | 建除类型 |
+| 导出函数/类型                           | 说明                           |
+| --------------------------------------- | ------------------------------ |
+| `getJianChu(monthBranch, targetBranch)` | 获取单个地支的建除类型         |
+| `getMonthJianChu(monthBranch)`          | 获取当月全部 12 地支的建除类型 |
+| `JianChuType`                           | 建除类型                       |
 
 ### nayin.ts — 纳音五行
 
@@ -617,12 +626,12 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 **口诀节选：** 甲子乙丑海中金、丙寅丁卯炉中火、戊辰己巳大林木……
 
-| 导出函数/常量 | 说明 |
-|---------|------|
-| `getNaYin(stem, branch)` | 获取单对干支的纳音名称 |
-| `getBoardNaYin(dayStem, heavenBoard)` | 批量计算天盘纳音 |
-| `NAYIN_TABLE` | 纳音表（60 项） |
-| `NAYIN_ELEMENT` | 纳音名称 → 五行映射 |
+| 导出函数/常量                         | 说明                   |
+| ------------------------------------- | ---------------------- |
+| `getNaYin(stem, branch)`              | 获取单对干支的纳音名称 |
+| `getBoardNaYin(dayStem, heavenBoard)` | 批量计算天盘纳音       |
+| `NAYIN_TABLE`                         | 纳音表（60 项）        |
+| `NAYIN_ELEMENT`                       | 纳音名称 → 五行映射    |
 
 ### types.ts — 类型定义
 
@@ -631,6 +640,7 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 ### constants.ts — 常量表
 
 所有查找表和常量的集中定义，包括：
+
 - 天干地支名称（`TIAN_GAN`、`DI_ZHI`）
 - 五行（`WU_XING`、`STEM_ELEMENT`、`BRANCH_ELEMENT`）
 - 阴阳（`STEM_YIN_YANG`、`BRANCH_YIN_YANG`）
@@ -646,19 +656,19 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 多模块共享的辅助函数：
 
-| 导出函数 | 说明 |
-|---------|------|
-| `elemB(branch)` | 取地支五行 |
-| `elemS(stem)` | 取天干五行 |
-| `keOf(a)` | 五行 a 所克之五行 |
-| `shengOf(a)` | 五行 a 所生之五行 |
-| `sexagenaryIndex(stem, branch)` | 计算六十甲子序号 |
-| `stemLodgingBranch(stem)` | 日干寄宫所在支 |
-| `isFuyin(result)` | 天地盘是否伏吟 |
-| `isFanyin(result)` | 天地盘是否返吟 |
-| `inFourLessons(branch, result)` | 天盘某支是否在四课上课中 |
-| `getGeneralRidingBranch(branch, result)` | 天盘某支所乘天将编号 |
-| `findGeneralPosition(name, result)` | 找某天将所在地盘宫位 |
+| 导出函数                                 | 说明                     |
+| ---------------------------------------- | ------------------------ |
+| `elemB(branch)`                          | 取地支五行               |
+| `elemS(stem)`                            | 取天干五行               |
+| `keOf(a)`                                | 五行 a 所克之五行        |
+| `shengOf(a)`                             | 五行 a 所生之五行        |
+| `sexagenaryIndex(stem, branch)`          | 计算六十甲子序号         |
+| `stemLodgingBranch(stem)`                | 日干寄宫所在支           |
+| `isFuyin(result)`                        | 天地盘是否伏吟           |
+| `isFanyin(result)`                       | 天地盘是否返吟           |
+| `inFourLessons(branch, result)`          | 天盘某支是否在四课上课中 |
+| `getGeneralRidingBranch(branch, result)` | 天盘某支所乘天将编号     |
+| `findGeneralPosition(name, result)`      | 找某天将所在地盘宫位     |
 
 ---
 
@@ -670,8 +680,8 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 
 **中气与月将对应：**
 
-| 中气 | 月将 |
-|------|------|
+| 中气 | 月将       |
+| ---- | ---------- |
 | 冬至 | 丑（大吉） |
 | 大寒 | 子（神后） |
 | 雨水 | 亥（登明） |
@@ -717,6 +727,7 @@ console.log(getJianChu(2, 3))    // 寅月卯日 → "除"
 7. **八专**：干支同位（四课仅二）时，阳日干上神顺数 2 位、阴日支上神逆数 2 位。
 
 **特殊盘**：
+
 - **伏吟**（天地盘重合）：有克取克（不虞），无克阳日取干上神（自任）、阴日取支上神（自信），初传自刑时取替代（杜传）。中末传用刑链。
 - **返吟**（天地盘对冲）：初传沿用标准九宗门，中末传改为冲链。特殊日（辛未/辛丑/丁丑/己丑）走无亲格。
 
@@ -749,6 +760,7 @@ npm test
 ## 索引约定
 
 所有地支、天干索引均为 0-based：
+
 - **天干**：甲=0, 乙=1, 丙=2, 丁=3, 戊=4, 己=5, 庚=6, 辛=7, 壬=8, 癸=9
 - **地支**：子=0, 丑=1, 寅=2, 卯=3, 辰=4, 巳=5, 午=6, 未=7, 申=8, 酉=9, 戌=10, 亥=11
 - **五行**：木=0, 火=1, 土=2, 金=3, 水=4

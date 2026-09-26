@@ -38,15 +38,22 @@
   --danger-soft: #ff7777;
   --rose: #ff4d6d;
 
-  --font-body: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
-    "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+  --font-body:
+    "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Source Han Sans SC",
+    "Noto Sans CJK SC", sans-serif;
   --font-display: "KaiTi", "STKaiti", "DFKai-SB", "BiauKai", var(--font-body);
 
   /* 通用过渡时长（消除重复的 cubic-bezier 长定义） */
-  --ease: cubic-bezier(.4, 0, .2, 1);
-  --t-fast: color .15s var(--ease), background .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease), opacity .15s var(--ease), transform .15s var(--ease);
-  --t-normal: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease), opacity .2s var(--ease), transform .2s var(--ease);
-  --t-slow: color .25s var(--ease), background .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease), opacity .25s var(--ease), transform .25s var(--ease);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --t-fast:
+    color 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease), opacity 0.15s var(--ease), transform 0.15s var(--ease);
+  --t-normal:
+    color 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease), opacity 0.2s var(--ease), transform 0.2s var(--ease);
+  --t-slow:
+    color 0.25s var(--ease), background 0.25s var(--ease), border-color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease), opacity 0.25s var(--ease), transform 0.25s var(--ease);
 
   font-family: var(--font-body);
   color-scheme: dark;
@@ -75,14 +82,25 @@
 
 /** 淡入动画 */
 @keyframes u-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /** 脉动动画（加载状态） */
 @keyframes u-pulse {
-  0%, 100% { opacity: 0.6; }
-  50%      { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 * {
@@ -234,4 +252,3 @@ body {
 *::-webkit-scrollbar-track {
   background: transparent;
 }
-

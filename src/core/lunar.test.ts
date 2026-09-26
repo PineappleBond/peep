@@ -1,6 +1,12 @@
 /** 农历转换与闰月测试（lunar-lite 的月天数/闰月 API 已知损坏，验证改走 lunar-typescript 后的正确性） */
 import { describe, expect, it } from "vitest";
-import { dayGanZhi, daysInLunarMonth, leapMonthOf, lunarStrToSolarStr, lunarToSolarStr } from "./lunar";
+import {
+  dayGanZhi,
+  daysInLunarMonth,
+  leapMonthOf,
+  lunarStrToSolarStr,
+  lunarToSolarStr,
+} from "./lunar";
 
 describe("闰月", () => {
   it("闰月年份判定", () => {

@@ -94,9 +94,7 @@ function compareCase(caseId: string, phpCase: PhpCase) {
 
   // 天地盘
   for (let i = 0; i < 12; i++) {
-    expect(tsResult.heavenBoard[i], `${caseId} 天盘[${i}]`).toBe(
-      exp[`tianpan${i}`] as number
-    );
+    expect(tsResult.heavenBoard[i], `${caseId} 天盘[${i}]`).toBe(exp[`tianpan${i}`] as number);
   }
 
   // 四课（PHP sike 格式：[rigan, L1上, L2下, L2上, rizhi, L3上, L4下, L4上]）
@@ -108,43 +106,23 @@ function compareCase(caseId: string, phpCase: PhpCase) {
   //       TS fourLessons[1].upper === PHP sike[3]
   //       TS fourLessons[2].upper === PHP sike[5]
   //       TS fourLessons[3].upper === PHP sike[7]
-  expect(tsResult.fourLessons[0].upper, `${caseId} 课1上`).toBe(
-    exp.sike1 as number
-  );
-  expect(tsResult.fourLessons[1].upper, `${caseId} 课2上`).toBe(
-    exp.sike3 as number
-  );
-  expect(tsResult.fourLessons[2].upper, `${caseId} 课3上`).toBe(
-    exp.sike5 as number
-  );
-  expect(tsResult.fourLessons[3].upper, `${caseId} 课4上`).toBe(
-    exp.sike7 as number
-  );
+  expect(tsResult.fourLessons[0].upper, `${caseId} 课1上`).toBe(exp.sike1 as number);
+  expect(tsResult.fourLessons[1].upper, `${caseId} 课2上`).toBe(exp.sike3 as number);
+  expect(tsResult.fourLessons[2].upper, `${caseId} 课3上`).toBe(exp.sike5 as number);
+  expect(tsResult.fourLessons[3].upper, `${caseId} 课4上`).toBe(exp.sike7 as number);
 
   // 四课下（PHP sike[0]=日干本身，TS 用日干寄宫支，两者表示不同，跳过第一课下的比较）
   // 第二课下=课1上
-  expect(tsResult.fourLessons[1].lower, `${caseId} 课2下`).toBe(
-    exp.sike2 as number
-  );
+  expect(tsResult.fourLessons[1].lower, `${caseId} 课2下`).toBe(exp.sike2 as number);
   // 第三课下=日支
-  expect(tsResult.fourLessons[2].lower, `${caseId} 课3下`).toBe(
-    exp.sike4 as number
-  );
+  expect(tsResult.fourLessons[2].lower, `${caseId} 课3下`).toBe(exp.sike4 as number);
   // 第四课下=课3上
-  expect(tsResult.fourLessons[3].lower, `${caseId} 课4下`).toBe(
-    exp.sike6 as number
-  );
+  expect(tsResult.fourLessons[3].lower, `${caseId} 课4下`).toBe(exp.sike6 as number);
 
   // 三传
-  expect(tsResult.threeTransmissions.initial, `${caseId} 初传`).toBe(
-    exp.sanchuan0 as number
-  );
-  expect(tsResult.threeTransmissions.middle, `${caseId} 中传`).toBe(
-    exp.sanchuan1 as number
-  );
-  expect(tsResult.threeTransmissions.final, `${caseId} 末传`).toBe(
-    exp.sanchuan2 as number
-  );
+  expect(tsResult.threeTransmissions.initial, `${caseId} 初传`).toBe(exp.sanchuan0 as number);
+  expect(tsResult.threeTransmissions.middle, `${caseId} 中传`).toBe(exp.sanchuan1 as number);
+  expect(tsResult.threeTransmissions.final, `${caseId} 末传`).toBe(exp.sanchuan2 as number);
 
   // 九宗门
   const phpJiuZongMen = exp.jiuzongmen as number;
@@ -175,12 +153,10 @@ function compareCase(caseId: string, phpCase: PhpCase) {
       ).toBeUndefined();
     } else {
       const tsDunChar = tsResult.xunDun[sanchuan[i]];
-      const tsDunIdx =
-        typeof tsDunChar === "string" ? TIAN_GAN.indexOf(tsDunChar) : -1;
-      expect(
-        tsDunIdx,
-        `${caseId} 旬遁[${i}]（三传=${sanchuan[i]}，TS遁干="${tsDunChar}"）`
-      ).toBe(expDun);
+      const tsDunIdx = typeof tsDunChar === "string" ? TIAN_GAN.indexOf(tsDunChar) : -1;
+      expect(tsDunIdx, `${caseId} 旬遁[${i}]（三传=${sanchuan[i]}，TS遁干="${tsDunChar}"）`).toBe(
+        expDun
+      );
     }
   }
 

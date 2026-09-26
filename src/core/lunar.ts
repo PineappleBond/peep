@@ -5,11 +5,7 @@
  * 不存在的 LUNAR_INFO 常量（0.2.x 已知损坏，调用必抛错），故月天数与闰月
  * 一律直接走其底层依赖 lunar-typescript 计算。
  */
-import {
-  solar2lunar,
-  lunar2solar,
-  getHeavenlyStemAndEarthlyBranchBySolarDate,
-} from "lunar-lite";
+import { solar2lunar, lunar2solar, getHeavenlyStemAndEarthlyBranchBySolarDate } from "lunar-lite";
 import { LunarMonth, LunarYear } from "lunar-typescript";
 
 /** 格式化 Date 为 YYYY-M-D 字符串 */

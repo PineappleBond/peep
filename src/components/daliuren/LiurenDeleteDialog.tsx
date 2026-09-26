@@ -15,12 +15,7 @@ interface LiurenDeleteDialogProps {
   onDeleted: () => void;
 }
 
-export function LiurenDeleteDialog({
-  open,
-  onClose,
-  record,
-  onDeleted,
-}: LiurenDeleteDialogProps) {
+export function LiurenDeleteDialog({ open, onClose, record, onDeleted }: LiurenDeleteDialogProps) {
   const { t } = useI18n();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,16 +53,30 @@ export function LiurenDeleteDialog({
       }
     >
       <div className="liuren-delete-confirm">
-        {error && <div className="liuren-form-error" role="alert">{error}</div>}
+        {error && (
+          <div className="liuren-form-error" role="alert">
+            {error}
+          </div>
+        )}
         <p className="liuren-delete-msg">{t("daliuren.deleteMessage")}</p>
         {record && (
           <div className="liuren-delete-info">
             <div>
-              <strong>{t("common.labelValue", { label: t("daliuren.courseTime"), value: record.calculationTime })}</strong>
+              <strong>
+                {t("common.labelValue", {
+                  label: t("daliuren.courseTime"),
+                  value: record.calculationTime,
+                })}
+              </strong>
             </div>
             {record.question && (
               <div>
-                <strong>{t("common.labelValue", { label: t("daliuren.questionLabel"), value: record.question })}</strong>
+                <strong>
+                  {t("common.labelValue", {
+                    label: t("daliuren.questionLabel"),
+                    value: record.question,
+                  })}
+                </strong>
               </div>
             )}
           </div>

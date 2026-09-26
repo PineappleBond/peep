@@ -34,7 +34,7 @@ function makeChart(dateStr = "2000-08-16", timeIndex = 2, gender: "男" | "女" 
 /** 与 useZwds 同口径提取大限 */
 function decadesOf(a: Astrolabe, birthLunarYear: number): DecadeInfo[] {
   return a.palaces
-    .map((p) => ({
+    .map(p => ({
       palaceIndex: p.index,
       range: p.decadal.range as [number, number],
       heavenlyStem: p.decadal.heavenlyStem as string,
@@ -93,14 +93,16 @@ describe("hbar 运限拨盘计算", () => {
     });
 
     it("起限 1 岁时无童限", () => {
-      const fakeDecades: DecadeInfo[] = [{
-        palaceIndex: 0,
-        range: [1, 10],
-        heavenlyStem: "甲",
-        earthlyBranch: "子",
-        startYear: birthYear,
-        endYear: birthYear + 9,
-      }];
+      const fakeDecades: DecadeInfo[] = [
+        {
+          palaceIndex: 0,
+          range: [1, 10],
+          heavenlyStem: "甲",
+          earthlyBranch: "子",
+          startYear: birthYear,
+          endYear: birthYear + 9,
+        },
+      ];
       expect(buildChildhood(fakeDecades, birthYear)).toBeNull();
     });
   });
@@ -169,12 +171,12 @@ describe("hbar 运限拨盘计算", () => {
     it("闰年 13 个月（闰月插入正确位置）", () => {
       const months = buildMonths(2025, 6); // 2025 闰六月
       expect(months).toHaveLength(13);
-      const leapCell = months.find((m) => m.leap);
+      const leapCell = months.find(m => m.leap);
       expect(leapCell).toBeDefined();
       expect(leapCell!.month).toBe(6);
       expect(leapCell!.label).toBe("闰六月");
       // 闰月与正六月干支相同
-      const normal6 = months.find((m) => m.month === 6 && !m.leap);
+      const normal6 = months.find(m => m.month === 6 && !m.leap);
       expect(leapCell!.gz).toBe(normal6!.gz);
     });
   });

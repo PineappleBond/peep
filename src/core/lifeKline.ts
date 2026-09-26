@@ -44,10 +44,22 @@ import { leapMonthOf } from "./lunar";
 
 const BRIGHT_SCORE: Record<string, number> = { 庙: 3, 旺: 2, 得: 1, 利: 1, 平: 0, 不: -1, 陷: -2 };
 const GOOD_STARS: Record<string, number> = {
-  左辅: 1.5, 右弼: 1.5, 天魁: 1.5, 天钺: 1.5, 文昌: 1, 文曲: 1, 禄存: 2, 天马: 1,
+  左辅: 1.5,
+  右弼: 1.5,
+  天魁: 1.5,
+  天钺: 1.5,
+  文昌: 1,
+  文曲: 1,
+  禄存: 2,
+  天马: 1,
 };
 const BAD_STARS: Record<string, number> = {
-  擎羊: -2, 陀罗: -2, 火星: -2, 铃星: -2, 地空: -2.5, 地劫: -2.5,
+  擎羊: -2,
+  陀罗: -2,
+  火星: -2,
+  铃星: -2,
+  地空: -2.5,
+  地劫: -2.5,
 };
 const MUT_YEARLY = [8, 5, 4, -8];
 const MUT_DECADAL = [6, 4, 3, -6];
@@ -63,10 +75,26 @@ const DOUBLE_JI_FACTOR = 0.35;
  * 流鸾流喜在夫妻/子女域加倍（婚恋应期标记）。
  */
 const FLOW_STAR_SCORE: Record<string, number> = {
-  流禄: 2, 流马: 1.5, 流昌: 1, 流曲: 1, 流魁: 1, 流钺: 1,
-  流羊: -2, 流陀: -2, 流鸾: 0.8, 流喜: 0.8,
-  月禄: 1.2, 月马: 0.8, 月昌: 0.6, 月曲: 0.6, 月魁: 0.6, 月钺: 0.6,
-  月羊: -1.2, 月陀: -1.2, 月鸾: 0.5, 月喜: 0.5,
+  流禄: 2,
+  流马: 1.5,
+  流昌: 1,
+  流曲: 1,
+  流魁: 1,
+  流钺: 1,
+  流羊: -2,
+  流陀: -2,
+  流鸾: 0.8,
+  流喜: 0.8,
+  月禄: 1.2,
+  月马: 0.8,
+  月昌: 0.6,
+  月曲: 0.6,
+  月魁: 0.6,
+  月钺: 0.6,
+  月羊: -1.2,
+  月陀: -1.2,
+  月鸾: 0.5,
+  月喜: 0.5,
 };
 /** 鸾喜的婚恋域（加倍生效） */
 const LOVE_DOMAINS = new Set(["夫妻", "子女"]);
@@ -134,8 +162,18 @@ function flowStarsOf(scope: "yearly" | "monthly", stem: string, branch: string):
 }
 /** 小限起宫地支（生年支三合局）：寅午戌人辰上起、申子辰人戌上起、巳酉丑人未上起、亥卯未人丑上起 */
 const AGE_START_BRANCH: Record<string, string> = {
-  寅: "辰", 午: "辰", 戌: "辰", 申: "戌", 子: "戌", 辰: "戌",
-  巳: "未", 酉: "未", 丑: "未", 亥: "丑", 卯: "丑", 未: "丑",
+  寅: "辰",
+  午: "辰",
+  戌: "辰",
+  申: "戌",
+  子: "戌",
+  辰: "戌",
+  巳: "未",
+  酉: "未",
+  丑: "未",
+  亥: "丑",
+  卯: "丑",
+  未: "丑",
 };
 /** 地支 → 宫位索引（palaces[0]=寅） */
 const branchPalaceIdx = (branch: string) => fixIndex(BRANCHES.indexOf(branch as never) - 2);
@@ -294,7 +332,7 @@ export function buildLifeKline(
 
   const natalYearStem = ix.yearStem;
   /** 生年四化星 → 四化位（0禄1权2科3忌），同星叠象判定用 */
-  const natalMutMap = new Map(mutHits(natalYearStem).map((h) => [h.star, h.k]));
+  const natalMutMap = new Map(mutHits(natalYearStem).map(h => [h.star, h.k]));
   const lastAge = Math.min(100, decades[decades.length - 1].range[1]);
 
   /* 小限：生年支三合定起宫（寅午戌辰起…），男顺女逆，一岁一宫 */
@@ -310,7 +348,11 @@ export function buildLifeKline(
   const bands: KlineBand[] = [];
   const firstAge = decades[0].range[0];
   if (firstAge > 1) {
-    bands.push({ label: "童限", startYear: birthLunarYear, endYear: birthLunarYear + firstAge - 2 });
+    bands.push({
+      label: "童限",
+      startYear: birthLunarYear,
+      endYear: birthLunarYear + firstAge - 2,
+    });
   }
   for (const d of decades) {
     // 起限岁超出显示范围（lastAge 封顶 100）的大限段不入 bands，
@@ -323,7 +365,8 @@ export function buildLifeKline(
     });
   }
 
-  const decadeAt = (age: number) => decades.find((d) => age >= d.range[0] && age <= d.range[1]) ?? null;
+  const decadeAt = (age: number) =>
+    decades.find(d => age >= d.range[0] && age <= d.range[1]) ?? null;
 
   const domains: KlineDomain[] = [];
 
@@ -331,7 +374,7 @@ export function buildLifeKline(
     const P = palace.index;
     const meta = DOMAIN_META[palace.name] ?? { label: palace.name, priority: 99 };
     const wmap = tsWeights(P);
-    const composeNames = [...wmap.keys()].map((q) => a.palaces[q].name);
+    const composeNames = [...wmap.keys()].map(q => a.palaces[q].name);
 
     /* baseline（静态：三方四正星情 + 生年四化 + 身宫 + 离心自化泄气） */
     const baselineNotes: string[] = [];
@@ -367,8 +410,8 @@ export function buildLifeKline(
     // 离心自化（本宫宫干四化本宫之星）：气外泄。忌最重=得而复失；禄权科小幅泄
     const selfMutKinds = new Set(
       mutHits(palace.heavenlyStem)
-        .filter((h) => h.idx === P)
-        .map((h) => h.k)
+        .filter(h => h.idx === P)
+        .map(h => h.k)
     );
     const hasSelfJi = selfMutKinds.has(3);
     if (hasSelfJi) {
@@ -420,7 +463,9 @@ export function buildLifeKline(
             if (pos === 0) nature.push(`${tag}${hit.star}忌入本宫·纠缠`);
             else if (pos === 1) nature.push(`${tag}${hit.star}忌冲本宫·被动`);
             else nature.push(`${tag}${hit.star}忌拖累三合`);
-            factors.push(`${tag}${hit.star}化忌→${a.palaces[hit.idx].name}${pos === 1 ? "(冲本宫)" : ""} -${round(v)}`);
+            factors.push(
+              `${tag}${hit.star}化忌→${a.palaces[hit.idx].name}${pos === 1 ? "(冲本宫)" : ""} -${round(v)}`
+            );
             // 同星叠象：生年忌星再化忌=忌上加忌（应验最烈）；忌撞生年禄星=禄逢冲破
             if (natalMutMap.get(hit.star) === 3) {
               const extra = v * 0.3;
@@ -437,7 +482,9 @@ export function buildLifeKline(
             const v = w * MUT[hit.k];
             gain += v;
             if (Math.abs(v) >= 1)
-              factors.push(`${tag}${hit.star}化${MUTAGEN_CHARS[hit.k]}→${a.palaces[hit.idx].name} ${fmt(v)}`);
+              factors.push(
+                `${tag}${hit.star}化${MUTAGEN_CHARS[hit.k]}→${a.palaces[hit.idx].name} ${fmt(v)}`
+              );
             // 同星叠象：生年禄星再化禄=叠禄（喜上加喜）
             if (hit.k === 0 && natalMutMap.get(hit.star) === 0) {
               gain += 2;
@@ -470,8 +517,8 @@ export function buildLifeKline(
 
       // 流曜（魁钺昌曲禄羊陀马鸾喜十颗，iztro 同源公式；鸾喜在夫妻/子女域加倍）
       const flows = flowStarsOf("yearly", yStem, yBranch);
-      const liuLuIdx = flows.find((f) => f.name === "流禄")?.idx ?? -1;
-      const liuMaIdx = flows.find((f) => f.name === "流马")?.idx ?? -1;
+      const liuLuIdx = flows.find(f => f.name === "流禄")?.idx ?? -1;
+      const liuMaIdx = flows.find(f => f.name === "流马")?.idx ?? -1;
       for (const f of flows) {
         if (f.name === "流马") continue; // 流马按禄马交驰逻辑单独处理
         const w = wmap.get(f.idx);
@@ -488,10 +535,10 @@ export function buildLifeKline(
         // 禄马交驰年：流马与流禄同宫，或流马之宫坐本命禄存/生年禄星
         const maMates = new Set(
           [...a.palaces[liuMaIdx].majorStars, ...a.palaces[liuMaIdx].minorStars].map(
-            (s) => s.name as string
+            s => s.name as string
           )
         );
-        const natalLuStar = mutHits(natalYearStem).find((h) => h.k === 0)?.star;
+        const natalLuStar = mutHits(natalYearStem).find(h => h.k === 0)?.star;
         const withLu =
           liuMaIdx === liuLuIdx ||
           maMates.has("禄存") ||
@@ -506,8 +553,8 @@ export function buildLifeKline(
       }
 
       // 流禄引动生年忌：流年化禄星落生年忌之宫（含禄忌同星），禄忌交缠=变动之年
-      const yLuHit = mutHits(yStem).find((h) => h.k === 0);
-      const natalJiHit = mutHits(natalYearStem).find((h) => h.k === 3);
+      const yLuHit = mutHits(yStem).find(h => h.k === 0);
+      const natalJiHit = mutHits(natalYearStem).find(h => h.k === 3);
       if (yLuHit && natalJiHit && yLuHit.idx === natalJiHit.idx && wmap.has(yLuHit.idx)) {
         gain += 2;
         drain += 2;
@@ -593,8 +640,8 @@ export function buildLifeKline(
     }
 
     /* 大限段均分 */
-    const decadeAvg: KlineDecadeAvg[] = bands.map((b) => {
-      const pts = years.filter((y) => y.year >= b.startYear && y.year <= b.endYear);
+    const decadeAvg: KlineDecadeAvg[] = bands.map(b => {
+      const pts = years.filter(y => y.year >= b.startYear && y.year <= b.endYear);
       return {
         label: b.label,
         startYear: b.startYear,
@@ -690,7 +737,12 @@ export function buildMonthlyKline(
   for (let m = 1; m <= 12; m++) {
     list.push({ month: m, leap: false, label: LUNAR_MONTHS[m - 1], gz: monthGanZhi(year, m) });
     if (leapM === m) {
-      list.push({ month: m, leap: true, label: `闰${LUNAR_MONTHS[m - 1]}`, gz: monthGanZhi(year, m) });
+      list.push({
+        month: m,
+        leap: true,
+        label: `闰${LUNAR_MONTHS[m - 1]}`,
+        gz: monthGanZhi(year, m),
+      });
     }
   }
 
@@ -718,7 +770,9 @@ export function buildMonthlyKline(
         const v = w * MUT_MONTHLY[hit.k];
         gain += v;
         if (v >= 0.8)
-          factors.push(`月${hit.star}化${MUTAGEN_CHARS[hit.k]}→${a.palaces[hit.idx].name} ${fmt(v)}`);
+          factors.push(
+            `月${hit.star}化${MUTAGEN_CHARS[hit.k]}→${a.palaces[hit.idx].name} ${fmt(v)}`
+          );
       }
     }
 

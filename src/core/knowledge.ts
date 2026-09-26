@@ -164,7 +164,9 @@ export function topicGuidesMd(): string {
   const L: string[] = [];
   L.push(`## 附录D：分主题推理指引（问什么看哪里）`);
   L.push("");
-  L.push(`> 按提问主题取用对应小节；每节含取用宫位、判断次序、关键结构与常见误区。与附录A总则配合使用。`);
+  L.push(
+    `> 按提问主题取用对应小节；每节含取用宫位、判断次序、关键结构与常见误区。与附录A总则配合使用。`
+  );
   L.push("");
   for (const t of TOPIC_GUIDES) {
     L.push(t.md.trim());

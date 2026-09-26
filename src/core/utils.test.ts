@@ -105,7 +105,7 @@ describe("中州派地/人盘身宫", () => {
     );
     for (const t of ["earth", "human"] as const) {
       const a = cast(t);
-      const real = a.palaces.find((p) => p.isBodyPalace)!.earthlyBranch;
+      const real = a.palaces.find(p => p.isBodyPalace)!.earthlyBranch;
       expect(bodyPalaceBranchOf(a.palaces, a.earthlyBranchOfBodyPalace)).toBe(real);
       // 上游 rearrangeAstrolable 目前不更新顶层身宫支；iztro 修复后此断言变红，即可评估移除本兜底
       expect(a.earthlyBranchOfBodyPalace).not.toBe(real);

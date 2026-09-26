@@ -33,7 +33,7 @@ describe("PalaceDetail 弹层渲染", () => {
   const { z, a } = makeZ();
 
   it("命宫弹层：三方四正/宫干四化/传导链（忌链文本与引擎一致）", () => {
-    const soulIdx = a.palaces.findIndex((p) => p.name === "命宫");
+    const soulIdx = a.palaces.findIndex(p => p.name === "命宫");
     const html = renderInProvider(<PalaceDetail z={z} index={soulIdx} onClose={() => {}} />);
     expect(html).toContain("三方四正");
     expect(html).toContain("宫干四化");
@@ -44,7 +44,7 @@ describe("PalaceDetail 弹层渲染", () => {
   });
 
   it("官禄弹层：自化忌链终止文本", () => {
-    const guanIdx = a.palaces.findIndex((p) => p.name === "官禄");
+    const guanIdx = a.palaces.findIndex(p => p.name === "官禄");
     const html = renderInProvider(<PalaceDetail z={z} index={guanIdx} onClose={() => {}} />);
     expect(html).toContain("官禄(丙)廉贞忌入本宫【自化忌】");
   });

@@ -48,7 +48,7 @@ export function shengOf(a: number): number {
  * 由 CRT（中国剩余定理）可得：n = (6 * stem - 5 * branch + 60) % 60。
  */
 export function sexagenaryIndex(stem: number, branch: number): number {
-  return ((6 * stem - 5 * branch) % 60 + 60) % 60;
+  return (((6 * stem - 5 * branch) % 60) + 60) % 60;
 }
 
 // ─── 十干寄宫 ────────────────────────────────────────────
@@ -72,7 +72,7 @@ export function isFanyin(r: DaLiuRenResult): boolean {
 
 /** 天盘某支是否在四课的上课中出现 */
 export function inFourLessons(branch: number, r: DaLiuRenResult): boolean {
-  return r.fourLessons.some((l) => l.upper === branch);
+  return r.fourLessons.some(l => l.upper === branch);
 }
 
 /**
@@ -80,21 +80,15 @@ export function inFourLessons(branch: number, r: DaLiuRenResult): boolean {
  *
  * 先找天盘支在地盘的宫位，再查该宫的天将。
  */
-export function getGeneralRidingBranch(
-  branch: number,
-  r: DaLiuRenResult
-): number {
+export function getGeneralRidingBranch(branch: number, r: DaLiuRenResult): number {
   const ground = r.heavenBoard.indexOf(branch);
   if (ground === -1) return -1;
-  const g = r.twelveGenerals.find((g) => g.position === ground);
+  const g = r.twelveGenerals.find(g => g.position === ground);
   return g ? g.general : -1;
 }
 
 /** 找某天将所在地盘宫位（-1 表示不存在） */
-export function findGeneralPosition(
-  generalName: string,
-  r: DaLiuRenResult
-): number {
-  const g = r.twelveGenerals.find((g) => g.name === generalName);
+export function findGeneralPosition(generalName: string, r: DaLiuRenResult): number {
+  const g = r.twelveGenerals.find(g => g.name === generalName);
   return g ? g.position : -1;
 }

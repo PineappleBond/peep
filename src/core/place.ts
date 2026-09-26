@@ -24,7 +24,14 @@ function offsetAtEpoch(timeZone: string, epochMs: number): number {
   for (const part of dtf.formatToParts(epochMs)) {
     if (part.type !== "literal") p[part.type] = Number(part.value);
   }
-  const wallUTC = Date.UTC(p.year, (p.month ?? 1) - 1, p.day ?? 1, p.hour ?? 0, p.minute ?? 0, p.second ?? 0);
+  const wallUTC = Date.UTC(
+    p.year,
+    (p.month ?? 1) - 1,
+    p.day ?? 1,
+    p.hour ?? 0,
+    p.minute ?? 0,
+    p.second ?? 0
+  );
   return Math.round((wallUTC - epochMs) / 60000);
 }
 
@@ -75,7 +82,8 @@ export function browserTimezone(): string {
 /** 全球 IANA 时区列表（浏览器原生；不支持时退回 tzdb 坐标表键） */
 export function listTimezones(): string[] {
   try {
-    const sv = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf;
+    const sv = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] })
+      .supportedValuesOf;
     if (sv) return sv.call(Intl, "timeZone");
   } catch {
     /* fall through */
@@ -124,7 +132,6 @@ export function resolveBirthPlace(
   return {
     longitude: getLongitude(p.province, p.city, p.district) ?? 120,
     clockOffsetMinutes: 480,
-    place:
-      p.province === p.city ? `${p.city}${p.district}` : `${p.province}${p.city}${p.district}`,
+    place: p.province === p.city ? `${p.city}${p.district}` : `${p.province}${p.city}${p.district}`,
   };
 }

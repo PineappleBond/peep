@@ -17,19 +17,14 @@ interface LiurenEditDialogProps {
   onSaved: () => void;
 }
 
-export function LiurenEditDialog({
-  open,
-  onClose,
-  record,
-  onSaved,
-}: LiurenEditDialogProps) {
+export function LiurenEditDialog({ open, onClose, record, onSaved }: LiurenEditDialogProps) {
   const { t } = useI18n();
   const [values, setValues] = useState<LiurenFormValues>(EMPTY_LIUREN_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const updateValues = (patch: Partial<LiurenFormValues>) => {
-    setValues((prev) => ({ ...prev, ...patch }));
+    setValues(prev => ({ ...prev, ...patch }));
   };
 
   // 打开时填充现有数据
@@ -94,7 +89,11 @@ export function LiurenEditDialog({
       }
     >
       <div className="liuren-dialog-form">
-        {error && <div className="liuren-form-error" role="alert">{error}</div>}
+        {error && (
+          <div className="liuren-form-error" role="alert">
+            {error}
+          </div>
+        )}
 
         {/* 只读信息 */}
         <div className="liuren-form-field readonly">

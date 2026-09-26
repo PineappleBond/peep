@@ -1,5 +1,6 @@
 import { memo } from "react";
-import { MUTAGEN_CHARS, SCOPES, Scope, SCOPE_META, type ScopeSelfMark } from "../core/utils";
+import type { Scope } from "../core/utils";
+import { MUTAGEN_CHARS, SCOPES, SCOPE_META, type ScopeSelfMark } from "../core/utils";
 import type { Horoscope } from "../core/useZwds";
 import { useI18n } from "../core/i18n";
 
@@ -63,13 +64,14 @@ export const StarCell = memo(function StarCell({
               {selfChar}
             </b>
           )}
-          {scopeMuts.map((m) => (
+          {scopeMuts.map(m => (
             <b key={m.scope} className={`mut mut-scope mut-${m.scope}`} data-m={m.char}>
               {m.char}
             </b>
           ))}
           {selfScopeMarks.map((m, idx) => {
-            const dirLabel = m.direction === "outward" ? t("starCell.outward") : t("starCell.inward");
+            const dirLabel =
+              m.direction === "outward" ? t("starCell.outward") : t("starCell.inward");
             const scopeLabel = SCOPE_META[m.scope].rowLabel;
             return (
               <b

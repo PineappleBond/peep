@@ -1,6 +1,12 @@
 /** 出生地解析测试：IANA 时区偏移（含历史夏令时）、主城经度、真太阳时联动 */
 import { describe, expect, it } from "vitest";
-import { formatOffset, listTimezones, resolveBirthPlace, zoneLongitude, zoneOffsetMinutes } from "./place";
+import {
+  formatOffset,
+  listTimezones,
+  resolveBirthPlace,
+  zoneLongitude,
+  zoneOffsetMinutes,
+} from "./place";
 import { TZ_LONGITUDE } from "./tzdata";
 import { applyTrueSolar } from "./utils";
 

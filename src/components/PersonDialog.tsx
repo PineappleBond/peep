@@ -2,7 +2,8 @@
  * 人物新增/编辑弹窗：包含完整 BirthInput 表单
  * 视觉风格匹配项目主题
  */
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LUNAR_DAYS,
   LUNAR_MONTHS,
@@ -12,11 +13,7 @@ import {
   applyTrueSolar,
 } from "../core/utils";
 import { daysInLunarMonth, leapMonthOf, lunarStrToSolarStr } from "../core/lunar";
-import {
-  ALL_PROVINCE_NAMES,
-  getCityNamesOfProvince,
-  getDistrictNamesOfCity,
-} from "../core/cities";
+import { ALL_PROVINCE_NAMES, getCityNamesOfProvince, getDistrictNamesOfCity } from "../core/cities";
 import {
   browserTimezone,
   formatOffset,
@@ -39,13 +36,7 @@ type PersonDialogProps = {
   title?: string;
 };
 
-export function PersonDialog({
-  open,
-  onClose,
-  onSave,
-  initialData,
-  title,
-}: PersonDialogProps) {
+export function PersonDialog({ open, onClose, onSave, initialData, title }: PersonDialogProps) {
   const { t } = useI18n();
   const resolvedTitle = title ?? (initialData ? t("person.editPerson") : t("person.addPerson"));
   const [draft, setDraft] = useState<BirthInput>(initialData || DEFAULT_BIRTH_INPUT);
@@ -59,11 +50,11 @@ export function PersonDialog({
   }, [open, initialData]);
 
   const set = <K extends keyof BirthInput>(k: K, v: BirthInput[K]) =>
-    setDraft((d) => ({ ...d, [k]: v }));
+    setDraft(d => ({ ...d, [k]: v }));
 
   /** 切流派：年界与四化表自动跟随该派默认 */
   const setAlgorithm = (alg: BirthInput["algorithm"]) =>
-    setDraft((d) => ({
+    setDraft(d => ({
       ...d,
       algorithm: alg,
       yearDivide: SCHOOL_YEAR_DIVIDE[alg],
@@ -83,7 +74,11 @@ export function PersonDialog({
   const lunarMaxDay = useMemo(
     () =>
       draft.calendar === "lunar"
-        ? daysInLunarMonth(lunarYMD.y, lunarYMD.m, draft.isLeapMonth && lunarLeapMonth === lunarYMD.m)
+        ? daysInLunarMonth(
+            lunarYMD.y,
+            lunarYMD.m,
+            draft.isLeapMonth && lunarLeapMonth === lunarYMD.m
+          )
         : 30,
     [draft.calendar, lunarYMD, draft.isLeapMonth, lunarLeapMonth]
   );
@@ -91,7 +86,7 @@ export function PersonDialog({
   const setLunar = (y: number, m: number, d: number, leap: boolean) => {
     const validLeap = leap && leapMonthOf(y) === m;
     const maxD = daysInLunarMonth(y, m, validLeap);
-    setDraft((dr) => ({
+    setDraft(dr => ({
       ...dr,
       date: `${y}-${m}-${Math.min(d, maxD)}`,
       isLeapMonth: validLeap,
@@ -100,7 +95,7 @@ export function PersonDialog({
 
   /** 勾选真太阳时 */
   const toggleTrueSolar = (on: boolean) =>
-    setDraft((d) => ({
+    setDraft(d => ({
       ...d,
       useTrueSolar: on,
       exactTime: on && !d.exactTime ? "12:00" : d.exactTime,
@@ -108,7 +103,7 @@ export function PersonDialog({
 
   /** 省 → 市 → 区 三级联动 */
   const setProvince = (p: string) =>
-    setDraft((d) => {
+    setDraft(d => {
       const cities = getCityNamesOfProvince(p);
       const city = cities[0] ?? "";
       const districts = getDistrictNamesOfCity(p, city);
@@ -116,7 +111,7 @@ export function PersonDialog({
     });
 
   const setCity = (c: string) =>
-    setDraft((d) => {
+    setDraft(d => {
       const districts = getDistrictNamesOfCity(d.province, c);
       return { ...d, city: c, district: districts[0] ?? "" };
     });
@@ -195,7 +190,7 @@ export function PersonDialog({
             <span>{t("person.name")}</span>
             <input
               value={draft.name}
-              onChange={(e) => set("name", e.target.value)}
+              onChange={e => set("name", e.target.value)}
               placeholder={t("person.namePlaceholder")}
               maxLength={12}
               required
@@ -207,14 +202,14 @@ export function PersonDialog({
             <input
               className="residence"
               value={draft.residence}
-              onChange={(e) => set("residence", e.target.value)}
+              onChange={e => set("residence", e.target.value)}
               placeholder={t("person.residencePlaceholder")}
               maxLength={24}
             />
           </label>
 
           <div className="seg" role="group" aria-label={t("person.gender")}>
-            {(["男", "女"] as const).map((g) => (
+            {(["男", "女"] as const).map(g => (
               <button
                 type="button"
                 key={g}
@@ -228,13 +223,13 @@ export function PersonDialog({
           </div>
 
           <div className="seg" role="group" aria-label={t("person.calendar")}>
-            {(["solar", "lunar"] as const).map((cal) => (
+            {(["solar", "lunar"] as const).map(cal => (
               <button
                 type="button"
                 key={cal}
                 className={draft.calendar === cal ? "on" : ""}
                 onClick={() =>
-                  setDraft((d) => {
+                  setDraft(d => {
                     if (d.calendar === cal) return d;
                     const [y, m, dd] = d.date.split(/[-/.]/).map(Number);
                     if (!y || !m || !dd) return { ...d, calendar: cal };
@@ -262,7 +257,7 @@ export function PersonDialog({
                 min="1900-02-01"
                 max="2100-12-31"
                 value={draft.date}
-                onChange={(e) => set("date", e.target.value)}
+                onChange={e => set("date", e.target.value)}
               />
             </label>
           ) : (
@@ -271,9 +266,11 @@ export function PersonDialog({
                 <span>{t("person.lunarYear")}</span>
                 <select
                   value={lunarYMD.y}
-                  onChange={(e) => setLunar(Number(e.target.value), lunarYMD.m, lunarYMD.d, draft.isLeapMonth)}
+                  onChange={e =>
+                    setLunar(Number(e.target.value), lunarYMD.m, lunarYMD.d, draft.isLeapMonth)
+                  }
                 >
-                  {Array.from({ length: 201 }, (_, i) => 1900 + i).map((y) => (
+                  {Array.from({ length: 201 }, (_, i) => 1900 + i).map(y => (
                     <option key={y} value={y}>
                       {y}
                     </option>
@@ -284,7 +281,7 @@ export function PersonDialog({
                 <span>{t("person.month")}</span>
                 <select
                   value={`${lunarYMD.m}${draft.isLeapMonth && lunarLeapMonth === lunarYMD.m ? "L" : ""}`}
-                  onChange={(e) => {
+                  onChange={e => {
                     const v = e.target.value;
                     const leap = v.endsWith("L");
                     setLunar(lunarYMD.y, Number(leap ? v.slice(0, -1) : v), lunarYMD.d, leap);
@@ -312,9 +309,11 @@ export function PersonDialog({
                 <span>{t("person.day")}</span>
                 <select
                   value={Math.min(lunarYMD.d, lunarMaxDay)}
-                  onChange={(e) => setLunar(lunarYMD.y, lunarYMD.m, Number(e.target.value), draft.isLeapMonth)}
+                  onChange={e =>
+                    setLunar(lunarYMD.y, lunarYMD.m, Number(e.target.value), draft.isLeapMonth)
+                  }
                 >
-                  {Array.from({ length: lunarMaxDay }, (_, i) => i + 1).map((d) => (
+                  {Array.from({ length: lunarMaxDay }, (_, i) => i + 1).map(d => (
                     <option key={d} value={d}>
                       {LUNAR_DAYS[d - 1]}
                     </option>
@@ -330,9 +329,9 @@ export function PersonDialog({
               value={derivedIdx ?? draft.timeIndex}
               disabled={derivedIdx != null}
               title={derivedIdx != null ? t("person.trueSolarAuto") : undefined}
-              onChange={(e) => set("timeIndex", Number(e.target.value))}
+              onChange={e => set("timeIndex", Number(e.target.value))}
             >
-              {TIME_OPTIONS.map((item) => (
+              {TIME_OPTIONS.map(item => (
                 <option key={item.index} value={item.index}>
                   {item.label} {item.range}
                 </option>
@@ -344,7 +343,7 @@ export function PersonDialog({
             <span>{t("person.school")}</span>
             <select
               value={draft.algorithm}
-              onChange={(e) => setAlgorithm(e.target.value as BirthInput["algorithm"])}
+              onChange={e => setAlgorithm(e.target.value as BirthInput["algorithm"])}
             >
               <option value="default">{t("person.schoolDefault")}</option>
               <option value="zhongzhou">{t("person.schoolZhongzhou")}</option>
@@ -355,13 +354,15 @@ export function PersonDialog({
             <span>{t("person.yearDivide")}</span>
             <select
               value={draft.yearDivide}
-              onChange={(e) => set("yearDivide", e.target.value as BirthInput["yearDivide"])}
+              onChange={e => set("yearDivide", e.target.value as BirthInput["yearDivide"])}
             >
               <option value="normal">
-                {t("person.yearDivideNormal")}{draft.algorithm === "default" ? t("person.yearDivideNormalDefault") : ""}
+                {t("person.yearDivideNormal")}
+                {draft.algorithm === "default" ? t("person.yearDivideNormalDefault") : ""}
               </option>
               <option value="exact">
-                {t("person.yearDivideExact")}{draft.algorithm === "zhongzhou" ? t("person.yearDivideExactDefault") : ""}
+                {t("person.yearDivideExact")}
+                {draft.algorithm === "zhongzhou" ? t("person.yearDivideExactDefault") : ""}
               </option>
             </select>
           </label>
@@ -370,13 +371,15 @@ export function PersonDialog({
             <span>{t("person.mutagenTable")}</span>
             <select
               value={draft.mutagenTable}
-              onChange={(e) => set("mutagenTable", e.target.value as BirthInput["mutagenTable"])}
+              onChange={e => set("mutagenTable", e.target.value as BirthInput["mutagenTable"])}
             >
               <option value="default">
-                {t("person.mutagenDefault")}{draft.algorithm === "default" ? t("person.yearDivideNormalDefault") : ""}
+                {t("person.mutagenDefault")}
+                {draft.algorithm === "default" ? t("person.yearDivideNormalDefault") : ""}
               </option>
               <option value="zhongzhou">
-                {t("person.mutagenZhongzhou")}{draft.algorithm === "zhongzhou" ? t("person.yearDivideExactDefault") : ""}
+                {t("person.mutagenZhongzhou")}
+                {draft.algorithm === "zhongzhou" ? t("person.yearDivideExactDefault") : ""}
               </option>
             </select>
           </label>
@@ -385,7 +388,7 @@ export function PersonDialog({
             <span>{t("person.dayDivide")}</span>
             <select
               value={draft.dayDivide}
-              onChange={(e) => set("dayDivide", e.target.value as BirthInput["dayDivide"])}
+              onChange={e => set("dayDivide", e.target.value as BirthInput["dayDivide"])}
             >
               <option value="forward">{t("person.dayDivideForward")}</option>
               <option value="current">{t("person.dayDivideCurrent")}</option>
@@ -397,7 +400,7 @@ export function PersonDialog({
               <span>{t("person.astroType")}</span>
               <select
                 value={draft.astroType}
-                onChange={(e) => set("astroType", e.target.value as BirthInput["astroType"])}
+                onChange={e => set("astroType", e.target.value as BirthInput["astroType"])}
               >
                 <option value="heaven">{t("person.astroHeaven")}</option>
                 <option value="earth">{t("person.astroEarth")}</option>
@@ -410,7 +413,7 @@ export function PersonDialog({
             <input
               type="checkbox"
               checked={draft.useTrueSolar}
-              onChange={(e) => toggleTrueSolar(e.target.checked)}
+              onChange={e => toggleTrueSolar(e.target.checked)}
             />
             {t("person.trueSolar")}
           </label>
@@ -418,7 +421,8 @@ export function PersonDialog({
 
         {dstWarn && (
           <div className="dst-hint">
-            ⚠ {dstWarn}{t("person.dstHint")}
+            ⚠ {dstWarn}
+            {t("person.dstHint")}
           </div>
         )}
 
@@ -430,7 +434,7 @@ export function PersonDialog({
                 type="time"
                 required
                 value={draft.exactTime}
-                onChange={(e) => set("exactTime", e.target.value)}
+                onChange={e => set("exactTime", e.target.value)}
               />
             </label>
 
@@ -447,7 +451,7 @@ export function PersonDialog({
                 type="button"
                 className={draft.placeMode === "overseas" ? "on" : ""}
                 onClick={() =>
-                  setDraft((d) => ({
+                  setDraft(d => ({
                     ...d,
                     placeMode: "overseas",
                     timezone: d.timezone || browserTimezone(),
@@ -465,9 +469,9 @@ export function PersonDialog({
                 <select
                   className="tz-select"
                   value={draft.timezone || browserTimezone()}
-                  onChange={(e) => set("timezone", e.target.value)}
+                  onChange={e => set("timezone", e.target.value)}
                 >
-                  {timezones.map((tz) => (
+                  {timezones.map(tz => (
                     <option key={tz} value={tz}>
                       {tz}
                     </option>
@@ -478,8 +482,8 @@ export function PersonDialog({
               <>
                 <label className="fld">
                   <span>{t("person.province")}</span>
-                  <select value={draft.province} onChange={(e) => setProvince(e.target.value)}>
-                    {ALL_PROVINCE_NAMES.map((p) => (
+                  <select value={draft.province} onChange={e => setProvince(e.target.value)}>
+                    {ALL_PROVINCE_NAMES.map(p => (
                       <option key={p} value={p}>
                         {p}
                       </option>
@@ -489,8 +493,8 @@ export function PersonDialog({
 
                 <label className="fld">
                   <span>{t("person.city")}</span>
-                  <select value={draft.city} onChange={(e) => setCity(e.target.value)}>
-                    {cityNames.map((c) => (
+                  <select value={draft.city} onChange={e => setCity(e.target.value)}>
+                    {cityNames.map(c => (
                       <option key={c} value={c}>
                         {c}
                       </option>
@@ -500,8 +504,8 @@ export function PersonDialog({
 
                 <label className="fld">
                   <span>{t("person.district")}</span>
-                  <select value={draft.district} onChange={(e) => set("district", e.target.value)}>
-                    {districtNames.map((d) => (
+                  <select value={draft.district} onChange={e => set("district", e.target.value)}>
+                    {districtNames.map(d => (
                       <option key={d} value={d}>
                         {d}
                       </option>
@@ -515,10 +519,13 @@ export function PersonDialog({
               <span className="ts-lng">
                 {t("person.longitude", { value: resolvedPlace.longitude })} ·{" "}
                 {draft.placeMode === "overseas"
-                  ? t("person.clockBase", { offset: formatOffset(resolvedPlace.clockOffsetMinutes) })
+                  ? t("person.clockBase", {
+                      offset: formatOffset(resolvedPlace.clockOffsetMinutes),
+                    })
                   : t("person.clockBaseUTC8")}{" "}
                 · {t("person.lngOffset")}{" "}
-                {Math.round(resolvedPlace.longitude * 4 - resolvedPlace.clockOffsetMinutes)} {t("person.lngOffsetUnit")}
+                {Math.round(resolvedPlace.longitude * 4 - resolvedPlace.clockOffsetMinutes)}{" "}
+                {t("person.lngOffsetUnit")}
               </span>
             )}
           </div>
@@ -528,7 +535,7 @@ export function PersonDialog({
           <input
             type="checkbox"
             checked={isDefault}
-            onChange={(e) => setIsDefault(e.target.checked)}
+            onChange={e => setIsDefault(e.target.checked)}
           />
           {t("person.setDefault")}
         </label>

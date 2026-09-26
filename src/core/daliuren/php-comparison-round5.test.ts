@@ -10,10 +10,10 @@ import { calculateDaLiuRen } from "./calculator";
 /** 运行 PHP 计算器 */
 function runPhp(date: string, time: string): any {
   try {
-    const result = execSync(
-      `cd /tmp/liuren && php cli_calculate.php ${date} ${time}`,
-      { encoding: "utf-8", timeout: 5000 }
-    );
+    const result = execSync(`cd /tmp/liuren && php cli_calculate.php ${date} ${time}`, {
+      encoding: "utf-8",
+      timeout: 5000,
+    });
     return JSON.parse(result);
   } catch (error) {
     console.error("PHP 执行失败:", error);
@@ -158,7 +158,9 @@ describe("全面综合对比测试（第 5 轮 - 最终轮）", () => {
         console.log(`差异:`);
         checks.forEach(c => console.log(`  - ${c}`));
         console.log(`PHP 天将: ${JSON.stringify(phpResult.tianjiang)}`);
-        console.log(`TS 天将: ${JSON.stringify(tsResult.twelveGenerals.map((g: { general: number }) => g.general))}`);
+        console.log(
+          `TS 天将: ${JSON.stringify(tsResult.twelveGenerals.map((g: { general: number }) => g.general))}`
+        );
       }
 
       expect(checks).toHaveLength(0);

@@ -24,7 +24,7 @@ export function ZiweiPage() {
   useEffect(() => {
     const handlePersonChanged = (person: Person) => {
       setInput(person);
-      setGenId((g) => g + 1);
+      setGenId(g => g + 1);
     };
 
     globalEvents.on("person.changed", handlePersonChanged);

@@ -49,13 +49,11 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
         // 过滤掉自身
         idSet.delete(docId);
         // 批量查询标题
-        const docs = await Promise.all(
-          Array.from(idSet).map((id) => getWikiDoc(id))
-        );
+        const docs = await Promise.all(Array.from(idSet).map(id => getWikiDoc(id)));
         if (cancelled) return;
         const items: RelatedDoc[] = docs
           .filter((d): d is WikiDocument => !!d && d.id != null)
-          .map((d) => ({ id: d.id!, title: d.title }));
+          .map(d => ({ id: d.id!, title: d.title }));
         setRelatedDocs(items);
       } catch (err) {
         console.error("[WikiReader] 加载关联文档失败", err);
@@ -64,16 +62,16 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
     }
 
     loadRelated();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [doc?.id]);
 
   // 空状态
   if (!doc) {
     return (
       <div className="wiki-reader wiki-reader-empty">
-        <div className="wiki-empty-hint">
-          {t("wiki.readerEmpty")}
-        </div>
+        <div className="wiki-empty-hint">{t("wiki.readerEmpty")}</div>
       </div>
     );
   }
@@ -91,8 +89,10 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
             <span className="wiki-meta-time">{formatDateTime(doc.updatedAt)}</span>
             {doc.tags.length > 0 && (
               <span className="wiki-meta-tags">
-                {doc.tags.map((tag) => (
-                  <span key={tag} className="wiki-tag-chip">{tag}</span>
+                {doc.tags.map(tag => (
+                  <span key={tag} className="wiki-tag-chip">
+                    {tag}
+                  </span>
                 ))}
               </span>
             )}
@@ -115,7 +115,7 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
         <div className="wiki-related-panel">
           <h3 className="wiki-related-title">{t("wiki.relatedDocs")}</h3>
           <ul className="wiki-related-list">
-            {relatedDocs.map((rd) => (
+            {relatedDocs.map(rd => (
               <li key={rd.id} className="wiki-related-item">
                 <button
                   type="button"

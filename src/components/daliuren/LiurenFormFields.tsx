@@ -40,7 +40,7 @@ export function LiurenFormFields({ values, onChange, disabled }: LiurenFormField
         <input
           type="text"
           value={values.question}
-          onChange={(e) => onChange({ question: e.target.value })}
+          onChange={e => onChange({ question: e.target.value })}
           placeholder={t("daliuren.questionPlaceholder")}
           maxLength={200}
           autoFocus
@@ -52,7 +52,7 @@ export function LiurenFormFields({ values, onChange, disabled }: LiurenFormField
         <input
           type="text"
           value={values.note}
-          onChange={(e) => onChange({ note: e.target.value })}
+          onChange={e => onChange({ note: e.target.value })}
           placeholder={t("daliuren.optional")}
           maxLength={500}
           disabled={disabled}
@@ -62,7 +62,7 @@ export function LiurenFormFields({ values, onChange, disabled }: LiurenFormField
         <label>{t("daliuren.background")}</label>
         <textarea
           value={values.background}
-          onChange={(e) => onChange({ background: e.target.value })}
+          onChange={e => onChange({ background: e.target.value })}
           placeholder={t("daliuren.backgroundPlaceholder")}
           rows={3}
           maxLength={2000}
@@ -73,7 +73,7 @@ export function LiurenFormFields({ values, onChange, disabled }: LiurenFormField
         <label>{t("daliuren.tags")}</label>
         <TagInput
           value={values.tags}
-          onChange={(tags) => onChange({ tags })}
+          onChange={tags => onChange({ tags })}
           placeholder={t("daliuren.tagsPlaceholder")}
           disabled={disabled}
         />

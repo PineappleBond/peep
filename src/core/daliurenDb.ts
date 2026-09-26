@@ -8,8 +8,7 @@ import { t } from "./i18n";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
 const tagCache = createTagCache(
-  (personId: number) =>
-    db.liurenRecords.where("personId").equals(personId).toArray(),
+  (personId: number) => db.liurenRecords.where("personId").equals(personId).toArray(),
   (r: LiurenRecord) => r.tags
 );
 
@@ -51,10 +50,7 @@ export async function listLiurenRecords(
   filters: LiurenListFilters = {}
 ): Promise<LiurenListResult> {
   try {
-    const allRecords = await db.liurenRecords
-      .where("personId")
-      .equals(personId)
-      .toArray();
+    const allRecords = await db.liurenRecords.where("personId").equals(personId).toArray();
 
     const result = filterAndPaginate<LiurenRecord>({
       records: allRecords,
@@ -63,7 +59,12 @@ export async function listLiurenRecords(
       filters,
     });
 
-    return { records: result.items, total: result.total, page: result.page, pageSize: result.pageSize };
+    return {
+      records: result.items,
+      total: result.total,
+      page: result.page,
+      pageSize: result.pageSize,
+    };
   } catch (err) {
     console.error("[daliurenDb] 查询记录列表失败", err);
     throw new Error(t("db.readLiurenListFailed"));

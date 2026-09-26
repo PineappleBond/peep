@@ -27,7 +27,15 @@ const DEFAULT_MAX_TAG_LENGTH = 30;
 /** 标签最大数量 */
 const DEFAULT_MAX_TAGS = 20;
 
-export function TagInput({ value, onChange, placeholder, disabled, suggestions, maxTagLength = DEFAULT_MAX_TAG_LENGTH, maxTags = DEFAULT_MAX_TAGS }: TagInputProps) {
+export function TagInput({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  suggestions,
+  maxTagLength = DEFAULT_MAX_TAG_LENGTH,
+  maxTags = DEFAULT_MAX_TAGS,
+}: TagInputProps) {
   const { t } = useI18n();
   const resolvedPlaceholder = placeholder ?? t("tagInput.placeholder");
   const [input, setInput] = useState("");
@@ -37,9 +45,9 @@ export function TagInput({ value, onChange, placeholder, disabled, suggestions, 
   const addTags = (raw: string) => {
     const newTags = raw
       .split(/[,，]/)
-      .map((s) => s.trim())
+      .map(s => s.trim())
       // 过滤空标签、超长标签、重复标签
-      .filter((s) => s && s.length <= maxTagLength && !value.includes(s));
+      .filter(s => s && s.length <= maxTagLength && !value.includes(s));
     // 限制标签总数
     const remaining = maxTags - value.length;
     const toAdd = newTags.slice(0, remaining);
@@ -75,7 +83,7 @@ export function TagInput({ value, onChange, placeholder, disabled, suggestions, 
     setInput(val);
     if (suggestions && val.trim()) {
       const filtered = suggestions.filter(
-        (s) => s.toLowerCase().includes(val.toLowerCase()) && !value.includes(s)
+        s => s.toLowerCase().includes(val.toLowerCase()) && !value.includes(s)
       );
       setShowSuggestions(filtered.length > 0);
     } else {
@@ -84,23 +92,20 @@ export function TagInput({ value, onChange, placeholder, disabled, suggestions, 
   };
 
   const handleRemove = (tag: string) => {
-    onChange(value.filter((s) => s !== tag));
+    onChange(value.filter(s => s !== tag));
   };
 
   // 计算建议列表
   const filteredSuggestions = suggestions
     ? suggestions
-        .filter(
-          (s) =>
-            s.toLowerCase().includes(input.toLowerCase()) && !value.includes(s)
-        )
+        .filter(s => s.toLowerCase().includes(input.toLowerCase()) && !value.includes(s))
         .slice(0, 10)
     : [];
 
   return (
     <div className="tag-input">
       <div className="tag-input-tags" role="group" aria-label={t("tagInput.tagList")}>
-        {value.map((tag) => (
+        {value.map(tag => (
           <span key={tag} className="tag-input-tag">
             <span className="tag-input-tag-text">{tag}</span>
             <button
@@ -119,7 +124,7 @@ export function TagInput({ value, onChange, placeholder, disabled, suggestions, 
           type="text"
           className="tag-input-field"
           value={input}
-          onChange={(e) => handleInputChange(e.target.value)}
+          onChange={e => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           placeholder={value.length === 0 ? resolvedPlaceholder : ""}
@@ -131,14 +136,14 @@ export function TagInput({ value, onChange, placeholder, disabled, suggestions, 
       {/* 标签建议下拉 */}
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div className="tag-input-suggestions">
-          {filteredSuggestions.map((s) => (
+          {filteredSuggestions.map(s => (
             <div
               key={s}
               className="tag-input-suggestion-item"
               onClick={() => addTags(s)}
               role="option"
               tabIndex={0}
-              onKeyDown={(e) => {
+              onKeyDown={e => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   addTags(s);

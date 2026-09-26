@@ -3,11 +3,7 @@
  */
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import type { LiurenRecord } from "../../core/personDb";
-import {
-  listLiurenRecords,
-  getAllLiurenTags,
-  type LiurenListFilters,
-} from "../../core/daliurenDb";
+import { listLiurenRecords, getAllLiurenTags, type LiurenListFilters } from "../../core/daliurenDb";
 import { formatRelativeTime } from "../../core/utils";
 import { useI18n } from "../../core/i18n";
 
@@ -28,16 +24,19 @@ interface LiurenListProps {
   refreshKey?: number;
 }
 
-export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function LiurenList({
-  personId,
-  selectedId,
-  onSelect,
-  onNewClick,
-  onEditClick,
-  onDeleteClick,
-  onViewClick,
-  refreshKey = 0,
-}, ref) {
+export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function LiurenList(
+  {
+    personId,
+    selectedId,
+    onSelect,
+    onNewClick,
+    onEditClick,
+    onDeleteClick,
+    onViewClick,
+    refreshKey = 0,
+  },
+  ref
+) {
   const { t } = useI18n();
   const [records, setRecords] = useState<LiurenRecord[]>([]);
   const [total, setTotal] = useState(0);
@@ -87,17 +86,16 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
   useEffect(() => {
     getAllLiurenTags(personId)
       .then(setAllTags)
-      .catch((err) => {
+      .catch(err => {
         console.error("[LiurenList] 加载标签失败", err);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, records.length, refreshKey]); // 记录变化时刷新标签
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const handleTagToggle = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(item => item !== tag) : [...prev, tag]
     );
     setPage(1); // 切换筛选时重置到第一页
   };
@@ -123,7 +121,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           className="record-search-input"
           placeholder={t("daliuren.search")}
           value={searchText}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={e => handleSearchChange(e.target.value)}
           aria-label={t("daliuren.searchAria")}
         />
       </div>
@@ -131,7 +129,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
       {/* Tag 筛选 */}
       {allTags.length > 0 && (
         <div className="record-list-tags">
-          {allTags.map((tag) => (
+          {allTags.map(tag => (
             <button
               key={tag}
               className={`record-tag-filter ${selectedTags.includes(tag) ? "active" : ""}`}
@@ -152,7 +150,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
               : t("daliuren.noRecords")}
           </div>
         ) : (
-          records.map((record) => (
+          records.map(record => (
             <div
               key={record.id}
               className={`record-list-item ${selectedId === record.id ? "active" : ""} ${hoveredId === record.id ? "hovered" : ""}`}
@@ -161,7 +159,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
               onMouseLeave={() => setHoveredId(null)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => {
+              onKeyDown={e => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   onSelect(record);
@@ -169,23 +167,19 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
               }}
             >
               <div className="record-list-item-main">
-                <div className="record-list-item-time">
-                  {formatRelativeTime(record.savedAt)}
-                </div>
+                <div className="record-list-item-time">{formatRelativeTime(record.savedAt)}</div>
                 <div className="record-list-item-text">
                   {record.question || t("daliuren.noQuestion")}
                 </div>
                 {record.tags.length > 0 && (
                   <div className="record-list-item-tags">
-                    {record.tags.slice(0, 3).map((tag) => (
+                    {record.tags.slice(0, 3).map(tag => (
                       <span key={tag} className="record-list-item-tag">
                         {tag}
                       </span>
                     ))}
                     {record.tags.length > 3 && (
-                      <span className="record-list-item-tag-more">
-                        +{record.tags.length - 3}
-                      </span>
+                      <span className="record-list-item-tag-more">+{record.tags.length - 3}</span>
                     )}
                   </div>
                 )}
@@ -194,7 +188,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                 {onViewClick && (
                   <button
                     className="record-action-btn"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       onViewClick(record);
                     }}
@@ -206,7 +200,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                 )}
                 <button
                   className="record-action-btn"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     onEditClick(record);
                   }}
@@ -217,7 +211,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                 </button>
                 <button
                   className="record-action-btn record-action-delete"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     onDeleteClick(record);
                   }}
@@ -237,7 +231,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
         <div className="record-list-pagination">
           <button
             disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
+            onClick={() => setPage(p => p - 1)}
             aria-label={t("common.prev")}
           >
             ‹
@@ -247,7 +241,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           </span>
           <button
             disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setPage(p => p + 1)}
             aria-label={t("common.next")}
           >
             ›

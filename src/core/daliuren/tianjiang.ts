@@ -69,9 +69,10 @@ function calcSunEqOfCenter(T: number): number {
   const sinM = Math.sin(Mrad);
   const sin2M = Math.sin(2 * Mrad);
   const sin3M = Math.sin(3 * Mrad);
-  const C = sinM * (1.914602 - T * (0.004817 + 0.000014 * T)) +
-            sin2M * (0.019993 - 0.000101 * T) +
-            sin3M * 0.000289;
+  const C =
+    sinM * (1.914602 - T * (0.004817 + 0.000014 * T)) +
+    sin2M * (0.019993 - 0.000101 * T) +
+    sin3M * 0.000289;
   return C;
 }
 
@@ -95,7 +96,7 @@ function calcSunApparentLong(T: number): number {
  * 计算平均黄赤交角（Mean Obliquity of the Ecliptic）
  */
 function calcMeanObliquityOfEcliptic(T: number): number {
-  const seconds = 21.448 - T * (46.8150 + T * (0.00059 - T * 0.001813));
+  const seconds = 21.448 - T * (46.815 + T * (0.00059 - T * 0.001813));
   return 23.0 + (26.0 + seconds / 60.0) / 60.0;
 }
 
@@ -127,7 +128,7 @@ function calcEquationOfTime(T: number): number {
   const e = calcEccentricityEarthOrbit(T);
   const m = calcGeomMeanAnomalySun(T);
 
-  let y = Math.tan((epsilon / 2.0 * Math.PI) / 180.0);
+  let y = Math.tan(((epsilon / 2.0) * Math.PI) / 180.0);
   y *= y;
 
   const sin2l0 = Math.sin((2.0 * l0 * Math.PI) / 180.0);
@@ -136,9 +137,14 @@ function calcEquationOfTime(T: number): number {
   const sin4l0 = Math.sin((4.0 * l0 * Math.PI) / 180.0);
   const sin2m = Math.sin((2.0 * m * Math.PI) / 180.0);
 
-  const Etime = y * sin2l0 - 2.0 * e * sinm + 4.0 * e * y * sinm * cos2l0 - 0.5 * y * y * sin4l0 - 1.25 * e * e * sin2m;
+  const Etime =
+    y * sin2l0 -
+    2.0 * e * sinm +
+    4.0 * e * y * sinm * cos2l0 -
+    0.5 * y * y * sin4l0 -
+    1.25 * e * e * sin2m;
 
-  return (Etime * 180.0 / Math.PI) * 4.0; // in minutes
+  return ((Etime * 180.0) / Math.PI) * 4.0; // in minutes
 }
 
 /**
@@ -147,14 +153,22 @@ function calcEquationOfTime(T: number): number {
 function calcHourAngleSunrise(lat: number, declination: number): number {
   const latRad = (lat * Math.PI) / 180.0;
   const decRad = (declination * Math.PI) / 180.0;
-  const cosHA = (Math.cos(90.833 * Math.PI / 180.0) / (Math.cos(latRad) * Math.cos(decRad))) - Math.tan(latRad) * Math.tan(decRad);
+  const cosHA =
+    Math.cos((90.833 * Math.PI) / 180.0) / (Math.cos(latRad) * Math.cos(decRad)) -
+    Math.tan(latRad) * Math.tan(decRad);
   return (Math.acos(cosHA) * 180.0) / Math.PI;
 }
 
 /**
  * 计算日出日落时间（与 PHP date_sun_info 完全一致）
  */
-function calcSunriseSunset(year: number, month: number, day: number, latitude: number, longitude: number): { sunrise: number; sunset: number } {
+function calcSunriseSunset(
+  year: number,
+  month: number,
+  day: number,
+  latitude: number,
+  longitude: number
+): { sunrise: number; sunset: number } {
   const jd = calcJD(year, month, day);
   const T = calcT(jd + 0.5); // 使用正午计算
 
@@ -169,7 +183,8 @@ function calcSunriseSunset(year: number, month: number, day: number, latitude: n
   // 转换为 Unix 时间戳（秒）
   // 注意：使用 UTC 午夜作为基准，加上 UTC 分钟数
   const baseDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-  const sunriseTimestamp = Math.floor(baseDate.getTime() / 1000) + Math.floor(sunriseMinutesUTC * 60);
+  const sunriseTimestamp =
+    Math.floor(baseDate.getTime() / 1000) + Math.floor(sunriseMinutesUTC * 60);
   const sunsetTimestamp = Math.floor(baseDate.getTime() / 1000) + Math.floor(sunsetMinutesUTC * 60);
 
   return { sunrise: sunriseTimestamp, sunset: sunsetTimestamp };
@@ -188,7 +203,13 @@ export function isDaytime(
   minute: number
 ): boolean {
   // 计算日出日落（返回 UTC 时间戳）
-  const { sunrise, sunset } = calcSunriseSunset(year, month, day, BEIJING_LATITUDE, BEIJING_LONGITUDE);
+  const { sunrise, sunset } = calcSunriseSunset(
+    year,
+    month,
+    day,
+    BEIJING_LATITUDE,
+    BEIJING_LONGITUDE
+  );
 
   // 计算当前时间戳（UTC）
   const currentDate = new Date(Date.UTC(year, month - 1, day, hour - TIMEZONE_OFFSET, minute, 0));
@@ -249,10 +270,10 @@ export function calculateTwelveGenerals(
     let generalIdx: number;
     if (isReverse) {
       // 逆行
-      generalIdx = ((nobleman - ground - heaven0) % 12 + 12) % 12;
+      generalIdx = (((nobleman - ground - heaven0) % 12) + 12) % 12;
     } else {
       // 顺行
-      generalIdx = ((heaven0 - nobleman + ground) % 12 + 12) % 12;
+      generalIdx = (((heaven0 - nobleman + ground) % 12) + 12) % 12;
     }
 
     generals.push({

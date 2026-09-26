@@ -16,9 +16,7 @@ import { globalEvents } from "./events";
  *   - initError：初始化失败时的错误信息
  *   - refresh：手动刷新人物（目前仅用于调试 API）
  */
-export function useDefaultPerson(
-  onPersonChanged?: (newPerson: Person) => void
-) {
+export function useDefaultPerson(onPersonChanged?: (newPerson: Person) => void) {
   const [person, setPerson] = useState<Person | null>(null);
   /** 初始化失败时展示错误提示（避免无限 loading） */
   const [initError, setInitError] = useState<string | null>(null);
@@ -26,11 +24,11 @@ export function useDefaultPerson(
   // 初始加载默认人物
   useEffect(() => {
     getDefaultPerson()
-      .then((p) => {
+      .then(p => {
         if (p.id != null) setPerson(p);
         else setInitError("未找到默认人物，请刷新页面重试");
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("[useDefaultPerson] 加载默认人物失败", err);
         setInitError("加载人物信息失败，请检查浏览器存储设置后刷新页面");
       });
@@ -76,7 +74,7 @@ export function useRefreshKey() {
   refreshRef.current = refreshKey;
 
   const refresh = useCallback(() => {
-    setRefreshKey((k) => k + 1);
+    setRefreshKey(k => k + 1);
   }, []);
 
   return { refreshKey, refresh, refreshRef };

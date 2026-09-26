@@ -2,20 +2,8 @@
  * 运限拨盘（hbar）数据计算：大运/流年/流月/流日/流时列表
  * 纯函数，供 useZwds 和 debugApi 共享
  */
-import {
-  BRANCHES,
-  LUNAR_DAYS,
-  LUNAR_MONTHS,
-  hourGanZhi,
-  monthGanZhi,
-  yearGanZhi,
-} from "./utils";
-import {
-  daysInLunarMonth,
-  dayGanZhi,
-  leapMonthOf,
-  lunarToSolarStr,
-} from "./lunar";
+import { BRANCHES, LUNAR_DAYS, LUNAR_MONTHS, hourGanZhi, monthGanZhi, yearGanZhi } from "./utils";
+import { daysInLunarMonth, dayGanZhi, leapMonthOf, lunarToSolarStr } from "./lunar";
 import type { Astrolabe } from "./useZwds";
 
 /* ─────────────── 类型定义 ─────────────── */
@@ -82,7 +70,7 @@ export type HbarData = {
 /** 计算十二大限（按起限年龄升序） */
 export function buildDecades(astrolabe: Astrolabe, birthLunarYear: number): DecadeInfo[] {
   return astrolabe.palaces
-    .map((p) => ({
+    .map(p => ({
       palaceIndex: p.index,
       range: p.decadal.range as [number, number],
       heavenlyStem: p.decadal.heavenlyStem as string,
@@ -114,7 +102,7 @@ export function calcActiveDecadeIdx(
   if (!decades.length) return -1;
   const age = pickYear - birthLunarYear + 1;
   if (age < decades[0].range[0]) return -1;
-  const i = decades.findIndex((d) => age >= d.range[0] && age <= d.range[1]);
+  const i = decades.findIndex(d => age >= d.range[0] && age <= d.range[1]);
   return i >= 0 ? i : decades.length - 1;
 }
 
@@ -200,7 +188,7 @@ export function buildHbarData(
   const activeDecadeIdx = calcActiveDecadeIdx(pick.year, decades, birthLunarYear);
 
   const years = buildYears(activeDecadeIdx, decades, childhood, birthLunarYear);
-  const activeYearIdx = years.findIndex((y) => y.year === pick.year);
+  const activeYearIdx = years.findIndex(y => y.year === pick.year);
 
   const yearLeapMonth = leapMonthOf(pick.year);
   const effLeap = pick.leap && pick.month === yearLeapMonth;
@@ -208,7 +196,7 @@ export function buildHbarData(
   const clampedDay = Math.min(pick.day, monthDays);
 
   const months = buildMonths(pick.year, yearLeapMonth);
-  const activeMonthIdx = months.findIndex((m) => m.month === pick.month && m.leap === pick.leap);
+  const activeMonthIdx = months.findIndex(m => m.month === pick.month && m.leap === pick.leap);
 
   const days = buildDays(pick.year, pick.month, monthDays, effLeap);
   const activeDayIdx = clampedDay - 1; // days 数组从 day=1 开始，索引从 0 开始

@@ -1,6 +1,12 @@
 import { useMemo, memo } from "react";
 import { util } from "iztro";
-import { abbrPalace, fixIndex, type Scope, type MutagenChar, type ScopeSelfMark } from "../core/utils";
+import {
+  abbrPalace,
+  fixIndex,
+  type Scope,
+  type MutagenChar,
+  type ScopeSelfMark,
+} from "../core/utils";
 import type { PalaceData, Zwds } from "../core/useZwds";
 import { StarCell } from "./StarCell";
 import { useI18n } from "../core/i18n";
@@ -43,7 +49,7 @@ export const PalaceCard = memo(function PalaceCard({
   );
 
   /* 运限宫名徽章：从 scopeData 获取 */
-  const chips = scopeData.map((sd) => ({
+  const chips = scopeData.map(sd => ({
     key: sd.scope,
     cls: sd.scope,
     text: abbrPalace(sd.palaceName),
@@ -51,8 +57,8 @@ export const PalaceCard = memo(function PalaceCard({
 
   /* 流耀：从 scopeData 获取 */
   const horoStarRows = scopeData
-    .filter((sd) => sd.stars.length > 0)
-    .map((sd) => ({ scope: sd.scope, stars: sd.stars }));
+    .filter(sd => sd.stars.length > 0)
+    .map(sd => ({ scope: sd.scope, stars: sd.stars }));
 
   /* 按星曜名分组自化标记，供 StarCell 消费 */
   const selfMarksByStar = useMemo(() => {
@@ -70,7 +76,9 @@ export const PalaceCard = memo(function PalaceCard({
   const sui =
     visible.yearly && horoscope ? horoscope.yearly.yearlyDecStar.suiqian12[i] : palace.suiqian12;
   const jiang =
-    visible.yearly && horoscope ? horoscope.yearly.yearlyDecStar.jiangqian12[i] : palace.jiangqian12;
+    visible.yearly && horoscope
+      ? horoscope.yearly.yearlyDecStar.jiangqian12[i]
+      : palace.jiangqian12;
 
   const isFocus = focus === i;
   const isOpp = focus >= 0 && i === fixIndex(focus + 6);
@@ -90,7 +98,7 @@ export const PalaceCard = memo(function PalaceCard({
       className={cls}
       style={{ gridArea: `g${i}` }}
       onClick={() => onFocus(i)}
-      onKeyDown={(e) => {
+      onKeyDown={e => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onFocus(i);
@@ -105,7 +113,7 @@ export const PalaceCard = memo(function PalaceCard({
         <button
           className="p-detail-btn"
           aria-label={t("palace.detailAriaLabel")}
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation();
             onDetail(i);
           }}
@@ -115,7 +123,7 @@ export const PalaceCard = memo(function PalaceCard({
       )}
       <div className="p-stars">
         <div className="p-major">
-          {palace.majorStars.map((s) => (
+          {palace.majorStars.map(s => (
             <StarCell
               key={s.name}
               star={s}
@@ -125,7 +133,7 @@ export const PalaceCard = memo(function PalaceCard({
               selfScopeMarks={selfMarksByStar[s.name]}
             />
           ))}
-          {palace.minorStars.map((s) => (
+          {palace.minorStars.map(s => (
             <StarCell
               key={s.name}
               star={s}
@@ -138,14 +146,14 @@ export const PalaceCard = memo(function PalaceCard({
         </div>
         {palace.adjectiveStars.length > 0 && (
           <div className="p-adj">
-            {palace.adjectiveStars.map((s) => (
+            {palace.adjectiveStars.map(s => (
               <span key={s.name}>{s.name}</span>
             ))}
           </div>
         )}
-        {horoStarRows.map((r) => (
+        {horoStarRows.map(r => (
           <div key={r.scope} className={`p-horostars hs-${r.scope}`}>
-            {r.stars.map((s) => (
+            {r.stars.map(s => (
               <span key={s.name}>{s.name}</span>
             ))}
           </div>
@@ -156,7 +164,7 @@ export const PalaceCard = memo(function PalaceCard({
 
       {chips.length > 0 && (
         <div className="p-chips">
-          {chips.map((c) => (
+          {chips.map(c => (
             <i key={c.key} className={`chip chip-${c.cls}`}>
               {c.text}
             </i>

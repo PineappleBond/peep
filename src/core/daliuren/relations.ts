@@ -47,14 +47,8 @@ export interface BranchRelation {
 }
 
 /** 检查两个地支是否在某个对中 */
-function pairMatch(
-  pairs: readonly (readonly [number, number])[],
-  a: number,
-  b: number
-): boolean {
-  return pairs.some(
-    ([x, y]) => (x === a && y === b) || (x === b && y === a)
-  );
+function pairMatch(pairs: readonly (readonly [number, number])[], a: number, b: number): boolean {
+  return pairs.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 }
 
 /** 刑的检测（含三刑链和自刑） */
@@ -88,9 +82,7 @@ function checkXing(a: number, b: number): string | null {
  * @param branches 要检查的地支列表（可含重复，如四课/三传中的地支）
  * @returns 所有检测到的关系列表
  */
-export function findBranchRelations(
-  branches: number[]
-): BranchRelation[] {
+export function findBranchRelations(branches: number[]): BranchRelation[] {
   const relations: BranchRelation[] = [];
   // 去重
   const unique = [...new Set(branches)];
@@ -158,7 +150,7 @@ export function findBranchRelations(
     if (counts[b] >= 2 && [4, 6, 9, 11].includes(b)) {
       // 检查是否已经作为自刑添加过（unique 列表中不含重复，所以这里单独处理）
       const alreadyHas = relations.some(
-        (r) => r.type === "刑" && r.branches[0] === b && r.branches[1] === b
+        r => r.type === "刑" && r.branches[0] === b && r.branches[1] === b
       );
       if (!alreadyHas) {
         relations.push({

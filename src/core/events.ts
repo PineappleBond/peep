@@ -30,7 +30,7 @@ class EventEmitter {
   emit<E extends EventName>(event: E, ...args: Parameters<EventMap[E]>) {
     const listeners = this.listeners.get(event);
     if (!listeners) return;
-    listeners.forEach((listener) => {
+    listeners.forEach(listener => {
       try {
         listener(...args);
       } catch (err) {

@@ -107,7 +107,7 @@ describe("chartIndex 盘面索引原语", () => {
       const names = starNamesAt(a, 0);
       const p = a.palaces[0];
       const expected = [...p.majorStars, ...p.minorStars, ...p.adjectiveStars].map(
-        (s) => s.name as string
+        s => s.name as string
       );
       expect(names).toEqual(expected);
     });

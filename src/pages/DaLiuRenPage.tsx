@@ -19,7 +19,11 @@ import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 export function DaLiuRenPage() {
   const { t } = useI18n();
   // 列表刷新计数器（用于在 Dialog 操作后触发刷新）
-  const { refreshKey: listRefreshKey, refresh: refreshList, refreshRef: listRefreshKeyRef } = useRefreshKey();
+  const {
+    refreshKey: listRefreshKey,
+    refresh: refreshList,
+    refreshRef: listRefreshKeyRef,
+  } = useRefreshKey();
 
   // 默认人物加载 + 切换监听（切换后清空选中、刷新列表）
   const { person, initError } = useDefaultPerson((newPerson: Person) => {
@@ -40,13 +44,21 @@ export function DaLiuRenPage() {
   const liurenListRef = useRef<LiurenListHandle>(null);
 
   // 调试 API：用于预填充新建 Dialog 的表单数据
-  const createFormInitialDataRef = useRef<{ question: string; note: string; background: string; tags: string[] } | null>(null);
+  const createFormInitialDataRef = useRef<{
+    question: string;
+    note: string;
+    background: string;
+    tags: string[];
+  } | null>(null);
   // 调试 API：提交触发计数器
   const [createSubmitTrigger, setCreateSubmitTrigger] = useState(0);
   // 调试 API：selectedRecord 的 ref 镜像，避免 getSelectedRecord 回调的闭包过时问题
   const selectedRecordRef = useRef<LiurenRecord | null>(null);
   // 调试 API：submitCreateForm 轮询定时器（组件卸载时清理，防止泄漏）
-  const submitPollRef = useRef<{ interval: ReturnType<typeof setInterval>; timeout: ReturnType<typeof setTimeout> } | null>(null);
+  const submitPollRef = useRef<{
+    interval: ReturnType<typeof setInterval>;
+    timeout: ReturnType<typeof setTimeout>;
+  } | null>(null);
 
   // 同步 selectedRecord 到 ref（供调试 API 的 getSelectedRecord 回调读取最新值）
   useEffect(() => {
@@ -83,7 +95,7 @@ export function DaLiuRenPage() {
       openCreateDialog: () => {
         setCreateDialogOpen(true);
       },
-      fillCreateForm: (data) => {
+      fillCreateForm: data => {
         createFormInitialDataRef.current = {
           question: data.question,
           note: data.note || "",
@@ -103,7 +115,7 @@ export function DaLiuRenPage() {
           }, 5000);
 
           // 触发提交（通过递增 submitTrigger）
-          setCreateSubmitTrigger((t) => t + 1);
+          setCreateSubmitTrigger(t => t + 1);
 
           // 监听 listRefreshKey 变化（表示保存成功）
           const originalRefreshKey = listRefreshKeyRef.current;
@@ -115,14 +127,14 @@ export function DaLiuRenPage() {
               // 获取最新记录（刚刚创建的）
               if (person?.id) {
                 listLiurenRecords(person.id, { page: 1, pageSize: 1 })
-                  .then((result) => {
+                  .then(result => {
                     if (result.records.length > 0) {
                       resolve(result.records[0]);
                     } else {
                       reject(new Error(t("daliuren.recordNotFound")));
                     }
                   })
-                  .catch((err) => reject(err));
+                  .catch(err => reject(err));
               } else {
                 reject(new Error(t("daliuren.personNotSelected")));
               }
@@ -184,10 +196,10 @@ export function DaLiuRenPage() {
       // 重新加载该记录
       if (dialogRecord.id) {
         getLiurenRecord(dialogRecord.id)
-          .then((r) => {
+          .then(r => {
             if (r) setSelectedRecord(r);
           })
-          .catch((err) => {
+          .catch(err => {
             console.error("[DaLiuRenPage] 重新加载记录失败", err);
           });
       }
@@ -206,13 +218,17 @@ export function DaLiuRenPage() {
     if (initError) {
       return (
         <div className="liuren-page">
-          <div className="err-box" role="alert">{initError}</div>
+          <div className="err-box" role="alert">
+            {initError}
+          </div>
         </div>
       );
     }
     return (
       <div className="liuren-page">
-        <div className="liuren-loading" role="status" aria-live="polite">{t("daliuren.loading")}</div>
+        <div className="liuren-loading" role="status" aria-live="polite">
+          {t("daliuren.loading")}
+        </div>
       </div>
     );
   }

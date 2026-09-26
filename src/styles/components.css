@@ -32,7 +32,13 @@
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    opacity 0.2s,
+    transform 0.2s;
 }
 
 .export-actions button:hover {
@@ -62,7 +68,9 @@
   white-space: nowrap;
 }
 
-.export-actions button.export-primary .export-size { color: var(--gold-deep); }
+.export-actions button.export-primary .export-size {
+  color: var(--gold-deep);
+}
 
 .export-pv-head {
   display: flex;
@@ -92,10 +100,18 @@
   font-size: 0.7rem;
   font-family: inherit;
   cursor: pointer;
-  transition: color .15s, background .15s, border-color .15s, box-shadow .15s, opacity .15s, transform .15s;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s,
+    opacity 0.15s,
+    transform 0.15s;
 }
 
-.export-tabs button:hover { color: var(--cyan); }
+.export-tabs button:hover {
+  color: var(--cyan);
+}
 
 .export-tabs button.on {
   border-color: rgba(85, 215, 255, 0.4);
@@ -127,9 +143,17 @@
 }
 
 @media (max-width: 760px) {
-  .export { padding: 10px 10px 10px; }
-  .export-actions button { flex: 1 1 100%; justify-content: space-between; }
-  .export-pv-meta { margin-left: 0; flex-basis: 100%; }
+  .export {
+    padding: 10px 10px 10px;
+  }
+  .export-actions button {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+  .export-pv-meta {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
 }
 
 .export-opts {
@@ -171,8 +195,12 @@
 }
 
 @keyframes dlg-fadein {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .dlg-panel {
@@ -192,8 +220,14 @@
 }
 
 @keyframes dlg-slidein {
-  from { transform: translateY(16px) scale(0.96); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+  from {
+    transform: translateY(16px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 .dlg-head {
@@ -225,7 +259,13 @@
   color: var(--dim);
   font-size: 13px;
   cursor: pointer;
-  transition: color .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease, opacity .22s ease, transform .22s ease;
+  transition:
+    color 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    opacity 0.22s ease,
+    transform 0.22s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -285,7 +325,13 @@
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: color .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease, opacity .22s ease, transform .22s ease;
+  transition:
+    color 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    opacity 0.22s ease,
+    transform 0.22s ease;
 }
 
 .btn-cancel:hover {
@@ -304,7 +350,13 @@
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    opacity 0.2s,
+    transform 0.2s;
 }
 
 .btn-save:hover {
@@ -322,7 +374,13 @@
   font-family: inherit;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: color .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease, opacity .22s ease, transform .22s ease;
+  transition:
+    color 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    opacity 0.22s ease,
+    transform 0.22s ease;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
@@ -405,7 +463,9 @@
 
 .person-select:focus {
   border-color: var(--line-strong);
-  box-shadow: 0 0 12px rgba(85, 215, 255, 0.25), inset 0 0 4px rgba(85, 215, 255, 0.05);
+  box-shadow:
+    0 0 12px rgba(85, 215, 255, 0.25),
+    inset 0 0 4px rgba(85, 215, 255, 0.05);
 }
 
 .person-select:focus-visible {
@@ -428,7 +488,13 @@
   color: var(--dim);
   font-size: 14px;
   cursor: pointer;
-  transition: color .22s cubic-bezier(.4,0,.2,1), background .22s cubic-bezier(.4,0,.2,1), border-color .22s cubic-bezier(.4,0,.2,1), box-shadow .22s cubic-bezier(.4,0,.2,1), opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1);
+  transition:
+    color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -505,7 +571,9 @@
   font-size: 0.8rem;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .form-grid input:focus,
@@ -530,7 +598,13 @@
   cursor: pointer;
   font-size: 0.8rem;
   font-family: inherit;
-  transition: color .2s, background .2s, border-color .2s, box-shadow .2s, opacity .2s, transform .2s;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    opacity 0.2s,
+    transform 0.2s;
 }
 
 .form-grid .seg button.on {
@@ -623,8 +697,13 @@
 
 /* liurenPulse 已合并到全局 u-pulse，保留别名兼容旧引用 */
 @keyframes liurenPulse {
-  0%, 100% { opacity: 0.6; }
-  50%      { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .liuren-layout {
@@ -680,7 +759,6 @@
   background: transparent;
 }
 
-
 /* ── 左侧列表（大六壬 / Wiki 共用样式） ── */
 .record-list {
   display: flex;
@@ -717,7 +795,9 @@
 
 .record-new-btn:hover {
   background: linear-gradient(135deg, rgba(243, 201, 107, 0.22), rgba(219, 166, 60, 0.15));
-  box-shadow: 0 0 14px rgba(243, 201, 107, 0.35), inset 0 0 6px rgba(243, 201, 107, 0.1);
+  box-shadow:
+    0 0 14px rgba(243, 201, 107, 0.35),
+    inset 0 0 6px rgba(243, 201, 107, 0.1);
   transform: translateY(-1px);
 }
 
@@ -749,7 +829,9 @@
 
 .record-search-input:focus {
   border-color: var(--line-strong);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.22), inset 0 0 4px rgba(85, 215, 255, 0.05);
+  box-shadow:
+    0 0 10px rgba(85, 215, 255, 0.22),
+    inset 0 0 4px rgba(85, 215, 255, 0.05);
   background: rgba(0, 0, 0, 0.35);
 }
 
@@ -864,7 +946,9 @@
   border-color: rgba(243, 201, 107, 0.4);
   border-left: 2px solid var(--gold);
   padding-left: 9px;
-  box-shadow: 0 0 10px rgba(243, 201, 107, 0.18), inset 0 0 0 1px rgba(243, 201, 107, 0.05);
+  box-shadow:
+    0 0 10px rgba(243, 201, 107, 0.18),
+    inset 0 0 0 1px rgba(243, 201, 107, 0.05);
 }
 
 .record-list-item.active:hover {
@@ -935,7 +1019,7 @@
   gap: 4px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .15s cubic-bezier(.4,0,.2,1);
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .record-list-item.hovered .record-list-item-actions,
@@ -1021,7 +1105,6 @@
   font-size: 0.7rem;
   color: var(--dim);
 }
-
 
 /* ─── 懒加载占位指示器 ─── */
 .lazy-loading {

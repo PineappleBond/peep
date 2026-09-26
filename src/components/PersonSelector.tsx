@@ -3,12 +3,7 @@
  */
 import { useEffect, useState } from "react";
 import type { Person } from "../core/personDb";
-import {
-  listPersons,
-  savePerson,
-  deletePerson,
-  getDefaultPerson,
-} from "../core/personDb";
+import { listPersons, savePerson, deletePerson, getDefaultPerson } from "../core/personDb";
 import type { BirthInput } from "../core/useZwds";
 import { PersonDialog } from "./PersonDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -45,7 +40,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
 
   const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = Number(e.target.value);
-    const person = persons.find((p) => p.id === id);
+    const person = persons.find(p => p.id === id);
     if (person) onSelect(person);
   };
 
@@ -55,7 +50,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
   };
 
   const handleEdit = () => {
-    const current = persons.find((p) => p.id === currentId);
+    const current = persons.find(p => p.id === currentId);
     if (current) {
       setEditingPerson(current);
       setDialogOpen(true);
@@ -74,7 +69,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
   };
 
   const handleDeleteClick = () => {
-    const current = persons.find((p) => p.id === currentId);
+    const current = persons.find(p => p.id === currentId);
     if (current) setConfirmDelete(current);
   };
 
@@ -92,7 +87,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
     }
   };
 
-  const currentPerson = persons.find((p) => p.id === currentId);
+  const currentPerson = persons.find(p => p.id === currentId);
   const canDelete = currentPerson && !currentPerson.isDefault;
 
   return (
@@ -104,9 +99,10 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
           className="person-select"
           aria-label={t("person.selectPerson")}
         >
-          {persons.map((p) => (
+          {persons.map(p => (
             <option key={p.id} value={p.id}>
-              {p.name || t("person.unnamed")} · {p.gender === "男" ? t("common.male") : t("common.female")}
+              {p.name || t("person.unnamed")} ·{" "}
+              {p.gender === "男" ? t("common.male") : t("common.female")}
             </option>
           ))}
         </select>

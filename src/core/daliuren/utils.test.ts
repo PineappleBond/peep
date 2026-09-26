@@ -22,11 +22,18 @@ function makeMinimalResult(overrides: Partial<DaLiuRenResult> = {}): DaLiuRenRes
   return {
     calculationTime: "2024-01-15 12:00:00",
     fourPillars: {
-      yearStem: 3, yearBranch: 3, // 丁卯
-      monthStem: 9, monthBranch: 0, // 癸子
-      dayStem: 0, dayBranch: 0, // 甲子
-      hourStem: 6, hourBranch: 6, // 庚午
-      yearPillar: "丁卯", monthPillar: "癸丑", dayPillar: "甲子", hourPillar: "庚午",
+      yearStem: 3,
+      yearBranch: 3, // 丁卯
+      monthStem: 9,
+      monthBranch: 0, // 癸子
+      dayStem: 0,
+      dayBranch: 0, // 甲子
+      hourStem: 6,
+      hourBranch: 6, // 庚午
+      yearPillar: "丁卯",
+      monthPillar: "癸丑",
+      dayPillar: "甲子",
+      hourPillar: "庚午",
     },
     monthGeneral: { branch: 0, name: "子" },
     earthBoard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],

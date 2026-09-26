@@ -28,7 +28,9 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onClose={onCancel} title={title ?? t("confirm.title")} width={380}>
       <div className="confirm-content">
-        <div className="confirm-icon" aria-hidden="true">⚠</div>
+        <div className="confirm-icon" aria-hidden="true">
+          ⚠
+        </div>
         <p className="confirm-msg">{message}</p>
       </div>
       <div className="dlg-foot">

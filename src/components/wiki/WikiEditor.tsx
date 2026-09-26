@@ -21,13 +21,7 @@ export interface WikiEditorProps {
   onCancel: () => void;
 }
 
-export function WikiEditor({
-  doc,
-  personId,
-  existingTags,
-  onSave,
-  onCancel,
-}: WikiEditorProps) {
+export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: WikiEditorProps) {
   const { t } = useI18n();
   // 表单状态
   const [title, setTitle] = useState("");
@@ -59,7 +53,7 @@ export function WikiEditor({
           const targetIds = await getWikiLinks(doc.id);
           setLinkTargetIds(targetIds);
           // 批量查询标题
-          const docs = await Promise.all(targetIds.map((id) => getWikiDoc(id)));
+          const docs = await Promise.all(targetIds.map(id => getWikiDoc(id)));
           const titles: Record<number, string> = {};
           docs.forEach((d, i) => {
             if (d) titles[targetIds[i]] = d.title;
@@ -100,7 +94,7 @@ export function WikiEditor({
         });
         // 排除当前文档（编辑模式）和已选择的文档
         const filtered = result.docs.filter(
-          (d) => d.id !== doc?.id && !linkTargetIds.includes(d.id!)
+          d => d.id !== doc?.id && !linkTargetIds.includes(d.id!)
         );
         setLinkSearchResults(filtered);
       } catch (e) {
@@ -124,7 +118,7 @@ export function WikiEditor({
       try {
         const targetDoc = await getWikiDoc(targetId);
         if (targetDoc) {
-          setLinkTargetTitles((prev) => ({ ...prev, [targetId]: targetDoc.title }));
+          setLinkTargetTitles(prev => ({ ...prev, [targetId]: targetDoc.title }));
         }
       } catch (err) {
         console.error("[WikiEditor] 查询关联文档标题失败", err);
@@ -136,7 +130,7 @@ export function WikiEditor({
 
   // 移除关联文档
   const removeLinkTarget = (targetId: number) => {
-    setLinkTargetIds(linkTargetIds.filter((id) => id !== targetId));
+    setLinkTargetIds(linkTargetIds.filter(id => id !== targetId));
   };
 
   // 保存
@@ -178,7 +172,11 @@ export function WikiEditor({
   return (
     <div className="wiki-editor">
       {/* 错误提示 */}
-      {error && <div className="wiki-editor-error" role="alert">{error}</div>}
+      {error && (
+        <div className="wiki-editor-error" role="alert">
+          {error}
+        </div>
+      )}
 
       {/* 标题输入 */}
       <div className="wiki-editor-field">
@@ -186,7 +184,7 @@ export function WikiEditor({
           type="text"
           className="wiki-editor-title"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={e => setTitle(e.target.value)}
           placeholder={t("wiki.editor.docTitlePlaceholder")}
           maxLength={200}
           autoFocus
@@ -199,7 +197,7 @@ export function WikiEditor({
         <textarea
           className="wiki-editor-textarea"
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={e => setContent(e.target.value)}
           placeholder={t("wiki.editor.contentPlaceholder")}
           rows={20}
           maxLength={100000}
@@ -210,12 +208,7 @@ export function WikiEditor({
       {/* 标签输入 */}
       <div className="wiki-editor-field">
         <label>{t("wiki.editor.tags")}</label>
-        <TagInput
-          value={tags}
-          onChange={setTags}
-          suggestions={existingTags}
-          disabled={saving}
-        />
+        <TagInput value={tags} onChange={setTags} suggestions={existingTags} disabled={saving} />
       </div>
 
       {/* 关联文档选择 */}
@@ -227,7 +220,7 @@ export function WikiEditor({
             type="text"
             className="wiki-editor-link-search"
             value={linkSearchText}
-            onChange={(e) => setLinkSearchText(e.target.value)}
+            onChange={e => setLinkSearchText(e.target.value)}
             placeholder={t("wiki.editor.searchRelated")}
             aria-label={t("wiki.editor.searchRelatedAria")}
           />
@@ -235,14 +228,14 @@ export function WikiEditor({
           {/* 搜索结果列表 */}
           {linkSearchResults.length > 0 && (
             <div className="wiki-link-search-results">
-              {linkSearchResults.map((result) => (
+              {linkSearchResults.map(result => (
                 <div
                   key={result.id}
                   className="wiki-link-search-item"
                   onClick={() => addLinkTarget(result.id!)}
                   role="option"
                   tabIndex={0}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       addLinkTarget(result.id!);
@@ -250,9 +243,7 @@ export function WikiEditor({
                   }}
                 >
                   <span className="wiki-link-title">{result.title}</span>
-                  <span className="wiki-link-tags">
-                    {result.tags.slice(0, 3).join(", ")}
-                  </span>
+                  <span className="wiki-link-tags">{result.tags.slice(0, 3).join(", ")}</span>
                 </div>
               ))}
             </div>
@@ -261,7 +252,7 @@ export function WikiEditor({
           {/* 已关联文档列表 */}
           {linkTargetIds.length > 0 && (
             <div className="wiki-link-selected">
-              {linkTargetIds.map((id) => (
+              {linkTargetIds.map(id => (
                 <div key={id} className="wiki-link-selected-item">
                   <span>{linkTargetTitles[id] || t("wiki.editor.docRef", { id })}</span>
                   <button
@@ -281,18 +272,10 @@ export function WikiEditor({
 
       {/* 底部按钮 */}
       <div className="wiki-editor-footer">
-        <button
-          className="btn-cancel"
-          onClick={handleCancel}
-          disabled={saving}
-        >
+        <button className="btn-cancel" onClick={handleCancel} disabled={saving}>
           {t("wiki.editor.cancel")}
         </button>
-        <button
-          className="btn-primary"
-          onClick={handleSave}
-          disabled={saving}
-        >
+        <button className="btn-primary" onClick={handleSave} disabled={saving}>
           {saving ? t("wiki.editor.saving") : t("wiki.editor.save")}
         </button>
       </div>

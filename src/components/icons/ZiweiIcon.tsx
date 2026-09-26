@@ -33,7 +33,15 @@ export function ZiweiIcon(props: SVGAttributes<SVGSVGElement>) {
       />
       {/* 紫微星（中心大星） */}
       <circle cx="12" cy="12" r="1.8" fill="currentColor" />
-      <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
+      <circle
+        cx="12"
+        cy="12"
+        r="2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="0.5"
+        opacity="0.3"
+      />
     </svg>
   );
 }

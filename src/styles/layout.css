@@ -40,12 +40,22 @@
   border: 1px solid var(--line);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 20px rgba(85, 215, 255, 0.05);
-  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(85, 215, 255, 0.05);
+  transition:
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .top:hover {
-  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35), 0 0 24px rgba(85, 215, 255, 0.08);
+  box-shadow:
+    0 6px 28px rgba(0, 0, 0, 0.35),
+    0 0 24px rgba(85, 215, 255, 0.08);
 }
 
 .top h1 {
@@ -176,7 +186,6 @@
   transform: translateY(-2px);
 }
 
-
 /* ── 出错 / 页脚 ── */
 .err-box {
   margin: 30px auto;
@@ -227,64 +236,216 @@
     gap: 1px;
   }
 
-  .star-name { font-size: 10.5px; letter-spacing: 0; }
-  .star-major .star-name { font-size: 11.5px; }
-  .star-bright { font-size: 8px; min-height: 10px; }
-  .mut { width: 11px; height: 11px; line-height: 11px; font-size: 8px; border-radius: 2px; }
-  .mut-scope { line-height: 9px; }
-  .p-adj, .p-horostars { font-size: 8.5px; gap: 0 3px; }
-  .chip { font-size: 8px; padding: 0 2px; letter-spacing: 0; border-radius: 3px; }
-  .p-chips { gap: 1px; }
-  .p-name { font-size: 11.5px; letter-spacing: 1px; }
-  .p-body, .p-origin { font-size: 8px; padding: 0 2px; margin-left: 2px; letter-spacing: 0; }
-  .p-f-l, .p-f12 { font-size: 7.5px; }
-  .p-gz { font-size: 10px; }
-  .p-range { font-size: 8px; }
-  .p-ages { display: none; }
+  .star-name {
+    font-size: 10.5px;
+    letter-spacing: 0;
+  }
+  .star-major .star-name {
+    font-size: 11.5px;
+  }
+  .star-bright {
+    font-size: 8px;
+    min-height: 10px;
+  }
+  .mut {
+    width: 11px;
+    height: 11px;
+    line-height: 11px;
+    font-size: 8px;
+    border-radius: 2px;
+  }
+  .mut-scope {
+    line-height: 9px;
+  }
+  .p-adj,
+  .p-horostars {
+    font-size: 8.5px;
+    gap: 0 3px;
+  }
+  .chip {
+    font-size: 8px;
+    padding: 0 2px;
+    letter-spacing: 0;
+    border-radius: 3px;
+  }
+  .p-chips {
+    gap: 1px;
+  }
+  .p-name {
+    font-size: 11.5px;
+    letter-spacing: 1px;
+  }
+  .p-body,
+  .p-origin {
+    font-size: 8px;
+    padding: 0 2px;
+    margin-left: 2px;
+    letter-spacing: 0;
+  }
+  .p-f-l,
+  .p-f12 {
+    font-size: 7.5px;
+  }
+  .p-gz {
+    font-size: 10px;
+  }
+  .p-range {
+    font-size: 8px;
+  }
+  .p-ages {
+    display: none;
+  }
 
-  .center { padding: 8px 9px 6px; }
-  .center-head { margin-bottom: 4px; gap: 6px; }
-  .center-head h2 { font-size: 1.05rem; letter-spacing: 0.2em; }
-  .center-sub { display: none; }
-  .center-info { grid-template-columns: 1fr; gap: 1px; font-size: 10px; }
-  .ci { gap: 5px; }
-  .pillars { gap: 5px; margin: 6px 0 2px; }
-  .pillar { padding: 3px 5px; border-radius: 5px; }
-  .pillar b { font-size: 12px; }
-  .pillar i { font-size: 8px; }
-  .target-line { font-size: 9px; padding-top: 4px; }
-  .tl-tag { font-size: 8px; padding: 0 3px; margin-right: 4px; }
-  .depth-row { gap: 4px; padding-top: 5px; }
-  .db { width: 26px; height: 24px; font-size: 11px; border-radius: 6px; }
+  .center {
+    padding: 8px 9px 6px;
+  }
+  .center-head {
+    margin-bottom: 4px;
+    gap: 6px;
+  }
+  .center-head h2 {
+    font-size: 1.05rem;
+    letter-spacing: 0.2em;
+  }
+  .center-sub {
+    display: none;
+  }
+  .center-info {
+    grid-template-columns: 1fr;
+    gap: 1px;
+    font-size: 10px;
+  }
+  .ci {
+    gap: 5px;
+  }
+  .pillars {
+    gap: 5px;
+    margin: 6px 0 2px;
+  }
+  .pillar {
+    padding: 3px 5px;
+    border-radius: 5px;
+  }
+  .pillar b {
+    font-size: 12px;
+  }
+  .pillar i {
+    font-size: 8px;
+  }
+  .target-line {
+    font-size: 9px;
+    padding-top: 4px;
+  }
+  .tl-tag {
+    font-size: 8px;
+    padding: 0 3px;
+    margin-right: 4px;
+  }
+  .depth-row {
+    gap: 4px;
+    padding-top: 5px;
+  }
+  .db {
+    width: 26px;
+    height: 24px;
+    font-size: 11px;
+    border-radius: 6px;
+  }
 }
 
 @media (max-width: 760px) {
-  .app { padding: 0 8px 20px; }
-  .top { gap: 10px; padding: 12px 14px; margin-bottom: 14px; }
-  .top h1 { font-size: 1.35rem; letter-spacing: 0.25em; }
-  .top-sub { display: none; }
-  .top-actions button { padding: 5px 9px; font-size: 0.68rem; }
-  .nav-icon { width: 34px; height: 34px; border-radius: 8px; }
-  .person-sel { gap: 6px; padding: 3px; }
-  .person-select { min-width: 120px; font-size: 0.72rem; padding: 6px 10px; }
-  .person-btn { width: 28px; height: 28px; font-size: 12px; }
-  .input-panel { gap: 8px 10px; padding: 8px 10px; margin: 10px 0; }
-  .btn-go { margin-left: 0; width: 100%; }
-  .chart-outer { padding: 2px 0 6px; }
+  .app {
+    padding: 0 8px 20px;
+  }
+  .top {
+    gap: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .top h1 {
+    font-size: 1.35rem;
+    letter-spacing: 0.25em;
+  }
+  .top-sub {
+    display: none;
+  }
+  .top-actions button {
+    padding: 5px 9px;
+    font-size: 0.68rem;
+  }
+  .nav-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+  .person-sel {
+    gap: 6px;
+    padding: 3px;
+  }
+  .person-select {
+    min-width: 120px;
+    font-size: 0.72rem;
+    padding: 6px 10px;
+  }
+  .person-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  .input-panel {
+    gap: 8px 10px;
+    padding: 8px 10px;
+    margin: 10px 0;
+  }
+  .btn-go {
+    margin-left: 0;
+    width: 100%;
+  }
+  .chart-outer {
+    padding: 2px 0 6px;
+  }
 
-  .hbar { padding: 5px; gap: 3px; border-radius: 10px; }
-  .hlabel { width: 30px; letter-spacing: 0; font-size: 10.5px; border-radius: 6px; }
-  .hcells { gap: 3px; }
-  .hcell { min-width: 48px; padding: 2px 4px; border-radius: 5px; }
-  .hcell b { font-size: 10.5px; }
-  .hcell i { font-size: 8.5px; }
-  .hcells-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px; }
+  .hbar {
+    padding: 5px;
+    gap: 3px;
+    border-radius: 10px;
+  }
+  .hlabel {
+    width: 30px;
+    letter-spacing: 0;
+    font-size: 10.5px;
+    border-radius: 6px;
+  }
+  .hcells {
+    gap: 3px;
+  }
+  .hcell {
+    min-width: 48px;
+    padding: 2px 4px;
+    border-radius: 5px;
+  }
+  .hcell b {
+    font-size: 10.5px;
+  }
+  .hcell i {
+    font-size: 8.5px;
+  }
+  .hcells-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 2px;
+  }
   /* 流日：未选中只显日名，选中才显干支，压缩高度（同文墨） */
-  .hcells-grid .hcell:not(.on) i { display: none; }
+  .hcells-grid .hcell:not(.on) i {
+    display: none;
+  }
 
   /* 中宫内容允许纵向滚动，防止被裁切 */
-  .center { overflow-y: auto; }
-  .target-line { margin-top: 6px; }
+  .center {
+    overflow-y: auto;
+  }
+  .target-line {
+    margin-top: 6px;
+  }
 }
 
 /* ── 移动端补充：Header/PersonSelector ≤600px ── */
@@ -295,11 +456,35 @@
     gap: 10px;
     padding: 12px;
   }
-  .top h1 { font-size: 1.2rem; letter-spacing: 0.2em; }
-  .top-nav { order: -1; width: 100%; justify-content: center; }
-  .top-actions { width: 100%; justify-content: center; }
-  .person-sel { flex-wrap: wrap; justify-content: center; width: 100%; }
-  .person-select { min-width: 0; flex: 1; font-size: 0.7rem; }
-  .nav-icon { width: 32px; height: 32px; }
-  .nav-icon svg { width: 18px; height: 18px; }
+  .top h1 {
+    font-size: 1.2rem;
+    letter-spacing: 0.2em;
+  }
+  .top-nav {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+  }
+  .top-actions {
+    width: 100%;
+    justify-content: center;
+  }
+  .person-sel {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  .person-select {
+    min-width: 0;
+    flex: 1;
+    font-size: 0.7rem;
+  }
+  .nav-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .nav-icon svg {
+    width: 18px;
+    height: 18px;
+  }
 }

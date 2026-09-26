@@ -4,11 +4,7 @@
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import type { WikiDocument } from "../../core/personDb";
 import { getPerson } from "../../core/personDb";
-import {
-  listWikiDocs,
-  getAllWikiTags,
-  type WikiListFilters,
-} from "../../core/wikiDb";
+import { listWikiDocs, getAllWikiTags, type WikiListFilters } from "../../core/wikiDb";
 import { formatRelativeTime } from "../../core/utils";
 import { useI18n } from "../../core/i18n";
 
@@ -28,15 +24,10 @@ interface WikiListProps {
   refreshKey?: number;
 }
 
-export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiList({
-  personId,
-  selectedId,
-  onSelect,
-  onNewClick,
-  onEditClick,
-  onDeleteClick,
-  refreshKey = 0,
-}, ref) {
+export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiList(
+  { personId, selectedId, onSelect, onNewClick, onEditClick, onDeleteClick, refreshKey = 0 },
+  ref
+) {
   const { t } = useI18n();
   const [docs, setDocs] = useState<WikiDocument[]>([]);
   const [total, setTotal] = useState(0);
@@ -87,19 +78,18 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   useEffect(() => {
     getAllWikiTags(personId)
       .then(setAllTags)
-      .catch((err) => {
+      .catch(err => {
         console.error("[WikiList] 加载标签失败", err);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, docs.length, refreshKey]); // 记录变化时刷新标签
 
   // 查询关联人物名称
   useEffect(() => {
     getPerson(personId)
-      .then((p) => {
+      .then(p => {
         if (p) setPersonName(p.name);
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("[WikiList] 加载人物信息失败", err);
       });
   }, [personId]);
@@ -107,9 +97,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const handleTagToggle = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    setSelectedTags(prev => (prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]));
     setPage(1); // 切换筛选时重置到第一页
   };
 
@@ -134,7 +122,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           className="record-search-input"
           placeholder={t("wiki.search")}
           value={searchText}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={e => handleSearchChange(e.target.value)}
           aria-label={t("wiki.searchAria")}
         />
       </div>
@@ -142,7 +130,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
       {/* Tag 筛选 */}
       {allTags.length > 0 && (
         <div className="record-list-tags">
-          {allTags.map((tag) => (
+          {allTags.map(tag => (
             <button
               key={tag}
               className={`record-tag-filter ${selectedTags.includes(tag) ? "active" : ""}`}
@@ -158,12 +146,10 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
       <div className="record-list-items">
         {docs.length === 0 ? (
           <div className="record-list-empty wiki-empty">
-            {searchText || selectedTags.length > 0
-              ? t("wiki.noMatch")
-              : t("wiki.noDocs")}
+            {searchText || selectedTags.length > 0 ? t("wiki.noMatch") : t("wiki.noDocs")}
           </div>
         ) : (
-          docs.map((doc) => (
+          docs.map(doc => (
             <div
               key={doc.id}
               className={`record-list-item ${selectedId === doc.id ? "active" : ""}`}
@@ -172,7 +158,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
               onMouseLeave={() => setHoveredId(null)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => {
+              onKeyDown={e => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   onSelect(doc);
@@ -180,26 +166,18 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
               }}
             >
               <div className="record-list-item-main">
-                <div className="record-list-item-time">
-                  {formatRelativeTime(doc.updatedAt)}
-                </div>
-                <div className="record-list-item-text">
-                  {doc.title || t("wiki.noTitle")}
-                </div>
-                {personName && (
-                  <div className="record-list-item-person">{personName}</div>
-                )}
+                <div className="record-list-item-time">{formatRelativeTime(doc.updatedAt)}</div>
+                <div className="record-list-item-text">{doc.title || t("wiki.noTitle")}</div>
+                {personName && <div className="record-list-item-person">{personName}</div>}
                 {doc.tags.length > 0 && (
                   <div className="record-list-item-tags">
-                    {doc.tags.slice(0, 3).map((tag) => (
+                    {doc.tags.slice(0, 3).map(tag => (
                       <span key={tag} className="record-list-item-tag">
                         {tag}
                       </span>
                     ))}
                     {doc.tags.length > 3 && (
-                      <span className="record-list-item-tag-more">
-                        +{doc.tags.length - 3}
-                      </span>
+                      <span className="record-list-item-tag-more">+{doc.tags.length - 3}</span>
                     )}
                   </div>
                 )}
@@ -207,7 +185,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
               <div className={`record-list-item-actions${hoveredId === doc.id ? " visible" : ""}`}>
                 <button
                   className="record-action-btn"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     onEditClick(doc);
                   }}
@@ -218,7 +196,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
                 </button>
                 <button
                   className="record-action-btn record-action-delete"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     onDeleteClick(doc);
                   }}
@@ -238,7 +216,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
         <div className="record-list-pagination">
           <button
             disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
+            onClick={() => setPage(p => p - 1)}
             aria-label={t("common.prev")}
           >
             &lt;
@@ -248,7 +226,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           </span>
           <button
             disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setPage(p => p + 1)}
             aria-label={t("common.next")}
           >
             &gt;

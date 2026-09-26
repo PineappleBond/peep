@@ -64,10 +64,8 @@ function log(level: LogLevel, category: string, message: string, data?: unknown)
 
   // 带 CSS 样式的 console 输出（浏览器支持 %c 占位符）
   if (data !== undefined) {
-    // eslint-disable-next-line no-console
     (console as any)[method](`%c${prefix}%c ${message}`, LEVEL_STYLES[level], "", data);
   } else {
-    // eslint-disable-next-line no-console
     (console as any)[method](`%c${prefix}%c ${message}`, LEVEL_STYLES[level], "");
   }
 }
@@ -96,23 +94,28 @@ let _navigate: ((path: string) => void) | null = null;
 
 /** 大六壬 React 回调注册：从 DaLiuRenPage.tsx 注入 */
 let _getDaLiuRenList: ((filters: LiurenListFilters) => Promise<LiurenListResult>) | null = null;
-let _setListFilters: ((filters: { searchText?: string; tags?: string[]; page?: number }) => void) | null = null;
+let _setListFilters:
+  ((filters: { searchText?: string; tags?: string[]; page?: number }) => void) | null = null;
 let _openCreateDialog: (() => void) | null = null;
-let _fillCreateForm: ((data: { question: string; note?: string; background?: string; tags?: string[] }) => void) | null = null;
+let _fillCreateForm:
+  | ((data: { question: string; note?: string; background?: string; tags?: string[] }) => void)
+  | null = null;
 let _submitCreateForm: (() => Promise<LiurenRecord>) | null = null;
 let _selectRecord: ((recordId: number) => Promise<LiurenRecord | null>) | null = null;
 let _getSelectedRecord: (() => LiurenRecord | null) | null = null;
 
 /** Wiki React 回调注册：从 WikiPage.tsx 注入 */
 let _getWikiList: ((filters: WikiListFilters) => Promise<WikiListResult>) | null = null;
-let _setWikiListFilters: ((filters: { searchText?: string; tags?: string[]; page?: number }) => void) | null = null;
+let _setWikiListFilters:
+  ((filters: { searchText?: string; tags?: string[]; page?: number }) => void) | null = null;
 let _openWikiEditor: (() => void) | null = null;
-let _saveWikiDoc: ((doc: WikiDocument, linkTargetIds: number[]) => Promise<WikiDocument>) | null = null;
+let _saveWikiDoc: ((doc: WikiDocument, linkTargetIds: number[]) => Promise<WikiDocument>) | null =
+  null;
 let _selectWikiDoc: ((docId: number) => Promise<WikiDocument | null>) | null = null;
 let _getSelectedWikiDoc: (() => WikiDocument | null) | null = null;
 
 /** 回调注册状态追踪 */
-let _callbacksReady: {
+const _callbacksReady: {
   ziwei: boolean;
   daliuren: boolean;
   wiki: boolean;
@@ -131,7 +134,12 @@ export function registerDebugApi(opts: {
   getDaLiuRenList?: (filters: LiurenListFilters) => Promise<LiurenListResult>;
   setListFilters?: (filters: { searchText?: string; tags?: string[]; page?: number }) => void;
   openCreateDialog?: () => void;
-  fillCreateForm?: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
+  fillCreateForm?: (data: {
+    question: string;
+    note?: string;
+    background?: string;
+    tags?: string[];
+  }) => void;
   submitCreateForm?: () => Promise<LiurenRecord>;
   selectRecord?: (recordId: number) => Promise<LiurenRecord | null>;
   getSelectedRecord?: () => LiurenRecord | null;
@@ -150,9 +158,7 @@ export function registerDebugApi(opts: {
 }
 
 /** 注册紫微斗数页面回调（ZiweiPage.tsx 调用） */
-export function registerZiWeiCallbacks(opts: {
-  getZwds: () => Zwds | null;
-}) {
+export function registerZiWeiCallbacks(opts: { getZwds: () => Zwds | null }) {
   _getZwds = opts.getZwds;
   _callbacksReady.ziwei = true;
   log("debug", "init", "ZiWei 页面回调注册完成");
@@ -163,7 +169,12 @@ export function registerDaLiuRenCallbacks(opts: {
   getDaLiuRenList: (filters: LiurenListFilters) => Promise<LiurenListResult>;
   setListFilters?: (filters: { searchText?: string; tags?: string[]; page?: number }) => void;
   openCreateDialog: () => void;
-  fillCreateForm: (data: { question: string; note?: string; background?: string; tags?: string[] }) => void;
+  fillCreateForm: (data: {
+    question: string;
+    note?: string;
+    background?: string;
+    tags?: string[];
+  }) => void;
   submitCreateForm: () => Promise<LiurenRecord>;
   selectRecord: (recordId: number) => Promise<LiurenRecord | null>;
   getSelectedRecord: () => LiurenRecord | null;
@@ -199,7 +210,10 @@ export function registerWikiCallbacks(opts: {
 }
 
 /** 等待页面回调注册完成 */
-async function waitForCallbacks(page: "ziwei" | "daliuren" | "wiki", timeout = 3000): Promise<void> {
+async function waitForCallbacks(
+  page: "ziwei" | "daliuren" | "wiki",
+  timeout = 3000
+): Promise<void> {
   const start = Date.now();
   while (!_callbacksReady[page]) {
     if (Date.now() - start > timeout) {
@@ -207,7 +221,7 @@ async function waitForCallbacks(page: "ziwei" | "daliuren" | "wiki", timeout = 3
       log("error", page, "回调注册超时", { timeout, callbacksReady: _callbacksReady });
       throw err;
     }
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise(r => setTimeout(r, 50));
   }
 }
 
@@ -256,7 +270,7 @@ export async function ZiWei(
     await _selectPerson(personId);
 
     // 等待 astrolabe 重新计算 + useEffect 重置 pick 完成
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 100));
 
     const z = _getZwds();
     if (!z) {
@@ -278,14 +292,12 @@ export async function ZiWei(
     }
 
     // 4. 等待所有状态更新完成（双 rAF 确保渲染完成）
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     // 5. 获取数据
     const person = _getPerson();
     const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
-    const hbar = hbarBase
-      ? { ...hbarBase, visible: { ...z.visible } }
-      : null;
+    const hbar = hbarBase ? { ...hbarBase, visible: { ...z.visible } } : null;
 
     let chart: ScopeChartData | null = null;
     if (scope && z.astrolabe && z.horoscope) {
@@ -367,7 +379,10 @@ export async function DaLiuRenCreate(params: {
 }): Promise<LiurenRecord> {
   const stop = timer("DaLiuRenCreate");
   try {
-    log("info", "DaLiuRenCreate", "开始创建起课", { personId: params.personId, question: params.question });
+    log("info", "DaLiuRenCreate", "开始创建起课", {
+      personId: params.personId,
+      question: params.question,
+    });
 
     // 1. 跳转到 /liuren 页面并等待回调注册
     await navigateToPage("/liuren", "daliuren");
@@ -418,7 +433,11 @@ export async function DaLiuRenList(params: {
 }): Promise<{ records: LiurenRecord[]; total: number }> {
   const stop = timer("DaLiuRenList");
   try {
-    log("info", "DaLiuRenList", "查询列表", { personId: params.personId, searchText: params.searchText, tags: params.tags });
+    log("info", "DaLiuRenList", "查询列表", {
+      personId: params.personId,
+      searchText: params.searchText,
+      tags: params.tags,
+    });
 
     // 1. 跳转到 /liuren 页面并等待回调注册
     await navigateToPage("/liuren", "daliuren");
@@ -449,7 +468,10 @@ export async function DaLiuRenList(params: {
     };
     const result = await _getDaLiuRenList(filters);
 
-    log("info", "DaLiuRenList", "查询成功", { total: result.total, returned: result.records.length });
+    log("info", "DaLiuRenList", "查询成功", {
+      total: result.total,
+      returned: result.records.length,
+    });
     stop();
     return { records: result.records, total: result.total };
   } catch (err) {
@@ -468,7 +490,10 @@ export async function DaLiuRenView(params: {
 }): Promise<LiurenRecord> {
   const stop = timer("DaLiuRenView");
   try {
-    log("info", "DaLiuRenView", "查看详情", { personId: params.personId, recordId: params.recordId });
+    log("info", "DaLiuRenView", "查看详情", {
+      personId: params.personId,
+      recordId: params.recordId,
+    });
 
     // 1. 跳转到 /liuren 页面并等待回调注册
     await navigateToPage("/liuren", "daliuren");
@@ -512,7 +537,10 @@ export async function WikiList(params: {
 }): Promise<{ docs: WikiDocument[]; total: number }> {
   const stop = timer("WikiList");
   try {
-    log("info", "WikiList", "查询文档列表", { personId: params.personId, searchText: params.searchText });
+    log("info", "WikiList", "查询文档列表", {
+      personId: params.personId,
+      searchText: params.searchText,
+    });
 
     // 1. 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
@@ -654,22 +682,19 @@ export async function WikiView(params: {
 
 /** 辅助函数：等待页面加载 */
 function waitForPageLoad(): Promise<void> {
-  return new Promise((r) => setTimeout(r, 200));
+  return new Promise(r => setTimeout(r, 200));
 }
 
 /** 辅助函数：等待状态更新 */
 function waitForStateUpdate(): Promise<void> {
-  return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+  return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 }
 
 /**
  * 导航到指定页面并等待回调注册完成。
  * 消除 ZiWei / DaLiuRen* / Wiki* 共用的 navigate + waitForCallbacks + waitForPageLoad 样板。
  */
-async function navigateToPage(
-  path: string,
-  page: "ziwei" | "daliuren" | "wiki"
-): Promise<void> {
+async function navigateToPage(path: string, page: "ziwei" | "daliuren" | "wiki"): Promise<void> {
   if (_navigate) {
     _navigate(path);
   } else {
@@ -699,17 +724,17 @@ function wrapDebugError(label: string, err: unknown): Error {
 
 /** 辅助函数：等待 Dialog 打开 */
 function waitForDialogOpen(): Promise<void> {
-  return new Promise((r) => setTimeout(r, 100));
+  return new Promise(r => setTimeout(r, 100));
 }
 
 /** 辅助函数：等待表单填写 */
 function waitForFormFill(): Promise<void> {
-  return new Promise((r) => setTimeout(r, 50));
+  return new Promise(r => setTimeout(r, 50));
 }
 
 /** 辅助函数：等待保存完成 */
 function waitForSaveComplete(): Promise<void> {
-  return new Promise((r) => setTimeout(r, 150));
+  return new Promise(r => setTimeout(r, 150));
 }
 
 /* ============================================================
@@ -728,11 +753,7 @@ function version(): void {
     ""
   );
   // eslint-disable-next-line no-console
-  console.log(
-    "%c[peep]%c 可用调试 API:",
-    "color:#2196f3;font-weight:bold",
-    ""
-  );
+  console.log("%c[peep]%c 可用调试 API:", "color:#2196f3;font-weight:bold", "");
   // eslint-disable-next-line no-console
   console.table([
     { 方法: "ZiWei(personId, scope?, time?)", 说明: "紫微斗数排盘+运限操控" },

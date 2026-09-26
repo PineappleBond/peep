@@ -55,7 +55,10 @@ function MonthGeneralSection({ result }: { result: DaLiuRenResult }) {
     <section className="liuren-section" aria-label={t("daliuren.monthGeneral")}>
       <h4 className="liuren-section-title">{t("daliuren.monthGeneral")}</h4>
       <div className="liuren-month-general">
-        {t("daliuren.nameWithBranch", { name: result.monthGeneral.name, branch: branchText(result.monthGeneral.branch) })}
+        {t("daliuren.nameWithBranch", {
+          name: result.monthGeneral.name,
+          branch: branchText(result.monthGeneral.branch),
+        })}
       </div>
     </section>
   );
@@ -72,11 +75,9 @@ function HeavenEarthBoardSection({ result }: { result: DaLiuRenResult }) {
     <section className="liuren-section" aria-label={t("daliuren.heavenEarth")}>
       <h4 className="liuren-section-title">{t("daliuren.heavenEarth")}</h4>
       <div className="liuren-board-grid">
-        {gridPositions.map((earthIdx) => {
+        {gridPositions.map(earthIdx => {
           const heavenIdx = result.heavenBoard[earthIdx];
-          const general = result.twelveGenerals.find(
-            (g) => g.position === earthIdx
-          );
+          const general = result.twelveGenerals.find(g => g.position === earthIdx);
           const wangXiang = result.wangXiang[heavenIdx];
           const liuQin = result.liuQin[heavenIdx];
           const xunDun = result.xunDun[earthIdx];
@@ -86,23 +87,13 @@ function HeavenEarthBoardSection({ result }: { result: DaLiuRenResult }) {
             <div key={earthIdx} className="liuren-board-cell">
               <div className="liuren-board-heaven">
                 {branchText(heavenIdx)}
-                {wangXiang && (
-                  <span className="liuren-board-wangxiang">{wangXiang}</span>
-                )}
+                {wangXiang && <span className="liuren-board-wangxiang">{wangXiang}</span>}
               </div>
               <div className="liuren-board-earth">{branchText(earthIdx)}</div>
-              {general && (
-                <div className="liuren-board-general">{general.name}</div>
-              )}
-              {liuQin && (
-                <div className="liuren-board-liuqin">{liuQin}</div>
-              )}
-              {xunDun && (
-                <div className="liuren-board-xundun">{xunDun}</div>
-              )}
-              {naYin && (
-                <div className="liuren-board-nayin">{naYin}</div>
-              )}
+              {general && <div className="liuren-board-general">{general.name}</div>}
+              {liuQin && <div className="liuren-board-liuqin">{liuQin}</div>}
+              {xunDun && <div className="liuren-board-xundun">{xunDun}</div>}
+              {naYin && <div className="liuren-board-nayin">{naYin}</div>}
             </div>
           );
         })}
@@ -169,7 +160,10 @@ function XunKongSection({ result }: { result: DaLiuRenResult }) {
     <section className="liuren-section" aria-label={t("daliuren.xunKong")}>
       <h4 className="liuren-section-title">{t("daliuren.xunKong")}</h4>
       <div className="liuren-xunkong">
-        {t("common.labelValue", { label: t("daliuren.xunHead"), value: `${branchText(xunKong.xunHead)} ${t("common.labelValue", { label: t("daliuren.void"), value: `${branchText(xunKong.void1)} ${branchText(xunKong.void2)}` })}` })}
+        {t("common.labelValue", {
+          label: t("daliuren.xunHead"),
+          value: `${branchText(xunKong.xunHead)} ${t("common.labelValue", { label: t("daliuren.void"), value: `${branchText(xunKong.void1)} ${branchText(xunKong.void2)}` })}`,
+        })}
       </div>
     </section>
   );
@@ -182,7 +176,7 @@ function TwelveGeneralsSection({ result }: { result: DaLiuRenResult }) {
     <section className="liuren-section" aria-label={t("daliuren.twelveGenerals")}>
       <h4 className="liuren-section-title">{t("daliuren.twelveGenerals")}</h4>
       <div className="liuren-twelve-generals">
-        {result.twelveGenerals.map((g) => (
+        {result.twelveGenerals.map(g => (
           <div key={g.position} className="liuren-general-item">
             <span className="liuren-general-branch">{branchText(g.position)}</span>
             <span className="liuren-general-name">{g.name}</span>
@@ -199,8 +193,8 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
   const { shenSha } = result;
   if (shenSha.length === 0) return null;
 
-  const jiShen = shenSha.filter((s) => s.type === "吉");
-  const xiongSha = shenSha.filter((s) => s.type === "凶");
+  const jiShen = shenSha.filter(s => s.type === "吉");
+  const xiongSha = shenSha.filter(s => s.type === "凶");
 
   return (
     <section className="liuren-section" aria-label={t("daliuren.shenSha")}>
@@ -250,7 +244,9 @@ function KeJingSection({ result }: { result: DaLiuRenResult }) {
             {k.evidence.length > 0 && (
               <div className="liuren-kejing-evidence">
                 {k.evidence.map((e, j) => (
-                  <div key={j} className="liuren-kejing-evidence-item">{e}</div>
+                  <div key={j} className="liuren-kejing-evidence-item">
+                    {e}
+                  </div>
                 ))}
               </div>
             )}
@@ -278,7 +274,9 @@ function BiFaSection({ result }: { result: DaLiuRenResult }) {
             {b.evidence.length > 0 && (
               <div className="liuren-bifa-evidence">
                 {b.evidence.map((e, j) => (
-                  <div key={j} className="liuren-bifa-evidence-item">{e}</div>
+                  <div key={j} className="liuren-bifa-evidence-item">
+                    {e}
+                  </div>
                 ))}
               </div>
             )}
@@ -315,17 +313,17 @@ function QuestionInfoSection({ record }: { record: LiurenRecord }) {
         {record.background && (
           <div className="liuren-info-row">
             <span className="liuren-info-label">{t("daliuren.backgroundLabel")}</span>
-            <span className="liuren-info-value liuren-info-background">
-              {record.background}
-            </span>
+            <span className="liuren-info-value liuren-info-background">{record.background}</span>
           </div>
         )}
         {record.tags.length > 0 && (
           <div className="liuren-info-row">
             <span className="liuren-info-label">{t("daliuren.tagsLabel")}</span>
             <span className="liuren-info-value">
-              {record.tags.map((tag) => (
-                <span key={tag} className="liuren-info-tag">{tag}</span>
+              {record.tags.map(tag => (
+                <span key={tag} className="liuren-info-tag">
+                  {tag}
+                </span>
               ))}
             </span>
           </div>

@@ -5,7 +5,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useI18n } from "../core/i18n";
 import type { Person, WikiDocument } from "../core/personDb";
-import { saveWikiDoc, deleteWikiDoc, saveWikiLinks, getWikiDoc, getAllWikiTags, listWikiDocs, type WikiListFilters } from "../core/wikiDb";
+import {
+  saveWikiDoc,
+  deleteWikiDoc,
+  saveWikiLinks,
+  getWikiDoc,
+  getAllWikiTags,
+  listWikiDocs,
+  type WikiListFilters,
+} from "../core/wikiDb";
 import { registerWikiCallbacks } from "../core/debugApi";
 import { WikiList, type WikiListHandle } from "../components/wiki/WikiList";
 import { WikiReader } from "../components/wiki/WikiReader";
@@ -45,7 +53,7 @@ export function WikiPage() {
         if (!person?.id) throw new Error(t("daliuren.personNotSelected"));
         return listWikiDocs(person.id, filters);
       },
-      setWikiListFilters: (filters) => {
+      setWikiListFilters: filters => {
         wikiListRef.current?.setFilters({
           searchText: filters.searchText,
           selectedTags: filters.tags,
@@ -86,7 +94,7 @@ export function WikiPage() {
     if (!person?.id) return;
     getAllWikiTags(person.id)
       .then(setExistingTags)
-      .catch((err) => {
+      .catch(err => {
         console.error("[WikiPage] 加载标签列表失败", err);
       });
   }, [person?.id, listRefreshKey]);
@@ -198,13 +206,15 @@ export function WikiPage() {
 
       const renderDocs = (list: WikiDocument[]) =>
         list
-          .map((d) => {
+          .map(d => {
             const preview = d.content.split("\n")[0].slice(0, 100) || t("wiki.noContent");
             return `- [${d.title || t("wiki.noTitle")}](#doc-${d.id}): ${preview}`;
           })
           .join("\n");
 
-      for (const [tag, list] of Array.from(tagMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
+      for (const [tag, list] of Array.from(tagMap.entries()).sort((a, b) =>
+        a[0].localeCompare(b[0])
+      )) {
         md += `## ${tag}\n\n${renderDocs(list)}\n\n`;
       }
       if (untagged.length > 0) {
@@ -245,13 +255,17 @@ export function WikiPage() {
     if (initError) {
       return (
         <div className="wiki-page">
-          <div className="err-box" role="alert">{initError}</div>
+          <div className="err-box" role="alert">
+            {initError}
+          </div>
         </div>
       );
     }
     return (
       <div className="wiki-page">
-        <div className="wiki-loading" role="status" aria-live="polite">{t("wiki.loading")}</div>
+        <div className="wiki-loading" role="status" aria-live="polite">
+          {t("wiki.loading")}
+        </div>
       </div>
     );
   }
@@ -315,7 +329,12 @@ export function WikiPage() {
       >
         <p>{t("wiki.confirmDeleteMessage")}</p>
         {deletingDoc && (
-          <p className="dlg-hint">{t("common.labelValue", { label: t("wiki.docLabel"), value: deletingDoc.title || t("wiki.noTitle") })}</p>
+          <p className="dlg-hint">
+            {t("common.labelValue", {
+              label: t("wiki.docLabel"),
+              value: deletingDoc.title || t("wiki.noTitle"),
+            })}
+          </p>
         )}
       </Dialog>
     </div>

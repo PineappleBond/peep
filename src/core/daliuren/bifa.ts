@@ -123,9 +123,8 @@ const rules: BiFaRule[] = [
   {
     code: "bifa.01",
     name: "前后引从升迁吉",
-    description:
-      "初末传分临日干（或日支）前后宫，前引后从，主迁官进职、修宅迁居。",
-    check: (r) => {
+    description: "初末传分临日干（或日支）前后宫，前引后从，主迁官进职、修宅迁居。",
+    check: r => {
       const { initial, final } = r.threeTransmissions;
       const dayStem = r.fourPillars.dayStem;
       const dayBranch = r.fourPillars.dayBranch;
@@ -136,20 +135,17 @@ const rules: BiFaRule[] = [
       const initialGround = heavenBranchGround(initial, r);
       const finalGround = heavenBranchGround(final, r);
       if (initialGround === -1 || finalGround === -1) return false;
-      const yinGan =
-        initialGround === lodgingFront && finalGround === lodgingBack;
+      const yinGan = initialGround === lodgingFront && finalGround === lodgingBack;
       if (yinGan) return true;
       // 引从地支
       const rizhiFront = (dayBranch + 1) % 12;
       const rizhiBack = (dayBranch + 11) % 12;
-      const yinZhi =
-        initialGround === rizhiFront && finalGround === rizhiBack;
+      const yinZhi = initialGround === rizhiFront && finalGround === rizhiBack;
       if (yinZhi) return true;
       // 拱贵格：引从天干 + 干上神为昼夜贵人之一
       const [dayNoble, nightNoble] = NOBLEMAN_TABLE[dayStem];
       const ganShang = r.heavenBoard[lodging];
-      const gongGui =
-        yinGan && (ganShang === dayNoble || ganShang === nightNoble);
+      const gongGui = yinGan && (ganShang === dayNoble || ganShang === nightNoble);
       if (gongGui) return true;
       // 两贵引从天干格：引从天干 + 初末传为昼夜二贵
       const liangGui =
@@ -173,7 +169,7 @@ const rules: BiFaRule[] = [
     name: "首尾相见始终宜",
     description:
       "旬首、旬尾分别临日干与日支，或四建尽入四课，或三传尽入四课，主事情前后相续、吉凶易成。",
-    check: (r) => {
+    check: r => {
       const dayStem = r.fourPillars.dayStem;
       const dayBranch = r.fourPillars.dayBranch;
       const lodging = stemLodgingBranch(dayStem);
@@ -187,7 +183,7 @@ const rules: BiFaRule[] = [
       if (ganShang === xunHead && zhiShang === xunTail) return true;
       // 天心格：四建（太岁、月建、日支、占时）尽入四课
       const lessonBranches = new Set<number>();
-      r.fourLessons.forEach((l) => {
+      r.fourLessons.forEach(l => {
         lessonBranches.add(l.upper);
         lessonBranches.add(l.lower);
       });
@@ -204,11 +200,7 @@ const rules: BiFaRule[] = [
       }
       // 回还格：三传尽入四课
       const { initial, middle, final } = r.threeTransmissions;
-      if (
-        lessonBranches.has(initial) &&
-        lessonBranches.has(middle) &&
-        lessonBranches.has(final)
-      ) {
+      if (lessonBranches.has(initial) && lessonBranches.has(middle) && lessonBranches.has(final)) {
         return true;
       }
       return false;
@@ -221,7 +213,7 @@ const rules: BiFaRule[] = [
     name: "帘幕贵人高甲第",
     description:
       "昼占取夜贵、夜占取昼贵为帘幕贵人；帘幕临干年命、旬首帘幕、斗鬼、德入天门等皆为科名之象。",
-    check: (r) => {
+    check: r => {
       const dayStem = r.fourPillars.dayStem;
       const lodging = stemLodgingBranch(dayStem);
       const [dayNoble, nightNoble] = NOBLEMAN_TABLE[dayStem];
@@ -235,8 +227,7 @@ const rules: BiFaRule[] = [
       const xunHead = xunHeadBranch(r);
       if (xunHead === curtain && ganShang === xunHead) return true;
       // 辰戌旬首临干年命
-      if ((xunHead === 4 || xunHead === 10) && ganShang === xunHead)
-        return true;
+      if ((xunHead === 4 || xunHead === 10) && ganShang === xunHead) return true;
       // 德入天门：日德加临地盘亥宫（DAY_VIRTUES 已从 constants.ts 导入）
       const dayVirtue = DAY_VIRTUES[dayStem];
       if (r.heavenBoard[11] === dayVirtue && r.threeTransmissions.initial === dayVirtue)
@@ -251,16 +242,21 @@ const rules: BiFaRule[] = [
     name: "催官使者赴官期",
     description:
       "日鬼或官星乘白虎加临日干或年命为催官使者；或官星临日干年命而三传组成三合局、局生官星为催官符。",
-    check: (r) => {
+    check: r => {
       const dayStem = r.fourPillars.dayStem;
       const lodging = stemLodgingBranch(dayStem);
       // 官星表（普通五行官鬼）
       const DAY_OFFICIALS: Record<number, number[]> = {
-        0: [8, 9], 1: [8, 9], // 甲乙(木)→申酉(金)
-        2: [0, 11], 3: [0, 11], // 丙丁(火)→亥子(水)
-        4: [2, 3], 5: [2, 3], // 戊己(土)→寅卯(木)
-        6: [5, 6], 7: [5, 6], // 庚辛(金)→巳午(火)
-        8: [4, 10, 1, 7], 9: [4, 10, 1, 7], // 壬癸(水)→辰戌丑未(土)
+        0: [8, 9],
+        1: [8, 9], // 甲乙(木)→申酉(金)
+        2: [0, 11],
+        3: [0, 11], // 丙丁(火)→亥子(水)
+        4: [2, 3],
+        5: [2, 3], // 戊己(土)→寅卯(木)
+        6: [5, 6],
+        7: [5, 6], // 庚辛(金)→巳午(火)
+        8: [4, 10, 1, 7],
+        9: [4, 10, 1, 7], // 壬癸(水)→辰戌丑未(土)
       };
       const officials = DAY_OFFICIALS[dayStem] || [];
       // 催官使者：官星乘白虎加临日干寄宫
@@ -295,11 +291,11 @@ const rules: BiFaRule[] = [
     name: "六阳数足须公用",
     description:
       "四课四上神与中末传六位全阳，或六位恰五阳一阴而占人年命有阳支填实，主公用明白、利公不利私。",
-    check: (r) => {
-      const uppers = r.fourLessons.map((l) => l.upper);
+    check: r => {
+      const uppers = r.fourLessons.map(l => l.upper);
       const { middle, final } = r.threeTransmissions;
       const positions = [...uppers, middle, final];
-      const yangCount = positions.filter((b) => b % 2 === 0).length;
+      const yangCount = positions.filter(b => b % 2 === 0).length;
       // 六阳格：六位全阳
       if (yangCount === 6) return true;
       // 五阳格：五位阳，一位阴
@@ -314,11 +310,11 @@ const rules: BiFaRule[] = [
     name: "六阴相继尽昏迷",
     description:
       "四课四上神与中末传六位全阴，或六位恰五阴一阳而占人年命得阴填实，主事情幽暗、进退难决。",
-    check: (r) => {
-      const uppers = r.fourLessons.map((l) => l.upper);
+    check: r => {
+      const uppers = r.fourLessons.map(l => l.upper);
       const { middle, final } = r.threeTransmissions;
       const positions = [...uppers, middle, final];
-      const yinCount = positions.filter((b) => b % 2 === 1).length;
+      const yinCount = positions.filter(b => b % 2 === 1).length;
       // 六阴格：六位全阴
       if (yinCount === 6) return true;
       // 五阴格：五位阴，一位阳

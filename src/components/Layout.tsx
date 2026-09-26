@@ -65,7 +65,7 @@ export function Layout({ children }: LayoutProps) {
     registerDebugApi({
       selectPerson: async (personId: number) => {
         const persons = await listPersons();
-        const person = persons.find((p) => p.id === personId);
+        const person = persons.find(p => p.id === personId);
         if (person) {
           handleSelectPerson(person);
         }
@@ -102,8 +102,12 @@ export function Layout({ children }: LayoutProps) {
       <main id="main-content">{children}</main>
       <footer className="foot">
         {t("layout.engine")}{" "}
-        <a href="https://github.com/SylarLong/iztro" target="_blank" rel="noreferrer"
-           aria-label={t("layout.engineLabel")}>
+        <a
+          href="https://github.com/SylarLong/iztro"
+          target="_blank"
+          rel="noreferrer"
+          aria-label={t("layout.engineLabel")}
+        >
           iztro
         </a>{" "}
         · {t("layout.chartNote")}

@@ -45,7 +45,11 @@ function interpolate(template: string, params?: Record<string, string | number>)
  * @param locale 当前语言
  * @returns 翻译后的文本
  */
-export function t(key: string, params?: Record<string, string | number>, locale: Locale = "zh-CN"): string {
+export function t(
+  key: string,
+  params?: Record<string, string | number>,
+  locale: Locale = "zh-CN"
+): string {
   const dict = resources[locale] || resources["zh-CN"];
   const value = dict[key];
   if (value !== undefined) {
@@ -103,7 +107,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [locale]
   );
 
-  const value = useMemo(() => ({ locale, setLocale, t: translate }), [locale, setLocale, translate]);
+  const value = useMemo(
+    () => ({ locale, setLocale, t: translate }),
+    [locale, setLocale, translate]
+  );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
