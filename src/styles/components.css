@@ -1579,3 +1579,177 @@
 }
 
 /* prefers-reduced-motion：Spinner 降级已由 base.css 全局规则统一处理 */
+
+/* ════════════════════════════════════════════════════
+   快捷键帮助弹窗
+   ════════════════════════════════════════════════════ */
+
+.shortcut-help-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  animation: shortcut-help-fadein 0.2s ease-out;
+}
+
+@keyframes shortcut-help-fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.shortcut-help-panel {
+  width: 480px;
+  max-width: 92vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--line-strong);
+  backdrop-filter: blur(var(--blur-xl));
+  -webkit-backdrop-filter: blur(var(--blur-xl));
+  box-shadow:
+    0 0 30px rgba(85, 215, 255, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: shortcut-help-slidein 0.25s ease-out;
+  outline: none;
+}
+
+@keyframes shortcut-help-slidein {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.shortcut-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.shortcut-help-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--cyan);
+  letter-spacing: 1px;
+}
+
+.shortcut-help-close {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: var(--t-normal);
+}
+
+.shortcut-help-close:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--cyan) 12%, transparent);
+}
+
+.shortcut-help-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 20px 16px;
+}
+
+.shortcut-group {
+  margin-bottom: 14px;
+}
+
+.shortcut-group:last-child {
+  margin-bottom: 0;
+}
+
+.shortcut-group-title {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.shortcut-list {
+  margin: 0;
+  padding: 0;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  gap: 12px;
+}
+
+.shortcut-desc {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin: 0;
+}
+
+.shortcut-key {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.shortcut-key kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cyan) 25%, transparent);
+  border-radius: 6px;
+  min-width: 24px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.shortcut-help-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.shortcut-hint {
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+
+.shortcut-help-foot kbd {
+  display: inline-block;
+  padding: 1px 7px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 25%, transparent);
+  border-radius: 5px;
+  line-height: 1.5;
+}

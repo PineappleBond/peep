@@ -359,5 +359,19 @@
   "db.readWikiFailed": "无法读取文档详情",
   "db.saveWikiFailed": "保存文档失败，请重试",
   "db.deleteWikiFailed": "删除文档失败，请重试",
-  "db.saveWikiLinkFailed": "保存文档链接失败，请重试"
+  "db.saveWikiLinkFailed": "保存文档链接失败，请重试",
+
+  "shortcut.helpTitle": "键盘快捷键",
+  "shortcut.showHelp": "显示快捷键帮助",
+  "shortcut.toggleTheme": "切换主题",
+  "shortcut.newRecord": "新建占课",
+  "shortcut.newDoc": "新建文档",
+  "shortcut.editDoc": "编辑文档",
+  "shortcut.group.nav": "导航",
+  "shortcut.group.general": "通用",
+  "shortcut.group.ziwei": "紫微斗数",
+  "shortcut.group.daliuren": "大六壬",
+  "shortcut.group.wiki": "知识库",
+  "shortcut.hintPress": "按",
+  "shortcut.hintToggle": "切换此面板"
 }

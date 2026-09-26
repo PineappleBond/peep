@@ -359,5 +359,19 @@
   "db.readWikiFailed": "Unable to read document details",
   "db.saveWikiFailed": "Save document failed, please try again",
   "db.deleteWikiFailed": "Delete document failed, please try again",
-  "db.saveWikiLinkFailed": "Save document link failed, please try again"
+  "db.saveWikiLinkFailed": "Save document link failed, please try again",
+
+  "shortcut.helpTitle": "Keyboard Shortcuts",
+  "shortcut.showHelp": "Show shortcuts help",
+  "shortcut.toggleTheme": "Toggle theme",
+  "shortcut.newRecord": "New divination",
+  "shortcut.newDoc": "New document",
+  "shortcut.editDoc": "Edit document",
+  "shortcut.group.nav": "Navigation",
+  "shortcut.group.general": "General",
+  "shortcut.group.ziwei": "Zi Wei Dou Shu",
+  "shortcut.group.daliuren": "Da Liu Ren",
+  "shortcut.group.wiki": "Wiki",
+  "shortcut.hintPress": "Press",
+  "shortcut.hintToggle": "to toggle this panel"
 }

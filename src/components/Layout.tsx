@@ -7,10 +7,12 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "./Header";
 import { ToastHost } from "./ToastHost";
+import { ShortcutHelp } from "./ShortcutHelp";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
 import { useI18n } from "../core/i18n";
+import { registerShortcuts, toggleHelp } from "../core/shortcuts";
 
 const STORAGE_KEY = "zwds-current-person-id";
 
@@ -92,6 +94,37 @@ export function Layout({ children }: LayoutProps) {
     });
   }, [navigate, handleSelectPerson]);
 
+  // ── 全局导航快捷键 + 帮助弹窗 ────────────────────────────
+  useEffect(() => {
+    const unreg = registerShortcuts([
+      {
+        key: "1",
+        description: t("nav.ziwei"),
+        group: "shortcut.group.nav",
+        handler: () => navigate("/"),
+      },
+      {
+        key: "2",
+        description: t("nav.daliuren"),
+        group: "shortcut.group.nav",
+        handler: () => navigate("/liuren"),
+      },
+      {
+        key: "3",
+        description: t("nav.wiki"),
+        group: "shortcut.group.nav",
+        handler: () => navigate("/wiki"),
+      },
+      {
+        key: "?",
+        description: t("shortcut.showHelp"),
+        group: "shortcut.group.general",
+        handler: () => toggleHelp(),
+      },
+    ]);
+    return unreg;
+  }, [navigate, t]);
+
   return (
     <div className="app">
       {/* 可访问性：跳过导航链接，键盘用户可直达主内容 */}
@@ -115,6 +148,8 @@ export function Layout({ children }: LayoutProps) {
       </footer>
       {/* Toast 通知宿主：全局浮动层，渲染在 app 内以便继承主题 */}
       <ToastHost />
+      {/* 快捷键帮助弹窗 */}
+      <ShortcutHelp />
     </div>
   );
 }

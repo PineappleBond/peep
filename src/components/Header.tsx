@@ -2,7 +2,7 @@
  * Header 组件 - 全局共用
  * 包含标题、SVG Icon 导航、PersonSelector
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
@@ -11,6 +11,7 @@ import { WikiIcon } from "./icons/WikiIcon";
 import type { Person } from "../core/personDb";
 import { useI18n, type Locale } from "../core/i18n";
 import { getTheme, setTheme, type Theme } from "../core/theme";
+import { registerShortcut } from "../core/shortcuts";
 
 type HeaderProps = {
   /** 当前选中人物 ID */
@@ -58,6 +59,16 @@ export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
   /** 主题按钮显示文本 */
   const themeLabel = theme === "system" ? "⚙" : theme === "light" ? "☀" : "☾";
   const themeTitle = theme === "system" ? "跟随系统" : theme === "light" ? "亮色主题" : "暗色主题";
+
+  // ── 主题切换快捷键 T ────────────────────────────
+  useEffect(() => {
+    return registerShortcut({
+      key: "T",
+      description: t("shortcut.toggleTheme"),
+      group: "shortcut.group.general",
+      handler: cycleTheme,
+    });
+  }, [cycleTheme, t]);
 
   return (
     <header className="top">

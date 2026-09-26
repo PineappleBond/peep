@@ -22,6 +22,7 @@ import { Dialog } from "../components/Dialog";
 import { Spinner } from "../components/Spinner";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 import { toast } from "../core/toast";
+import { registerShortcuts } from "../core/shortcuts";
 
 export function WikiPage() {
   const { t } = useI18n();
@@ -122,6 +123,30 @@ export function WikiPage() {
     setEditingDoc(undefined);
     setMode("edit");
   }, []);
+
+  // ── 页面快捷键：N 新建文档、E 编辑当前文档 ──────────────────
+  useEffect(() => {
+    return registerShortcuts([
+      {
+        key: "N",
+        description: t("shortcut.newDoc"),
+        group: "shortcut.group.wiki",
+        handler: () => handleNewClick(),
+      },
+      {
+        key: "E",
+        description: t("shortcut.editDoc"),
+        group: "shortcut.group.wiki",
+        handler: () => {
+          // 阅读模式下且有选中文档时，切换到编辑模式
+          if (selectedDocRef.current && mode === "read") {
+            setEditingDoc(selectedDocRef.current);
+            setMode("edit");
+          }
+        },
+      },
+    ]);
+  }, [t, handleNewClick, mode]);
 
   // 编辑：设置 editingDoc，切换到 edit 模式
   const handleEditClick = useCallback((doc: WikiDocument) => {

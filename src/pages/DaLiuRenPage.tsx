@@ -16,6 +16,7 @@ import type { LiurenRecord, Person } from "../core/personDb";
 import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
 import { registerDaLiuRenCallbacks } from "../core/debugApi";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
+import { registerShortcut } from "../core/shortcuts";
 
 export function DaLiuRenPage() {
   const { t } = useI18n();
@@ -166,6 +167,16 @@ export function DaLiuRenPage() {
   const handleNewClick = () => {
     setCreateDialogOpen(true);
   };
+
+  // ── 页面快捷键：N 新建占课 ────────────────────────────
+  useEffect(() => {
+    return registerShortcut({
+      key: "N",
+      description: t("shortcut.newRecord"),
+      group: "shortcut.group.daliuren",
+      handler: () => handleNewClick(),
+    });
+  }, [t]);
 
   const handleEditClick = (record: LiurenRecord) => {
     setDialogRecord(record);
