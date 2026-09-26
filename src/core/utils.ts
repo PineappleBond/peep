@@ -246,7 +246,25 @@ export function formatRelativeTime(savedAt: number): string {
   if (days < 2) return "昨天";
   if (days < 30) return `${days}天前`;
   const date = new Date(savedAt);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return formatDate(date);
+}
+
+/** 将 Date 格式化为 YYYY-MM-DD */
+export function formatDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** 将时间戳格式化为 YYYY-MM-DD HH:mm（可选包含秒数 HH:mm:ss） */
+export function formatDateTime(ts: number, includeSeconds = false): string {
+  const d = new Date(ts);
+  const date = formatDate(d);
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  if (includeSeconds) {
+    const s = String(d.getSeconds()).padStart(2, "0");
+    return `${date} ${h}:${m}:${s}`;
+  }
+  return `${date} ${h}:${m}`;
 }
 
 /** 均时差（分钟），N 为年内第几日 */

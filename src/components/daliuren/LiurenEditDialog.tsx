@@ -5,7 +5,7 @@
  */
 import { useState, useEffect } from "react";
 import { Dialog } from "../Dialog";
-import { LiurenFormFields, type LiurenFormValues } from "./LiurenFormFields";
+import { LiurenFormFields, EMPTY_LIUREN_FORM, type LiurenFormValues } from "./LiurenFormFields";
 import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord } from "../../core/personDb";
 
@@ -16,21 +16,13 @@ interface LiurenEditDialogProps {
   onSaved: () => void;
 }
 
-/** 表单初始空值 */
-const EMPTY_FORM: LiurenFormValues = {
-  question: "",
-  note: "",
-  background: "",
-  tags: [],
-};
-
 export function LiurenEditDialog({
   open,
   onClose,
   record,
   onSaved,
 }: LiurenEditDialogProps) {
-  const [values, setValues] = useState<LiurenFormValues>(EMPTY_FORM);
+  const [values, setValues] = useState<LiurenFormValues>(EMPTY_LIUREN_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -5,8 +5,9 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { Dialog } from "../Dialog";
-import { LiurenFormFields, type LiurenFormValues } from "./LiurenFormFields";
+import { LiurenFormFields, EMPTY_LIUREN_FORM, type LiurenFormValues } from "./LiurenFormFields";
 import { calculateDaLiuRen } from "../../core/daliuren/calculator";
+import { formatDate, formatDateTime } from "../../core/utils";
 import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord, Person } from "../../core/personDb";
 
@@ -26,14 +27,6 @@ interface LiurenCreateDialogProps {
   submitTrigger?: number;
 }
 
-/** 表单初始空值 */
-const EMPTY_FORM: LiurenFormValues = {
-  question: "",
-  note: "",
-  background: "",
-  tags: [],
-};
-
 export function LiurenCreateDialog({
   open,
   onClose,
@@ -42,7 +35,7 @@ export function LiurenCreateDialog({
   initialData,
   submitTrigger,
 }: LiurenCreateDialogProps) {
-  const [values, setValues] = useState<LiurenFormValues>(EMPTY_FORM);
+  const [values, setValues] = useState<LiurenFormValues>(EMPTY_LIUREN_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +68,7 @@ export function LiurenCreateDialog({
   }, [submitTrigger, open, saving]);
 
   const resetForm = () => {
-    setValues(EMPTY_FORM);
+    setValues(EMPTY_LIUREN_FORM);
     setError(null);
   };
 
@@ -99,8 +92,8 @@ export function LiurenCreateDialog({
 
     try {
       const now = new Date();
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+      const dateStr = formatDate(now);
+      const timeStr = formatDateTime(now.getTime(), true).split(" ")[1];
 
       // 解析出生年份（防御性处理：格式异常时降级为 2000）
       const parsedYear = parseInt(person.date.split("-")[0], 10);

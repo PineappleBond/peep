@@ -212,23 +212,24 @@ function wuMu(monthBranch: number): number {
   return [7, 10, 1, 4][season];
 }
 
+/** 六合映射（按地支序号 0-11）：子↔丑、寅↔亥、卯↔戌、辰↔酉、巳↔申、午↔未 */
+const LIU_HE_MAP: Record<number, number> = {
+  0: 1, 1: 0, 2: 11, 3: 10, 4: 9, 5: 8, 6: 7, 7: 6, 8: 5, 9: 4, 10: 3, 11: 2,
+};
+
+/** 取某地支序号的六合支序号 */
+function liuheOf(branch: number): number {
+  return LIU_HE_MAP[branch] ?? branch;
+}
+
 /** 天德合：月德所临之合支（与天德相对） */
 function tianDeHe(monthBranch: number): number {
-  const td = tianDe(monthBranch);
-  // 天德的六合位
-  const liuheMap: Record<number, number> = {
-    0: 1, 1: 0, 2: 11, 3: 10, 4: 9, 5: 8, 6: 7, 7: 6, 8: 5, 9: 4, 10: 3, 11: 2,
-  };
-  return liuheMap[td] ?? td;
+  return liuheOf(tianDe(monthBranch));
 }
 
 /** 月德合：月德所临之合支 */
 function yueDeHe(monthBranch: number): number {
-  const yd = yueDe(monthBranch);
-  const liuheMap: Record<number, number> = {
-    0: 1, 1: 0, 2: 11, 3: 10, 4: 9, 5: 8, 6: 7, 7: 6, 8: 5, 9: 4, 10: 3, 11: 2,
-  };
-  return liuheMap[yd] ?? yd;
+  return liuheOf(yueDe(monthBranch));
 }
 
 /** 天恩：月支所对应的天恩贵人（春戌、夏丑、秋辰、冬未） */

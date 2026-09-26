@@ -13,6 +13,14 @@ export interface LiurenFormValues {
   tags: string[];
 }
 
+/** 表单初始空值（CreateDialog 重置 / EditDialog 初始共用） */
+export const EMPTY_LIUREN_FORM: LiurenFormValues = {
+  question: "",
+  note: "",
+  background: "",
+  tags: [],
+};
+
 interface LiurenFormFieldsProps {
   values: LiurenFormValues;
   onChange: (patch: Partial<LiurenFormValues>) => void;

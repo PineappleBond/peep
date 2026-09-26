@@ -8,23 +8,13 @@ import { useState, useEffect } from "react";
 import type { WikiDocument } from "../../core/personDb";
 import { getWikiLinks, getWikiBacklinks, getWikiDoc } from "../../core/wikiDb";
 import { renderMarkdown } from "../../core/markdown";
+import { formatDateTime } from "../../core/utils";
 
 interface WikiReaderProps {
   doc: WikiDocument | null;
   personName: string;
   onEditClick: () => void;
   onDocClick: (docId: number) => void;
-}
-
-/** 格式化时间戳为 YYYY-MM-DD HH:mm */
-function formatTime(ts: number): string {
-  const d = new Date(ts);
-  const y = d.getFullYear();
-  const M = String(d.getMonth() + 1).padStart(2, "0");
-  const D = String(d.getDate()).padStart(2, "0");
-  const h = String(d.getHours()).padStart(2, "0");
-  const m = String(d.getMinutes()).padStart(2, "0");
-  return `${y}-${M}-${D} ${h}:${m}`;
 }
 
 /** 关联文档项（ID + 标题） */
@@ -96,7 +86,7 @@ export function WikiReader({ doc, personName, onEditClick, onDocClick }: WikiRea
           <h1 className="wiki-reader-title">{doc.title || "（无标题）"}</h1>
           <div className="wiki-reader-meta">
             <span className="wiki-meta-person">{personName}</span>
-            <span className="wiki-meta-time">{formatTime(doc.updatedAt)}</span>
+            <span className="wiki-meta-time">{formatDateTime(doc.updatedAt)}</span>
             {doc.tags.length > 0 && (
               <span className="wiki-meta-tags">
                 {doc.tags.map((tag) => (
