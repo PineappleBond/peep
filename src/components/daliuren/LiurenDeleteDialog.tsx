@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Dialog } from "../Dialog";
 import { deleteLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord } from "../../core/personDb";
+import { useI18n } from "../../core/i18n";
 
 interface LiurenDeleteDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ export function LiurenDeleteDialog({
   record,
   onDeleted,
 }: LiurenDeleteDialogProps) {
+  const { t } = useI18n();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +34,7 @@ export function LiurenDeleteDialog({
       onDeleted();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "删除失败，请重试");
+      setError(e instanceof Error ? e.message : t("daliuren.deleteFailed"));
     } finally {
       setDeleting(false);
     }
@@ -42,31 +44,31 @@ export function LiurenDeleteDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="删除确认"
+      title={t("daliuren.deleteTitle")}
       width={420}
       footer={
         <>
           <button className="btn-cancel" onClick={onClose} disabled={deleting}>
-            取消
+            {t("common.cancel")}
           </button>
           <button className="btn-danger" onClick={handleDelete} disabled={deleting}>
-            {deleting ? "删除中..." : "确定删除"}
+            {deleting ? t("common.deleting") : t("daliuren.confirmDelete")}
           </button>
         </>
       }
     >
       <div className="liuren-delete-confirm">
         {error && <div className="liuren-form-error" role="alert">{error}</div>}
-        <p className="liuren-delete-msg">确定要删除这条起课记录吗？此操作不可恢复。</p>
+        <p className="liuren-delete-msg">{t("daliuren.deleteMessage")}</p>
         {record && (
           <div className="liuren-delete-info">
             <div>
-              <strong>起课时间：</strong>
+              <strong>{t("daliuren.courseTime")}：</strong>
               {record.calculationTime}
             </div>
             {record.question && (
               <div>
-                <strong>占事：</strong>
+                <strong>{t("daliuren.questionLabel")}：</strong>
                 {record.question}
               </div>
             )}

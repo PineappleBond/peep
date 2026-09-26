@@ -9,6 +9,7 @@ import { Header } from "./Header";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
+import { useI18n } from "../core/i18n";
 
 const STORAGE_KEY = "zwds-current-person-id";
 
@@ -18,6 +19,7 @@ type LayoutProps = {
 
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [currentPersonId, setCurrentPersonId] = useState<number | null>(null);
   const currentPersonRef = useRef<Person | null>(null);
 
@@ -93,18 +95,18 @@ export function Layout({ children }: LayoutProps) {
     <div className="app">
       {/* 可访问性：跳过导航链接，键盘用户可直达主内容 */}
       <a href="#main-content" className="skip-link">
-        跳过导航
+        {t("nav.skipNav")}
       </a>
       <div className="bg-fx" aria-hidden="true" />
       <Header currentPersonId={currentPersonId} onSelectPerson={handleSelectPerson} />
       <main id="main-content">{children}</main>
       <footer className="foot">
-        算法引擎{" "}
+        {t("layout.engine")}{" "}
         <a href="https://github.com/SylarLong/iztro" target="_blank" rel="noreferrer"
-           aria-label="iztro 算法引擎（在新标签页打开）">
+           aria-label={t("layout.engineLabel")}>
           iztro
         </a>{" "}
-        · 盘面 react-zwds · 星盘仅供学习研究
+        · {t("layout.chartNote")}
       </footer>
     </div>
   );

@@ -10,6 +10,7 @@
  * - 关闭后焦点返回触发元素
  */
 import { useEffect, useRef, type ReactNode } from "react";
+import { useI18n } from "../core/i18n";
 
 type DialogProps = {
   open: boolean;
@@ -29,6 +30,7 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const titleId = useRef(`dlg-title-${++dialogCounter}`);
+  const { t } = useI18n();
 
   /* 记录触发弹窗的元素，关闭后恢复焦点 */
   useEffect(() => {
@@ -117,7 +119,7 @@ export function Dialog({ open, onClose, title, children, width = 480, footer }: 
       >
         <div className="dlg-head">
           <h2 className="dlg-title" id={titleId.current}>{title}</h2>
-          <button className="dlg-close" onClick={onClose} aria-label="关闭">
+          <button className="dlg-close" onClick={onClose} aria-label={t("dialog.close")}>
             ✕
           </button>
         </div>

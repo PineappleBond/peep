@@ -8,6 +8,7 @@ import { ZiweiIcon } from "./icons/ZiweiIcon";
 import { LiurenIcon } from "./icons/LiurenIcon";
 import { WikiIcon } from "./icons/WikiIcon";
 import type { Person } from "../core/personDb";
+import { useI18n, type Locale } from "../core/i18n";
 
 type HeaderProps = {
   /** 当前选中人物 ID */
@@ -16,62 +17,69 @@ type HeaderProps = {
   onSelectPerson: (person: Person) => void;
 };
 
-/** 根据路由获取标题 */
-function getTitleByPath(pathname: string): string {
-  if (pathname.startsWith("/wiki")) {
-    return "知识库";
-  }
-  if (pathname.startsWith("/liuren")) {
-    return "大六壬";
-  }
-  return "紫微斗数";
+/** 根据路由获取标题键名 */
+function getTitleKeyByPath(pathname: string): string {
+  if (pathname.startsWith("/wiki")) return "nav.wiki";
+  if (pathname.startsWith("/liuren")) return "nav.daliuren";
+  return "nav.ziwei";
 }
 
-/** 根据路由获取副标题 */
-function getSubtitleByPath(pathname: string): string {
-  if (pathname.startsWith("/wiki")) {
-    return "LLM 知识底座 · Markdown · 实体关联";
-  }
-  if (pathname.startsWith("/liuren")) {
-    return "古法占课 · 天地盘 · 四课三传";
-  }
-  return "玄机排盘 · iztro 引擎 · 自研盘面";
+/** 根据路由获取副标题键名 */
+function getSubtitleKeyByPath(pathname: string): string {
+  if (pathname.startsWith("/wiki")) return "header.wiki.subtitle";
+  if (pathname.startsWith("/liuren")) return "header.daliuren.subtitle";
+  return "header.ziwei.subtitle";
 }
 
 export function Header({ currentPersonId, onSelectPerson }: HeaderProps) {
   const location = useLocation();
-  const title = getTitleByPath(location.pathname);
-  const subtitle = getSubtitleByPath(location.pathname);
+  const { t, locale, setLocale } = useI18n();
+  const titleKey = getTitleKeyByPath(location.pathname);
+  const subtitleKey = getSubtitleKeyByPath(location.pathname);
+
+  /** 切换语言 */
+  const toggleLocale = () => {
+    const next: Locale = locale === "zh-CN" ? "en-US" : "zh-CN";
+    setLocale(next);
+  };
 
   return (
     <header className="top">
-      <h1>{title}</h1>
-      <span className="top-sub">{subtitle}</span>
-      <nav className="top-nav" aria-label="主导航">
+      <h1>{t(titleKey)}</h1>
+      <span className="top-sub">{t(subtitleKey)}</span>
+      <nav className="top-nav" aria-label={t("nav.mainNav")}>
         <NavLink
           to="/"
           end
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
-          aria-label="紫微斗数"
+          aria-label={t("nav.ziwei")}
         >
           <ZiweiIcon aria-hidden="true" />
         </NavLink>
         <NavLink
           to="/liuren"
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
-          aria-label="大六壬"
+          aria-label={t("nav.daliuren")}
         >
           <LiurenIcon aria-hidden="true" />
         </NavLink>
         <NavLink
           to="/wiki"
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
-          aria-label="知识库"
+          aria-label={t("nav.wiki")}
         >
           <WikiIcon aria-hidden="true" />
         </NavLink>
       </nav>
       <div className="top-actions">
+        <button
+          className="lang-toggle"
+          onClick={toggleLocale}
+          title={locale === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")}
+          aria-label={locale === "zh-CN" ? t("common.switchToEnglish") : t("common.switchToChinese")}
+        >
+          {locale === "zh-CN" ? "EN" : "中"}
+        </button>
         <PersonSelector currentId={currentPersonId} onSelect={onSelectPerson} />
       </div>
     </header>

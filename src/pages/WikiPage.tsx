@@ -3,6 +3,7 @@
  * 左侧文档列表 + 右侧阅读/编辑区，支持新建、编辑、删除、关联跳转
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useI18n } from "../core/i18n";
 import type { Person, WikiDocument } from "../core/personDb";
 import { saveWikiDoc, deleteWikiDoc, saveWikiLinks, getWikiDoc, getAllWikiTags, listWikiDocs, type WikiListFilters } from "../core/wikiDb";
 import { registerWikiCallbacks } from "../core/debugApi";
@@ -13,6 +14,7 @@ import { Dialog } from "../components/Dialog";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 
 export function WikiPage() {
+  const { t } = useI18n();
   const { refreshKey: listRefreshKey, refresh: refreshList } = useRefreshKey();
   const [selectedDoc, setSelectedDoc] = useState<WikiDocument | null>(null);
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -40,7 +42,7 @@ export function WikiPage() {
     if (!person?.id) return;
     registerWikiCallbacks({
       getWikiList: async (filters: WikiListFilters) => {
-        if (!person?.id) throw new Error("人物未选择");
+        if (!person?.id) throw new Error(t("daliuren.personNotSelected"));
         return listWikiDocs(person.id, filters);
       },
       setWikiListFilters: (filters) => {
@@ -98,7 +100,7 @@ export function WikiPage() {
       setMode("read");
     } catch (err) {
       console.error("[WikiPage] 加载文档详情失败", err);
-      alert("无法加载文档详情，请重试");
+      alert(t("wiki.loadDocFailed"));
     }
   }, []);
 
@@ -134,7 +136,7 @@ export function WikiPage() {
       refreshList();
     } catch (err) {
       console.error("[WikiPage] 删除文档失败", err);
-      alert(err instanceof Error ? err.message : "删除文档失败，请重试");
+      alert(err instanceof Error ? err.message : t("wiki.deleteFailed"));
     }
   }, [deletingDoc, selectedDoc, refreshList]);
 
@@ -155,7 +157,7 @@ export function WikiPage() {
       setMode("read");
     } catch (err) {
       console.error("[WikiPage] 保存文档失败", err);
-      alert(err instanceof Error ? err.message : "保存文档失败，请重试");
+      alert(err instanceof Error ? err.message : t("wiki.saveFailed"));
     }
   }, []);
 
@@ -173,7 +175,7 @@ export function WikiPage() {
       const docs = result.docs;
 
       if (docs.length === 0) {
-        alert("暂无文档可导出");
+        alert(t("wiki.noDocsToExport"));
         return;
       }
 
@@ -191,14 +193,14 @@ export function WikiPage() {
         }
       }
 
-      let md = `# 知识库 — ${person.name || "未命名"}\n\n`;
-      md += `> ${person.name || "未命名"} 的紫微斗数知识库\n\n`;
+      let md = `# ${t("wiki.knowledgeBase", { name: person.name || t("common.unnamed") })}\n\n`;
+      md += `> ${t("wiki.knowledgeBaseDesc", { name: person.name || t("common.unnamed") })}\n\n`;
 
       const renderDocs = (list: WikiDocument[]) =>
         list
           .map((d) => {
-            const preview = d.content.split("\n")[0].slice(0, 100) || "（无内容）";
-            return `- [${d.title || "（无标题）"}](#doc-${d.id}): ${preview}`;
+            const preview = d.content.split("\n")[0].slice(0, 100) || t("wiki.noContent");
+            return `- [${d.title || t("wiki.noTitle")}](#doc-${d.id}): ${preview}`;
           })
           .join("\n");
 
@@ -206,7 +208,7 @@ export function WikiPage() {
         md += `## ${tag}\n\n${renderDocs(list)}\n\n`;
       }
       if (untagged.length > 0) {
-        md += `## 未分类\n\n${renderDocs(untagged)}\n\n`;
+        md += `## ${t("wiki.uncategorized")}\n\n${renderDocs(untagged)}\n\n`;
       }
 
       const blob = new Blob([md], { type: "text/plain;charset=utf-8" });
@@ -218,7 +220,7 @@ export function WikiPage() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("[WikiPage] 导出失败", err);
-      alert("导出失败，请重试");
+      alert(t("wiki.exportFailed"));
     }
   }, [person]);
 
@@ -230,11 +232,11 @@ export function WikiPage() {
         setSelectedDoc(doc);
         setMode("read");
       } else {
-        alert("文档不存在或已被删除");
+        alert(t("wiki.docNotFound"));
       }
     } catch (err) {
       console.error("[WikiPage] 加载关联文档失败", err);
-      alert("无法加载关联文档，请重试");
+      alert(t("wiki.loadRelatedFailed"));
     }
   }, []);
 
@@ -249,7 +251,7 @@ export function WikiPage() {
     }
     return (
       <div className="wiki-page">
-        <div className="wiki-loading" role="status" aria-live="polite">加载中...</div>
+        <div className="wiki-loading" role="status" aria-live="polite">{t("wiki.loading")}</div>
       </div>
     );
   }
@@ -257,9 +259,9 @@ export function WikiPage() {
   return (
     <div className="wiki-page">
       <div className="wiki-header">
-        <h2 className="wiki-title">知识库</h2>
-        <button className="wiki-export-btn" onClick={handleExport} title="导出为 llms.txt">
-          导出
+        <h2 className="wiki-title">{t("wiki.title")}</h2>
+        <button className="wiki-export-btn" onClick={handleExport} title={t("wiki.exportTitle")}>
+          {t("wiki.export")}
         </button>
       </div>
       <div className="wiki-layout">
@@ -299,21 +301,21 @@ export function WikiPage() {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        title="确认删除"
+        title={t("wiki.confirmDeleteTitle")}
         footer={
           <div className="dlg-buttons">
             <button className="btn-cancel" onClick={() => setDeleteDialogOpen(false)}>
-              取消
+              {t("common.cancel")}
             </button>
             <button className="btn-danger" onClick={handleConfirmDelete}>
-              删除
+              {t("common.delete")}
             </button>
           </div>
         }
       >
-        <p>确定要删除这篇文档吗？此操作不可恢复。</p>
+        <p>{t("wiki.confirmDeleteMessage")}</p>
         {deletingDoc && (
-          <p className="dlg-hint">文档：{deletingDoc.title || "（无标题）"}</p>
+          <p className="dlg-hint">{t("wiki.docLabel")}：{deletingDoc.title || t("wiki.noTitle")}</p>
         )}
       </Dialog>
     </div>

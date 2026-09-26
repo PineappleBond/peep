@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { MUTAGEN_CHARS, SCOPES, Scope, SCOPE_META, type ScopeSelfMark } from "../core/utils";
 import type { Horoscope } from "../core/useZwds";
+import { useI18n } from "../core/i18n";
 
 type StarLike = {
   name: string;
@@ -29,6 +30,7 @@ export const StarCell = memo(function StarCell({
   /** 运限自化标记（多 scope 叠加） */
   selfScopeMarks?: ScopeSelfMark[];
 }) {
+  const { t } = useI18n();
   const scopeMuts: { scope: Scope; char: string }[] = [];
   if (horoscope && visible) {
     for (const s of SCOPES) {
@@ -56,7 +58,7 @@ export const StarCell = memo(function StarCell({
             <b
               className="mut mut-self"
               data-m={selfChar}
-              title={`自化${selfChar}（宫干四化入本宫·离心）`}
+              title={t("starCell.selfMutagenOutward", { char: selfChar })}
             >
               {selfChar}
             </b>
@@ -67,7 +69,7 @@ export const StarCell = memo(function StarCell({
             </b>
           ))}
           {selfScopeMarks.map((m, idx) => {
-            const dirLabel = m.direction === "outward" ? "离心" : "向心";
+            const dirLabel = m.direction === "outward" ? t("starCell.outward") : t("starCell.inward");
             const scopeLabel = SCOPE_META[m.scope].rowLabel;
             return (
               <b

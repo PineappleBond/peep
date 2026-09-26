@@ -9,6 +9,7 @@ import { Layout } from "./components/Layout";
 import { ZiweiPage } from "./pages/ZiweiPage";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { initDebugApi } from "./core/debugApi";
+import { useI18n } from "./core/i18n";
 
 // 大六壬 / Wiki 页面仅在访问时按需加载，降低首屏 bundle 体积
 const DaLiuRenPage = lazy(() =>
@@ -33,7 +34,8 @@ try {
 
 /** 懒加载路由的占位加载指示器 */
 function LazyFallback() {
-  return <div className="lazy-loading" role="status" aria-live="polite">加载中…</div>;
+  const { t } = useI18n();
+  return <div className="lazy-loading" role="status" aria-live="polite">{t("app.loading")}</div>;
 }
 
 /** 404 未找到路由：重定向到首页 */

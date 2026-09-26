@@ -5,6 +5,7 @@
 import { Dialog } from "../Dialog";
 import { LiurenChart } from "./LiurenChart";
 import type { LiurenRecord } from "../../core/personDb";
+import { useI18n } from "../../core/i18n";
 
 interface LiurenViewDialogProps {
   open: boolean;
@@ -13,10 +14,11 @@ interface LiurenViewDialogProps {
 }
 
 export function LiurenViewDialog({ open, onClose, record }: LiurenViewDialogProps) {
+  const { t } = useI18n();
   if (!record) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} title="查看盘面详情" width={720}>
+    <Dialog open={open} onClose={onClose} title={t("daliuren.viewTitle")} width={720}>
       <div className="liuren-view-dialog-content">
         <LiurenChart record={record} />
       </div>

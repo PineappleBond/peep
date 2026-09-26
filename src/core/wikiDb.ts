@@ -5,6 +5,7 @@
 import { db, type WikiDocument, type WikiLink } from "./personDb";
 import { createTagCache } from "./tagCache";
 import { filterAndPaginate } from "./dbUtils";
+import { t } from "./i18n";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
 const tagCache = createTagCache(
@@ -66,7 +67,7 @@ export async function listWikiDocs(
     return { docs: result.items, total: result.total, page: result.page, pageSize: result.pageSize };
   } catch (err) {
     console.error("[wikiDb] 查询文档列表失败", err);
-    throw new Error("无法读取文档列表");
+    throw new Error(t("db.readWikiListFailed"));
   }
 }
 
@@ -78,7 +79,7 @@ export async function getWikiDoc(id: number): Promise<WikiDocument | undefined> 
     return await db.wikiDocs.get(id);
   } catch (err) {
     console.error("[wikiDb] 获取文档详情失败", err);
-    throw new Error("无法读取文档详情");
+    throw new Error(t("db.readWikiFailed"));
   }
 }
 
@@ -102,7 +103,7 @@ export async function saveWikiDoc(doc: WikiDocument): Promise<number> {
     return id;
   } catch (err) {
     console.error("[wikiDb] 保存文档失败", err);
-    throw new Error("保存文档失败，请重试");
+    throw new Error(t("db.saveWikiFailed"));
   }
 }
 
@@ -126,7 +127,7 @@ export async function deleteWikiDoc(id: number): Promise<void> {
     });
   } catch (err) {
     console.error("[wikiDb] 删除文档失败", err);
-    throw new Error("删除文档失败，请重试");
+    throw new Error(t("db.deleteWikiFailed"));
   } finally {
     invalidateTagCache();
   }
@@ -208,6 +209,6 @@ export async function saveWikiLinks(
     });
   } catch (err) {
     console.error("[wikiDb] 保存文档链接失败", err);
-    throw new Error("保存文档链接失败，请重试");
+    throw new Error(t("db.saveWikiLinkFailed"));
   }
 }

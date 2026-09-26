@@ -3,6 +3,7 @@
  * 视觉风格匹配项目主题
  */
 import { Dialog } from "./Dialog";
+import { useI18n } from "../core/i18n";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -18,23 +19,24 @@ export function ConfirmDialog({
   open,
   onConfirm,
   onCancel,
-  title = "确认操作",
+  title,
   message,
-  confirmText = "确定",
-  cancelText = "取消",
+  confirmText,
+  cancelText,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
   return (
-    <Dialog open={open} onClose={onCancel} title={title} width={380}>
+    <Dialog open={open} onClose={onCancel} title={title ?? t("confirm.title")} width={380}>
       <div className="confirm-content">
         <div className="confirm-icon" aria-hidden="true">⚠</div>
         <p className="confirm-msg">{message}</p>
       </div>
       <div className="dlg-foot">
         <button className="btn-cancel" onClick={onCancel}>
-          {cancelText}
+          {cancelText ?? t("confirm.cancelText")}
         </button>
         <button className="btn-danger" onClick={onConfirm}>
-          {confirmText}
+          {confirmText ?? t("confirm.confirmText")}
         </button>
       </div>
     </Dialog>

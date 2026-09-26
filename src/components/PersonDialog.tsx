@@ -27,6 +27,7 @@ import {
 import type { BirthInput } from "../core/useZwds";
 import { DEFAULT_BIRTH_INPUT } from "../core/useZwds";
 import { Dialog } from "./Dialog";
+import { useI18n } from "../core/i18n";
 
 type PersonDialogProps = {
   open: boolean;
@@ -43,8 +44,10 @@ export function PersonDialog({
   onClose,
   onSave,
   initialData,
-  title = initialData ? "编辑人物" : "新增人物",
+  title,
 }: PersonDialogProps) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? (initialData ? t("person.editPerson") : t("person.addPerson"));
   const [draft, setDraft] = useState<BirthInput>(initialData || DEFAULT_BIRTH_INPUT);
   const [isDefault, setIsDefault] = useState(initialData?.isDefault ?? false);
 
@@ -145,9 +148,9 @@ export function PersonDialog({
       .split(":")
       .map(Number);
     return zoneOffsetMinutes("Asia/Shanghai", y, m || 1, d || 1, hh || 12, mi || 0) === 540
-      ? `${y} 年该时段中国大陆实行夏令时（钟表拨快 1 小时）`
+      ? t("person.dstWarn", { year: String(y) })
       : null;
-  }, [draft.placeMode, draft.useTrueSolar, draft.exactTime, solarStr]);
+  }, [draft.placeMode, draft.useTrueSolar, draft.exactTime, solarStr, t]);
 
   const derivedIdx = useMemo(() => {
     if (!draft.useTrueSolar || !draft.exactTime || !solarStr || !resolvedPlace) return null;
@@ -165,19 +168,19 @@ export function PersonDialog({
     e.preventDefault();
     // 客户端兜底校验（HTML5 校验可能因浏览器差异被绕过）
     if (!draft.date || !/^\d{4}-\d{1,2}-\d{1,2}$/.test(draft.date)) {
-      alert("出生日期格式不正确，请使用 YYYY-MM-DD 格式");
+      alert(t("person.invalidDateFormat"));
       return;
     }
     if (draft.timeIndex < 0 || draft.timeIndex > 12) {
-      alert("时辰索引超出范围（0~12）");
+      alert(t("person.timeIndexOutOfRange"));
       return;
     }
     if (draft.useTrueSolar && !draft.exactTime) {
-      alert("启用真太阳时时必须填写出生时刻");
+      alert(t("person.trueSolarRequiresTime"));
       return;
     }
     if (draft.useTrueSolar && draft.placeMode === "overseas" && !draft.timezone) {
-      alert("海外出生时必须选择时区");
+      alert(t("person.overseasRequiresTimezone"));
       return;
     }
     onSave(draft, isDefault);
@@ -185,32 +188,32 @@ export function PersonDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title={title} width={680}>
+    <Dialog open={open} onClose={onClose} title={resolvedTitle} width={680}>
       <form className="person-form" onSubmit={submit}>
         <div className="form-grid">
           <label className="fld">
-            <span>姓名</span>
+            <span>{t("person.name")}</span>
             <input
               value={draft.name}
               onChange={(e) => set("name", e.target.value)}
-              placeholder="请输入姓名"
+              placeholder={t("person.namePlaceholder")}
               maxLength={12}
               required
             />
           </label>
 
           <label className="fld">
-            <span>常居地</span>
+            <span>{t("person.residence")}</span>
             <input
               className="residence"
               value={draft.residence}
               onChange={(e) => set("residence", e.target.value)}
-              placeholder="可选，如 广东深圳"
+              placeholder={t("person.residencePlaceholder")}
               maxLength={24}
             />
           </label>
 
-          <div className="seg" role="group" aria-label="性别">
+          <div className="seg" role="group" aria-label={t("person.gender")}>
             {(["男", "女"] as const).map((g) => (
               <button
                 type="button"
@@ -219,12 +222,12 @@ export function PersonDialog({
                 onClick={() => set("gender", g)}
                 aria-pressed={draft.gender === g}
               >
-                {g}
+                {g === "男" ? t("common.male") : t("common.female")}
               </button>
             ))}
           </div>
 
-          <div className="seg" role="group" aria-label="历法">
+          <div className="seg" role="group" aria-label={t("person.calendar")}>
             {(["solar", "lunar"] as const).map((cal) => (
               <button
                 type="button"
@@ -245,14 +248,14 @@ export function PersonDialog({
                 }
                 aria-pressed={draft.calendar === cal}
               >
-                {cal === "solar" ? "阳历" : "农历"}
+                {cal === "solar" ? t("person.solar") : t("person.lunar")}
               </button>
             ))}
           </div>
 
           {draft.calendar === "solar" ? (
             <label className="fld">
-              <span>阳历生日</span>
+              <span>{t("person.solarBirthday")}</span>
               <input
                 type="date"
                 required
@@ -265,7 +268,7 @@ export function PersonDialog({
           ) : (
             <>
               <label className="fld">
-                <span>农历年</span>
+                <span>{t("person.lunarYear")}</span>
                 <select
                   value={lunarYMD.y}
                   onChange={(e) => setLunar(Number(e.target.value), lunarYMD.m, lunarYMD.d, draft.isLeapMonth)}
@@ -278,7 +281,7 @@ export function PersonDialog({
                 </select>
               </label>
               <label className="fld">
-                <span>月</span>
+                <span>{t("person.month")}</span>
                 <select
                   value={`${lunarYMD.m}${draft.isLeapMonth && lunarLeapMonth === lunarYMD.m ? "L" : ""}`}
                   onChange={(e) => {
@@ -297,7 +300,7 @@ export function PersonDialog({
                     if (lunarLeapMonth === m) {
                       opts.push(
                         <option key={`${m}L`} value={`${m}L`}>
-                          闰{label}
+                          {t("person.leapMonth", { label })}
                         </option>
                       );
                     }
@@ -306,7 +309,7 @@ export function PersonDialog({
                 </select>
               </label>
               <label className="fld">
-                <span>日</span>
+                <span>{t("person.day")}</span>
                 <select
                   value={Math.min(lunarYMD.d, lunarMaxDay)}
                   onChange={(e) => setLunar(lunarYMD.y, lunarYMD.m, Number(e.target.value), draft.isLeapMonth)}
@@ -322,83 +325,83 @@ export function PersonDialog({
           )}
 
           <label className="fld">
-            <span>时辰</span>
+            <span>{t("person.time")}</span>
             <select
               value={derivedIdx ?? draft.timeIndex}
               disabled={derivedIdx != null}
-              title={derivedIdx != null ? "已由真太阳时校正自动推定" : undefined}
+              title={derivedIdx != null ? t("person.trueSolarAuto") : undefined}
               onChange={(e) => set("timeIndex", Number(e.target.value))}
             >
-              {TIME_OPTIONS.map((t) => (
-                <option key={t.index} value={t.index}>
-                  {t.label} {t.range}
+              {TIME_OPTIONS.map((item) => (
+                <option key={item.index} value={item.index}>
+                  {item.label} {item.range}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="fld">
-            <span>流派</span>
+            <span>{t("person.school")}</span>
             <select
               value={draft.algorithm}
               onChange={(e) => setAlgorithm(e.target.value as BirthInput["algorithm"])}
             >
-              <option value="default">通行版（南派）</option>
-              <option value="zhongzhou">中州派</option>
+              <option value="default">{t("person.schoolDefault")}</option>
+              <option value="zhongzhou">{t("person.schoolZhongzhou")}</option>
             </select>
           </label>
 
           <label className="fld">
-            <span>年界</span>
+            <span>{t("person.yearDivide")}</span>
             <select
               value={draft.yearDivide}
               onChange={(e) => set("yearDivide", e.target.value as BirthInput["yearDivide"])}
             >
               <option value="normal">
-                正月初一{draft.algorithm === "default" ? "（南派默认）" : ""}
+                {t("person.yearDivideNormal")}{draft.algorithm === "default" ? t("person.yearDivideNormalDefault") : ""}
               </option>
               <option value="exact">
-                立春{draft.algorithm === "zhongzhou" ? "（中州默认）" : ""}
+                {t("person.yearDivideExact")}{draft.algorithm === "zhongzhou" ? t("person.yearDivideExactDefault") : ""}
               </option>
             </select>
           </label>
 
           <label className="fld">
-            <span>四化表</span>
+            <span>{t("person.mutagenTable")}</span>
             <select
               value={draft.mutagenTable}
               onChange={(e) => set("mutagenTable", e.target.value as BirthInput["mutagenTable"])}
             >
               <option value="default">
-                通行四化{draft.algorithm === "default" ? "（南派默认）" : ""}
+                {t("person.mutagenDefault")}{draft.algorithm === "default" ? t("person.yearDivideNormalDefault") : ""}
               </option>
               <option value="zhongzhou">
-                中州四化·天府化科{draft.algorithm === "zhongzhou" ? "（中州默认）" : ""}
+                {t("person.mutagenZhongzhou")}{draft.algorithm === "zhongzhou" ? t("person.yearDivideExactDefault") : ""}
               </option>
             </select>
           </label>
 
           <label className="fld">
-            <span>子时界</span>
+            <span>{t("person.dayDivide")}</span>
             <select
               value={draft.dayDivide}
               onChange={(e) => set("dayDivide", e.target.value as BirthInput["dayDivide"])}
             >
-              <option value="forward">晚子归次日（默认）</option>
-              <option value="current">晚子归当日</option>
+              <option value="forward">{t("person.dayDivideForward")}</option>
+              <option value="current">{t("person.dayDivideCurrent")}</option>
             </select>
           </label>
 
           {draft.algorithm === "zhongzhou" && (
             <label className="fld">
-              <span>盘型</span>
+              <span>{t("person.astroType")}</span>
               <select
                 value={draft.astroType}
                 onChange={(e) => set("astroType", e.target.value as BirthInput["astroType"])}
               >
-                <option value="heaven">天盘</option>
-                <option value="earth">地盘</option>
-                <option value="human">人盘</option>
+                <option value="heaven">{t("person.astroHeaven")}</option>
+                <option value="earth">{t("person.astroEarth")}</option>
+                <option value="human">{t("person.astroHuman")}</option>
               </select>
             </label>
           )}
@@ -409,20 +412,20 @@ export function PersonDialog({
               checked={draft.useTrueSolar}
               onChange={(e) => toggleTrueSolar(e.target.checked)}
             />
-            真太阳时
+            {t("person.trueSolar")}
           </label>
         </div>
 
         {dstWarn && (
           <div className="dst-hint">
-            ⚠ {dstWarn}——若出生记录为当时钟表时间，请将时刻减 1 小时后输入。
+            ⚠ {dstWarn}{t("person.dstHint")}
           </div>
         )}
 
         {draft.useTrueSolar && (
           <div className="ts-row">
             <label className="fld">
-              <span>出生时刻</span>
+              <span>{t("person.birthTime")}</span>
               <input
                 type="time"
                 required
@@ -431,14 +434,14 @@ export function PersonDialog({
               />
             </label>
 
-            <div className="seg" role="group" aria-label="出生地">
+            <div className="seg" role="group" aria-label={t("person.birthPlace")}>
               <button
                 type="button"
                 className={draft.placeMode !== "overseas" ? "on" : ""}
                 onClick={() => set("placeMode", "china")}
                 aria-pressed={draft.placeMode !== "overseas"}
               >
-                中国
+                {t("person.china")}
               </button>
               <button
                 type="button"
@@ -452,13 +455,13 @@ export function PersonDialog({
                 }
                 aria-pressed={draft.placeMode === "overseas"}
               >
-                海外
+                {t("person.overseas")}
               </button>
             </div>
 
             {draft.placeMode === "overseas" ? (
               <label className="fld">
-                <span>时区</span>
+                <span>{t("person.timezone")}</span>
                 <select
                   className="tz-select"
                   value={draft.timezone || browserTimezone()}
@@ -474,7 +477,7 @@ export function PersonDialog({
             ) : (
               <>
                 <label className="fld">
-                  <span>省份</span>
+                  <span>{t("person.province")}</span>
                   <select value={draft.province} onChange={(e) => setProvince(e.target.value)}>
                     {ALL_PROVINCE_NAMES.map((p) => (
                       <option key={p} value={p}>
@@ -485,7 +488,7 @@ export function PersonDialog({
                 </label>
 
                 <label className="fld">
-                  <span>城市</span>
+                  <span>{t("person.city")}</span>
                   <select value={draft.city} onChange={(e) => setCity(e.target.value)}>
                     {cityNames.map((c) => (
                       <option key={c} value={c}>
@@ -496,7 +499,7 @@ export function PersonDialog({
                 </label>
 
                 <label className="fld">
-                  <span>区县</span>
+                  <span>{t("person.district")}</span>
                   <select value={draft.district} onChange={(e) => set("district", e.target.value)}>
                     {districtNames.map((d) => (
                       <option key={d} value={d}>
@@ -510,32 +513,32 @@ export function PersonDialog({
 
             {resolvedPlace && (
               <span className="ts-lng">
-                经度 {resolvedPlace.longitude}° ·{" "}
+                {t("person.longitude", { value: resolvedPlace.longitude })} ·{" "}
                 {draft.placeMode === "overseas"
-                  ? `钟表基准 ${formatOffset(resolvedPlace.clockOffsetMinutes)}`
-                  : "钟表基准东八区"}{" "}
-                · 经度偏移{" "}
-                {Math.round(resolvedPlace.longitude * 4 - resolvedPlace.clockOffsetMinutes)} 分
+                  ? t("person.clockBase", { offset: formatOffset(resolvedPlace.clockOffsetMinutes) })
+                  : t("person.clockBaseUTC8")}{" "}
+                · {t("person.lngOffset")}{" "}
+                {Math.round(resolvedPlace.longitude * 4 - resolvedPlace.clockOffsetMinutes)} {t("person.lngOffsetUnit")}
               </span>
             )}
           </div>
         )}
 
-        <label className="ck" title="设为默认人物，应用启动时自动起盘">
+        <label className="ck" title={t("person.setDefault")}>
           <input
             type="checkbox"
             checked={isDefault}
             onChange={(e) => setIsDefault(e.target.checked)}
           />
-          设为默认人物
+          {t("person.setDefault")}
         </label>
 
         <div className="dlg-foot">
           <button type="button" className="btn-cancel" onClick={onClose}>
-            取消
+            {t("common.cancel")}
           </button>
           <button type="submit" className="btn-save">
-            保存
+            {t("common.save")}
           </button>
         </div>
       </form>

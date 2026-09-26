@@ -12,6 +12,7 @@ import {
 import type { BirthInput } from "../core/useZwds";
 import { PersonDialog } from "./PersonDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useI18n } from "../core/i18n";
 
 type PersonSelectorProps = {
   /** 当前选中人物 ID */
@@ -21,6 +22,7 @@ type PersonSelectorProps = {
 };
 
 export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
+  const { t } = useI18n();
   const [persons, setPersons] = useState<Person[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | undefined>();
@@ -67,7 +69,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
       await loadPersons();
     } catch (err) {
       console.error("[PersonSelector] 保存人物失败", err);
-      alert(err instanceof Error ? err.message : "保存失败，请重试");
+      alert(err instanceof Error ? err.message : t("person.saveFailed"));
     }
   };
 
@@ -86,7 +88,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
       await loadPersons();
     } catch (err) {
       console.error("[PersonSelector] 删除人物失败", err);
-      alert(err instanceof Error ? err.message : "删除失败，请重试");
+      alert(err instanceof Error ? err.message : t("person.deleteFailed"));
     }
   };
 
@@ -100,26 +102,26 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
           value={currentId || ""}
           onChange={handleSelect}
           className="person-select"
-          aria-label="选择人物"
+          aria-label={t("person.selectPerson")}
         >
           {persons.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name || "无名"} · {p.gender}
+              {p.name || t("person.unnamed")} · {p.gender === "男" ? t("common.male") : t("common.female")}
             </option>
           ))}
         </select>
-        <button className="person-btn" onClick={handleAdd} aria-label="新增人物">
+        <button className="person-btn" onClick={handleAdd} aria-label={t("person.addPerson")}>
           +
         </button>
-        <button className="person-btn" onClick={handleEdit} aria-label="编辑当前人物">
+        <button className="person-btn" onClick={handleEdit} aria-label={t("person.editCurrent")}>
           ✎
         </button>
         <button
           className="person-btn person-del"
           onClick={handleDeleteClick}
           disabled={!canDelete}
-          aria-label={canDelete ? "删除当前人物" : "默认人物不可删除"}
-          title={canDelete ? "删除当前人物" : "默认人物不可删除"}
+          aria-label={canDelete ? t("person.deleteCurrent") : t("person.defaultCannotDelete")}
+          title={canDelete ? t("person.deleteCurrent") : t("person.defaultCannotDelete")}
         >
           ✕
         </button>
@@ -136,10 +138,10 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
         open={!!confirmDelete}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setConfirmDelete(null)}
-        title="删除人物"
-        message={`确定删除人物「${confirmDelete?.name || "无名"}」吗？此操作不可撤销。`}
-        confirmText="确定删除"
-        cancelText="取消"
+        title={t("person.deletePerson")}
+        message={t("person.confirmDelete", { name: confirmDelete?.name || t("person.unnamed") })}
+        confirmText={t("person.confirmDeleteText")}
+        cancelText={t("common.cancel")}
       />
     </>
   );

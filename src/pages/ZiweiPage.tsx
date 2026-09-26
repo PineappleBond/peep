@@ -3,6 +3,7 @@
  * 展示星盘、运限栏等
  */
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../core/i18n";
 import { DEFAULT_BIRTH_INPUT, useZwds, type BirthInput } from "../core/useZwds";
 import { Chart } from "../components/Chart";
 import { HoroscopeBar } from "../components/HoroscopeBar";
@@ -12,6 +13,7 @@ import { registerZiWeiCallbacks } from "../core/debugApi";
 import type { Person } from "../core/personDb";
 
 export function ZiweiPage() {
+  const { t } = useI18n();
   const [input, setInput] = useState<BirthInput>(DEFAULT_BIRTH_INPUT);
   const [genId, setGenId] = useState(0);
   const z = useZwds(input);
@@ -47,7 +49,7 @@ export function ZiweiPage() {
         </ErrorBoundary>
       ) : (
         <div className="err-box" role="alert">
-          排盘失败：请检查出生日期与时辰（支持 1900 ~ 2100 年，农历请勿超出当月天数）。
+          {t("ziwei.errorMessage")}
         </div>
       )}
     </>

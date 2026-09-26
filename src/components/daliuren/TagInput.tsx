@@ -6,6 +6,7 @@
  * - 可选建议列表（suggestions），输入时自动过滤匹配项并展示下拉
  */
 import { useState, useRef, type KeyboardEvent } from "react";
+import { useI18n } from "../../core/i18n";
 
 interface TagInputProps {
   value: string[];
@@ -26,7 +27,9 @@ const DEFAULT_MAX_TAG_LENGTH = 30;
 /** 标签最大数量 */
 const DEFAULT_MAX_TAGS = 20;
 
-export function TagInput({ value, onChange, placeholder = "输入标签后按回车...", disabled, suggestions, maxTagLength = DEFAULT_MAX_TAG_LENGTH, maxTags = DEFAULT_MAX_TAGS }: TagInputProps) {
+export function TagInput({ value, onChange, placeholder, disabled, suggestions, maxTagLength = DEFAULT_MAX_TAG_LENGTH, maxTags = DEFAULT_MAX_TAGS }: TagInputProps) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t("tagInput.placeholder");
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,9 +37,9 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
   const addTags = (raw: string) => {
     const newTags = raw
       .split(/[,，]/)
-      .map((t) => t.trim())
+      .map((s) => s.trim())
       // 过滤空标签、超长标签、重复标签
-      .filter((t) => t && t.length <= maxTagLength && !value.includes(t));
+      .filter((s) => s && s.length <= maxTagLength && !value.includes(s));
     // 限制标签总数
     const remaining = maxTags - value.length;
     const toAdd = newTags.slice(0, remaining);
@@ -72,7 +75,7 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
     setInput(val);
     if (suggestions && val.trim()) {
       const filtered = suggestions.filter(
-        (t) => t.toLowerCase().includes(val.toLowerCase()) && !value.includes(t)
+        (s) => s.toLowerCase().includes(val.toLowerCase()) && !value.includes(s)
       );
       setShowSuggestions(filtered.length > 0);
     } else {
@@ -81,22 +84,22 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
   };
 
   const handleRemove = (tag: string) => {
-    onChange(value.filter((t) => t !== tag));
+    onChange(value.filter((s) => s !== tag));
   };
 
   // 计算建议列表
   const filteredSuggestions = suggestions
     ? suggestions
         .filter(
-          (t) =>
-            t.toLowerCase().includes(input.toLowerCase()) && !value.includes(t)
+          (s) =>
+            s.toLowerCase().includes(input.toLowerCase()) && !value.includes(s)
         )
         .slice(0, 10)
     : [];
 
   return (
     <div className="tag-input">
-      <div className="tag-input-tags" role="group" aria-label="标签列表">
+      <div className="tag-input-tags" role="group" aria-label={t("tagInput.tagList")}>
         {value.map((tag) => (
           <span key={tag} className="tag-input-tag">
             <span className="tag-input-tag-text">{tag}</span>
@@ -104,7 +107,7 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
               type="button"
               className="tag-input-tag-remove"
               onClick={() => handleRemove(tag)}
-              aria-label={`删除 ${tag}`}
+              aria-label={t("tagInput.deleteTag", { tag })}
               disabled={disabled}
             >
               ✕
@@ -119,8 +122,8 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
-          placeholder={value.length === 0 ? placeholder : ""}
-          aria-label="添加标签"
+          placeholder={value.length === 0 ? resolvedPlaceholder : ""}
+          aria-label={t("tagInput.addTag")}
           disabled={disabled || value.length >= maxTags}
           maxLength={maxTagLength}
         />
@@ -128,21 +131,21 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
       {/* 标签建议下拉 */}
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div className="tag-input-suggestions">
-          {filteredSuggestions.map((t) => (
+          {filteredSuggestions.map((s) => (
             <div
-              key={t}
+              key={s}
               className="tag-input-suggestion-item"
-              onClick={() => addTags(t)}
+              onClick={() => addTags(s)}
               role="option"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  addTags(t);
+                  addTags(s);
                 }
               }}
             >
-              {t}
+              {s}
             </div>
           ))}
         </div>

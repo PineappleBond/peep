@@ -8,6 +8,7 @@ import type { LiurenRecord } from "../../core/personDb";
 import type { DaLiuRenResult } from "../../core/daliuren/types";
 import { DI_ZHI } from "../../core/daliuren/constants";
 import { LiurenEmpty } from "./LiurenEmpty";
+import { useI18n } from "../../core/i18n";
 
 interface LiurenChartProps {
   record: LiurenRecord | null;
@@ -20,25 +21,26 @@ function branchText(idx: number): string {
 
 /** 四柱展示 */
 function FourPillarsSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   const { fourPillars: fp } = result;
   return (
-    <section className="liuren-section" aria-label="四柱">
-      <h4 className="liuren-section-title">四柱</h4>
+    <section className="liuren-section" aria-label={t("daliuren.pillar")}>
+      <h4 className="liuren-section-title">{t("daliuren.pillar")}</h4>
       <div className="liuren-four-pillars">
         <div className="liuren-pillar">
-          <div className="liuren-pillar-label">年</div>
+          <div className="liuren-pillar-label">{t("daliuren.year")}</div>
           <div className="liuren-pillar-value">{fp.yearPillar}</div>
         </div>
         <div className="liuren-pillar">
-          <div className="liuren-pillar-label">月</div>
+          <div className="liuren-pillar-label">{t("daliuren.month")}</div>
           <div className="liuren-pillar-value">{fp.monthPillar}</div>
         </div>
         <div className="liuren-pillar">
-          <div className="liuren-pillar-label">日</div>
+          <div className="liuren-pillar-label">{t("daliuren.day")}</div>
           <div className="liuren-pillar-value">{fp.dayPillar}</div>
         </div>
         <div className="liuren-pillar">
-          <div className="liuren-pillar-label">时</div>
+          <div className="liuren-pillar-label">{t("daliuren.hour")}</div>
           <div className="liuren-pillar-value">{fp.hourPillar}</div>
         </div>
       </div>
@@ -48,9 +50,10 @@ function FourPillarsSection({ result }: { result: DaLiuRenResult }) {
 
 /** 月将展示 */
 function MonthGeneralSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   return (
-    <section className="liuren-section" aria-label="月将">
-      <h4 className="liuren-section-title">月将</h4>
+    <section className="liuren-section" aria-label={t("daliuren.monthGeneral")}>
+      <h4 className="liuren-section-title">{t("daliuren.monthGeneral")}</h4>
       <div className="liuren-month-general">
         {result.monthGeneral.name}（{branchText(result.monthGeneral.branch)}）
       </div>
@@ -60,13 +63,14 @@ function MonthGeneralSection({ result }: { result: DaLiuRenResult }) {
 
 /** 天地盘展示（12 宫格） */
 function HeavenEarthBoardSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   // 地盘固定：子至亥（0-11），天盘旋转
   // 简化为 4x3 网格，每格显示：天盘/地盘 + 天将/六亲/遁干/纳音
   const gridPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
   return (
-    <section className="liuren-section" aria-label="天地盘">
-      <h4 className="liuren-section-title">天地盘</h4>
+    <section className="liuren-section" aria-label={t("daliuren.heavenEarth")}>
+      <h4 className="liuren-section-title">{t("daliuren.heavenEarth")}</h4>
       <div className="liuren-board-grid">
         {gridPositions.map((earthIdx) => {
           const heavenIdx = result.heavenBoard[earthIdx];
@@ -109,9 +113,10 @@ function HeavenEarthBoardSection({ result }: { result: DaLiuRenResult }) {
 
 /** 四课展示 */
 function FourLessonsSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   return (
-    <section className="liuren-section" aria-label="四课">
-      <h4 className="liuren-section-title">四课</h4>
+    <section className="liuren-section" aria-label={t("daliuren.fourCourses")}>
+      <h4 className="liuren-section-title">{t("daliuren.fourCourses")}</h4>
       <div className="liuren-four-lessons">
         {result.fourLessons.map((lesson, i) => (
           <div key={i} className="liuren-lesson">
@@ -128,25 +133,26 @@ function FourLessonsSection({ result }: { result: DaLiuRenResult }) {
 
 /** 三传展示 */
 function ThreeTransmissionsSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   const { threeTransmissions: tt } = result;
   return (
-    <section className="liuren-section" aria-label="三传">
-      <h4 className="liuren-section-title">三传</h4>
+    <section className="liuren-section" aria-label={t("daliuren.threeTransmissions")}>
+      <h4 className="liuren-section-title">{t("daliuren.threeTransmissions")}</h4>
       <div className="liuren-three-transmissions">
         <div className="liuren-transmission-method">{tt.method}</div>
         <div className="liuren-transmissions-row">
           <div className="liuren-transmission">
-            <div className="liuren-transmission-label">初传</div>
+            <div className="liuren-transmission-label">{t("daliuren.firstTransmission")}</div>
             <div className="liuren-transmission-value">{branchText(tt.initial)}</div>
           </div>
           <div className="liuren-transmission-arrow">→</div>
           <div className="liuren-transmission">
-            <div className="liuren-transmission-label">中传</div>
+            <div className="liuren-transmission-label">{t("daliuren.secondTransmission")}</div>
             <div className="liuren-transmission-value">{branchText(tt.middle)}</div>
           </div>
           <div className="liuren-transmission-arrow">→</div>
           <div className="liuren-transmission">
-            <div className="liuren-transmission-label">末传</div>
+            <div className="liuren-transmission-label">{t("daliuren.thirdTransmission")}</div>
             <div className="liuren-transmission-value">{branchText(tt.final)}</div>
           </div>
         </div>
@@ -157,12 +163,13 @@ function ThreeTransmissionsSection({ result }: { result: DaLiuRenResult }) {
 
 /** 旬空展示 */
 function XunKongSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   const { xunKong } = result;
   return (
-    <section className="liuren-section" aria-label="旬空">
-      <h4 className="liuren-section-title">旬空</h4>
+    <section className="liuren-section" aria-label={t("daliuren.xunKong")}>
+      <h4 className="liuren-section-title">{t("daliuren.xunKong")}</h4>
       <div className="liuren-xunkong">
-        旬首：{branchText(xunKong.xunHead)} 空亡：{branchText(xunKong.void1)} {branchText(xunKong.void2)}
+        {t("daliuren.xunHead")}：{branchText(xunKong.xunHead)} {t("daliuren.void")}：{branchText(xunKong.void1)} {branchText(xunKong.void2)}
       </div>
     </section>
   );
@@ -170,9 +177,10 @@ function XunKongSection({ result }: { result: DaLiuRenResult }) {
 
 /** 十二天将展示 */
 function TwelveGeneralsSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   return (
-    <section className="liuren-section" aria-label="十二天将">
-      <h4 className="liuren-section-title">十二天将</h4>
+    <section className="liuren-section" aria-label={t("daliuren.twelveGenerals")}>
+      <h4 className="liuren-section-title">{t("daliuren.twelveGenerals")}</h4>
       <div className="liuren-twelve-generals">
         {result.twelveGenerals.map((g) => (
           <div key={g.position} className="liuren-general-item">
@@ -187,6 +195,7 @@ function TwelveGeneralsSection({ result }: { result: DaLiuRenResult }) {
 
 /** 神煞展示 */
 function ShenShaSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   const { shenSha } = result;
   if (shenSha.length === 0) return null;
 
@@ -194,11 +203,11 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
   const xiongSha = shenSha.filter((s) => s.type === "凶");
 
   return (
-    <section className="liuren-section" aria-label="神煞">
-      <h4 className="liuren-section-title">神煞</h4>
+    <section className="liuren-section" aria-label={t("daliuren.shenSha")}>
+      <h4 className="liuren-section-title">{t("daliuren.shenSha")}</h4>
       {jiShen.length > 0 && (
         <div className="liuren-shensha-group">
-          <div className="liuren-shensha-label ji">吉神</div>
+          <div className="liuren-shensha-label ji">{t("daliuren.jiShen")}</div>
           <div className="liuren-shensha-list">
             {jiShen.map((s, i) => (
               <span key={i} className="liuren-shensha-item ji" title={s.description}>
@@ -210,7 +219,7 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
       )}
       {xiongSha.length > 0 && (
         <div className="liuren-shensha-group">
-          <div className="liuren-shensha-label xiong">凶煞</div>
+          <div className="liuren-shensha-label xiong">{t("daliuren.xiongSha")}</div>
           <div className="liuren-shensha-list">
             {xiongSha.map((s, i) => (
               <span key={i} className="liuren-shensha-item xiong" title={s.description}>
@@ -226,12 +235,13 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
 
 /** 课经展示 */
 function KeJingSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   const { keJing } = result;
   if (keJing.length === 0) return null;
 
   return (
-    <section className="liuren-section" aria-label="课经">
-      <h4 className="liuren-section-title">课经</h4>
+    <section className="liuren-section" aria-label={t("daliuren.keJing")}>
+      <h4 className="liuren-section-title">{t("daliuren.keJing")}</h4>
       <div className="liuren-kejing-list">
         {keJing.map((k, i) => (
           <div key={i} className="liuren-kejing-item">
@@ -253,12 +263,13 @@ function KeJingSection({ result }: { result: DaLiuRenResult }) {
 
 /** 毕法展示 */
 function BiFaSection({ result }: { result: DaLiuRenResult }) {
+  const { t } = useI18n();
   const { biFa } = result;
   if (biFa.length === 0) return null;
 
   return (
-    <section className="liuren-section" aria-label="毕法">
-      <h4 className="liuren-section-title">毕法</h4>
+    <section className="liuren-section" aria-label={t("daliuren.biFa")}>
+      <h4 className="liuren-section-title">{t("daliuren.biFa")}</h4>
       <div className="liuren-bifa-list">
         {biFa.map((b, i) => (
           <div key={i} className="liuren-bifa-item">
@@ -280,29 +291,30 @@ function BiFaSection({ result }: { result: DaLiuRenResult }) {
 
 /** 占事信息展示 */
 function QuestionInfoSection({ record }: { record: LiurenRecord }) {
+  const { t } = useI18n();
   return (
-    <section className="liuren-section" aria-label="占事信息">
-      <h4 className="liuren-section-title">占事信息</h4>
+    <section className="liuren-section" aria-label={t("daliuren.questionInfo")}>
+      <h4 className="liuren-section-title">{t("daliuren.questionInfo")}</h4>
       <div className="liuren-question-info">
         <div className="liuren-info-row">
-          <span className="liuren-info-label">起课时间</span>
+          <span className="liuren-info-label">{t("daliuren.courseTime")}</span>
           <span className="liuren-info-value">{record.calculationTime}</span>
         </div>
         {record.question && (
           <div className="liuren-info-row">
-            <span className="liuren-info-label">占事</span>
+            <span className="liuren-info-label">{t("daliuren.questionLabel")}</span>
             <span className="liuren-info-value">{record.question}</span>
           </div>
         )}
         {record.note && (
           <div className="liuren-info-row">
-            <span className="liuren-info-label">备注</span>
+            <span className="liuren-info-label">{t("daliuren.noteLabel")}</span>
             <span className="liuren-info-value">{record.note}</span>
           </div>
         )}
         {record.background && (
           <div className="liuren-info-row">
-            <span className="liuren-info-label">背景</span>
+            <span className="liuren-info-label">{t("daliuren.backgroundLabel")}</span>
             <span className="liuren-info-value liuren-info-background">
               {record.background}
             </span>
@@ -310,10 +322,10 @@ function QuestionInfoSection({ record }: { record: LiurenRecord }) {
         )}
         {record.tags.length > 0 && (
           <div className="liuren-info-row">
-            <span className="liuren-info-label">标签</span>
+            <span className="liuren-info-label">{t("daliuren.tagsLabel")}</span>
             <span className="liuren-info-value">
-              {record.tags.map((t) => (
-                <span key={t} className="liuren-info-tag">{t}</span>
+              {record.tags.map((tag) => (
+                <span key={tag} className="liuren-info-tag">{tag}</span>
               ))}
             </span>
           </div>

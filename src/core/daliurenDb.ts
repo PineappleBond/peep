@@ -4,6 +4,7 @@
 import { db, type LiurenRecord } from "./personDb";
 import { createTagCache } from "./tagCache";
 import { filterAndPaginate } from "./dbUtils";
+import { t } from "./i18n";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
 const tagCache = createTagCache(
@@ -65,7 +66,7 @@ export async function listLiurenRecords(
     return { records: result.items, total: result.total, page: result.page, pageSize: result.pageSize };
   } catch (err) {
     console.error("[daliurenDb] 查询记录列表失败", err);
-    throw new Error("无法读取起课记录列表");
+    throw new Error(t("db.readLiurenListFailed"));
   }
 }
 
@@ -77,7 +78,7 @@ export async function getLiurenRecord(id: number): Promise<LiurenRecord | undefi
     return await db.liurenRecords.get(id);
   } catch (err) {
     console.error("[daliurenDb] 获取记录详情失败", err);
-    throw new Error("无法读取起课记录详情");
+    throw new Error(t("db.readLiurenFailed"));
   }
 }
 
@@ -92,7 +93,7 @@ export async function saveLiurenRecord(record: LiurenRecord): Promise<number> {
     return id;
   } catch (err) {
     console.error("[daliurenDb] 保存记录失败", err);
-    throw new Error("保存起课记录失败，请重试");
+    throw new Error(t("db.saveLiurenFailed"));
   }
 }
 
@@ -105,7 +106,7 @@ export async function deleteLiurenRecord(id: number): Promise<void> {
     invalidateLiurenTagCache();
   } catch (err) {
     console.error("[daliurenDb] 删除记录失败", err);
-    throw new Error("删除起课记录失败，请重试");
+    throw new Error(t("db.deleteLiurenFailed"));
   }
 }
 

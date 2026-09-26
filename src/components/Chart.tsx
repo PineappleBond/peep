@@ -5,6 +5,7 @@ import type { Zwds } from "../core/useZwds";
 import { PalaceCard } from "./Palace";
 import { CenterPanel } from "./CenterPanel";
 import { PalaceDetail } from "./PalaceDetail";
+import { useI18n } from "../core/i18n";
 
 /** 自动聚焦优先级：最深的已显示运限层的命宫 → 本命命宫 */
 const FOCUS_ORDER: Scope[] = ["hourly", "daily", "monthly", "yearly", "decadal"];
@@ -51,6 +52,7 @@ type FlyLine = {
  */
 export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
   const a = z.astrolabe;
+  const { t } = useI18n();
 
   /* 默认自动选中命宫：流时>流日>流月>流年>大限的命宫，全关则本命命宫 */
   const autoFocus = useMemo(() => {
@@ -194,7 +196,7 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
   if (!a) return null;
 
   return (
-    <div className="chart-outer" role="region" aria-label="紫微斗数星盘">
+    <div className="chart-outer" role="region" aria-label={t("center.title")}>
       <div className="chart-wrap">
         <div className={`chart ${flyMode ? "chart-flymode" : ""} chart-selfmode`}>
           {a.palaces.map((p) => (
@@ -244,7 +246,7 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
               f.self ? (
                 <g key={k} filter="url(#lglow)">
                   <text className="fly-label" data-m={f.mutagen} x={f.label.x} y={f.label.y}>
-                    自{f.mutagen}
+                    {t("detail.selfPrefix")}{f.mutagen}
                   </text>
                   <circle className="fly-selfdot" data-m={f.mutagen} cx={f.from.x} cy={f.from.y} r={5 + k * 2.5} />
                 </g>

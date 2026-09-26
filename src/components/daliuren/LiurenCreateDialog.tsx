@@ -10,6 +10,7 @@ import { calculateDaLiuRen } from "../../core/daliuren/calculator";
 import { formatDate, formatDateTime } from "../../core/utils";
 import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord, Person } from "../../core/personDb";
+import { useI18n } from "../../core/i18n";
 
 interface LiurenCreateDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function LiurenCreateDialog({
   initialData,
   submitTrigger,
 }: LiurenCreateDialogProps) {
+  const { t } = useI18n();
   const [values, setValues] = useState<LiurenFormValues>(EMPTY_LIUREN_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,11 +81,11 @@ export function LiurenCreateDialog({
 
   const handleSubmit = async () => {
     if (!values.question.trim()) {
-      setError("占事问题不能为空");
+      setError(t("daliuren.questionRequired"));
       return;
     }
     if (person.date == null) {
-      setError("人物出生日期未设置");
+      setError(t("daliuren.birthDateNotSet"));
       return;
     }
 
@@ -118,7 +120,7 @@ export function LiurenCreateDialog({
       onSaved();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "起课失败，请重试");
+      setError(e instanceof Error ? e.message : t("daliuren.createFailed"));
     } finally {
       setSaving(false);
     }
@@ -128,15 +130,15 @@ export function LiurenCreateDialog({
     <Dialog
       open={open}
       onClose={handleClose}
-      title="新建起课"
+      title={t("daliuren.create")}
       width={520}
       footer={
         <>
           <button className="btn-cancel" onClick={handleClose} disabled={saving}>
-            取消
+            {t("common.cancel")}
           </button>
           <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
-            {saving ? "起课中..." : "起课并保存"}
+            {saving ? t("daliuren.creating") : t("daliuren.createAndSave")}
           </button>
         </>
       }

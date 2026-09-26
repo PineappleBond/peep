@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useRef, memo } from "react";
 import type { Scope } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
+import { useI18n } from "../core/i18n";
 
 /**
  * 底部运限拨盘（文墨天机式）：
@@ -15,6 +16,7 @@ function Row({
   onToggle,
   activeKey,
   wrap,
+  toggleTitle,
   children,
 }: {
   label: string;
@@ -23,6 +25,7 @@ function Row({
   onToggle: () => void;
   activeKey: string | number;
   wrap?: boolean;
+  toggleTitle: string;
   children: ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -38,7 +41,7 @@ function Row({
       <button
         className={`hlabel ${on ? "on" : ""}`}
         onClick={onToggle}
-        title={on ? "点击隐藏该层级" : "点击显示该层级"}
+        title={toggleTitle}
         aria-pressed={on}
       >
         {label}
@@ -74,46 +77,49 @@ function Cell({
 }
 
 export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
+  const { t } = useI18n();
   const { decades, childhood, activeDecadeIdx, years, months, days, hours, pick, clampedDay, effLeap, visible, actions } = z;
 
   return (
-    <section className="hbar" aria-label="运限选择">
+    <section className="hbar" aria-label={t("hbar.label")}>
       <Row
-        label="大限"
+        label={t("hbar.decadal")}
         scope="decadal"
         on={visible.decadal}
         onToggle={() => actions.toggleScope("decadal")}
         activeKey={activeDecadeIdx}
+        toggleTitle={visible.decadal ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
         {childhood && (
           <Cell
-            main="童限"
+            main={t("hbar.childhood")}
             sub={childhood.label}
             scope="decadal"
             active={activeDecadeIdx === -1}
             onClick={() => actions.pickDecade(-1)}
-            title={`${childhood.startYear}~${childhood.endYear}年`}
+            title={t("hbar.childhoodYear", { start: childhood.startYear, end: childhood.endYear })}
           />
         )}
         {decades.map((d, k) => (
           <Cell
             key={`${d.range[0]}-${d.earthlyBranch}`}
             main={`${d.range[0]}~${d.range[1]}`}
-            sub={`${d.heavenlyStem}${d.earthlyBranch}限`}
+            sub={t("hbar.decadalSub", { stem: d.heavenlyStem, branch: d.earthlyBranch })}
             scope="decadal"
             active={activeDecadeIdx === k}
             onClick={() => actions.pickDecade(k)}
-            title={`公历 ${d.startYear}~${d.endYear} 年`}
+            title={t("hbar.decadalTitle", { start: d.startYear, end: d.endYear })}
           />
         ))}
       </Row>
 
       <Row
-        label="流年"
+        label={t("hbar.yearly")}
         scope="yearly"
         on={visible.yearly}
         onToggle={() => actions.toggleScope("yearly")}
         activeKey={pick.year}
+        toggleTitle={visible.yearly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
         {years.map((y) => (
           <Cell
@@ -128,11 +134,12 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
       </Row>
 
       <Row
-        label="流月"
+        label={t("hbar.monthly")}
         scope="monthly"
         on={visible.monthly}
         onToggle={() => actions.toggleScope("monthly")}
         activeKey={`${pick.month}${effLeap ? "L" : ""}`}
+        toggleTitle={visible.monthly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
         {months.map((m) => (
           <Cell
@@ -142,18 +149,19 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
             scope="monthly"
             active={pick.month === m.month && effLeap === m.leap}
             onClick={() => actions.pickMonth(m.month, m.leap)}
-            title={m.leap ? "闰月无独立月建，干支沿用本月；运限按实际日期推算" : undefined}
+            title={m.leap ? t("hbar.leapMonthHint") : undefined}
           />
         ))}
       </Row>
 
       <Row
-        label="流日"
+        label={t("hbar.daily")}
         scope="daily"
         on={visible.daily}
         onToggle={() => actions.toggleScope("daily")}
         activeKey={`${pick.year}-${pick.month}-${clampedDay}`}
         wrap
+        toggleTitle={visible.daily ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
         {days.map((d) => (
           <Cell
@@ -163,17 +171,18 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
             scope="daily"
             active={clampedDay === d.day}
             onClick={() => actions.pickDay(d.day)}
-            title={d.gz ? `${d.label} · ${d.gz}日` : d.label}
+            title={d.gz ? t("hbar.dayTitle", { label: d.label, gz: d.gz }) : d.label}
           />
         ))}
       </Row>
 
       <Row
-        label="流时"
+        label={t("hbar.hourly")}
         scope="hourly"
         on={visible.hourly}
         onToggle={() => actions.toggleScope("hourly")}
         activeKey={pick.hour}
+        toggleTitle={visible.hourly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
         {hours.map((h) => (
           <Cell

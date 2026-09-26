@@ -5,6 +5,7 @@
 import Dexie, { type Table } from "dexie";
 import { DEFAULT_BIRTH_INPUT, type BirthInput } from "./useZwds";
 import type { DaLiuRenResult } from "./daliuren/types";
+import { t } from "./i18n";
 
 /**
  * 人物档案类型：扩展 BirthInput，附加主键 id、保存时间戳、默认标志。
@@ -141,7 +142,7 @@ function ensureDefault(): Promise<Person> {
         // 失败时清空缓存，允许下次重试
         defaultPromise = null;
         console.error("[personDb] 初始化默认人物失败", err);
-        throw new Error("数据库初始化失败，请检查浏览器存储设置后重试");
+        throw new Error(t("db.initFailed"));
       }
     })();
   }
@@ -155,7 +156,7 @@ export async function listPersons(): Promise<Person[]> {
     return await db.persons.orderBy("savedAt").reverse().toArray();
   } catch (err) {
     console.error("[personDb] 获取人物列表失败", err);
-    throw new Error("无法读取人物列表，请检查浏览器存储设置");
+    throw new Error(t("db.readPersonListFailed"));
   }
 }
 
@@ -165,7 +166,7 @@ export async function getPerson(id: number): Promise<Person | undefined> {
     return await db.persons.get(id);
   } catch (err) {
     console.error("[personDb] 获取人物详情失败", err);
-    throw new Error("无法读取人物信息");
+    throw new Error(t("db.readPersonFailed"));
   }
 }
 
@@ -197,7 +198,7 @@ export async function savePerson(
     });
   } catch (err) {
     console.error("[personDb] 保存人物失败", err);
-    throw new Error("保存人物失败，请重试");
+    throw new Error(t("db.savePersonFailed"));
   }
 }
 
@@ -205,13 +206,13 @@ export async function savePerson(
 export async function deletePerson(id: number): Promise<void> {
   try {
     const person = await db.persons.get(id);
-    if (person?.isDefault) throw new Error("默认人物不可删除");
+    if (person?.isDefault) throw new Error(t("db.defaultCannotDelete"));
     await db.persons.delete(id);
   } catch (err) {
     // 保留业务错误（默认人物不可删除），包装其他错误
-    if (err instanceof Error && err.message === "默认人物不可删除") throw err;
+    if (err instanceof Error && err.message === t("db.defaultCannotDelete")) throw err;
     console.error("[personDb] 删除人物失败", err);
-    throw new Error("删除人物失败，请重试");
+    throw new Error(t("db.deletePersonFailed"));
   }
 }
 

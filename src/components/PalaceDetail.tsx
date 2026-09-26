@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, memo } from "react";
 import { SCOPES, SCOPE_META, type Scope } from "../core/utils";
 import { getSelfMarksForScope, buildChartIndex } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
+import { useI18n } from "../core/i18n";
 
 /** 宫位详情弹层：三方四正快照 + 飞宫四化/自化 + 相关格局 + 夹宫 + 借星 */
 export const PalaceDetail = memo(function PalaceDetail({
@@ -13,6 +14,7 @@ export const PalaceDetail = memo(function PalaceDetail({
   index: number;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const a = z.astrolabe;
   const an = z.analysis;
 
@@ -125,14 +127,14 @@ export const PalaceDetail = memo(function PalaceDetail({
               {palace.heavenlyStem}
               {palace.earthlyBranch}
             </i>
-            {palace.isBodyPalace && <em className="p-body">身宫</em>}
-            {palace.isOriginalPalace && <em className="p-origin">来因</em>}
+            {palace.isBodyPalace && <em className="p-body">{t("palace.bodyPalace")}</em>}
+            {palace.isOriginalPalace && <em className="p-origin">{t("palace.originPalace")}</em>}
           </b>
           <button
             className="pd-close"
             onClick={onClose}
-            title="关闭（Esc）"
-            aria-label="关闭"
+            title={t("detail.close")}
+            aria-label={t("detail.closeAria")}
           >
             ✕
           </button>
@@ -140,7 +142,7 @@ export const PalaceDetail = memo(function PalaceDetail({
 
         {snap && (
           <section>
-            <h4>三方四正</h4>
+            <h4>{t("detail.sanFang")}</h4>
             <ul className="pd-seats">
               {snap.seats.map((s, k) => (
                 <li key={k}>
@@ -157,16 +159,16 @@ export const PalaceDetail = memo(function PalaceDetail({
             {snap.borrowed && <p className="pd-borrow">{snap.borrowed}</p>}
             <div className="pd-tags">
               <p>
-                <i className="pd-k pd-k-good">会吉</i>
-                {snap.auspicious.join("、") || "无"}
+                <i className="pd-k pd-k-good">{t("detail.auspicious")}</i>
+                {snap.auspicious.join("、") || t("common.none")}
               </p>
               <p>
-                <i className="pd-k pd-k-bad">会煞</i>
-                {snap.inauspicious.join("、") || "无"}
+                <i className="pd-k pd-k-bad">{t("detail.inauspicious")}</i>
+                {snap.inauspicious.join("、") || t("common.none")}
               </p>
               <p>
-                <i className="pd-k pd-k-mut">四化会入</i>
-                {snap.natalMutagens.join("、") || "无"}
+                <i className="pd-k pd-k-mut">{t("detail.natalMutagens")}</i>
+                {snap.natalMutagens.join("、") || t("common.none")}
               </p>
             </div>
           </section>
@@ -174,7 +176,7 @@ export const PalaceDetail = memo(function PalaceDetail({
 
         {fly && (
           <section>
-            <h4>宫干四化（{fly.stem}干飞出）</h4>
+            <h4>{t("detail.flyMutagens", { stem: fly.stem })}</h4>
             <ul className="pd-flies">
               {fly.flies.map((f) => (
                 <li key={f.mutagen}>
@@ -182,30 +184,30 @@ export const PalaceDetail = memo(function PalaceDetail({
                     {f.mutagen}
                   </i>
                   <span>
-                    {f.star} → {f.isSelf ? "本宫（自化·离心）" : f.toName}
-                    {f.isOpposite ? "（冲本宫方向）" : ""}
+                    {f.star} → {f.isSelf ? t("detail.selfMutagenOutward") : f.toName}
+                    {f.isOpposite ? t("detail.clashPalace") : ""}
                   </span>
                 </li>
               ))}
             </ul>
             {fly.selfInward.length > 0 && (
-              <p className="pd-inward">向心自化：{fly.selfInward.join("、")}</p>
+              <p className="pd-inward">{t("detail.inwardSelf")}：{fly.selfInward.join("、")}</p>
             )}
           </section>
         )}
 
         {(jiChain || luChain) && (
           <section>
-            <h4>四化传导链（本宫为链首，两转三转）</h4>
+            <h4>{t("detail.chainTitle")}</h4>
             {jiChain && (
               <p className="pd-chain pd-chain-ji">
-                <i>忌链</i>
+                <i>{t("detail.jiChain")}</i>
                 {jiChain.text}
               </p>
             )}
             {luChain && (
               <p className="pd-chain pd-chain-lu">
-                <i>禄链</i>
+                <i>{t("detail.luChain")}</i>
                 {luChain.text}
               </p>
             )}
@@ -214,7 +216,7 @@ export const PalaceDetail = memo(function PalaceDetail({
 
         {patterns.length > 0 && (
           <section>
-            <h4>相关格局</h4>
+            <h4>{t("detail.patterns")}</h4>
             {patterns.map((p, k) => (
               <div className="pd-pattern" key={k}>
                 <b>
@@ -232,10 +234,10 @@ export const PalaceDetail = memo(function PalaceDetail({
 
         {jia.length > 0 && (
           <section>
-            <h4>夹宫</h4>
+            <h4>{t("detail.flanking")}</h4>
             {jia.map((j, k) => (
               <p key={k} className="pd-jia">
-                <i className={`pd-kind pd-kind-${j.good ? "吉" : "凶"}`}>{j.kind}</i>
+                <i className={`pd-kind pd-kind-${j.good ? t("detail.good") : t("detail.bad")}`}>{j.kind}</i>
                 {j.detail}
               </p>
             ))}
@@ -244,13 +246,13 @@ export const PalaceDetail = memo(function PalaceDetail({
 
         {scopeSelfMarks.length > 0 && (
           <section>
-            <h4>运限自化</h4>
+            <h4>{t("detail.decadalSelf")}</h4>
             {scopeSelfMarks.map((s) => (
               <p key={s.scope}>
                 <span className={`pat-scope pat-scope-${s.scope}`}>{SCOPE_META[s.scope].rowLabel}</span>
-                离心：{s.outward.length ? s.outward.map((m) => `${m.star}化${m.char}`).join("、") : "无"}
+                {t("detail.outwardLabel")}：{s.outward.length ? s.outward.map((m) => `${m.star}化${m.char}`).join("、") : t("common.none")}
                 {" / "}
-                向心：{s.inward.length ? s.inward.map((m) => `${m.star}化${m.char}`).join("、") : "无"}
+                {t("detail.inwardLabel")}：{s.inward.length ? s.inward.map((m) => `${m.star}化${m.char}`).join("、") : t("common.none")}
               </p>
             ))}
           </section>

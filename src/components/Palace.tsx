@@ -3,6 +3,7 @@ import { util } from "iztro";
 import { abbrPalace, fixIndex, type Scope, type MutagenChar, type ScopeSelfMark } from "../core/utils";
 import type { PalaceData, Zwds } from "../core/useZwds";
 import { StarCell } from "./StarCell";
+import { useI18n } from "../core/i18n";
 
 type ScopeDataItem = {
   scope: Scope;
@@ -32,6 +33,7 @@ export const PalaceCard = memo(function PalaceCard({
   scopeData?: ScopeDataItem[];
 }) {
   const { horoscope, visible } = z;
+  const { t } = useI18n();
   const i = palace.index;
 
   /* 自化（离心）：宫干四化命中本宫星耀；跟随流派 config */
@@ -96,19 +98,19 @@ export const PalaceCard = memo(function PalaceCard({
       }}
       tabIndex={0}
       role="button"
-      aria-label={`${palace.name}宫位`}
+      aria-label={t("palace.palaceLabel", { name: palace.name })}
       aria-pressed={isFocus}
     >
       {isFocus && onDetail && (
         <button
           className="p-detail-btn"
-          aria-label="宫位详情：三方四正快照、飞宫四化、格局、夹宫"
+          aria-label={t("palace.detailAriaLabel")}
           onClick={(e) => {
             e.stopPropagation();
             onDetail(i);
           }}
         >
-          详
+          {t("palace.detail")}
         </button>
       )}
       <div className="p-stars">
@@ -170,11 +172,11 @@ export const PalaceCard = memo(function PalaceCard({
         <div className="p-f-m">
           <div className="p-name">
             {palace.name}
-            {palace.isBodyPalace && <em className="p-body">身宫</em>}
-            {palace.isOriginalPalace && <em className="p-origin">来因</em>}
+            {palace.isBodyPalace && <em className="p-body">{t("palace.bodyPalace")}</em>}
+            {palace.isOriginalPalace && <em className="p-origin">{t("palace.originPalace")}</em>}
           </div>
           <div className="p-range">{palace.decadal.range.join("-")}</div>
-          <div className="p-ages" title={`小限岁数：${palace.ages.join(" ")}`}>
+          <div className="p-ages" title={t("palace.agesHint", { ages: palace.ages.join(" ") })}>
             {palace.ages.slice(0, 5).join(" ")}
           </div>
         </div>

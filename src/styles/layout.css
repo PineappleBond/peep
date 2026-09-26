@@ -116,6 +116,13 @@
   cursor: not-allowed;
 }
 
+/* 语言切换按钮 */
+.top-actions .lang-toggle {
+  padding: 7px 12px;
+  font-weight: 600;
+  min-width: 36px;
+}
+
 /* ── 顶部导航图标 ── */
 .top-nav {
   display: flex;

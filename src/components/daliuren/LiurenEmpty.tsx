@@ -1,13 +1,16 @@
 /**
  * 大六壬空状态组件
  */
+import { useI18n } from "../../core/i18n";
+
 export function LiurenEmpty() {
+  const { t } = useI18n();
   return (
     <div className="liuren-chart-empty">
       <div className="liuren-chart-empty-icon" aria-hidden="true">☰</div>
-      <h3 className="liuren-chart-empty-title">大六壬盘面</h3>
+      <h3 className="liuren-chart-empty-title">{t("daliuren.title")}</h3>
       <p className="liuren-chart-empty-desc">
-        请选择左侧列表中的记录查看盘面，或点击【新建起课】开始
+        {t("daliuren.empty")}
       </p>
     </div>
   );

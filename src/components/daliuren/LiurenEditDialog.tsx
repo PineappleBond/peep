@@ -8,6 +8,7 @@ import { Dialog } from "../Dialog";
 import { LiurenFormFields, EMPTY_LIUREN_FORM, type LiurenFormValues } from "./LiurenFormFields";
 import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord } from "../../core/personDb";
+import { useI18n } from "../../core/i18n";
 
 interface LiurenEditDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function LiurenEditDialog({
   record,
   onSaved,
 }: LiurenEditDialogProps) {
+  const { t } = useI18n();
   const [values, setValues] = useState<LiurenFormValues>(EMPTY_LIUREN_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,11 +47,11 @@ export function LiurenEditDialog({
 
   const handleSubmit = async () => {
     if (!record) {
-      setError("未找到要编辑的记录");
+      setError(t("daliuren.notFound"));
       return;
     }
     if (!values.question.trim()) {
-      setError("占事问题不能为空");
+      setError(t("daliuren.questionRequired"));
       return;
     }
 
@@ -68,7 +70,7 @@ export function LiurenEditDialog({
       onSaved();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "保存失败，请重试");
+      setError(e instanceof Error ? e.message : t("daliuren.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -78,15 +80,15 @@ export function LiurenEditDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="编辑起课信息"
+      title={t("daliuren.editTitle")}
       width={520}
       footer={
         <>
           <button className="btn-cancel" onClick={onClose} disabled={saving}>
-            取消
+            {t("common.cancel")}
           </button>
           <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
-            {saving ? "保存中..." : "保存"}
+            {saving ? t("common.saving") : t("common.save")}
           </button>
         </>
       }
@@ -96,7 +98,7 @@ export function LiurenEditDialog({
 
         {/* 只读信息 */}
         <div className="liuren-form-field readonly">
-          <label>起课时间</label>
+          <label>{t("daliuren.courseTime")}</label>
           <div className="liuren-form-static">{record?.calculationTime}</div>
         </div>
 

@@ -9,6 +9,7 @@ import {
   type LiurenListFilters,
 } from "../../core/daliurenDb";
 import { formatRelativeTime } from "../../core/utils";
+import { useI18n } from "../../core/i18n";
 
 /** LiurenList 暴露给父组件的命令式接口 */
 export interface LiurenListHandle {
@@ -37,6 +38,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
   onViewClick,
   refreshKey = 0,
 }, ref) {
+  const { t } = useI18n();
   const [records, setRecords] = useState<LiurenRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -95,7 +97,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]
     );
     setPage(1); // 切换筛选时重置到第一页
   };
@@ -110,7 +112,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
       {/* 顶部操作区 */}
       <div className="record-list-header">
         <button className="record-new-btn" onClick={onNewClick}>
-          + 新建起课
+          + {t("daliuren.create")}
         </button>
       </div>
 
@@ -119,10 +121,10 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
         <input
           type="text"
           className="record-search-input"
-          placeholder="搜索占事、备注..."
+          placeholder={t("daliuren.search")}
           value={searchText}
           onChange={(e) => handleSearchChange(e.target.value)}
-          aria-label="搜索占事"
+          aria-label={t("daliuren.searchAria")}
         />
       </div>
 
@@ -146,8 +148,8 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
         {records.length === 0 ? (
           <div className="record-list-empty liuren-empty">
             {searchText || selectedTags.length > 0
-              ? "未找到匹配的记录"
-              : "暂无起课记录"}
+              ? t("daliuren.noMatch")
+              : t("daliuren.noRecords")}
           </div>
         ) : (
           records.map((record) => (
@@ -171,7 +173,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                   {formatRelativeTime(record.savedAt)}
                 </div>
                 <div className="record-list-item-text">
-                  {record.question || "（无占事）"}
+                  {record.question || t("daliuren.noQuestion")}
                 </div>
                 {record.tags.length > 0 && (
                   <div className="record-list-item-tags">
@@ -196,8 +198,8 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                       e.stopPropagation();
                       onViewClick(record);
                     }}
-                    title="查看盘面"
-                    aria-label="查看盘面"
+                    title={t("daliuren.viewChart")}
+                    aria-label={t("daliuren.viewChart")}
                   >
                     ⚏
                   </button>
@@ -208,8 +210,8 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                     e.stopPropagation();
                     onEditClick(record);
                   }}
-                  title="编辑"
-                  aria-label="编辑"
+                  title={t("common.edit")}
+                  aria-label={t("common.edit")}
                 >
                   ✎
                 </button>
@@ -219,8 +221,8 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                     e.stopPropagation();
                     onDeleteClick(record);
                   }}
-                  title="删除"
-                  aria-label="删除"
+                  title={t("common.delete")}
+                  aria-label={t("common.delete")}
                 >
                   ✕
                 </button>
@@ -236,7 +238,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            aria-label="上一页"
+            aria-label={t("common.prev")}
           >
             ‹
           </button>
@@ -246,7 +248,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
-            aria-label="下一页"
+            aria-label={t("common.next")}
           >
             ›
           </button>

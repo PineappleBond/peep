@@ -7,6 +7,7 @@
  * - 详细错误仅输出到 console.error，供开发者排查
  */
 import { Component, ReactNode } from "react";
+import { t } from "../core/i18n";
 
 type Props = {
   children: ReactNode;
@@ -40,9 +41,9 @@ export class ErrorBoundary extends Component<Props, { error: Error | null }> {
       return (
         <div className="err-box" role="alert" aria-live="assertive">
           {/* 通用提示文案，不泄露内部实现 */}
-          <div>盘面渲染异常，请调整参数后重试。</div>
+          <div>{t("errorBoundary.title")}</div>
           <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
-            若持续异常请刷新页面；如需反馈请截图控制台日志。
+            {t("errorBoundary.hint")}
           </div>
           <button
             type="button"
@@ -50,7 +51,7 @@ export class ErrorBoundary extends Component<Props, { error: Error | null }> {
             style={{ marginTop: 8 }}
             onClick={this.reset}
           >
-            重试
+            {t("errorBoundary.retry")}
           </button>
         </div>
       );

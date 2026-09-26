@@ -4,6 +4,7 @@
  * 右侧：盘面区（70%宽度）
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useI18n } from "../core/i18n";
 import { LiurenList, type LiurenListHandle } from "../components/daliuren/LiurenList";
 import { LiurenChart } from "../components/daliuren/LiurenChart";
 import { LiurenCreateDialog } from "../components/daliuren/LiurenCreateDialog";
@@ -16,6 +17,7 @@ import { registerDaLiuRenCallbacks } from "../core/debugApi";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 
 export function DaLiuRenPage() {
+  const { t } = useI18n();
   // 列表刷新计数器（用于在 Dialog 操作后触发刷新）
   const { refreshKey: listRefreshKey, refresh: refreshList, refreshRef: listRefreshKeyRef } = useRefreshKey();
 
@@ -67,7 +69,7 @@ export function DaLiuRenPage() {
     registerDaLiuRenCallbacks({
       getDaLiuRenList: async (filters: LiurenListFilters) => {
         if (!person?.id) {
-          throw new Error("人物未选择");
+          throw new Error(t("daliuren.personNotSelected"));
         }
         return listLiurenRecords(person.id, filters);
       },
@@ -97,7 +99,7 @@ export function DaLiuRenPage() {
               clearInterval(submitPollRef.current.interval);
               submitPollRef.current = null;
             }
-            reject(new Error("提交超时"));
+            reject(new Error(t("daliuren.submitTimeout")));
           }, 5000);
 
           // 触发提交（通过递增 submitTrigger）
@@ -117,12 +119,12 @@ export function DaLiuRenPage() {
                     if (result.records.length > 0) {
                       resolve(result.records[0]);
                     } else {
-                      reject(new Error("未找到新创建的记录"));
+                      reject(new Error(t("daliuren.recordNotFound")));
                     }
                   })
                   .catch((err) => reject(err));
               } else {
-                reject(new Error("人物未选择"));
+                reject(new Error(t("daliuren.personNotSelected")));
               }
             }
           }, 100);
@@ -210,7 +212,7 @@ export function DaLiuRenPage() {
     }
     return (
       <div className="liuren-page">
-        <div className="liuren-loading" role="status" aria-live="polite">加载中...</div>
+        <div className="liuren-loading" role="status" aria-live="polite">{t("daliuren.loading")}</div>
       </div>
     );
   }
