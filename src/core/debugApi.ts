@@ -347,11 +347,20 @@ function log(level: LogLevel, category: string, message: string, data?: unknown)
 }
 
 /**
+ * 静态空函数引用：生产环境下 timer 直接返回此引用，
+ * 避免每次 timer() 调用都创建新的空闭包，减少内存分配与 GC 压力。
+ */
+const NOOP = () => {};
+
+/**
  * 性能计时工具——返回一个 stop 函数，调用时打印耗时。
  * 用法：const stop = timer("ZiWei"); ... stop(); // "ZiWei 耗时 23ms"
+ *
+ * 生产环境直接返回共享的 NOOP 引用（无闭包分配）；
+ * 开发环境才创建 start 变量与闭包用于计时。
  */
 function timer(category: string): () => void {
-  if (!import.meta.env.DEV) return () => {};
+  if (!import.meta.env.DEV) return NOOP;
   const start = performance.now();
   return () => {
     const duration = performance.now() - start;
@@ -2619,8 +2628,67 @@ async function waitForDocSaved(docId: number | undefined, timeout = 2000): Promi
  * ============================================================ */
 
 /**
+ * 公开调试 API 说明：自动枚举 window.peep 时的签名/说明描述。
+ * 新增 API 时：只需在此表追加一行；version() 会自动从 window.peep 枚举并过滤内部方法。
+ * 内部方法（resetDebugApi/setLogLevel/getCacheStats/clearCaches/version）不在此表，自动被过滤。
+ */
+const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
+  PersonList: { 方法: "PersonList()", 说明: "人物列表" },
+  PersonGet: { 方法: "PersonGet(personId?)", 说明: "获取人物详情（不传返回默认）" },
+  PersonCreate: { 方法: "PersonCreate(input)", 说明: "创建人物" },
+  PersonUpdate: { 方法: "PersonUpdate(personId, input)", 说明: "更新人物" },
+  PersonDelete: { 方法: "PersonDelete(personId)", 说明: "删除人物" },
+  ZiWei: { 方法: "ZiWei(personId?, scope?, time?)", 说明: "紫微斗数排盘+运限操控" },
+  GetScopeData: { 方法: "GetScopeData(solarDate, personId?)", 说明: "获取运限数据（纯计算）" },
+  computeScopeData: {
+    方法: "computeScopeData(person, solarDate)",
+    说明: "计算运限数据（纯计算，同步）",
+  },
+  computeZiWeiData: {
+    方法: "computeZiWeiData(z, scope?)",
+    说明: "从 Zwds 状态提取 hbar/chart 数据（纯计算）",
+  },
+  DaLiuRen: { 方法: "DaLiuRen(date, time, fateInput?)", 说明: "大六壬纯计算排盘（向后兼容）" },
+  computeDaLiuRenData: {
+    方法: "computeDaLiuRenData(date, time, fateInput?)",
+    说明: "大六壬纯计算排盘（推荐）",
+  },
+  DaLiuRenCreate: {
+    方法: "DaLiuRenCreate(params, options?)",
+    说明: "大六壬起课（创建记录，支持 skipUI）",
+  },
+  DaLiuRenList: {
+    方法: "DaLiuRenList(params, options?)",
+    说明: "大六壬起课列表（支持 skipUI）",
+  },
+  DaLiuRenView: {
+    方法: "DaLiuRenView(params, options?)",
+    说明: "大六壬起课详情（支持 skipUI）",
+  },
+  WikiCreate: { 方法: "WikiCreate(params, options?)", 说明: "Wiki 文档创建（支持 skipUI）" },
+  WikiList: { 方法: "WikiList(params, options?)", 说明: "Wiki 文档列表（支持 skipUI）" },
+  WikiView: { 方法: "WikiView(params, options?)", 说明: "Wiki 文档详情（支持 skipUI）" },
+  getChartDataForScope: {
+    方法: "getChartDataForScope(opts)",
+    说明: "获取指定 scope 的运限盘面数据",
+  },
+};
+
+/** 内部方法：version() 自动枚举时过滤掉，不展示给普通用户 */
+const INTERNAL_METHODS = new Set([
+  "resetDebugApi",
+  "setLogLevel",
+  "getCacheStats",
+  "clearCaches",
+  "version",
+]);
+
+/**
  * 版本信息打印——在控制台快速查看当前部署版本/构建时间/可用 API。
  * 启动调试时的第一个调用建议。
+ *
+ * 改进：从 window.peep 自动枚举公开 API key，过滤内部方法，
+ * 避免新增 API 时忘记更新此列表导致文档与实际不一致。
  */
 function version(): void {
   // eslint-disable-next-line no-console
@@ -2631,26 +2699,17 @@ function version(): void {
   );
   // eslint-disable-next-line no-console
   console.log("%c[peep]%c 可用调试 API:", "color:#2196f3;font-weight:bold", "");
+
+  const peep = window.peep;
+  if (!peep) return;
+
+  // 自动枚举 window.peep 的 key，过滤内部方法，从 API_DESCRIPTIONS 取说明
+  const table = Object.keys(peep)
+    .filter(key => !INTERNAL_METHODS.has(key))
+    .map(key => API_DESCRIPTIONS[key] ?? { 方法: `${key}(...)`, 说明: "（请查阅源码）" });
+
   // eslint-disable-next-line no-console
-  console.table([
-    { 方法: "PersonList()", 说明: "人物列表" },
-    { 方法: "PersonGet(personId?)", 说明: "获取人物详情（不传返回默认）" },
-    { 方法: "PersonCreate(input)", 说明: "创建人物" },
-    { 方法: "PersonUpdate(personId, input)", 说明: "更新人物" },
-    { 方法: "PersonDelete(personId)", 说明: "删除人物" },
-    { 方法: "ZiWei(personId?, scope?, time?)", 说明: "紫微斗数排盘+运限操控" },
-    { 方法: "DaLiuRen(date, time, fateInput?)", 说明: "大六壬纯计算排盘（向后兼容）" },
-    { 方法: "computeDaLiuRenData(date, time, fateInput?)", 说明: "大六壬纯计算排盘（推荐）" },
-    { 方法: "DaLiuRenCreate(params, options?)", 说明: "大六壬起课（创建记录，支持 skipUI）" },
-    { 方法: "DaLiuRenList(params, options?)", 说明: "大六壬起课列表（支持 skipUI）" },
-    { 方法: "DaLiuRenView(params, options?)", 说明: "大六壬起课详情（支持 skipUI）" },
-    { 方法: "WikiCreate(params, options?)", 说明: "Wiki 文档创建（支持 skipUI）" },
-    { 方法: "WikiList(params, options?)", 说明: "Wiki 文档列表（支持 skipUI）" },
-    { 方法: "WikiView(params, options?)", 说明: "Wiki 文档详情（支持 skipUI）" },
-    { 方法: "setLogLevel(level)", 说明: "调整日志级别：debug/info/warn/error" },
-    { 方法: "getCacheStats()", 说明: "获取缓存统计（命中率/大小/淘汰数）" },
-    { 方法: "clearCaches()", 说明: "清空全部缓存（调试用）" },
-  ]);
+  console.table(table);
 }
 
 /** 调整日志级别（调试时动态开启/关闭详细输出） */

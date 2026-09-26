@@ -106,16 +106,28 @@ export class LRUCache<K, V> {
 /* ─────────────── 函数记忆化工具 ─────────────── */
 
 /**
+ * 缓存命中包装：WeakMap 对"未存"和"存了 undefined"返回的都是 undefined，无法区分。
+ * 用包装对象 { v: result } 存储，使缓存值始终为 truthy 对象引用。
+ * 开销极低（仅一个轻量对象包装），相比 fn 本身的计算可忽略。
+ */
+interface CacheHit<V> {
+  v: V;
+}
+
+/**
  * 单参数函数记忆化：使用 WeakMap 避免内存泄漏（键为对象时自动回收）。
  * 适用于：astrolabe → 计算结果 这类以对象为键的场景。
+ *
+ * 使用包装对象（CacheHit）存储返回值，正确缓存 undefined。
+ * 旧实现用 `cached !== undefined` 判断，导致原函数返回 undefined 时每次都 miss。
  */
 export function memoizeWeak<T extends object, R>(fn: (arg: T) => R): (arg: T) => R {
-  const cache = new WeakMap<T, R>();
+  const cache = new WeakMap<T, CacheHit<R>>();
   return function memoized(arg: T): R {
-    const cached = cache.get(arg);
-    if (cached !== undefined) return cached;
+    const hit = cache.get(arg);
+    if (hit) return hit.v;
     const result = fn(arg);
-    cache.set(arg, result);
+    cache.set(arg, { v: result });
     return result;
   };
 }

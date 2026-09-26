@@ -200,7 +200,7 @@ describe("memoizeWeak", () => {
     expect(callCount).toBe(1);
   });
 
-  it("返回 undefined 时不缓存（每次重新调用）", () => {
+  it("返回 undefined 时也能正确缓存（哨兵值修复）", () => {
     let callCount = 0;
     const fn = memoizeWeak((_obj: object): undefined => {
       callCount++;
@@ -210,8 +210,8 @@ describe("memoizeWeak", () => {
     const key = {};
     fn(key);
     fn(key);
-    // cached 为 undefined → 不命中 → 每次都调用
-    expect(callCount).toBe(2);
+    // 哨兵值方案：undefined 也被缓存，第二次调用直接命中
+    expect(callCount).toBe(1);
   });
 });
 
