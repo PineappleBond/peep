@@ -447,7 +447,8 @@ export async function ZiWei(
       z.actions.showScope(scope);
     }
 
-    // 4. 等待所有状态更新完成（双 rAF 确保渲染完成）
+    // 4. 等待所有状态更新完成（多次 rAF + 延时确保 React 状态更新和渲染完成）
+    await new Promise(r => setTimeout(r, 200));
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     // 5. 获取数据
