@@ -293,13 +293,23 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
 
       {/* 标签输入 */}
       <div className="wiki-editor-field">
-        <label>{t("wiki.editor.tags")}</label>
-        <TagInput value={tags} onChange={setTags} suggestions={existingTags} disabled={saving} />
+        <label className="wiki-editor-label" id="wiki-tags-label">
+          {t("wiki.editor.tags")}
+        </label>
+        <TagInput
+          value={tags}
+          onChange={setTags}
+          suggestions={existingTags}
+          disabled={saving}
+          aria-labelledby="wiki-tags-label"
+        />
       </div>
 
       {/* 关联文档选择 */}
       <div className="wiki-editor-field">
-        <label>{t("wiki.editor.relatedDocs")}</label>
+        <label className="wiki-editor-label" id="wiki-related-label">
+          {t("wiki.editor.relatedDocs")}
+        </label>
         <div className="wiki-editor-link-section">
           {/* 搜索框 */}
           <input

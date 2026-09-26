@@ -21,6 +21,8 @@ interface TagInputProps {
   maxTagLength?: number;
   /** 标签最大数量（默认 20） */
   maxTags?: number;
+  /** 无障碍：外部标签的 ID，供 aria-labelledby 引用 */
+  "aria-labelledby"?: string;
 }
 
 /** 单个标签最大长度 */
@@ -36,6 +38,7 @@ export function TagInput({
   suggestions,
   maxTagLength = DEFAULT_MAX_TAG_LENGTH,
   maxTags = DEFAULT_MAX_TAGS,
+  "aria-labelledby": ariaLabelledBy,
 }: TagInputProps) {
   const { t } = useI18n();
   const resolvedPlaceholder = placeholder ?? t("tagInput.placeholder");
@@ -158,6 +161,7 @@ export function TagInput({
           onBlur={handleBlur}
           placeholder={value.length === 0 ? resolvedPlaceholder : ""}
           aria-label={t("tagInput.addTag")}
+          aria-labelledby={ariaLabelledBy}
           aria-autocomplete="list"
           aria-controls="tag-input-suggestions"
           aria-activedescendant={

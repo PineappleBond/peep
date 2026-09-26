@@ -99,12 +99,13 @@ export function LiurenFormFields({
         />
       </div>
       <div className="liuren-form-field">
-        <label>{t("daliuren.tags")}</label>
+        <label id="liuren-tags-label">{t("daliuren.tags")}</label>
         <TagInput
           value={values.tags}
           onChange={tags => onChange({ tags })}
           placeholder={t("daliuren.tagsPlaceholder")}
           disabled={disabled}
+          aria-labelledby="liuren-tags-label"
         />
       </div>
     </>

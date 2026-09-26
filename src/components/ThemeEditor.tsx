@@ -219,6 +219,7 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
                 className="te-preset"
                 onClick={() => applyPreset(preset)}
                 title={preset.name}
+                aria-label={t("themeEditor.applyPreset", { name: preset.name })}
               >
                 <div className="te-preset-swatch">
                   <span style={{ background: preset.colors.bg }} />

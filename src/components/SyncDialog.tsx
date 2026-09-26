@@ -643,8 +643,9 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
               <span className="sync-label" id="sync-auto-sync-label">
                 {t("sync.autoSync")}
               </span>
-              <label className="sync-radio">
+              <label className="sync-radio" htmlFor="sync-auto-upload">
                 <input
+                  id="sync-auto-upload"
                   type="checkbox"
                   checked={config.autoUpload}
                   onChange={e => handleSaveConfig({ autoUpload: e.target.checked })}

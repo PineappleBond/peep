@@ -9,6 +9,7 @@
  */
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useI18n } from "../core/i18n";
+import { useFocusTrap } from "../core/useFocusTrap";
 import type { GuideStep } from "../core/guide";
 
 type GuideOverlayProps = {
@@ -36,6 +37,12 @@ export function GuideOverlay({
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const titleId = `guide-title-${currentStep}`;
+
+  // 无障碍：焦点陷阱，防止 Tab 逃逸到引导气泡背后
+  const overlayRef = useFocusTrap<HTMLDivElement>(true, {
+    autoFocus: true,
+    returnFocus: true,
+  });
 
   /* 计算目标元素的位置 */
   useEffect(() => {
@@ -133,7 +140,13 @@ export function GuideOverlay({
   };
 
   return (
-    <div className="guide-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+    <div
+      ref={overlayRef}
+      className="guide-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+    >
       {/* 遮罩层（带镂空） */}
       {highlightRect && (
         <>

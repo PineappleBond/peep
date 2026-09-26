@@ -116,6 +116,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
           onChange={handleSelect}
           className="person-select"
           aria-label={t("person.selectPerson")}
+          aria-busy={loading}
           disabled={loading}
         >
           {loading ? (
@@ -133,6 +134,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
           className="person-btn"
           onClick={handleAdd}
           aria-label={t("person.addPerson")}
+          aria-busy={loading}
           disabled={loading}
         >
           +
@@ -141,6 +143,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
           className="person-btn"
           onClick={handleEdit}
           aria-label={t("person.editCurrent")}
+          aria-busy={loading}
           disabled={loading}
         >
           ✎
@@ -150,6 +153,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
           onClick={handleDeleteClick}
           disabled={!canDelete || loading}
           aria-label={canDelete ? t("person.deleteCurrent") : t("person.defaultCannotDelete")}
+          aria-busy={loading}
           title={canDelete ? t("person.deleteCurrent") : t("person.defaultCannotDelete")}
         >
           ✕

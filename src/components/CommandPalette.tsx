@@ -14,6 +14,7 @@
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../core/i18n";
+import { useFocusTrap } from "../core/useFocusTrap";
 import {
   searchAll,
   parseQuery,
@@ -237,6 +238,12 @@ export function CommandPalette({ open, onClose, context }: CommandPaletteProps) 
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  // 无障碍：焦点陷阱，防止 Tab 逃逸到面板背后
+  const panelRef = useFocusTrap<HTMLDivElement>(open, {
+    autoFocus: false, // 由下方 useEffect 手动聚焦输入框
+    returnFocus: true,
+  });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [parsed, setParsed] = useState<ParsedQuery | null>(null);
@@ -421,6 +428,7 @@ export function CommandPalette({ open, onClose, context }: CommandPaletteProps) 
   return (
     <div className="cp-mask" onClick={onClose}>
       <div
+        ref={panelRef}
         className="cp-panel"
         role="dialog"
         aria-modal="true"
@@ -458,6 +466,7 @@ export function CommandPalette({ open, onClose, context }: CommandPaletteProps) 
             onClick={() => setShowHistory(v => !v)}
             title={`${t("search.history")} (Ctrl+R)`}
             aria-label={t("search.history")}
+            aria-expanded={showHistory}
           >
             🕘
           </button>

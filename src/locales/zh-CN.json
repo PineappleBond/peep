@@ -530,6 +530,7 @@
   "themeEditor.exportDownloaded": "主题已下载为文件",
   "themeEditor.pickColor": "选择颜色",
   "themeEditor.openEditor": "自定义主题",
+  "themeEditor.applyPreset": "应用预设主题：{name}",
   "themeEditor.color.bg": "背景色",
   "themeEditor.color.panel": "面板背景",
   "themeEditor.color.line": "边框线",

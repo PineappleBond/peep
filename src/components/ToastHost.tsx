@@ -6,7 +6,10 @@
  * - 右上角浮动定位，不影响页面布局
  * - 使用 useSyncExternalStore 订阅 toast 状态
  * - 每条 Toast 带有入场/离场动画
- * - 无障碍：role="status" + aria-live="polite"（屏幕阅读器可读）
+ * - 无障碍：
+ *   - 宿主容器 role="status" + aria-live="polite"（普通通知不中断用户）
+ *   - error 类型的 Toast 使用 role="alert"（立即播报）
+ *   - info/success/warn 使用 role="status"（温和播报）
  */
 import { useSyncExternalStore } from "react";
 import { subscribe, getSnapshot, toast, type ToastItem } from "../core/toast";
@@ -32,7 +35,7 @@ export function ToastHost() {
         <div
           key={item.id}
           className={`toast-item toast-${item.type}${item.dismissing ? " toast-out" : ""}`}
-          role="alert"
+          role={item.type === "error" ? "alert" : "status"}
         >
           <span className="toast-icon" aria-hidden="true">
             {TYPE_ICON[item.type]}

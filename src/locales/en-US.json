@@ -531,6 +531,7 @@
   "themeEditor.exportDownloaded": "Theme downloaded as file",
   "themeEditor.pickColor": "Pick color",
   "themeEditor.openEditor": "Custom Theme",
+  "themeEditor.applyPreset": "Apply preset theme: {name}",
   "themeEditor.color.bg": "Background",
   "themeEditor.color.panel": "Panel Background",
   "themeEditor.color.line": "Border Line",

@@ -484,7 +484,7 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
         </div>
 
         {dstWarn && (
-          <div className="dst-hint">
+          <div className="dst-hint" role="alert">
             ⚠ {dstWarn}
             {t("person.dstHint")}
           </div>
