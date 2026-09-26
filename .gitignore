@@ -5,3 +5,4 @@ dist
 *.log
 .claude/launch.json
 test-results/.last-run.json
+stats.html

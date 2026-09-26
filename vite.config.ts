@@ -1,9 +1,28 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { visualizer } from "rollup-plugin-visualizer";
+import { removeConsoleCalls } from "./vite-plugin-remove-console-log.ts";
+
+// Bundle 分析：设 ANALYZE=1 启用；会生成 stats.html 可视化报告（gitignore 掉）
+const enableAnalyze = process.env.ANALYZE === "1";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // 生产构建移除源码中的 console.log / console.debug / console.info（保留 error / warn）
+    removeConsoleCalls(),
+    // Bundle 分析器——仅 ANALYZE=1 时启用，生成 stats.html 便于定位大模块
+    enableAnalyze &&
+      visualizer({
+        filename: "stats.html",
+        gzipSize: true,
+        brotliSize: true,
+        open: true,
+        // treemap 视图：直观看每个模块的体积占比
+        template: "treemap",
+      }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       // lunar-typescript 是双格式包（require→index.cjs / import→index.mjs）：
@@ -84,8 +103,17 @@ export default defineConfig({
     rolldownOptions: {},
   },
   build: {
-    // 开发阶段也跑类型检查（通过 npm run build 走 tsc），但 vite build
-    // 本身跳过类型检查以最大化速度——二者配合达到"快速构建 + 严格类型"的平衡。
+    // 目标现代浏览器——利用 ES2020+ 语法，减少 polyfill 与转译体积
+    target: "es2020",
+    // 生产环境生成 source map，便于线上排查（CI/生产可设 NO_SOURCEMAP=1 关闭以加速）
+    sourcemap: process.env.NO_SOURCEMAP === "1" ? false : true,
+    // CSS 代码分割：每个异步 chunk 的 CSS 独立拆分，首屏只加载所需 CSS
+    cssCodeSplit: true,
+    // Vite 8 默认使用 oxc 压缩（rolldown 内核自带，比 esbuild 更快）
+    // 显式声明以强调此处选择；可选值："oxc" | "terser" | "esbuild" | false
+    minify: "oxc",
+    // 报告产物体积阈值——超过 500 KiB 时打印警告，帮助识别大 chunk
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         // rolldown（vite 8 内核）下 advancedChunks 已弃用，
@@ -99,9 +127,19 @@ export default defineConfig({
           // React 核心（精确匹配 react、react-dom、scheduler、loose-envify，
           // 避免误匹配 react-router 等其他 react-* 库）
           if (
-            /\/node_modules\/(react|react-dom)\/|\/node_modules\/scheduler\/|\/node_modules\/loose-envify\//.test(id)
+            /\/node_modules\/(react|react-dom)\/|\/node_modules\/scheduler\/|\/node_modules\/loose-envify\//.test(
+              id
+            )
           ) {
             return "react";
+          }
+          // 路由库单独分包——升级频率低于 React，缓存友好
+          if (/\/node_modules\/react-router/.test(id)) {
+            return "router";
+          }
+          // Dexie（IndexedDB 封装）单独分包——仅 PersonDialog 等编辑流程使用
+          if (/\/node_modules\/dexie\//.test(id)) {
+            return "db";
           }
         },
       },

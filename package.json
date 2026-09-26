@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:analyze": "ANALYZE=1 npm run build",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
@@ -42,6 +43,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.5.1",
     "prettier": "^3.9.9",
+    "rollup-plugin-visualizer": "^7.1.1",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.70.1",
     "vite": "^8.3.1",
