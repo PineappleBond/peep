@@ -388,17 +388,15 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
     agentDescription: "紫微斗数 · 大六壬 · 知识库 —— 命理分析 AI 助手",
     persona: document.documentElement.lang === "en-US" ? PERSONA_EN : PERSONA_ZH,
     groups: FUNCTION_GROUPS,
+    // 嵌入式面板模式：embedded=true 自动禁用拖拽/缩放/最小化/最大化/关闭按钮，
+    // 并设 defaultMode='maximized'——让 RTC 填满父容器（peep-v2 右侧 3/8 侧栏）
+    window: { embedded: true },
+    // 只保留 chat 按钮，禁用文件/设置面板
+    activityBar: {
+      disabledActivities: ["files", "settings"],
+    },
     on: {
       ready: () => {
-        // 嵌入式面板模式：embedded=true 自动禁用拖拽/缩放/最小化/最大化/关闭按钮，
-        // 并设 defaultMode='maximized'——让 RTC 填满父容器（peep-v2 右侧 3/8 侧栏）
-        if (_agent) {
-          _agent.windowConfig = { embedded: true };
-          // 只保留 chat 按钮，禁用文件/设置面板
-          _agent.activityBarConfig = {
-            disabledActivities: ["files", "settings"],
-          };
-        }
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
           console.log(

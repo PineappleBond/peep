@@ -44,6 +44,20 @@ declare module "@rtc-agent/component" {
       persona?: string;
       groups?: RtcAgentFunctionGroup[];
     };
+    /** 窗口配置（创建时传入） */
+    window?: {
+      defaultMode?: "normal" | "maximized" | "minimized";
+      draggable?: boolean;
+      resizable?: boolean;
+      showMinimize?: boolean;
+      showMaximize?: boolean;
+      showClose?: boolean;
+      embedded?: boolean;
+    };
+    /** 活动栏配置（创建时传入） */
+    activityBar?: {
+      disabledActivities?: string[];
+    };
     on?: {
       ready?: () => void;
     };
