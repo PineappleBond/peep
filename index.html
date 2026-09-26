@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
+    <!--
+      CSP（Content-Security-Policy）基础防护：
+      - 阻止外部 <base> 标签劫持（base-uri）
+      - 阻止页面被嵌入 iframe（frame-ancestors，meta 标签不支持此指令，
+        建议在生产环境通过 HTTP 响应头补充完整 CSP）
+      - 限制表单仅能提交到同源（form-action）
+      完整 CSP（含 script-src / style-src）建议通过服务器 HTTP 响应头配置，
+      见 vite.config.ts 的 preview 配置或部署平台的头信息配置。
+    -->
+    <meta http-equiv="Content-Security-Policy" content="base-uri 'self'; form-action 'self'" />
     <title>紫微斗数 · 玄机排盘</title>
     <style>html,body{margin:0;background:#05070f}</style>
   </head>

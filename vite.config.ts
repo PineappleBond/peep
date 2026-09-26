@@ -16,6 +16,26 @@ export default defineConfig({
     },
   },
   server: { port: 5199, strictPort: true },
+  preview: {
+    port: 5199,
+    // CSP 安全响应头——生产部署时应通过 nginx/CDN 配置同等或更严格的策略
+    headers: {
+      "Content-Security-Policy": [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join("; "),
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+    },
+  },
   build: {
     rollupOptions: {
       output: {
