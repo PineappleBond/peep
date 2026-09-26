@@ -1,8 +1,46 @@
-node_modules
-dist
-*.local
-.DS_Store
-*.log
-.claude/launch.json
-test-results/.last-run.json
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
 stats.html
+
+# 环境变量（Vite 约定）
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# 测试产物
+coverage/
+test-results/
+playwright-report/
+
+# Claude Code 本地配置
+.claude/launch.json
+
+# Node
+.node_repl_history
+
+# 锁文件备份（npm/pnpm 偶尔生成）
+package-lock.json.bak
+
+# 构建分析
+.vite/
