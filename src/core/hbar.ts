@@ -1,11 +1,18 @@
 /**
  * 运限拨盘（hbar）数据计算：大运/流年/流月/流日/流时列表
  * 纯函数，供 useZwds 和 debugApi 共享
+ *
+ * 性能优化：
+ * - solar2lunar 按日期缓存（同一年月内重复调用时直接命中）
+ * - buildMonths 按年份缓存（一年内月列表不变）
+ * - buildDays 按年月缓存（同月内日列表不变）
+ * - buildDecades 按 astrolabe+birthLunarYear 缓存（盘不变则大限不变）
  */
 import { BRANCHES, LUNAR_DAYS, LUNAR_MONTHS, hourGanZhi, monthGanZhi, yearGanZhi } from "./utils";
 import { daysInLunarMonth, dayGanZhi, leapMonthOf, lunarToSolarStr } from "./lunar";
 import { solar2lunar } from "lunar-lite";
 import type { Astrolabe } from "./useZwds";
+import { LRUCache, registerCache } from "./cache";
 
 /* ─────────────── 类型定义 ─────────────── */
 
@@ -72,11 +79,70 @@ export type HbarData = {
   clampedDay: number;
 };
 
+/* ─────────────── 缓存实例 ─────────────── */
+
+/** solar2lunar 按日期缓存（阳历日期字符串 → 农历结果） */
+const solar2lunarCache = new LRUCache<
+  string,
+  { lunarMonth: number; lunarDay: number; isLeap: boolean }
+>({
+  maxSize: 500,
+  name: "solar2lunar",
+});
+
+/** buildMonths 按年份缓存 */
+const buildMonthsCache = new LRUCache<number, CellMonth[]>({ maxSize: 50, name: "buildMonths" });
+
+/** buildDays 按"年-月"缓存 */
+const buildDaysCache = new LRUCache<string, CellDay[]>({ maxSize: 200, name: "buildDays" });
+
+/** buildDecades 按 astrolabe 对象弱引用缓存（WeakMap 避免内存泄漏） */
+const buildDecadesCache = new WeakMap<Astrolabe, Map<number, DecadeInfo[]>>();
+
+/** dayGanZhi 按日期字符串缓存 */
+const dayGanZhiCache = new LRUCache<string, string>({ maxSize: 500, name: "dayGanZhi" });
+
+/** 注册缓存到全局注册表，便于统计 */
+registerCache("solar2lunar", solar2lunarCache);
+registerCache("buildMonths", buildMonthsCache);
+registerCache("buildDays", buildDaysCache);
+registerCache("dayGanZhi", dayGanZhiCache);
+
 /* ─────────────── 纯函数计算 ─────────────── */
 
-/** 计算十二大限（按起限年龄升序） */
+/** 带缓存的 solar2lunar 调用 */
+function solar2lunarCached(date: Date): { lunarMonth: number; lunarDay: number; isLeap: boolean } {
+  const key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  const cached = solar2lunarCache.get(key);
+  if (cached) return cached;
+  const lunar = solar2lunar(date);
+  const result = { lunarMonth: lunar.lunarMonth, lunarDay: lunar.lunarDay, isLeap: lunar.isLeap };
+  solar2lunarCache.set(key, result);
+  return result;
+}
+
+/** 带缓存的 dayGanZhi 调用 */
+function dayGanZhiCached(solarStr: string): string {
+  const cached = dayGanZhiCache.get(solarStr);
+  if (cached !== undefined) return cached;
+  const result = dayGanZhi(solarStr);
+  dayGanZhiCache.set(solarStr, result);
+  return result;
+}
+
+/** 计算十二大限（按起限年龄升序），按 astrolabe+birthLunarYear 缓存 */
 export function buildDecades(astrolabe: Astrolabe, birthLunarYear: number): DecadeInfo[] {
-  return astrolabe.palaces
+  // 先查 astrolabe 级别的缓存（WeakMap 键，astrolabe 被回收时自动清理）
+  let yearCache = buildDecadesCache.get(astrolabe);
+  if (yearCache) {
+    const cached = yearCache.get(birthLunarYear);
+    if (cached) return cached;
+  } else {
+    yearCache = new Map();
+    buildDecadesCache.set(astrolabe, yearCache);
+  }
+  // 计算并缓存
+  const result = astrolabe.palaces
     .map(p => ({
       palaceIndex: p.index,
       range: p.decadal.range as [number, number],
@@ -86,6 +152,8 @@ export function buildDecades(astrolabe: Astrolabe, birthLunarYear: number): Deca
       endYear: birthLunarYear + p.decadal.range[1] - 1,
     }))
     .sort((a, b) => a.range[0] - b.range[0]);
+  yearCache.set(birthLunarYear, result);
+  return result;
 }
 
 /** 计算童限（出生 ~ 起运前一年） */
@@ -142,8 +210,13 @@ export function buildYears(
 /**
  * 计算流月列表：以阳历月 1-12 为主循环，与 pick.month（阳历）语义一致。
  * 每个月用 15 号作为代表日，通过 solar2lunar 反查农历月以计算干支与月名。
+ *
+ * 缓存：按年份缓存（同一年的月列表固定不变），避免重复调用 12 次 solar2lunar。
  */
 export function buildMonths(pickYear: number, _yearLeapMonth: number): CellMonth[] {
+  const cached = buildMonthsCache.get(pickYear);
+  if (cached) return cached;
+
   const list: CellMonth[] = [];
   for (let solarMonth = 1; solarMonth <= 12; solarMonth++) {
     // 取该阳历月 15 号作为代表日，反查农历月
@@ -151,7 +224,7 @@ export function buildMonths(pickYear: number, _yearLeapMonth: number): CellMonth
     let lunarMonth: number;
     let isLeap = false;
     try {
-      const lunar = solar2lunar(solarDate);
+      const lunar = solar2lunarCached(solarDate);
       lunarMonth = lunar.lunarMonth;
       isLeap = lunar.isLeap;
     } catch {
@@ -177,22 +250,34 @@ export function buildMonths(pickYear: number, _yearLeapMonth: number): CellMonth
       gz,
     });
   }
+  buildMonthsCache.set(pickYear, list);
   return list;
 }
 
-/** 计算流日列表：从阳历日转换为农历日 */
+/**
+ * 计算流日列表：从阳历日转换为农历日。
+ *
+ * 缓存：按"年-月"缓存（同一阳历月的日列表固定不变），避免重复调用 solar2lunar。
+ * 每次切换日期时，buildDays 会被调用 28-31 次 solar2lunar；
+ * 缓存后仅首次计算，后续直接命中。
+ */
 export function buildDays(
   pickYear: number,
   pickMonth: number,
   monthDays: number,
   effLeap: boolean,
 ): CellDay[] {
+  // 缓存键包含年月和天数（同一阳历月天数固定，但测试可能传入不同值）
+  const cacheKey = `${pickYear}-${pickMonth}-${monthDays}`;
+  const cached = buildDaysCache.get(cacheKey);
+  if (cached) return cached;
+
   const list: CellDay[] = [];
   // 使用调用方传入的 monthDays（阳历月天数）
   for (let solarDay = 1; solarDay <= monthDays; solarDay++) {
     const solarDate = new Date(pickYear, pickMonth - 1, solarDay);
     try {
-      const lunar = solar2lunar(solarDate);
+      const lunar = solar2lunarCached(solarDate);
       const lunarDay = lunar.lunarDay;
       const lunarMonth = lunar.lunarMonth;
       const isLeap = lunar.isLeap;
@@ -204,7 +289,7 @@ export function buildDays(
             : LUNAR_MONTHS[lunarMonth - 1]
           : LUNAR_DAYS[lunarDay - 1] || `${lunarDay}日`;
       const solarStr = `${pickYear}-${pickMonth}-${solarDay}`;
-      const gz = dayGanZhi(solarStr);
+      const gz = dayGanZhiCached(solarStr);
       list.push({
         day: solarDay,
         label: lunarLabel,
@@ -221,6 +306,7 @@ export function buildDays(
       });
     }
   }
+  buildDaysCache.set(cacheKey, list);
   return list;
 }
 
@@ -279,5 +365,31 @@ export function buildHbarData(
     pick,
     effLeap,
     clampedDay,
+  };
+}
+
+/* ─────────────── 缓存管理 ─────────────── */
+
+/**
+ * 清空 hbar 相关缓存（solar2lunar / buildMonths / buildDays / dayGanZhi）。
+ * 通常不需要调用——缓存使用 LRU 策略自动淘汰；仅在调试或测试时需要。
+ */
+export function clearHbarCaches(): void {
+  solar2lunarCache.clear();
+  buildMonthsCache.clear();
+  buildDaysCache.clear();
+  dayGanZhiCache.clear();
+}
+
+/**
+ * 获取 hbar 缓存统计信息（命中率/大小/淘汰数）。
+ * 开发环境用于性能监控，生产环境返回空对象。
+ */
+export function getHbarCacheStats(): Record<string, import("./cache").CacheStats> {
+  return {
+    solar2lunar: solar2lunarCache.getStats(),
+    buildMonths: buildMonthsCache.getStats(),
+    buildDays: buildDaysCache.getStats(),
+    dayGanZhi: dayGanZhiCache.getStats(),
   };
 }

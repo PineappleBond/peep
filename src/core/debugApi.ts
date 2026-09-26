@@ -7,7 +7,7 @@ import type { Scope } from "./utils";
 import type { Zwds } from "./useZwds";
 import type { Person, LiurenRecord, WikiDocument } from "./personDb";
 import { listPersons, getPerson, savePerson, deletePerson, getDefaultPerson } from "./personDb";
-import { buildHbarData, type HbarData } from "./hbar";
+import { buildHbarData, clearHbarCaches, type HbarData } from "./hbar";
 import { calculateDaLiuRen } from "./daliuren/calculator";
 import type { DaLiuRenResult } from "./daliuren/types";
 import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
@@ -17,6 +17,8 @@ import type { BirthInput } from "./useZwds";
 import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
 import { MUTAGEN_TABLES } from "./utils";
+import { LRUCache, registerCache, getAllCacheStats, clearAllCaches } from "./cache";
+import { buildChartIndex } from "./chartIndex";
 
 /**
  * 运限级别（已统一使用 utils/Scope，此处为向后兼容保留别名）。
@@ -534,20 +536,26 @@ export async function PersonDelete(personId: number): Promise<void> {
  * @returns hbar 和 chart 数据
  */
 export function computeZiWeiData(z: Zwds, scope?: Scope): ZiWeiComputedData {
+  const stop = timer("computeZiWeiData");
+
   // 构建 hbar：运限拨盘数据（大运/流年/流月/流日/流时列表）
   const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
   const hbar = hbarBase ? { ...hbarBase, visible: { ...z.visible } } : null;
 
   // 构建 chart：指定 scope 的运限盘面数据
+  // 共享 chartIndex：buildChartIndex 内部按 astrolabe 弱引用缓存，多次调用零开销
   let chart: ScopeChartData | null = null;
   if (scope && z.astrolabe && z.horoscope) {
+    const ix = buildChartIndex(z.astrolabe);
     chart = getChartDataForScope({
       astrolabe: z.astrolabe,
       horoscope: z.horoscope,
       scope,
+      chartIndex: ix,
     });
   }
 
+  stop();
   return { hbar, chart };
 }
 
@@ -915,9 +923,51 @@ async function setHoroscopeTimeWithRetry(z: Zwds, date: Date, maxRetries = 2): P
  * @returns iztro 本命盘对象
  * @throws ComputeScopeError 排盘失败时抛出，包含人物上下文和恢复建议
  */
+
+/* ─────────────── 本命盘缓存 ─────────────── */
+
+/**
+ * computeAstrolabe 缓存：按"人物输入指纹"缓存 iztro 计算结果。
+ * iztro 排盘是最昂贵的操作（约 20-100ms），相同输入时直接命中可节省大量时间。
+ * 指纹 = 排盘相关字段的连接，不包含 name/id 等无关字段。
+ */
+const astrolabeCache = new LRUCache<string, ReturnType<typeof astro.withOptions>>({
+  maxSize: 50,
+  name: "computeAstrolabe",
+});
+registerCache("computeAstrolabe", astrolabeCache);
+
+/**
+ * 生成人物的排盘指纹：由所有影响排盘结果的字段组成。
+ * 字段变更时指纹改变，缓存自动失效。
+ */
+function makeAstrolabeFingerprint(person: Person): string {
+  // 影响排盘结果的全部字段：历法/日期/时辰/性别/闰月/算法/年界/四化表/日界/盘型
+  return [
+    person.calendar,
+    person.date,
+    person.timeIndex,
+    person.gender,
+    person.isLeapMonth ? "1" : "0",
+    person.algorithm,
+    person.yearDivide,
+    person.mutagenTable,
+    person.dayDivide,
+    person.astroType,
+  ].join("|");
+}
+
 function computeAstrolabe(person: Person) {
+  // 先查缓存：相同输入指纹直接返回，避免重复 iztro 计算
+  const fp = makeAstrolabeFingerprint(person);
+  const cached = astrolabeCache.get(fp);
+  if (cached) {
+    log("debug", "computeAstrolabe", "缓存命中", { fingerprint: fp });
+    return cached;
+  }
+
   try {
-    return astro.withOptions({
+    const result = astro.withOptions({
       type: person.calendar,
       dateStr: person.date,
       timeIndex: person.timeIndex,
@@ -934,6 +984,9 @@ function computeAstrolabe(person: Person) {
         mutagens: (MUTAGEN_TABLES[person.mutagenTable] ?? MUTAGEN_TABLES.default) as never,
       },
     });
+    // 缓存结果
+    astrolabeCache.set(fp, result);
+    return result;
   } catch (e) {
     log("error", "computeAstrolabe", "排盘失败", e);
     throw new ComputeScopeError("本命盘计算失败", {
@@ -1706,6 +1759,8 @@ function version(): void {
     { 方法: "WikiList(params)", 说明: "Wiki 文档列表" },
     { 方法: "WikiView(params)", 说明: "Wiki 文档详情" },
     { 方法: "setLogLevel(level)", 说明: "调整日志级别：debug/info/warn/error" },
+    { 方法: "getCacheStats()", 说明: "获取缓存统计（命中率/大小/淘汰数）" },
+    { 方法: "clearCaches()", 说明: "清空全部缓存（调试用）" },
   ]);
 }
 
@@ -1713,6 +1768,24 @@ function version(): void {
 function setLogLevel(level: LogLevel): void {
   currentLogLevel = level;
   log("info", "logger", `日志级别调整为 ${level}`);
+}
+
+/**
+ * 性能监控：获取全部缓存统计（命中率/大小/淘汰数）。
+ * 开发环境用于定位性能瓶颈；生产环境可用于调试。
+ */
+function getCacheStats(): Record<string, import("./cache").CacheStats> {
+  return getAllCacheStats();
+}
+
+/**
+ * 清空全部缓存：调试用，验证缓存是否影响结果正确性。
+ * 清空后下次调用会重新计算全部缓存。
+ */
+function clearCaches(): void {
+  clearAllCaches();
+  clearHbarCaches();
+  log("info", "cache", "全部缓存已清空");
 }
 
 /** 初始化 window.peep（开发/生产均暴露，供 RTC Agent Function 调用） */
@@ -1742,6 +1815,8 @@ export function initDebugApi() {
     getChartDataForScope,
     version,
     setLogLevel,
+    getCacheStats,
+    clearCaches,
   };
 
   log("info", "init", "调试 API 已初始化——输入 peep.version() 查看可用方法");

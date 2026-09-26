@@ -1,6 +1,9 @@
 /**
  * 盘面索引原语：星→宫映射、三方四正、星文本——结构分析（analysis）与
  * 格局检测（patterns）共用的底层。整盘只建一次索引，向下传参复用。
+ *
+ * 性能优化：buildChartIndex 按 astrolabe 弱引用缓存（WeakMap），
+ * 同一张盘多次调用时直接返回已建索引，避免重复遍历十二宫。
  */
 import { util } from "iztro";
 import type { Astrolabe } from "./useZwds";
@@ -40,10 +43,20 @@ export function starNamesAt(a: Astrolabe, i: number): string[] {
 
 /**
  * 构建盘面共享索引：遍历全部宫位建立星名→宫位映射、亮度表、生年四化。
+ * 按 astrolabe 对象弱引用缓存（WeakMap），同一张盘多次调用直接返回已建索引。
+ * astrolabe 被回收时缓存自动清理，无内存泄漏。
+ *
  * @param a - 本命盘对象
  * @returns 共享索引，供后续分析函数使用
  */
+
+/** buildChartIndex 按 astrolabe 弱引用缓存 */
+const chartIndexCache = new WeakMap<Astrolabe, ChartIndex>();
+
 export function buildChartIndex(a: Astrolabe): ChartIndex {
+  const cached = chartIndexCache.get(a);
+  if (cached) return cached;
+
   const pos = new Map<string, number>();
   const bright = new Map<string, string>();
   for (const p of a.palaces) {
@@ -56,7 +69,7 @@ export function buildChartIndex(a: Astrolabe): ChartIndex {
   const yearStem = gz.charAt(0);
   const yearBranch = gz.charAt(1);
   const natal = yearStem ? (util.getMutagensByHeavenlyStem(yearStem as never) as string[]) : [];
-  return {
+  const result = {
     a,
     soulIdx: a.palaces.findIndex(p => p.name === "命宫"),
     pos,
@@ -65,6 +78,8 @@ export function buildChartIndex(a: Astrolabe): ChartIndex {
     yearStem,
     yearBranch,
   };
+  chartIndexCache.set(a, result);
+  return result;
 }
 
 /** P 的三方四正索引：[本宫, 对宫, 三合, 三合] */

@@ -56,6 +56,13 @@ declare global {
       version: () => void;
       /** 动态调整日志级别（debug/info/warn/error） */
       setLogLevel: (level: LogLevel) => void;
+      /** 获取缓存统计（命中率/大小/淘汰数）——性能监控 */
+      getCacheStats: () => Record<
+        string,
+        { hits: number; misses: number; evictions: number; size: number }
+      >;
+      /** 清空全部缓存（调试用） */
+      clearCaches: () => void;
     };
   }
 
