@@ -254,6 +254,7 @@
   "daliuren.optional": "Optional",
   "daliuren.search": "Search question, note...",
   "daliuren.searchAria": "Search question",
+  "daliuren.tagFilter": "Tag filter",
   "daliuren.viewChart": "View board",
   "daliuren.noQuestion": "(No question)",
   "daliuren.noMatch": "No matching records found",
@@ -304,6 +305,7 @@
   "tagInput.deleteTag": "Delete {tag}",
   "tagInput.addTag": "Add tag",
   "tagInput.tagList": "Tag list",
+  "tagInput.suggestions": "Tag suggestions",
 
   "wiki.title": "Wiki",
   "wiki.export": "Export",
@@ -311,6 +313,7 @@
   "wiki.createDoc": "New Document",
   "wiki.search": "Search title, content...",
   "wiki.searchAria": "Search documents",
+  "wiki.tagFilter": "Tag filter",
   "wiki.noMatch": "No matching documents found",
   "wiki.noDocs": "No documents yet",
   "wiki.noTitle": "(No title)",
@@ -349,6 +352,7 @@
   "wiki.editor.discardMessage": "You have unsaved changes. Are you sure you want to discard them?",
   "wiki.editor.discardConfirm": "Discard",
   "wiki.editor.discardCancel": "Keep editing",
+  "wiki.editor.searchResults": "Search results",
 
   "loading": "Loading...",
 

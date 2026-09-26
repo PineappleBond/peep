@@ -35,6 +35,7 @@ export function GuideOverlay({
   const step = steps[currentStep];
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const titleId = `guide-title-${currentStep}`;
 
   /* 计算目标元素的位置 */
   useEffect(() => {
@@ -132,7 +133,7 @@ export function GuideOverlay({
   };
 
   return (
-    <div className="guide-overlay" role="dialog" aria-modal="true" aria-label={t("guide.title")}>
+    <div className="guide-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       {/* 遮罩层（带镂空） */}
       {highlightRect && (
         <>
@@ -192,7 +193,7 @@ export function GuideOverlay({
       {/* 说明气泡 */}
       <div className="guide-popover" ref={popoverRef} style={getPopoverStyle()}>
         {/* 进度指示 */}
-        <div className="guide-progress">
+        <div className="guide-progress" aria-hidden="true">
           <span className="guide-progress-text">
             {currentStep + 1} / {steps.length}
           </span>
@@ -209,7 +210,9 @@ export function GuideOverlay({
         </div>
 
         {/* 标题 */}
-        <h3 className="guide-title">{step.title}</h3>
+        <h3 className="guide-title" id={titleId}>
+          {step.title}
+        </h3>
 
         {/* 内容 */}
         <p className="guide-content">{step.content}</p>

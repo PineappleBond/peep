@@ -135,14 +135,19 @@ export function TagInput({
       </div>
       {/* 标签建议下拉 */}
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <div className="tag-input-suggestions">
+        <div
+          className="tag-input-suggestions"
+          role="listbox"
+          aria-label={t("tagInput.suggestions")}
+        >
           {filteredSuggestions.map(s => (
             <div
               key={s}
               className="tag-input-suggestion-item"
-              onClick={() => addTags(s)}
               role="option"
+              aria-selected={false}
               tabIndex={0}
+              onClick={() => addTags(s)}
               onKeyDown={e => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();

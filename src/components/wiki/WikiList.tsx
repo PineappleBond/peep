@@ -135,12 +135,13 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
 
       {/* Tag 筛选 */}
       {allTags.length > 0 && (
-        <div className="record-list-tags">
+        <div className="record-list-tags" role="group" aria-label={t("wiki.tagFilter")}>
           {allTags.map(tag => (
             <button
               key={tag}
               className={`record-tag-filter ${selectedTags.includes(tag) ? "active" : ""}`}
               onClick={() => handleTagToggle(tag)}
+              aria-pressed={selectedTags.includes(tag)}
             >
               {tag}
             </button>

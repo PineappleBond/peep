@@ -266,13 +266,18 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
 
           {/* 搜索结果列表 */}
           {linkSearchResults.length > 0 && (
-            <div className="wiki-link-search-results">
+            <div
+              className="wiki-link-search-results"
+              role="listbox"
+              aria-label={t("wiki.editor.searchResults")}
+            >
               {linkSearchResults.map(result => (
                 <div
                   key={result.id}
                   className="wiki-link-search-item"
                   onClick={() => addLinkTarget(result.id!)}
                   role="option"
+                  aria-selected={false}
                   tabIndex={0}
                   onKeyDown={e => {
                     if (e.key === "Enter" || e.key === " ") {

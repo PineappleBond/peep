@@ -3,7 +3,7 @@
  * 展示所有已注册的可用快捷键，按分组排列
  * 按 "?" 键打开/关闭
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../core/i18n";
 import {
   getRegisteredShortcuts,
@@ -59,10 +59,52 @@ function groupShortcuts(shortcuts: ShortcutDef[]): Map<string, ShortcutDef[]> {
 export function ShortcutHelp() {
   const { t } = useI18n();
   const [visible, setVisible] = useState(isHelpVisible);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = "shortcut-help-title";
 
   useEffect(() => {
     return onHelpVisibility(setVisible);
   }, []);
+
+  /* ESC 关闭 + 焦点陷阱 */
+  useEffect(() => {
+    if (!visible) return;
+
+    /* 打开后自动聚焦面板 */
+    requestAnimationFrame(() => {
+      panelRef.current?.focus();
+    });
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setVisible(false);
+        return;
+      }
+      /* 焦点陷阱 */
+      if (e.key === "Tab" && panelRef.current) {
+        const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first || document.activeElement === panelRef.current) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -95,14 +137,18 @@ export function ShortcutHelp() {
   return (
     <div className="shortcut-help-mask" onClick={() => setVisible(false)}>
       <div
+        ref={panelRef}
         className="shortcut-help-panel"
         role="dialog"
         aria-modal="true"
-        aria-label={t("shortcut.helpTitle")}
+        aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
       >
         <div className="shortcut-help-head">
-          <h2 className="shortcut-help-title">{t("shortcut.helpTitle")}</h2>
+          <h2 className="shortcut-help-title" id={titleId}>
+            {t("shortcut.helpTitle")}
+          </h2>
           <button
             className="shortcut-help-close"
             onClick={() => setVisible(false)}

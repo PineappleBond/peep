@@ -174,7 +174,14 @@ export function ExportDialog({
       <div className="export-dialog">
         {/* 进度条 */}
         {progress.exporting && (
-          <div className="export-progress">
+          <div
+            className="export-progress"
+            role="progressbar"
+            aria-valuenow={progress.percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={t("export.exporting")}
+          >
             <div className="export-progress-bar" style={{ width: `${progress.percent}%` }} />
             <span className="export-progress-text">
               {progress.text} {progress.percent}%

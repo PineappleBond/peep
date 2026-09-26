@@ -208,8 +208,11 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
       <div className="te-body">
         {/* 主题名称 */}
         <div className="te-section">
-          <label className="te-label">{t("themeEditor.nameLabel")}</label>
+          <label className="te-label" htmlFor="te-name">
+            {t("themeEditor.nameLabel")}
+          </label>
           <input
+            id="te-name"
             className="te-input"
             type="text"
             value={themeName}
@@ -250,7 +253,9 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
           <div className="te-colors">
             {EDITABLE_COLOR_KEYS.map(({ key, label }) => (
               <div key={key} className="te-color-row">
-                <span className="te-color-label">{t(label)}</span>
+                <span className="te-color-label" id={`te-color-label-${key}`}>
+                  {t(label)}
+                </span>
                 <div className="te-color-inputs">
                   <input
                     type="color"
@@ -258,6 +263,7 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
                     value={colorToHex(colors[key])}
                     onChange={e => updateColor(key, e.target.value)}
                     title={t("themeEditor.pickColor")}
+                    aria-labelledby={`te-color-label-${key}`}
                   />
                   <input
                     type="text"
@@ -265,6 +271,7 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
                     value={colors[key]}
                     onChange={e => updateColor(key, e.target.value)}
                     placeholder="#000000"
+                    aria-label={`${t(label)} 颜色值`}
                   />
                 </div>
               </div>

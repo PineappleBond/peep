@@ -229,11 +229,22 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
         {state === "idle" && !preview && (
           <div
             className="import-dropzone"
+            role="button"
+            tabIndex={0}
+            aria-label={t("import.dropzone")}
             onClick={triggerFileSelect}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
+            onKeyDown={e => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                triggerFileSelect();
+              }
+            }}
           >
-            <div className="import-dropzone-icon">📁</div>
+            <div className="import-dropzone-icon" aria-hidden="true">
+              📁
+            </div>
             <div className="import-dropzone-text">{t("import.dropzone")}</div>
             <div className="import-dropzone-hint">{t("import.dropzoneHint")}</div>
           </div>
@@ -241,8 +252,10 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
 
         {/* 错误状态 */}
         {state === "error" && (
-          <div className="import-error">
-            <div className="import-error-icon">⚠️</div>
+          <div className="import-error" role="alert">
+            <div className="import-error-icon" aria-hidden="true">
+              ⚠️
+            </div>
             <div className="import-error-text">{error}</div>
             <button className="btn-primary" onClick={resetState}>
               {t("import.retry")}
@@ -254,7 +267,9 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
         {state === "idle" && preview && (
           <div className="import-preview">
             <div className="import-preview-header">
-              <div className="import-preview-icon">📄</div>
+              <div className="import-preview-icon" aria-hidden="true">
+                📄
+              </div>
               <div className="import-preview-info">
                 <div className="import-preview-filename">{file?.name}</div>
                 <div className="import-preview-type">
@@ -335,7 +350,14 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
 
         {/* 导入中：进度显示 */}
         {state === "importing" && (
-          <div className="import-progress">
+          <div
+            className="import-progress"
+            role="progressbar"
+            aria-valuenow={progress.percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={t("import.importing")}
+          >
             <div className="import-progress-bar" style={{ width: `${progress.percent}%` }} />
             <div className="import-progress-text">{progress.text}</div>
           </div>
@@ -343,8 +365,10 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
 
         {/* 导入完成：结果展示 */}
         {state === "done" && result && (
-          <div className="import-result">
-            <div className="import-result-icon">✓</div>
+          <div className="import-result" role="status" aria-live="polite">
+            <div className="import-result-icon" aria-hidden="true">
+              ✓
+            </div>
             <div className="import-result-title">{t("import.complete")}</div>
             <div className="import-result-stats">
               {result.persons > 0 && (

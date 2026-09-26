@@ -254,6 +254,7 @@
   "daliuren.optional": "选填",
   "daliuren.search": "搜索占事、备注...",
   "daliuren.searchAria": "搜索占事",
+  "daliuren.tagFilter": "标签筛选",
   "daliuren.viewChart": "查看盘面",
   "daliuren.noQuestion": "（无占事）",
   "daliuren.noMatch": "未找到匹配的记录",
@@ -304,6 +305,7 @@
   "tagInput.deleteTag": "删除 {tag}",
   "tagInput.addTag": "添加标签",
   "tagInput.tagList": "标签列表",
+  "tagInput.suggestions": "标签建议",
 
   "wiki.title": "知识库",
   "wiki.export": "导出",
@@ -311,6 +313,7 @@
   "wiki.createDoc": "新建文档",
   "wiki.search": "搜索标题、内容...",
   "wiki.searchAria": "搜索文档",
+  "wiki.tagFilter": "标签筛选",
   "wiki.noMatch": "未找到匹配的文档",
   "wiki.noDocs": "暂无文档",
   "wiki.noTitle": "（无标题）",
@@ -349,6 +352,7 @@
   "wiki.editor.discardMessage": "当前文档有未保存的修改，确定要放弃吗？",
   "wiki.editor.discardConfirm": "放弃修改",
   "wiki.editor.discardCancel": "继续编辑",
+  "wiki.editor.searchResults": "搜索结果",
 
   "loading": "加载中...",
 

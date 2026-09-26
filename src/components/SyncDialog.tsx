@@ -267,13 +267,15 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
     >
       <div className="sync-dialog">
         {/* 标签页 */}
-        <div className="sync-tabs" role="tablist">
+        <div className="sync-tabs" role="tablist" aria-label={t("sync.title")}>
           {tabs.map(tb => (
             <button
               key={tb.id}
               role="tab"
+              id={`sync-tab-${tb.id}`}
               className={`sync-tab${tab === tb.id ? " active" : ""}`}
               aria-selected={tab === tb.id}
+              aria-controls={`sync-panel-${tb.id}`}
               onClick={() => setTab(tb.id)}
             >
               {tb.label}
@@ -283,12 +285,20 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
 
         {/* ────── 上传面板 ────── */}
         {tab === "upload" && (
-          <div className="sync-panel">
+          <div
+            className="sync-panel"
+            role="tabpanel"
+            id="sync-panel-upload"
+            aria-labelledby="sync-tab-upload"
+          >
             <p className="sync-hint">{t("sync.uploadHint")}</p>
 
             <div className="sync-field">
-              <label className="sync-label">{t("sync.password")}</label>
+              <label className="sync-label" htmlFor="sync-upload-password">
+                {t("sync.password")}
+              </label>
               <input
+                id="sync-upload-password"
                 type="password"
                 className="sync-input"
                 value={password}
@@ -320,7 +330,14 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
             )}
 
             {uploadState === "generating" && (
-              <div className="sync-progress">
+              <div
+                className="sync-progress"
+                role="progressbar"
+                aria-valuenow={uploadProgress.percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={t("sync.uploading")}
+              >
                 <div
                   className="sync-progress-bar"
                   style={{ width: `${uploadProgress.percent}%` }}
@@ -352,8 +369,10 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
             )}
 
             {uploadState === "error" && (
-              <div className="sync-error">
-                <span className="sync-error-icon">⚠️</span>
+              <div className="sync-error" role="alert">
+                <span className="sync-error-icon" aria-hidden="true">
+                  ⚠️
+                </span>
                 <span>{uploadError}</span>
                 <button className="btn-cancel" onClick={resetUpload}>
                   {t("common.retry")}
@@ -365,12 +384,20 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
 
         {/* ────── 下载面板 ── */}
         {tab === "download" && (
-          <div className="sync-panel">
+          <div
+            className="sync-panel"
+            role="tabpanel"
+            id="sync-panel-download"
+            aria-labelledby="sync-tab-download"
+          >
             <p className="sync-hint">{t("sync.downloadHint")}</p>
 
             <div className="sync-field">
-              <label className="sync-label">{t("sync.pasteLink")}</label>
+              <label className="sync-label" htmlFor="sync-download-link">
+                {t("sync.pasteLink")}
+              </label>
               <textarea
+                id="sync-download-link"
                 className="sync-link-textarea"
                 value={inputLink}
                 onChange={e => setInputLink(e.target.value)}
@@ -381,8 +408,11 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
             </div>
 
             <div className="sync-field">
-              <label className="sync-label">{t("sync.password")}</label>
+              <label className="sync-label" htmlFor="sync-download-password">
+                {t("sync.password")}
+              </label>
               <input
+                id="sync-download-password"
                 type="password"
                 className="sync-input"
                 value={inputPassword}
@@ -403,7 +433,14 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
             )}
 
             {downloadState === "previewing" && (
-              <div className="sync-progress">
+              <div
+                className="sync-progress"
+                role="progressbar"
+                aria-valuenow={50}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={t("sync.parsing")}
+              >
                 <div className="sync-progress-bar" style={{ width: "50%" }} />
                 <div className="sync-progress-text">{t("sync.parsing")}</div>
               </div>
@@ -476,7 +513,14 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
             )}
 
             {downloadState === "restoring" && (
-              <div className="sync-progress">
+              <div
+                className="sync-progress"
+                role="progressbar"
+                aria-valuenow={downloadProgress.percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={t("sync.restoring")}
+              >
                 <div
                   className="sync-progress-bar"
                   style={{ width: `${downloadProgress.percent}%` }}
@@ -502,8 +546,10 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
             )}
 
             {downloadState === "error" && (
-              <div className="sync-error">
-                <span className="sync-error-icon">⚠️</span>
+              <div className="sync-error" role="alert">
+                <span className="sync-error-icon" aria-hidden="true">
+                  ⚠️
+                </span>
                 <span>{downloadError}</span>
                 <button className="btn-cancel" onClick={resetDownload}>
                   {t("common.retry")}
@@ -515,7 +561,12 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
 
         {/* ────── 历史面板 ────── */}
         {tab === "history" && (
-          <div className="sync-panel">
+          <div
+            className="sync-panel"
+            role="tabpanel"
+            id="sync-panel-history"
+            aria-labelledby="sync-tab-history"
+          >
             {history.length === 0 ? (
               <p className="sync-empty">{t("sync.noHistory")}</p>
             ) : (
@@ -528,7 +579,9 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
                         !rec.success ? " sync-history-fail" : ""
                       }`}
                     >
-                      <div className="sync-history-icon">{rec.event === "upload" ? "↑" : "↓"}</div>
+                      <div className="sync-history-icon" aria-hidden="true">
+                        {rec.event === "upload" ? "↑" : "↓"}
+                      </div>
                       <div className="sync-history-main">
                         <div className="sync-history-time">{formatTime(rec.at)}</div>
                         <div className="sync-history-meta">
@@ -538,7 +591,11 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
                         </div>
                       </div>
                       {!rec.success && rec.error && (
-                        <div className="sync-history-error" title={rec.error}>
+                        <div
+                          className="sync-history-error"
+                          title={rec.error}
+                          aria-label={rec.error}
+                        >
                           ⚠️
                         </div>
                       )}
@@ -555,10 +612,18 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
 
         {/* ────── 设置面板 ────── */}
         {tab === "settings" && (
-          <div className="sync-panel">
+          <div
+            className="sync-panel"
+            role="tabpanel"
+            id="sync-panel-settings"
+            aria-labelledby="sync-tab-settings"
+          >
             <div className="sync-field">
-              <label className="sync-label">{t("sync.defaultPassword")}</label>
+              <label className="sync-label" htmlFor="sync-settings-password">
+                {t("sync.defaultPassword")}
+              </label>
               <input
+                id="sync-settings-password"
                 type="password"
                 className="sync-input"
                 value={config.defaultPassword}
@@ -569,12 +634,15 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
             </div>
 
             <div className="sync-field">
-              <label className="sync-label">{t("sync.autoSync")}</label>
+              <span className="sync-label" id="sync-auto-sync-label">
+                {t("sync.autoSync")}
+              </span>
               <label className="sync-radio">
                 <input
                   type="checkbox"
                   checked={config.autoUpload}
                   onChange={e => handleSaveConfig({ autoUpload: e.target.checked })}
+                  aria-labelledby="sync-auto-sync-label"
                 />
                 <span>{t("sync.autoUpload")}</span>
               </label>

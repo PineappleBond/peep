@@ -34,10 +34,11 @@ export function LiurenFormFields({ values, onChange, disabled }: LiurenFormField
   return (
     <>
       <div className="liuren-form-field">
-        <label>
+        <label htmlFor="liuren-question">
           {t("daliuren.question")} <span className="required">{t("common.required")}</span>
         </label>
         <input
+          id="liuren-question"
           type="text"
           value={values.question}
           onChange={e => onChange({ question: e.target.value })}
@@ -48,8 +49,9 @@ export function LiurenFormFields({ values, onChange, disabled }: LiurenFormField
         />
       </div>
       <div className="liuren-form-field">
-        <label>{t("daliuren.note")}</label>
+        <label htmlFor="liuren-note">{t("daliuren.note")}</label>
         <input
+          id="liuren-note"
           type="text"
           value={values.note}
           onChange={e => onChange({ note: e.target.value })}
@@ -59,8 +61,9 @@ export function LiurenFormFields({ values, onChange, disabled }: LiurenFormField
         />
       </div>
       <div className="liuren-form-field">
-        <label>{t("daliuren.background")}</label>
+        <label htmlFor="liuren-background">{t("daliuren.background")}</label>
         <textarea
+          id="liuren-background"
           value={values.background}
           onChange={e => onChange({ background: e.target.value })}
           placeholder={t("daliuren.backgroundPlaceholder")}

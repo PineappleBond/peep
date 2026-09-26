@@ -127,16 +127,20 @@ export const VizPanel = memo(function VizPanel({ z }: VizPanelProps) {
     >
       {/* 控制栏 */}
       <div className="viz-header">
-        <div className="viz-tabs">
+        <div className="viz-tabs" role="tablist" aria-label="图表类型切换">
           {tabs.map(tab => (
             <button
               key={tab.key}
+              role="tab"
+              id={`viz-tab-${tab.key}`}
               className={`viz-tab ${activeTab === tab.key ? "active" : ""}`}
               onClick={() => setActiveTab(tab.key)}
               aria-selected={activeTab === tab.key}
-              role="tab"
+              aria-controls={`viz-panel-${tab.key}`}
             >
-              <span className="tab-icon">{tab.icon}</span>
+              <span className="tab-icon" aria-hidden="true">
+                {tab.icon}
+              </span>
               <span className="tab-label">{tab.label}</span>
             </button>
           ))}
@@ -201,7 +205,13 @@ export const VizPanel = memo(function VizPanel({ z }: VizPanelProps) {
       </div>
 
       {/* 图表区域 */}
-      <div ref={chartRef} className="viz-content">
+      <div
+        ref={chartRef}
+        className="viz-content"
+        role="tabpanel"
+        id={`viz-panel-${activeTab}`}
+        aria-labelledby={`viz-tab-${activeTab}`}
+      >
         {activeTab === "kline" && (
           <KlineChart data={lifeKline} initialDomain="命宫" width={900} height={420} />
         )}

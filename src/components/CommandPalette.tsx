@@ -194,7 +194,15 @@ function HistoryList({
             key={`${i}:${q}`}
             className="cp-history-item"
             role="option"
+            aria-selected={false}
+            tabIndex={0}
             onClick={() => onSelect(q)}
+            onKeyDown={e => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(q);
+              }
+            }}
           >
             <span className="cp-history-icon" aria-hidden="true">
               🕘

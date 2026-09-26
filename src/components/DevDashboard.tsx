@@ -286,11 +286,16 @@ export function DevDashboard() {
       : 0;
 
   return (
-    <div className="dev-dash-overlay" role="dialog" aria-label="开发者性能仪表板">
+    <div
+      className="dev-dash-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dev-dash-title"
+    >
       <div className="dev-dash-panel">
         <header className="dev-dash-header">
           <div className="dev-dash-title">
-            <span>开发者性能仪表板</span>
+            <span id="dev-dash-title">开发者性能仪表板</span>
             <span className="dev-dash-env">DEV</span>
           </div>
           <div className="dev-dash-actions">
@@ -299,6 +304,7 @@ export function DevDashboard() {
               className="dev-dash-btn"
               onClick={handleExport}
               title="导出 JSON 报告"
+              aria-label="导出 JSON 报告"
             >
               导出
             </button>
@@ -307,6 +313,7 @@ export function DevDashboard() {
               className="dev-dash-btn dev-dash-close"
               onClick={handleClose}
               title="关闭（Ctrl+Shift+D）"
+              aria-label="关闭开发者仪表板"
             >
               ×
             </button>
