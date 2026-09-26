@@ -82,6 +82,18 @@ export interface BackupData {
 
 /* ─────────────── JSON 导入 ─────────────── */
 
+/** 导入文件大小上限（50 MB），防止超大文件导致浏览器内存耗尽 */
+const MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024;
+
+/** 检查文件大小是否在安全范围内 */
+function assertFileSize(file: File): void {
+  if (file.size > MAX_IMPORT_FILE_SIZE) {
+    throw new Error(
+      `文件过大（${(file.size / 1024 / 1024).toFixed(1)} MB），上限为 ${MAX_IMPORT_FILE_SIZE / 1024 / 1024} MB`,
+    );
+  }
+}
+
 /**
  * 从 JSON 文件导入完整备份
  */
@@ -92,6 +104,7 @@ export async function importFromJson(
   const result: ImportResult = { persons: 0, liuren: 0, wiki: 0, errors: [] };
 
   try {
+    assertFileSize(file);
     onProgress?.(10, "读取文件...");
     const text = await file.text();
     const data: BackupData = JSON.parse(text);
@@ -234,6 +247,7 @@ export async function importFromCsv(
   type: "liuren" | "wiki",
   onProgress?: (percent: number, text: string) => void,
 ): Promise<number> {
+  assertFileSize(file);
   const text = await file.text();
   const lines = text.split("\n").filter(line => line.trim());
 
@@ -373,6 +387,7 @@ export async function previewJsonBackup(file: File): Promise<{
   wikiCount: number;
   exportedAt?: string;
 }> {
+  assertFileSize(file);
   const text = await file.text();
   const data: BackupData = JSON.parse(text);
 
@@ -392,6 +407,7 @@ export async function previewCsvData(file: File): Promise<{
   rowCount: number;
   sampleRows: string[][];
 }> {
+  assertFileSize(file);
   const text = await file.text();
   const lines = text.split("\n").filter(line => line.trim());
 

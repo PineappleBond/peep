@@ -357,6 +357,9 @@ export async function generateSyncLink(
 
 /**
  * 检测当前 URL 是否包含同步链接数据
+ *
+ * 注意：无法仅从载荷外观可靠区分加密与明文（两者均为 base64url），
+ * 因此 `encrypted` 字段始终返回 true，由调用方根据用户是否输入密码判断。
  */
 export function parseSyncLink(url?: string): { payload: string; encrypted: boolean } | null {
   const href = url ?? globalThis.location?.href ?? "";
