@@ -31,7 +31,7 @@
 .top {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-md);
   flex-wrap: wrap;
   padding: 16px 20px;
   margin-bottom: 20px;
@@ -86,13 +86,13 @@
 .top-actions {
   margin-left: auto;
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   align-items: center;
 }
 
 .top-actions button {
   padding: 7px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(85, 215, 255, 0.4);
   background: rgba(85, 215, 255, 0.07);
   color: var(--cyan);
@@ -129,7 +129,7 @@
 /* 语言切换按钮 */
 .top-actions .lang-toggle {
   padding: 7px 12px;
-  font-weight: 600;
+  font-weight: var(--font-bold);
   min-width: 36px;
 }
 
@@ -192,7 +192,7 @@
   max-width: 560px;
   padding: 18px 22px;
   border: 1px solid rgba(255, 136, 150, 0.4);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: rgba(70, 16, 26, 0.3);
   color: #ffb3bd;
   font-size: 0.85rem;
@@ -222,7 +222,7 @@
   .chart-wrap {
     min-width: 0;
     padding: 5px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
   }
 
   .chart {
@@ -342,7 +342,7 @@
     margin-right: 4px;
   }
   .depth-row {
-    gap: 4px;
+    gap: var(--space-xs);
     padding-top: 5px;
   }
   .db {
@@ -376,7 +376,7 @@
   .nav-icon {
     width: 34px;
     height: 34px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
   }
   .person-sel {
     gap: 6px;
@@ -477,7 +477,7 @@
   .person-select {
     min-width: 0;
     flex: 1;
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
   }
   .nav-icon {
     width: 32px;

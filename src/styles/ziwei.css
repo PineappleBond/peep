@@ -10,11 +10,11 @@
   gap: 10px 14px;
   margin: 14px 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: rgba(10, 16, 34, 0.6);
   border: 1px solid var(--line);
   backdrop-filter: blur(8px);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 .fld {
@@ -35,10 +35,10 @@
 .input-panel select {
   background: rgba(5, 9, 20, 0.8);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--text);
   padding: 6px 9px;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-family: inherit;
   outline: none;
   transition:
@@ -104,7 +104,7 @@
   border: none;
   color: var(--dim);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-family: inherit;
   transition:
     color 0.2s,
@@ -323,7 +323,7 @@
   min-width: 0;
   background: linear-gradient(165deg, rgba(16, 25, 50, 0.85), rgba(9, 14, 30, 0.94));
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition:
     border-color 0.22s,
@@ -606,7 +606,7 @@
   font-size: 10px;
   line-height: 1.35;
   padding: 0 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid;
   letter-spacing: 1px;
 }
@@ -647,7 +647,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 4px;
+  gap: var(--space-xs);
   margin-top: 2px;
   border-top: 1px dashed rgba(96, 165, 250, 0.16);
   padding-top: 3px;
@@ -731,7 +731,7 @@
   writing-mode: vertical-lr;
   text-orientation: upright;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--font-bold);
   color: var(--cyan);
   text-shadow: 0 0 8px rgba(85, 215, 255, 0.55);
 }
@@ -812,13 +812,13 @@
 
 .ci {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   min-width: 0;
 }
 
 .ci b {
   flex: none;
-  font-weight: 400;
+  font-weight: var(--font-normal);
   color: var(--dim);
   letter-spacing: 1px;
 }
@@ -882,7 +882,7 @@
   margin-right: 7px;
   padding: 0 6px;
   border: 1px solid rgba(85, 215, 255, 0.4);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--cyan);
   font-size: 10px;
   letter-spacing: 2px;
@@ -899,7 +899,7 @@
 .db {
   width: 34px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: rgba(217, 228, 255, 0.03);
   color: var(--dim);
@@ -1023,7 +1023,7 @@
 
 .hrow {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   align-items: stretch;
   min-width: 0;
 }
@@ -1031,7 +1031,7 @@
 .hlabel {
   flex: none;
   width: 48px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: rgba(217, 228, 255, 0.02);
   color: var(--faint);
@@ -1087,7 +1087,7 @@
 
 .hcells {
   display: flex;
-  gap: 4px;
+  gap: var(--space-xs);
   flex: 1;
   min-width: 0;
   overflow-x: auto;
@@ -1129,7 +1129,7 @@
 
 .hcell b {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--font-bold);
   white-space: nowrap;
 }
 
@@ -1261,7 +1261,7 @@
 .kline-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-xs);
   margin: 6px 0 4px;
 }
 
@@ -1356,7 +1356,7 @@
 
 .kline-tip-head em {
   font-style: normal;
-  font-weight: 400;
+  font-weight: var(--font-normal);
   font-size: 10px;
   color: var(--dim);
   margin-left: 5px;
@@ -1371,7 +1371,7 @@
 .kline-tip-metrics {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
   margin: 2px 0 3px;
   font-size: 10.5px;
   color: var(--dim);
@@ -1384,7 +1384,7 @@
 
 .kline-pat {
   padding: 0 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 10px;
   border: 1px solid var(--line-strong);
   color: var(--text);
@@ -1468,7 +1468,7 @@
   box-shadow:
     0 0 40px rgba(85, 215, 255, 0.15),
     0 18px 50px rgba(0, 0, 0, 0.6);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   animation: pd-slidein 0.25s ease-out;
 }
 
@@ -1501,14 +1501,14 @@
 .pd-gz {
   margin-left: 8px;
   font-style: normal;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--gold);
 }
 
 .pd-close {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: transparent;
   color: var(--dim);
@@ -1562,7 +1562,7 @@
 
 .pd-seats b {
   color: var(--text);
-  font-weight: 600;
+  font-weight: var(--font-bold);
   flex: none;
 }
 
@@ -1572,7 +1572,7 @@
   text-align: center;
   font-style: normal;
   font-size: 0.68rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
 }
 
@@ -1607,7 +1607,7 @@
   padding: 0 5px;
   font-style: normal;
   font-size: 0.68rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
 }
 
@@ -1630,7 +1630,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
   color: var(--text);
 }
 
@@ -1642,8 +1642,8 @@
   margin-right: 7px;
   text-align: center;
   font-style: normal;
-  font-size: 0.7rem;
-  border-radius: 4px;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
   color: #06101f;
 }
 
@@ -1683,7 +1683,7 @@
   font-size: 0.68rem;
   margin-right: 6px;
   padding: 0 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: #05070f;
 }
 .pd-chain-ji {
@@ -1729,7 +1729,7 @@
   padding: 0 5px;
   font-style: normal;
   font-size: 0.66rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid;
 }
 
@@ -1839,7 +1839,7 @@
   gap: 10px 14px;
   padding: 10px 0;
   border-top: 1px dashed var(--line);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 .syn-go {
@@ -1898,7 +1898,7 @@
 .syn-card {
   flex: 1 1 180px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--line);
   background: linear-gradient(165deg, rgba(16, 25, 50, 0.85), rgba(9, 14, 30, 0.94));
   text-align: center;
@@ -1948,7 +1948,7 @@
 }
 
 .syn-card-tier {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   color: var(--dim);
   letter-spacing: 2px;
 }
@@ -1963,7 +1963,7 @@
 
 .syn-summary p {
   margin: 4px 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--text);
   line-height: 1.6;
 }
@@ -1982,7 +1982,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .syn-detail li {
@@ -2004,7 +2004,7 @@
   text-align: center;
   font-style: normal;
   font-size: 0.68rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
 }
 
@@ -2063,7 +2063,7 @@
 .dst-hint {
   flex-basis: 100%;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(251, 191, 36, 0.35);
   background: rgba(251, 191, 36, 0.07);
   color: var(--m-ke);
@@ -2080,7 +2080,7 @@
     font-size: 0.74rem;
   }
   .pd-head b {
-    font-size: 0.9rem;
+    font-size: var(--text-md);
   }
   .pd-seats li {
     flex-wrap: wrap;
@@ -2247,7 +2247,7 @@
   flex: none;
   padding: 0 7px;
   font-style: normal;
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   border-radius: 5px;
   border: 1px solid;
   white-space: nowrap;
@@ -2289,7 +2289,7 @@
 /* ── 多盘档案按钮 ── */
 .arc-btn {
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: rgba(217, 228, 255, 0.03);
   color: var(--dim);
@@ -2339,7 +2339,7 @@
   box-shadow:
     0 0 40px rgba(85, 215, 255, 0.15),
     0 18px 50px rgba(0, 0, 0, 0.6);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 .rf-tip {
@@ -2393,7 +2393,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-sm);
   margin-bottom: 12px;
 }
 
@@ -2436,7 +2436,7 @@
   text-align: left;
   padding: 5px 8px;
   color: var(--cyan);
-  font-weight: 600;
+  font-weight: var(--font-bold);
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
@@ -2515,7 +2515,7 @@
 .rf-note {
   margin: 10px 0 0;
   color: var(--faint);
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   line-height: 1.6;
 }
 
@@ -2524,7 +2524,7 @@
     padding: 12px 10px;
   }
   .rf-table {
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
   }
   .rf-table th,
   .rf-table td {
@@ -2561,7 +2561,7 @@
   text-align: left;
   padding: 5px 8px;
   color: var(--cyan);
-  font-weight: 600;
+  font-weight: var(--font-bold);
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
@@ -2715,7 +2715,7 @@
     padding: 9px 10px 8px;
   }
   .dp-table {
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
   }
   .dp-table th,
   .dp-table td {

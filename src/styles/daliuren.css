@@ -23,7 +23,7 @@
 /* ── 大六壬响应式：≤900px 左右堆叠 ── */
 @media (max-width: 900px) {
   .liuren-page {
-    padding: 16px;
+    padding: var(--space-md);
   }
 
   .liuren-layout {
@@ -50,7 +50,7 @@
   }
 
   .record-list {
-    padding: 8px;
+    padding: var(--space-sm);
     gap: 6px;
   }
 
@@ -64,7 +64,7 @@
   }
 
   .liuren-four-pillars {
-    gap: 8px;
+    gap: var(--space-sm);
   }
 
   .liuren-pillar-value {
@@ -171,7 +171,7 @@
   margin: 0 0 8px;
   font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--font-bold);
   color: var(--gold);
   letter-spacing: 0.15em;
   text-shadow: 0 0 12px rgba(243, 201, 107, 0.2);
@@ -187,7 +187,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .liuren-pillar-label {
@@ -201,7 +201,7 @@
   color: var(--text);
   padding: 5px 12px;
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.15));
   box-shadow:
     inset 0 0 6px rgba(0, 0, 0, 0.2),
@@ -231,7 +231,7 @@
 .liuren-board-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .liuren-board-cell {
@@ -243,7 +243,7 @@
   border: 1px solid var(--line);
   border-radius: 6px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   transition:
     border-color 0.2s,
     background 0.2s,
@@ -306,10 +306,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   padding: 8px 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
   transition:
     border-color 0.2s,
@@ -350,7 +350,7 @@
 .liuren-three-transmissions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .liuren-transmission-method {
@@ -364,14 +364,14 @@
 .liuren-transmissions-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .liuren-transmission {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .liuren-transmission-label {
@@ -385,7 +385,7 @@
   color: var(--text);
   padding: 5px 16px;
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.15));
   box-shadow:
     inset 0 0 6px rgba(0, 0, 0, 0.2),
@@ -394,14 +394,14 @@
 }
 
 .liuren-transmission-arrow {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--faint);
   margin-top: 12px;
 }
 
 /* 旬空 */
 .liuren-xunkong {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--dim);
   font-family: var(--font-display);
   letter-spacing: 0.05em;
@@ -417,11 +417,11 @@
 .liuren-general-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   padding: 3px 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.08));
   transition: border-color 0.2s;
 }
@@ -443,7 +443,7 @@
 .liuren-shensha-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
   margin-bottom: 6px;
 }
 
@@ -453,7 +453,7 @@
 
 .liuren-shensha-label {
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: var(--font-bold);
 }
 
 .liuren-shensha-label.ji {
@@ -467,13 +467,13 @@
 .liuren-shensha-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .liuren-shensha-item {
   font-size: 0.65rem;
   padding: 2px 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: default;
   transition: opacity 0.15s;
 }
@@ -498,13 +498,13 @@
 .liuren-kejing-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .liuren-kejing-item {
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.08));
   transition:
     border-color 0.2s,
@@ -518,13 +518,13 @@
 
 .liuren-kejing-name {
   font-family: var(--font-display);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--gold);
   margin-bottom: 3px;
 }
 
 .liuren-kejing-desc {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   color: var(--dim);
   line-height: 1.5;
 }
@@ -545,13 +545,13 @@
 .liuren-bifa-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .liuren-bifa-item {
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.08));
   transition:
     border-color 0.2s,
@@ -565,13 +565,13 @@
 
 .liuren-bifa-name {
   font-family: var(--font-display);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--cyan);
   margin-bottom: 3px;
 }
 
 .liuren-bifa-desc {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   color: var(--dim);
   line-height: 1.5;
 }
@@ -602,14 +602,14 @@
 }
 
 .liuren-info-label {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   color: var(--faint);
   min-width: 56px;
   flex-shrink: 0;
 }
 
 .liuren-info-value {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--text);
   line-height: 1.5;
 }
@@ -622,7 +622,7 @@
   display: inline-block;
   margin-right: 4px;
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: linear-gradient(135deg, rgba(85, 215, 255, 0.1), rgba(85, 215, 255, 0.04));
   border: 1px solid rgba(85, 215, 255, 0.2);
   color: var(--cyan);
@@ -664,7 +664,7 @@
 
 .liuren-empty-desc {
   margin: 0 0 16px;
-  font-size: 0.9rem;
+  font-size: var(--text-md);
   color: var(--dim);
   letter-spacing: 0.15em;
   line-height: 1.8;
@@ -672,7 +672,7 @@
 
 .liuren-empty-hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--faint);
   letter-spacing: 0.1em;
 }
@@ -689,7 +689,7 @@
   padding: 10px 14px 10px 36px;
   background: rgba(227, 91, 91, 0.1);
   border: 1px solid rgba(227, 91, 91, 0.35);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--danger);
   font-size: 0.85rem;
   letter-spacing: 0.03em;
@@ -727,7 +727,7 @@
 .liuren-form-field textarea {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(243, 201, 107, 0.2);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 8px 11px;
   color: var(--text);
   font-size: 0.88rem;
@@ -768,7 +768,7 @@
 .liuren-form-static {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(243, 201, 107, 0.1);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 8px 11px;
   color: var(--dim);
   font-size: 0.88rem;
@@ -816,7 +816,7 @@
 .liuren-delete-info {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(243, 201, 107, 0.1);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   text-align: left;
   font-size: 0.82rem;
@@ -845,7 +845,7 @@
   padding: 7px 10px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(243, 201, 107, 0.2);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   min-height: 36px;
   align-items: center;
   cursor: text;
@@ -862,7 +862,7 @@
 .tag-input-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   padding: 2px 7px;
   background: rgba(243, 201, 107, 0.12);
   border: 1px solid rgba(243, 201, 107, 0.35);
@@ -883,7 +883,7 @@
   background: none;
   border: none;
   color: var(--gold);
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   cursor: pointer;
   padding: 0 2px;
   opacity: 0.6;
@@ -929,7 +929,7 @@
   max-height: 200px;
   overflow-y: auto;
   z-index: 100;
-  padding: 4px;
+  padding: var(--space-xs);
 }
 
 .tag-input-suggestion-item {
