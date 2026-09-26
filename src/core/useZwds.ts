@@ -317,10 +317,10 @@ export function useZwds(input: BirthInput) {
     return buildHours(dayStem);
   }, [days, clampedDay]);
 
-  /** 拨盘目标（公历） */
+  /** 拨盘目标（公历）：pick 已经是阳历值，直接构造日期字符串 */
   const targetSolar = useMemo(
-    () => lunarToSolarStr(pick.year, pick.month, clampedDay, effLeap) ?? fmtSolar(new Date()),
-    [pick.year, pick.month, clampedDay, effLeap],
+    () => `${pick.year}-${pick.month}-${clampedDay}`,
+    [pick.year, pick.month, clampedDay],
   );
 
   const horoscope = useMemo<Horoscope | null>(() => {
