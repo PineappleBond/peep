@@ -112,6 +112,20 @@ export type WikiViewResult = WikiDocument & {
 /**
  * 紫微斗数基础错误类：所有 debugApi 自定义错误的基类。
  * 包含上下文信息（输入参数、中间状态）和恢复建议。
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await window.peep.ZiWei(1, "yearly");
+ * } catch (err) {
+ *   if (err instanceof ZiWeiError) {
+ *     console.error("来源:", err.source);
+ *     console.error("上下文:", err.context);
+ *     console.error("建议:", err.suggestion);
+ *     console.error("原始错误:", err.cause);
+ *   }
+ * }
+ * ```
  */
 export class ZiWeiError extends Error {
   /** 错误来源标签（如 "ZiWei"、"computeScopeData"） */
@@ -520,6 +534,14 @@ async function resolvePersonId(personId?: number): Promise<number> {
 /**
  * 人物列表：返回所有人物（按保存时间倒序）。
  * 纯 DB 操作，无 UI 交互。
+ *
+ * @returns 人物数组，每人包含 id、name、date、timeIndex、gender 等完整出生信息
+ *
+ * @example
+ * ```typescript
+ * const persons = await window.peep.PersonList();
+ * persons.forEach(p => console.log(`${p.id}: ${p.name} (${p.date})`));
+ * ```
  */
 export async function PersonList(): Promise<Person[]> {
   const stop = timer("PersonList");
@@ -538,6 +560,23 @@ export async function PersonList(): Promise<Person[]> {
 /**
  * 获取人物详情：按 ID 查询，不传则返回默认人物。
  * 纯 DB 操作，无 UI 交互。
+ *
+ * @param personId 人物 ID（可选，不传则返回默认人物）
+ * @returns 人物详情，包含完整出生信息和设置
+ * @throws Error 人物不存在时抛出
+ *
+ * @example
+ * ```typescript
+ * // 获取默认人物
+ * const person = await window.peep.PersonGet();
+ * console.log("姓名:", person.name);
+ * console.log("出生日期:", person.date);
+ *
+ * // 获取指定人物
+ * const person = await window.peep.PersonGet(1);
+ * console.log("性别:", person.gender);
+ * console.log("历法:", person.calendar);
+ * ```
  */
 export async function PersonGet(personId?: number): Promise<Person> {
   const stop = timer("PersonGet");
@@ -654,6 +693,19 @@ export async function PersonDelete(personId: number): Promise<void> {
  * @param z Zwds 对象（已包含 astrolabe / horoscope / pick / visible）
  * @param scope 运限级别（可选；不传则 chart 返回 null）
  * @returns hbar 和 chart 数据
+ *
+ * @example
+ * ```typescript
+ * // 从已排好的 Zwds 状态中提取运限数据
+ * const zwds = getZwdsState();
+ * if (zwds) {
+ *   const { hbar, chart } = computeZiWeiData(zwds, "yearly");
+ *   // hbar: 运限拨盘数据（大运/流年/流月/流日/流时列表）
+ *   // chart: 流年盘面数据（十二宫星曜、四化等）
+ *   console.log("大运列表:", hbar?.decadalList);
+ *   console.log("流年命宫:", chart?.palaces.find(p => p.isMingPalace));
+ * }
+ * ```
  */
 export function computeZiWeiData(z: Zwds, scope?: Scope): ZiWeiComputedData {
   const stop = timer("computeZiWeiData");
@@ -700,6 +752,27 @@ export function computeZiWeiData(z: Zwds, scope?: Scope): ZiWeiComputedData {
  * @param scope 运限级别（decadal/yearly/monthly/daily/hourly）
  * @param time 可选时间参数（Date 或时间戳），用于设置运限时间（skipUI=true 时忽略）
  * @param options 可选配置项（目前支持 skipUI）
+ * @returns 包含人物信息、运限拨盘数据和运限盘面数据的完整结果
+ *
+ * @example
+ * ```typescript
+ * // 示例 1：查看默认人物的流年运势（带 UI 同步）
+ * const result = await window.peep.ZiWei(undefined, "yearly");
+ * console.log("人物:", result.person?.name);
+ * console.log("流年列表:", result.hbar?.yearlyList);
+ * console.log("流年命宫:", result.chart?.palaces.find(p => p.isMingPalace));
+ *
+ * // 示例 2：查看指定人物的流月运势，指定日期
+ * const result = await window.peep.ZiWei(1, "monthly", "2024-06-15");
+ * console.log("流月列表:", result.hbar?.monthlyList);
+ *
+ * // 示例 3：纯计算模式（不操控 UI，适用于 RTC Agent）
+ * const result = await window.peep.ZiWei(undefined, "yearly", undefined, { skipUI: true });
+ * // 注意：skipUI 模式下 personId 和 time 参数被忽略，仅使用当前 Zwds 状态
+ * ```
+ *
+ * @throws {ZiWeiError} 排盘失败时抛出，包含上下文和恢复建议
+ * @throws {ParseDateError} 日期格式无效时抛出
  */
 export async function ZiWei(
   personId?: number,
@@ -1136,6 +1209,35 @@ function computeAstrolabe(person: Person) {
  * @param solarDate 阳历日期（Date 对象或 YYYY-MM-DD 格式字符串）
  * @returns 运限拨盘完整数据（buildHbarData 返回 null 时仍可能为 null，表示无运限数据）
  * @throws ComputeScopeError 本命盘计算或日期解析失败时抛出
+ *
+ * @example
+ * ```typescript
+ * // 示例 1：从数据库获取人物后计算运限
+ * const person = await window.peep.PersonGet(1);
+ * const hbarData = window.peep.computeScopeData(person, "2024-06-15");
+ * if (hbarData) {
+ *   console.log("大运:", hbarData.decadalList);
+ *   console.log("流年:", hbarData.yearlyList);
+ *   console.log("流月:", hbarData.monthlyList);
+ * }
+ *
+ * // 示例 2：使用 Date 对象
+ * const now = new Date();
+ * const hbarData = window.peep.computeScopeData(person, now);
+ *
+ * // 示例 3：错误处理
+ * try {
+ *   const result = window.peep.computeScopeData(person, "invalid-date");
+ * } catch (err) {
+ *   if (err instanceof ParseDateError) {
+ *     console.error("日期格式错误:", err.rawInput);
+ *     console.error("尝试的格式:", err.attemptedFormats);
+ *   } else if (err instanceof ComputeScopeError) {
+ *     console.error("计算失败:", err.context);
+ *     console.error("建议:", err.suggestion);
+ *   }
+ * }
+ * ```
  */
 export function computeScopeData(person: Person, solarDate: Date | string): HbarData | null {
   const stop = timer("computeScopeData");
@@ -1207,7 +1309,35 @@ export function computeScopeData(person: Person, solarDate: Date | string): Hbar
  *
  * @param solarDate 阳历日期（Date 对象或 YYYY-MM-DD / YYYY-MM-DD HH:mm 格式字符串）
  * @param personId 人物 ID（可选，不传则使用默认人物）
- * @returns 运限拨盘完整数据
+ * @returns 运限拨盘完整数据（包含大运/流年/流月/流日/流时列表）
+ *
+ * @example
+ * ```typescript
+ * // 示例 1：获取默认人物的当前运限
+ * const hbarData = await window.peep.GetScopeData("2024-06-15");
+ * console.log("当前大运:", hbarData?.decadalList);
+ * console.log("当前流年:", hbarData?.yearlyList);
+ *
+ * // 示例 2：获取指定人物的运限
+ * const hbarData = await window.peep.GetScopeData("2024-06-15", 1);
+ *
+ * // 示例 3：使用 Date 对象
+ * const now = new Date();
+ * const hbarData = await window.peep.GetScopeData(now);
+ *
+ * // 示例 4：RTC Agent 推荐使用
+ * // 因为纯计算无 UI 开销，响应快且无超时风险
+ * const hbarData = await window.peep.GetScopeData("2024-06-15");
+ * if (hbarData) {
+ *   // 分析大运
+ *   const currentDecadal = hbarData.decadalList.find(d => d.isCurrent);
+ *   console.log("当前大运:", currentDecadal?.ganZhi);
+ *
+ *   // 分析流年
+ *   const currentYearly = hbarData.yearlyList.find(y => y.isCurrent);
+ *   console.log("当前流年:", currentYearly?.ganZhi);
+ * }
+ * ```
  */
 export async function GetScopeData(
   solarDate: Date | string,
@@ -1244,6 +1374,35 @@ export async function GetScopeData(
  * @param fateInput 可选：生年与性别（用于计算命宫行年）
  * @returns 完整大六壬排盘结果
  * @throws DaLiuRenError 排盘失败时抛出，包含输入上下文和恢复建议
+ *
+ * @example
+ * ```typescript
+ * // 示例 1：基础起课（不带命主信息）
+ * const result = window.peep.computeDaLiuRenData("2024-06-15", "14:30");
+ * console.log("起课时间:", result.calculationTime);
+ * console.log("四课:", result.siSanchuan.siKe);
+ * console.log("三传:", result.siSanchuan.sanChuan);
+ * console.log("天地盘:", result.tianDiPan);
+ *
+ * // 示例 2：带命主信息（计算命宫行年）
+ * const result = window.peep.computeDaLiuRenData("2024-06-15", "14:30", {
+ *   birthYear: 1990,
+ *   gender: "男"
+ * });
+ * console.log("命宫:", result.fate?.mingGong);
+ * console.log("行年:", result.fate?.xingNian);
+ *
+ * // 示例 3：错误处理
+ * try {
+ *   const result = window.peep.computeDaLiuRenData("invalid", "14:30");
+ * } catch (err) {
+ *   if (err instanceof DaLiuRenError) {
+ *     console.error("来源:", err.source);
+ *     console.error("输入上下文:", err.context);
+ *     console.error("建议:", err.suggestion);
+ *   }
+ * }
+ * ```
  */
 export function computeDaLiuRenData(
   date: string,
@@ -1304,6 +1463,35 @@ export function DaLiuRen(
  *
  * @param params 起课参数
  * @param options 可选配置项（目前支持 skipUI）
+ * @returns 创建后的起课记录，包含 id 和完整排盘结果
+ *
+ * @example
+ * ```typescript
+ * // 示例 1：skipUI 模式创建起课（RTC Agent 推荐）
+ * const record = await window.peep.DaLiuRenCreate({
+ *   question: "这笔生意能不能做？",
+ *   note: "客户询问合作前景",
+ *   background: "客户与对方已洽谈三月",
+ *   tags: ["求财", "合作"],
+ * }, { skipUI: true });
+ * console.log("起课 ID:", record.id);
+ * console.log("四课:", record.result.siSanchuan.siKe);
+ *
+ * // 示例 2：使用自定义起课时间
+ * const record = await window.peep.DaLiuRenCreate({
+ *   question: "今日出行是否顺利？",
+ *   calculationTime: "2024-06-15 08:30:00",
+ * }, { skipUI: true });
+ *
+ * // 示例 3：完整 UI 模式（会打开大六壬页面并填写表单）
+ * const record = await window.peep.DaLiuRenCreate({
+ *   personId: 1,
+ *   question: "考试能否通过？",
+ *   tags: ["考试", "学业"],
+ * });
+ * ```
+ *
+ * @throws {DaLiuRenError} 起课失败时抛出
  */
 export async function DaLiuRenCreate(
   params: {
