@@ -3,7 +3,7 @@
  *
  * 功能：
  * - 颜色选择器（HEX 输入 + 原生 color picker）
- * - 预设主题快速切换（根据当前亮暗模式自动选择变体）
+ * - 预设主题快速切换（根据当前亮暗模式显示对应分组）
  * - 实时预览（修改立即应用到 :root CSS 变量）
  * - 重置为默认
  * - 导出/导入主题 JSON
@@ -14,13 +14,11 @@ import { useI18n } from "../core/i18n";
 import { toast } from "../core/toast";
 import {
   EDITABLE_COLOR_KEYS,
-  PRESET_THEMES,
+  getPresetThemesForCurrentMode,
   getCustomTheme,
   saveCustomTheme,
   clearCustomTheme,
   importTheme,
-  themeFromPreset,
-  getPresetColors,
   type CustomTheme,
   type PresetTheme,
   type ThemeColors,
@@ -35,12 +33,10 @@ type ThemeEditorProps = {
 
 /** 解析颜色值为 HEX 格式（用于 color picker） */
 function colorToHex(value: string): string {
-  // 如果已经是 #xxxxxx 格式，直接返回
   if (/^#[0-9a-fA-F]{6}$/.test(value)) return value;
   if (/^#[0-9a-fA-F]{3}$/.test(value)) {
     return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`;
   }
-  // rgba 配置：提取前三个值转为 hex
   const rgbaMatch = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (rgbaMatch) {
     const r = parseInt(rgbaMatch[1]).toString(16).padStart(2, "0");
@@ -48,7 +44,6 @@ function colorToHex(value: string): string {
     const b = parseInt(rgbaMatch[3]).toString(16).padStart(2, "0");
     return `#${r}${g}${b}`;
   }
-  // 无法解析时返回黑色
   return "#000000";
 }
 
@@ -75,7 +70,6 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
   const [isDirty, setIsDirty] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 打开时从 localStorage 加载已保存的自定义主题
   useEffect(() => {
     if (open) {
       const saved = getCustomTheme();
@@ -90,30 +84,25 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
     }
   }, [open]);
 
-  /** 更新单个颜色变量并实时应用 */
   const updateColor = useCallback((key: keyof ThemeColors, value: string) => {
     setColors(prev => {
       const next = { ...prev, [key]: value };
-      // 实时预览：立即应用到 :root
       document.documentElement.style.setProperty(`--${key}`, value);
       return next;
     });
     setIsDirty(true);
   }, []);
 
-  /** 应用预设主题：根据当前亮暗模式自动选择对应变体 */
+  /** 应用预设主题 */
   const applyPreset = useCallback((preset: PresetTheme) => {
-    const variantColors = getPresetColors(preset);
-    setColors(variantColors);
+    setColors(preset.colors);
     setThemeName(preset.name);
-    // 实时预览
-    for (const [key, value] of Object.entries(variantColors)) {
+    for (const [key, value] of Object.entries(preset.colors)) {
       document.documentElement.style.setProperty(`--${key}`, value);
     }
     setIsDirty(true);
   }, []);
 
-  /** 保存当前自定义主题 */
   const handleSave = useCallback(() => {
     const theme: CustomTheme = { name: themeName, colors };
     saveCustomTheme(theme);
@@ -121,7 +110,6 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
     toast.success(t("themeEditor.saved"));
   }, [themeName, colors, t]);
 
-  /** 重置为默认主题 */
   const handleReset = useCallback(() => {
     clearCustomTheme();
     setColors(DEFAULT_COLORS);
@@ -130,18 +118,15 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
     toast.info(t("themeEditor.reset"));
   }, [t]);
 
-  /** 导出主题为 JSON */
   const handleExport = useCallback(() => {
     const theme: CustomTheme = { name: themeName, colors };
     const json = JSON.stringify(theme, null, 2);
-    // 复制到剪贴板
     navigator.clipboard
       .writeText(json)
       .then(() => {
         toast.success(t("themeEditor.exportCopied"));
       })
       .catch(() => {
-        // 剪贴板失败时尝试下载文件
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -153,7 +138,6 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
       });
   }, [themeName, colors, t]);
 
-  /** 导入主题 JSON */
   const handleImportClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
@@ -175,11 +159,13 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
         }
       };
       reader.readAsText(file);
-      // 清空 input 以便重复导入同一文件
       e.target.value = "";
     },
     [t],
   );
+
+  // 获取当前模式的预设主题
+  const currentPresets = getPresetThemesForCurrentMode();
 
   return (
     <Dialog
@@ -207,7 +193,6 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
       }
     >
       <div className="te-body">
-        {/* 主题名称 */}
         <div className="te-section">
           <label className="te-label" htmlFor="te-name">
             {t("themeEditor.nameLabel")}
@@ -225,33 +210,28 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
           />
         </div>
 
-        {/* 预设主题 */}
         <div className="te-section">
           <label className="te-label">{t("themeEditor.presets")}</label>
           <div className="te-presets">
-            {PRESET_THEMES.map(preset => {
-              const previewColors = getPresetColors(preset);
-              return (
-                <button
-                  key={preset.name}
-                  className="te-preset"
-                  onClick={() => applyPreset(preset)}
-                  title={preset.name}
-                >
-                  <div className="te-preset-swatch">
-                    <span style={{ background: previewColors.bg }} />
-                    <span style={{ background: previewColors.gold }} />
-                    <span style={{ background: previewColors.cyan }} />
-                    <span style={{ background: previewColors.text }} />
-                  </div>
-                  <span className="te-preset-name">{preset.name}</span>
-                </button>
-              );
-            })}
+            {currentPresets.map(preset => (
+              <button
+                key={preset.name}
+                className="te-preset"
+                onClick={() => applyPreset(preset)}
+                title={preset.name}
+              >
+                <div className="te-preset-swatch">
+                  <span style={{ background: preset.colors.bg }} />
+                  <span style={{ background: preset.colors.gold }} />
+                  <span style={{ background: preset.colors.cyan }} />
+                  <span style={{ background: preset.colors.text }} />
+                </div>
+                <span className="te-preset-name">{preset.name}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* 颜色变量编辑 */}
         <div className="te-section">
           <label className="te-label">{t("themeEditor.colors")}</label>
           <div className="te-colors">
@@ -283,7 +263,6 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
           </div>
         </div>
 
-        {/* 隐藏的文件输入（用于导入） */}
         <input
           ref={fileInputRef}
           type="file"
