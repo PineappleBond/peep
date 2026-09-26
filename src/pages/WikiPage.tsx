@@ -20,6 +20,7 @@ import { WikiReader } from "../components/wiki/WikiReader";
 import { WikiEditor } from "../components/wiki/WikiEditor";
 import { Dialog } from "../components/Dialog";
 import { Spinner } from "../components/Spinner";
+import { ExportDialog } from "../components/ExportDialog";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 import { toast } from "../core/toast";
 import { registerShortcuts } from "../core/shortcuts";
@@ -33,6 +34,8 @@ export function WikiPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingDoc, setDeletingDoc] = useState<WikiDocument | null>(null);
   const [existingTags, setExistingTags] = useState<string[]>([]);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [wikiDocs, setWikiDocs] = useState<WikiDocument[]>([]);
   const wikiListRef = useRef<WikiListHandle>(null);
   const selectedDocRef = useRef<WikiDocument | null>(null);
 
@@ -210,62 +213,21 @@ export function WikiPage() {
     setEditingDoc(undefined);
   }, []);
 
-  // 导出 llms.txt
+  // 导出 llms.txt / MD / JSON / CSV
   const handleExport = useCallback(async () => {
     if (!person?.id) return;
     try {
       const result = await listWikiDocs(person.id, { pageSize: 9999 });
-      const docs = result.docs;
+      setWikiDocs(result.docs);
 
-      if (docs.length === 0) {
+      if (result.docs.length === 0) {
         toast.warn(t("wiki.noDocsToExport"));
         return;
       }
 
-      // 按标签分组
-      const tagMap = new Map<string, WikiDocument[]>();
-      const untagged: WikiDocument[] = [];
-      for (const doc of docs) {
-        if (doc.tags.length === 0) {
-          untagged.push(doc);
-        } else {
-          for (const tag of doc.tags) {
-            if (!tagMap.has(tag)) tagMap.set(tag, []);
-            tagMap.get(tag)?.push(doc);
-          }
-        }
-      }
-
-      let md = `# ${t("wiki.knowledgeBase", { name: person.name || t("common.unnamed") })}\n\n`;
-      md += `> ${t("wiki.knowledgeBaseDesc", { name: person.name || t("common.unnamed") })}\n\n`;
-
-      const renderDocs = (list: WikiDocument[]) =>
-        list
-          .map(d => {
-            const preview = d.content.split("\n")[0].slice(0, 100) || t("wiki.noContent");
-            return `- [${d.title || t("wiki.noTitle")}](#doc-${d.id}): ${preview}`;
-          })
-          .join("\n");
-
-      for (const [tag, list] of Array.from(tagMap.entries()).sort((a, b) =>
-        a[0].localeCompare(b[0]),
-      )) {
-        md += `## ${tag}\n\n${renderDocs(list)}\n\n`;
-      }
-      if (untagged.length > 0) {
-        md += `## ${t("wiki.uncategorized")}\n\n${renderDocs(untagged)}\n\n`;
-      }
-
-      const blob = new Blob([md], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `llms-${person.name || "wiki"}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(t("common.exportSuccess"));
+      setExportOpen(true);
     } catch (err) {
-      console.error("[WikiPage] 导出失败", err);
+      console.error("[WikiPage] 加载导出文档失败", err);
       toast.error(t("wiki.exportFailed"));
     }
   }, [person, t]);
@@ -376,6 +338,14 @@ export function WikiPage() {
           </p>
         )}
       </Dialog>
+
+      {/* 导出对话框 */}
+      <ExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        person={person}
+        wikiDocs={wikiDocs}
+      />
     </div>
   );
 }

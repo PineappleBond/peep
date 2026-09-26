@@ -12,6 +12,7 @@ import { LiurenViewDialog } from "../components/daliuren/LiurenViewDialog";
 import { LiurenEditDialog } from "../components/daliuren/LiurenEditDialog";
 import { LiurenDeleteDialog } from "../components/daliuren/LiurenDeleteDialog";
 import { Spinner } from "../components/Spinner";
+import { ExportDialog } from "../components/ExportDialog";
 import type { LiurenRecord, Person } from "../core/personDb";
 import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
 import { registerDaLiuRenCallbacks } from "../core/debugApi";
@@ -41,6 +42,7 @@ export function DaLiuRenPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dialogRecord, setDialogRecord] = useState<LiurenRecord | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // LiurenList 组件 ref（用于调试 API 设置过滤条件）
   const liurenListRef = useRef<LiurenListHandle>(null);
@@ -291,6 +293,14 @@ export function DaLiuRenPage() {
         onClose={() => setDeleteDialogOpen(false)}
         record={dialogRecord}
         onDeleted={handleDeleted}
+      />
+
+      {/* 导出对话框 */}
+      <ExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        person={person}
+        liurenRecords={selectedRecord ? [selectedRecord] : []}
       />
     </div>
   );

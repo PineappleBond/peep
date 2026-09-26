@@ -10,7 +10,9 @@ import { HoroscopeBar } from "../components/HoroscopeBar";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { globalEvents } from "../core/events";
 import { registerZiWeiCallbacks } from "../core/debugApi";
+import { ExportDialog } from "../components/ExportDialog";
 import type { Person } from "../core/personDb";
+import { useDefaultPerson } from "../core/usePageInit";
 
 export function ZiweiPage() {
   const { t } = useI18n();
@@ -19,11 +21,15 @@ export function ZiweiPage() {
   const z = useZwds(input);
   const zRef = useRef(z);
   zRef.current = z;
+  const [exportOpen, setExportOpen] = useState(false);
+
+  // 默认人物加载
+  const { person } = useDefaultPerson();
 
   // 监听人物变更事件
   useEffect(() => {
-    const handlePersonChanged = (person: Person) => {
-      setInput(person);
+    const handlePersonChanged = (p: Person) => {
+      setInput(p);
       setGenId(g => g + 1);
     };
 
@@ -52,6 +58,14 @@ export function ZiweiPage() {
           {t("ziwei.errorMessage")}
         </div>
       )}
+
+      {/* 导出对话框 */}
+      <ExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        person={person}
+        zwds={z}
+      />
     </div>
   );
 }
