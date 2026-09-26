@@ -122,10 +122,6 @@ textarea:focus-visible,
 .db:focus-visible,
 .p-detail-btn:focus-visible,
 .pd-close:focus-visible,
-.liuren-new-btn:focus-visible,
-.liuren-tag-filter:focus-visible,
-.wiki-new-btn:focus-visible,
-.wiki-tag-filter:focus-visible,
 .dlg-close:focus-visible {
   outline: none;
   /* 这些元素已有各自的 border-color / box-shadow 焦点反馈 */
@@ -139,8 +135,7 @@ textarea:focus-visible,
 }
 
 /* 列表项（可点击 div）焦点样式 */
-.liuren-list-item:focus-visible,
-.wiki-list-item:focus-visible {
+.record-list-item:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: -2px;
   border-color: var(--line-strong);
@@ -148,15 +143,13 @@ textarea:focus-visible,
 }
 
 /* 图标操作按钮焦点样式 */
-.liuren-action-btn:focus-visible,
-.wiki-action-btn:focus-visible {
+.record-action-btn:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 1px;
 }
 
 /* 分页按钮焦点样式 */
-.liuren-list-pagination button:focus-visible,
-.wiki-list-pagination button:focus-visible {
+.record-list-pagination button:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 1px;
 }
@@ -178,16 +171,14 @@ textarea:focus-visible,
 .export-tabs button:focus-visible,
 .seg button:focus-visible,
 .syn-foot button:focus-visible,
-.liuren-search-input:focus-visible,
-.wiki-search-input:focus-visible {
+.record-search-input:focus-visible {
   outline: none;
   border-color: var(--line-strong);
   box-shadow: 0 0 10px rgba(85, 215, 255, 0.3);
 }
 
 /* 搜索输入框使用 :focus-visible（与 :focus 区分键盘/鼠标） */
-.liuren-search-input:focus-visible,
-.wiki-search-input:focus-visible {
+.record-search-input:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
@@ -3322,7 +3313,7 @@ body {
     padding: 12px 10px;
   }
 
-  .liuren-list {
+  .record-list {
     padding: 8px;
     gap: 6px;
   }
@@ -3346,8 +3337,8 @@ body {
   }
 }
 
-/* ── 左侧列表 ── */
-.liuren-list {
+/* ── 左侧列表（大六壬 / Wiki 共用样式） ── */
+.record-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3361,12 +3352,12 @@ body {
   overflow: hidden;
 }
 
-.liuren-list-header {
+.record-list-header {
   display: flex;
   gap: 8px;
 }
 
-.liuren-new-btn {
+.record-new-btn {
   flex: 1;
   padding: 8px 14px;
   border-radius: 8px;
@@ -3380,26 +3371,26 @@ body {
   letter-spacing: 0.1em;
 }
 
-.liuren-new-btn:hover {
+.record-new-btn:hover {
   background: linear-gradient(135deg, rgba(243, 201, 107, 0.22), rgba(219, 166, 60, 0.15));
   box-shadow: 0 0 14px rgba(243, 201, 107, 0.35), inset 0 0 6px rgba(243, 201, 107, 0.1);
   transform: translateY(-1px);
 }
 
-.liuren-new-btn:active {
+.record-new-btn:active {
   transform: translateY(0);
 }
 
-.liuren-new-btn:focus-visible {
+.record-new-btn:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
-.liuren-list-search {
+.record-list-search {
   display: flex;
 }
 
-.liuren-search-input {
+.record-search-input {
   width: 100%;
   padding: 6px 10px;
   border-radius: 6px;
@@ -3412,28 +3403,28 @@ body {
   transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
 }
 
-.liuren-search-input:focus {
+.record-search-input:focus {
   border-color: var(--line-strong);
   box-shadow: 0 0 10px rgba(85, 215, 255, 0.22), inset 0 0 4px rgba(85, 215, 255, 0.05);
   background: rgba(0, 0, 0, 0.35);
 }
 
-.liuren-search-input::placeholder {
+.record-search-input::placeholder {
   color: var(--faint);
   transition: opacity 0.2s;
 }
 
-.liuren-search-input:focus::placeholder {
+.record-search-input:focus::placeholder {
   opacity: 0.5;
 }
 
-.liuren-list-tags {
+.record-list-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
 
-.liuren-tag-filter {
+.record-tag-filter {
   padding: 2px 8px;
   border-radius: 10px;
   border: 1px solid var(--line);
@@ -3445,25 +3436,25 @@ body {
   transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
-.liuren-tag-filter:hover {
+.record-tag-filter:hover {
   border-color: var(--line-strong);
   color: var(--text);
   background: rgba(217, 228, 255, 0.02);
 }
 
-.liuren-tag-filter.active {
+.record-tag-filter.active {
   border-color: rgba(243, 201, 107, 0.5);
   background: linear-gradient(135deg, rgba(243, 201, 107, 0.14), rgba(219, 166, 60, 0.06));
   color: var(--gold);
   box-shadow: 0 0 6px rgba(243, 201, 107, 0.15);
 }
 
-.liuren-tag-filter:focus-visible {
+.record-tag-filter:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 1px;
 }
 
-.liuren-list-items {
+.record-list-items {
   flex: 1;
   overflow-y: auto;
   display: flex;
@@ -3474,24 +3465,24 @@ body {
   scrollbar-color: rgba(96, 165, 250, 0.15) transparent;
 }
 
-.liuren-list-items::-webkit-scrollbar {
+.record-list-items::-webkit-scrollbar {
   width: 4px;
 }
 
-.liuren-list-items::-webkit-scrollbar-track {
+.record-list-items::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.liuren-list-items::-webkit-scrollbar-thumb {
+.record-list-items::-webkit-scrollbar-thumb {
   background: rgba(96, 165, 250, 0.15);
   border-radius: 2px;
 }
 
-.liuren-list-items::-webkit-scrollbar-thumb:hover {
+.record-list-items::-webkit-scrollbar-thumb:hover {
   background: rgba(96, 165, 250, 0.25);
 }
 
-.liuren-list-empty {
+.record-list-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3503,20 +3494,13 @@ body {
   text-align: center;
 }
 
-.liuren-list-empty::before {
-  content: "☰";
+.record-list-empty::before {
   font-size: 1.8rem;
   opacity: 0.3;
   filter: grayscale(0.5);
-  animation: liurenEmptyFloat 4s ease-in-out infinite;
 }
 
-@keyframes liurenEmptyFloat {
-  0%, 100% { transform: translateY(0); opacity: 0.3; }
-  50%      { transform: translateY(-6px); opacity: 0.5; }
-}
-
-.liuren-list-item {
+.record-list-item {
   position: relative;
   padding: 8px 10px;
   border-radius: 6px;
@@ -3525,13 +3509,13 @@ body {
   transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
-.liuren-list-item:hover {
+.record-list-item:hover {
   background: rgba(85, 215, 255, 0.05);
   border-color: var(--line);
   transform: translateX(2px);
 }
 
-.liuren-list-item.active {
+.record-list-item.active {
   background: rgba(243, 201, 107, 0.08);
   border-color: rgba(243, 201, 107, 0.4);
   border-left: 2px solid var(--gold);
@@ -3539,23 +3523,24 @@ body {
   box-shadow: 0 0 10px rgba(243, 201, 107, 0.18), inset 0 0 0 1px rgba(243, 201, 107, 0.05);
 }
 
-.liuren-list-item.active:hover {
+.record-list-item.active:hover {
   transform: translateX(2px);
 }
 
-.liuren-list-item-main {
+.record-list-item-main {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.liuren-list-item-time {
+.record-list-item-time {
   font-size: 0.65rem;
   color: var(--faint);
   letter-spacing: 0.02em;
 }
 
-.liuren-list-item-question {
+/* 列表项主文本（悬停/选中变色） */
+.record-list-item-text {
   font-size: 0.78rem;
   color: var(--text);
   overflow: hidden;
@@ -3565,22 +3550,22 @@ body {
   transition: color 0.15s;
 }
 
-.liuren-list-item:hover .liuren-list-item-question {
+.record-list-item:hover .record-list-item-text {
   color: var(--cyan);
 }
 
-.liuren-list-item.active .liuren-list-item-question {
+.record-list-item.active .record-list-item-text {
   color: var(--gold);
 }
 
-.liuren-list-item-tags {
+.record-list-item-tags {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
   margin-top: 2px;
 }
 
-.liuren-list-item-tag {
+.record-list-item-tag {
   padding: 1px 6px;
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(85, 215, 255, 0.1), rgba(85, 215, 255, 0.04));
@@ -3590,14 +3575,15 @@ body {
   letter-spacing: 0.03em;
 }
 
-.liuren-list-item-tag-more {
+.record-list-item-tag-more {
   padding: 1px 4px;
   color: var(--faint);
   font-size: 0.6rem;
   font-style: italic;
 }
 
-.liuren-list-item-actions {
+/* 列表项操作按钮（悬停/焦点时显示） */
+.record-list-item-actions {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -3608,13 +3594,14 @@ body {
   transition: opacity .15s cubic-bezier(.4,0,.2,1);
 }
 
-.liuren-list-item.hovered .liuren-list-item-actions,
-.liuren-list-item:focus-within .liuren-list-item-actions {
+.record-list-item.hovered .record-list-item-actions,
+.record-list-item.visible .record-list-item-actions,
+.record-list-item:focus-within .record-list-item-actions {
   opacity: 1;
   pointer-events: auto;
 }
 
-.liuren-action-btn {
+.record-action-btn {
   width: 22px;
   height: 22px;
   display: flex;
@@ -3631,21 +3618,21 @@ body {
   transition: color .15s cubic-bezier(.4,0,.2,1), background .15s cubic-bezier(.4,0,.2,1), border-color .15s cubic-bezier(.4,0,.2,1), box-shadow .15s cubic-bezier(.4,0,.2,1), opacity .15s cubic-bezier(.4,0,.2,1), transform .15s cubic-bezier(.4,0,.2,1);
 }
 
-.liuren-action-btn:hover {
+.record-action-btn:hover {
   border-color: var(--cyan);
   color: var(--cyan);
   background: rgba(85, 215, 255, 0.14);
   box-shadow: 0 0 6px rgba(85, 215, 255, 0.2);
 }
 
-.liuren-action-delete:hover {
+.record-action-delete:hover {
   border-color: var(--danger);
   color: var(--danger);
   background: rgba(248, 113, 113, 0.14);
   box-shadow: 0 0 6px rgba(248, 113, 113, 0.2);
 }
 
-.liuren-list-pagination {
+.record-list-pagination {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3654,7 +3641,7 @@ body {
   border-top: 1px solid var(--line);
 }
 
-.liuren-list-pagination button {
+.record-list-pagination button {
   width: 24px;
   height: 24px;
   display: flex;
@@ -3669,7 +3656,7 @@ body {
   transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
 }
 
-.liuren-list-pagination button:hover:not(:disabled) {
+.record-list-pagination button:hover:not(:disabled) {
   border-color: var(--cyan);
   color: var(--cyan);
   background: rgba(85, 215, 255, 0.08);
@@ -3677,18 +3664,29 @@ body {
   transform: translateY(-1px);
 }
 
-.liuren-list-pagination button:active:not(:disabled) {
+.record-list-pagination button:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.liuren-list-pagination button:disabled {
+.record-list-pagination button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-.liuren-pagination-info {
+.record-pagination-info {
   font-size: 0.7rem;
   color: var(--dim);
+}
+
+/* ── 大六壬列表特有样式 ── */
+.record-list-empty.liuren-empty::before {
+  content: "☰";
+  animation: liurenEmptyFloat 4s ease-in-out infinite;
+}
+
+@keyframes liurenEmptyFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50%      { transform: translateY(-6px); opacity: 0.5; }
 }
 
 /* ── 右侧盘面区 ── */
@@ -5036,215 +5034,12 @@ body {
  * Wiki 列表样式（对齐大六壬列表设计语言）
  * ======================================== */
 
-.wiki-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(10, 16, 34, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 10px;
-  max-height: calc(100vh - 100px);
-  overflow: hidden;
-}
-
-.wiki-list-header {
-  display: flex;
-  gap: 8px;
-}
-
-.wiki-new-btn {
-  flex: 1;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(243, 201, 107, 0.4);
-  background: linear-gradient(135deg, rgba(243, 201, 107, 0.12), rgba(219, 166, 60, 0.08));
-  color: var(--gold);
-  font-size: 0.8rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
-  letter-spacing: 0.1em;
-}
-
-.wiki-new-btn:hover {
-  background: linear-gradient(135deg, rgba(243, 201, 107, 0.22), rgba(219, 166, 60, 0.15));
-  box-shadow: 0 0 14px rgba(243, 201, 107, 0.35), inset 0 0 6px rgba(243, 201, 107, 0.1);
-  transform: translateY(-1px);
-}
-
-.wiki-new-btn:active {
-  transform: translateY(0);
-}
-
-.wiki-list-search {
-  display: flex;
-}
-
-.wiki-search-input {
-  width: 100%;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--text);
-  font-size: 0.75rem;
-  font-family: inherit;
-  outline: none;
-  transition: color .25s cubic-bezier(.4,0,.2,1), background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1), opacity .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1);
-}
-
-.wiki-search-input:focus {
-  border-color: var(--line-strong);
-  box-shadow: 0 0 10px rgba(85, 215, 255, 0.22), inset 0 0 4px rgba(85, 215, 255, 0.05);
-  background: rgba(0, 0, 0, 0.35);
-}
-
-.wiki-search-input::placeholder {
-  color: var(--faint);
-  transition: opacity 0.2s;
-}
-
-.wiki-search-input:focus::placeholder {
-  opacity: 0.5;
-}
-
-.wiki-list-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.wiki-tag-filter {
-  padding: 2px 8px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--dim);
-  font-size: 0.65rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
-}
-
-.wiki-tag-filter:hover {
-  border-color: var(--line-strong);
-  color: var(--text);
-  background: rgba(217, 228, 255, 0.02);
-}
-
-.wiki-tag-filter.active {
-  border-color: rgba(243, 201, 107, 0.5);
-  background: linear-gradient(135deg, rgba(243, 201, 107, 0.14), rgba(219, 166, 60, 0.06));
-  color: var(--gold);
-  box-shadow: 0 0 6px rgba(243, 201, 107, 0.15);
-}
-
-.wiki-list-items {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 120px;
-}
-
-.wiki-list-items::-webkit-scrollbar {
-  width: 4px;
-}
-
-.wiki-list-items::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.wiki-list-items::-webkit-scrollbar-thumb {
-  background: rgba(96, 165, 250, 0.15);
-  border-radius: 2px;
-}
-
-.wiki-list-items::-webkit-scrollbar-thumb:hover {
-  background: rgba(96, 165, 250, 0.25);
-}
-
-.wiki-list-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 120px;
-  color: var(--faint);
-  font-size: 0.75rem;
-  text-align: center;
-}
-
-.wiki-list-empty::before {
+/* ── Wiki 列表特有样式 ── */
+.record-list-empty.wiki-empty::before {
   content: "📖";
-  font-size: 1.8rem;
-  opacity: 0.3;
-  filter: grayscale(0.5);
 }
 
-.wiki-list-item {
-  position: relative;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
-}
-
-.wiki-list-item:hover {
-  background: rgba(85, 215, 255, 0.05);
-  border-color: var(--line);
-  transform: translateX(2px);
-}
-
-.wiki-list-item.active {
-  background: rgba(243, 201, 107, 0.08);
-  border-color: rgba(243, 201, 107, 0.4);
-  border-left: 2px solid var(--gold);
-  padding-left: 9px;
-  box-shadow: 0 0 10px rgba(243, 201, 107, 0.18), inset 0 0 0 1px rgba(243, 201, 107, 0.05);
-}
-
-.wiki-list-item.active:hover {
-  transform: translateX(2px);
-}
-
-.wiki-list-item-main {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.wiki-list-item-time {
-  font-size: 0.65rem;
-  color: var(--faint);
-  letter-spacing: 0.02em;
-}
-
-.wiki-list-item-title {
-  font-size: 0.78rem;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-  transition: color 0.15s;
-}
-
-.wiki-list-item:hover .wiki-list-item-title {
-  color: var(--cyan);
-}
-
-.wiki-list-item.active .wiki-list-item-title {
-  color: var(--gold);
-}
-
-.wiki-list-item-person {
+.record-list-item-person {
   font-size: 0.7rem;
   color: var(--dim);
   overflow: hidden;
@@ -5252,132 +5047,12 @@ body {
   white-space: nowrap;
 }
 
-.wiki-list-item-person::before {
+.record-list-item-person::before {
   content: "◎";
   margin-right: 4px;
   color: var(--cyan);
   opacity: 0.6;
   font-size: 0.6rem;
-}
-
-.wiki-list-item-tags {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-top: 2px;
-}
-
-.wiki-list-item-tag {
-  padding: 1px 6px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(85, 215, 255, 0.1), rgba(85, 215, 255, 0.04));
-  border: 1px solid rgba(85, 215, 255, 0.2);
-  color: var(--cyan);
-  font-size: 0.6rem;
-  letter-spacing: 0.03em;
-}
-
-.wiki-list-item-tag-more {
-  padding: 1px 4px;
-  color: var(--faint);
-  font-size: 0.6rem;
-  font-style: italic;
-}
-
-.wiki-list-item-actions {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  transform: translateX(4px);
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
-  pointer-events: none;
-}
-
-.wiki-list-item:hover .wiki-list-item-actions,
-.wiki-list-item-actions.visible {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
-}
-
-.wiki-action-btn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  border: 1px solid var(--line);
-  background: rgba(10, 16, 34, 0.7);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  color: var(--dim);
-  font-size: 0.7rem;
-  cursor: pointer;
-  transition: color .15s cubic-bezier(.4,0,.2,1), background .15s cubic-bezier(.4,0,.2,1), border-color .15s cubic-bezier(.4,0,.2,1), box-shadow .15s cubic-bezier(.4,0,.2,1), opacity .15s cubic-bezier(.4,0,.2,1), transform .15s cubic-bezier(.4,0,.2,1);
-}
-
-.wiki-action-btn:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  background: rgba(85, 215, 255, 0.14);
-  box-shadow: 0 0 6px rgba(85, 215, 255, 0.2);
-}
-
-.wiki-action-delete:hover {
-  border-color: var(--danger);
-  color: var(--danger);
-  background: rgba(248, 113, 113, 0.14);
-  box-shadow: 0 0 6px rgba(248, 113, 113, 0.2);
-}
-
-.wiki-list-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding-top: 6px;
-  border-top: 1px solid var(--line);
-}
-
-.wiki-list-pagination button {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--dim);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1), opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
-}
-
-.wiki-list-pagination button:hover:not(:disabled) {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  background: rgba(85, 215, 255, 0.08);
-  box-shadow: 0 0 8px rgba(85, 215, 255, 0.2);
-  transform: translateY(-1px);
-}
-
-.wiki-list-pagination button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.wiki-list-pagination button:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.wiki-pagination-info {
-  font-size: 0.7rem;
-  color: var(--dim);
 }
 
 /* ════════════════════════════════════════════════════

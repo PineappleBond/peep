@@ -106,19 +106,19 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
   };
 
   return (
-    <div className="liuren-list">
+    <div className="record-list">
       {/* 顶部操作区 */}
-      <div className="liuren-list-header">
-        <button className="liuren-new-btn" onClick={onNewClick}>
+      <div className="record-list-header">
+        <button className="record-new-btn" onClick={onNewClick}>
           + 新建起课
         </button>
       </div>
 
       {/* 搜索区 */}
-      <div className="liuren-list-search">
+      <div className="record-list-search">
         <input
           type="text"
-          className="liuren-search-input"
+          className="record-search-input"
           placeholder="搜索占事、备注..."
           value={searchText}
           onChange={(e) => handleSearchChange(e.target.value)}
@@ -128,11 +128,11 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
 
       {/* Tag 筛选 */}
       {allTags.length > 0 && (
-        <div className="liuren-list-tags">
+        <div className="record-list-tags">
           {allTags.map((tag) => (
             <button
               key={tag}
-              className={`liuren-tag-filter ${selectedTags.includes(tag) ? "active" : ""}`}
+              className={`record-tag-filter ${selectedTags.includes(tag) ? "active" : ""}`}
               onClick={() => handleTagToggle(tag)}
             >
               {tag}
@@ -142,9 +142,9 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
       )}
 
       {/* 列表区 */}
-      <div className="liuren-list-items">
+      <div className="record-list-items">
         {records.length === 0 ? (
-          <div className="liuren-list-empty">
+          <div className="record-list-empty liuren-empty">
             {searchText || selectedTags.length > 0
               ? "未找到匹配的记录"
               : "暂无起课记录"}
@@ -153,7 +153,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           records.map((record) => (
             <div
               key={record.id}
-              className={`liuren-list-item ${selectedId === record.id ? "active" : ""} ${hoveredId === record.id ? "hovered" : ""}`}
+              className={`record-list-item ${selectedId === record.id ? "active" : ""} ${hoveredId === record.id ? "hovered" : ""}`}
               onClick={() => onSelect(record)}
               onMouseEnter={() => setHoveredId(record.id ?? null)}
               onMouseLeave={() => setHoveredId(null)}
@@ -166,32 +166,32 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                 }
               }}
             >
-              <div className="liuren-list-item-main">
-                <div className="liuren-list-item-time">
+              <div className="record-list-item-main">
+                <div className="record-list-item-time">
                   {formatRelativeTime(record.savedAt)}
                 </div>
-                <div className="liuren-list-item-question">
+                <div className="record-list-item-text">
                   {record.question || "（无占事）"}
                 </div>
                 {record.tags.length > 0 && (
-                  <div className="liuren-list-item-tags">
+                  <div className="record-list-item-tags">
                     {record.tags.slice(0, 3).map((tag) => (
-                      <span key={tag} className="liuren-list-item-tag">
+                      <span key={tag} className="record-list-item-tag">
                         {tag}
                       </span>
                     ))}
                     {record.tags.length > 3 && (
-                      <span className="liuren-list-item-tag-more">
+                      <span className="record-list-item-tag-more">
                         +{record.tags.length - 3}
                       </span>
                     )}
                   </div>
                 )}
               </div>
-              <div className="liuren-list-item-actions">
+              <div className="record-list-item-actions">
                 {onViewClick && (
                   <button
-                    className="liuren-action-btn"
+                    className="record-action-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       onViewClick(record);
@@ -203,7 +203,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                   </button>
                 )}
                 <button
-                  className="liuren-action-btn"
+                  className="record-action-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     onEditClick(record);
@@ -214,7 +214,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
                   ✎
                 </button>
                 <button
-                  className="liuren-action-btn liuren-action-delete"
+                  className="record-action-btn record-action-delete"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteClick(record);
@@ -232,7 +232,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
 
       {/* 分页 */}
       {total > pageSize && (
-        <div className="liuren-list-pagination">
+        <div className="record-list-pagination">
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
@@ -240,7 +240,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
           >
             ‹
           </button>
-          <span className="liuren-pagination-info">
+          <span className="record-pagination-info">
             {page} / {totalPages}
           </span>
           <button

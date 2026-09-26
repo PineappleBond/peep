@@ -117,19 +117,19 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   };
 
   return (
-    <div className="wiki-list">
+    <div className="record-list">
       {/* 顶部操作区 */}
-      <div className="wiki-list-header">
-        <button className="wiki-new-btn" onClick={onNewClick}>
+      <div className="record-list-header">
+        <button className="record-new-btn" onClick={onNewClick}>
           + 新建文档
         </button>
       </div>
 
       {/* 搜索区 */}
-      <div className="wiki-list-search">
+      <div className="record-list-search">
         <input
           type="text"
-          className="wiki-search-input"
+          className="record-search-input"
           placeholder="搜索标题、内容..."
           value={searchText}
           onChange={(e) => handleSearchChange(e.target.value)}
@@ -139,11 +139,11 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
 
       {/* Tag 筛选 */}
       {allTags.length > 0 && (
-        <div className="wiki-list-tags">
+        <div className="record-list-tags">
           {allTags.map((tag) => (
             <button
               key={tag}
-              className={`wiki-tag-filter ${selectedTags.includes(tag) ? "active" : ""}`}
+              className={`record-tag-filter ${selectedTags.includes(tag) ? "active" : ""}`}
               onClick={() => handleTagToggle(tag)}
             >
               {tag}
@@ -153,9 +153,9 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
       )}
 
       {/* 列表区 */}
-      <div className="wiki-list-items">
+      <div className="record-list-items">
         {docs.length === 0 ? (
-          <div className="wiki-list-empty">
+          <div className="record-list-empty wiki-empty">
             {searchText || selectedTags.length > 0
               ? "未找到匹配的文档"
               : "暂无文档"}
@@ -164,7 +164,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           docs.map((doc) => (
             <div
               key={doc.id}
-              className={`wiki-list-item ${selectedId === doc.id ? "active" : ""}`}
+              className={`record-list-item ${selectedId === doc.id ? "active" : ""}`}
               onClick={() => onSelect(doc)}
               onMouseEnter={() => setHoveredId(doc.id ?? null)}
               onMouseLeave={() => setHoveredId(null)}
@@ -177,34 +177,34 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
                 }
               }}
             >
-              <div className="wiki-list-item-main">
-                <div className="wiki-list-item-time">
+              <div className="record-list-item-main">
+                <div className="record-list-item-time">
                   {formatRelativeTime(doc.updatedAt)}
                 </div>
-                <div className="wiki-list-item-title">
+                <div className="record-list-item-text">
                   {doc.title || "（无标题）"}
                 </div>
                 {personName && (
-                  <div className="wiki-list-item-person">{personName}</div>
+                  <div className="record-list-item-person">{personName}</div>
                 )}
                 {doc.tags.length > 0 && (
-                  <div className="wiki-list-item-tags">
+                  <div className="record-list-item-tags">
                     {doc.tags.slice(0, 3).map((tag) => (
-                      <span key={tag} className="wiki-list-item-tag">
+                      <span key={tag} className="record-list-item-tag">
                         {tag}
                       </span>
                     ))}
                     {doc.tags.length > 3 && (
-                      <span className="wiki-list-item-tag-more">
+                      <span className="record-list-item-tag-more">
                         +{doc.tags.length - 3}
                       </span>
                     )}
                   </div>
                 )}
               </div>
-              <div className={`wiki-list-item-actions${hoveredId === doc.id ? " visible" : ""}`}>
+              <div className={`record-list-item-actions${hoveredId === doc.id ? " visible" : ""}`}>
                 <button
-                  className="wiki-action-btn"
+                  className="record-action-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     onEditClick(doc);
@@ -215,7 +215,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
                   ✎
                 </button>
                 <button
-                  className="wiki-action-btn wiki-action-delete"
+                  className="record-action-btn record-action-delete"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteClick(doc);
@@ -233,7 +233,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
 
       {/* 分页 */}
       {total > pageSize && (
-        <div className="wiki-list-pagination">
+        <div className="record-list-pagination">
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
@@ -241,7 +241,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
           >
             &lt;
           </button>
-          <span className="wiki-pagination-info">
+          <span className="record-pagination-info">
             {page} / {totalPages}
           </span>
           <button
