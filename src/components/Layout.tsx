@@ -2,17 +2,13 @@
  * Layout 组件 - 全局布局
  * 包含背景光雾、Header（含 PersonSelector）、main、footer
  */
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { ToastHost } from "./ToastHost";
 import { ShortcutHelp } from "./ShortcutHelp";
-import { ImportDialog } from "./ImportDialog";
-import { SyncDialog } from "./SyncDialog";
-import { CommandPalette } from "./CommandPalette";
-import { GuideOverlay } from "./GuideOverlay";
-import { ThemeEditor } from "./ThemeEditor";
+import { Spinner } from "./Spinner";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
@@ -29,6 +25,15 @@ import {
   markWelcomeCompleted,
   type GuideStep,
 } from "../core/guide";
+
+// ── 重型对话框懒加载：仅在用户触发时才下载对应 chunk，降低首屏 bundle 体积
+const CommandPalette = lazy(() =>
+  import("./CommandPalette").then(m => ({ default: m.CommandPalette })),
+);
+const ImportDialog = lazy(() => import("./ImportDialog").then(m => ({ default: m.ImportDialog })));
+const SyncDialog = lazy(() => import("./SyncDialog").then(m => ({ default: m.SyncDialog })));
+const ThemeEditor = lazy(() => import("./ThemeEditor").then(m => ({ default: m.ThemeEditor })));
+const GuideOverlay = lazy(() => import("./GuideOverlay").then(m => ({ default: m.GuideOverlay })));
 
 const STORAGE_KEY = "zwds-current-person-id";
 
@@ -308,34 +313,32 @@ export function Layout({ children }: LayoutProps) {
       </footer>
       {/* Toast 通知宿主：全局浮动层，渲染在 app 内以便继承主题 */}
       <ToastHost />
-      {/* 快捷键帮助弹窗 */}
+      {/* 快捷键帮助弹窗（体积较小，保持 eager 加载） */}
       <ShortcutHelp />
-      {/* 全局搜索命令面板 */}
-      <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
-      {/* 数据导入对话框 */}
-      <ImportDialog
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImportSuccess={handleImportSuccess}
-      />
-      {/* 多设备同步对话框 */}
-      <SyncDialog
-        open={syncOpen}
-        onClose={() => setSyncOpen(false)}
-        onRestored={handleImportSuccess}
-      />
-      {/* 主题编辑器 */}
-      <ThemeEditor open={themeEditorOpen} onClose={() => setThemeEditorOpen(false)} />
-      {/* 用户引导浮层 */}
-      {guideSteps && (
-        <GuideOverlay
-          steps={guideSteps}
-          currentStep={guideCurrentStep}
-          onGoTo={setGuideCurrentStep}
-          onComplete={handleGuideComplete}
-          onSkip={handleGuideSkip}
+      {/* 重型对话框：懒加载 + 共享 Suspense 占位 */}
+      <Suspense>
+        <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
+        <ImportDialog
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImportSuccess={handleImportSuccess}
         />
-      )}
+        <SyncDialog
+          open={syncOpen}
+          onClose={() => setSyncOpen(false)}
+          onRestored={handleImportSuccess}
+        />
+        <ThemeEditor open={themeEditorOpen} onClose={() => setThemeEditorOpen(false)} />
+        {guideSteps && (
+          <GuideOverlay
+            steps={guideSteps}
+            currentStep={guideCurrentStep}
+            onGoTo={setGuideCurrentStep}
+            onComplete={handleGuideComplete}
+            onSkip={handleGuideSkip}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

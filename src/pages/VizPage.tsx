@@ -7,6 +7,7 @@
  * 2. 调用 useZwds 计算完整盘面
  * 3. 渲染 VizPanel 展示所有可视化
  */
+import "../styles/viz.css";
 import { useZwds, DEFAULT_BIRTH_INPUT } from "../core/useZwds";
 import { VizPanel } from "../components/viz/VizPanel";
 import { useI18n } from "../core/i18n";

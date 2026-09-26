@@ -3,6 +3,7 @@
  * 左侧：历史列表区（30%宽度）
  * 右侧：盘面区（70%宽度）
  */
+import "../styles/daliuren.css";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useI18n } from "../core/i18n";
 import { LiurenList, type LiurenListHandle } from "../components/daliuren/LiurenList";

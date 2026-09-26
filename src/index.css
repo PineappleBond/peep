@@ -1,12 +1,11 @@
 /* ════════════════════════════════════════════════════
    react-zwds · 样式入口
    按功能域拆分至 src/styles/ 下各模块
+   页面专属 CSS 由对应路由组件 import，利用 Vite 的
+   cssCodeSplit 按需加载，降低首屏 CSS 体积
    ════════════════════════════════════════════════════ */
 
 @import "./styles/base.css";
 @import "./styles/layout.css";
 @import "./styles/components.css";
 @import "./styles/ziwei.css";
-@import "./styles/daliuren.css";
-@import "./styles/wiki.css";
-@import "./styles/viz.css";

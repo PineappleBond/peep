@@ -2,7 +2,7 @@
  * 紫微斗数页面 - 从 App.tsx 迁移
  * 展示星盘、运限栏等
  */
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useI18n } from "../core/i18n";
 import { DEFAULT_BIRTH_INPUT, useZwds, type BirthInput } from "../core/useZwds";
 import { Chart } from "../components/Chart";
@@ -10,9 +10,13 @@ import { HoroscopeBar } from "../components/HoroscopeBar";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { globalEvents } from "../core/events";
 import { registerZiWeiCallbacks } from "../core/debugApi";
-import { ExportDialog } from "../components/ExportDialog";
 import type { Person } from "../core/personDb";
 import { useDefaultPerson } from "../core/usePageInit";
+
+// 导出对话框懒加载：仅用户点击导出时下载
+const ExportDialog = lazy(() =>
+  import("../components/ExportDialog").then(m => ({ default: m.ExportDialog })),
+);
 
 export function ZiweiPage() {
   const { t } = useI18n();
@@ -65,12 +69,14 @@ export function ZiweiPage() {
 
       {/* 导出对话框 */}
       <div data-guide="ziwei-export">
-        <ExportDialog
-          open={exportOpen}
-          onClose={() => setExportOpen(false)}
-          person={person}
-          zwds={z}
-        />
+        <Suspense>
+          <ExportDialog
+            open={exportOpen}
+            onClose={() => setExportOpen(false)}
+            person={person}
+            zwds={z}
+          />
+        </Suspense>
       </div>
     </div>
   );

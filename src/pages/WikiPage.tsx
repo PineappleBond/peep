@@ -2,6 +2,7 @@
  * Wiki 知识库页面
  * 左侧文档列表 + 右侧阅读/编辑区，支持新建、编辑、删除、关联跳转
  */
+import "../styles/wiki.css";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useI18n } from "../core/i18n";
 import type { WikiDocument } from "../core/personDb";
