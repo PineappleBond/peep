@@ -145,7 +145,7 @@ describe("终极随机对比测试（200+ 案例）", () => {
 
   testCases.push(...jieqi2024);
 
-  testCases.forEach(({ date, time, name }, idx) => {
+  testCases.forEach(({ date, time, name }, _idx) => {
     it(`${name}: ${date} ${time}`, () => {
       const phpResult = runPhp(date, time);
       const tsResult = runTs(date, time);

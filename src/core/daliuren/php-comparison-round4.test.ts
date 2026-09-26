@@ -68,7 +68,7 @@ function compareTianJiang(php: any, ts: any): string[] {
 }
 
 /** 对比旬空 */
-function compareXunKong(php: any, ts: any): string[] {
+function _compareXunKong(_php: any, _ts: any): string[] {
   const checks: string[] = [];
 
   // PHP 没有直接输出旬空，但可以通过四柱计算
@@ -79,7 +79,7 @@ function compareXunKong(php: any, ts: any): string[] {
 }
 
 /** 对比三传天将 */
-function compareSanchuanTianJiang(php: any, ts: any): string[] {
+function _compareSanchuanTianJiang(_php: any, _ts: any): string[] {
   const checks: string[] = [];
 
   // PHP 输出三传的天将：sanchuan0tianjiang, sanchuan1tianjiang, sanchuan2tianjiang
@@ -90,7 +90,7 @@ function compareSanchuanTianJiang(php: any, ts: any): string[] {
 }
 
 /** 对比昼夜贵人 */
-function compareGuiren(php: any, ts: any): string[] {
+function _compareGuiren(_php: any, _ts: any): string[] {
   const checks: string[] = [];
 
   // PHP 输出 guirenPeriod (day/night)
@@ -151,7 +151,7 @@ describe("辅助计算专项对比测试（第 4 轮）", () => {
       console.log(`日干: PHP=${phpResult.rigan}, TS=${tsResult.fourPillars.dayStem}`);
       console.log(`时支: PHP=${phpResult.shizhi}, TS=${tsResult.fourPillars.hourBranch}`);
       console.log(
-        `天盘: PHP=${JSON.stringify(phpResult.tianpan)}, TS=${JSON.stringify(tsResult.heavenBoard)}`
+        `天盘: PHP=${JSON.stringify(phpResult.tianpan)}, TS=${JSON.stringify(tsResult.heavenBoard)}`,
       );
       console.log(`昼夜: PHP=${phpResult.guirenPeriod}, shunni=${phpResult.shunni}`);
 

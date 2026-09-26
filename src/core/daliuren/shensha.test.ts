@@ -2,7 +2,7 @@
  * 神煞计算测试
  */
 import { describe, expect, it } from "vitest";
-import { calculateShenSha, type ShenSha } from "./shensha";
+import { calculateShenSha } from "./shensha";
 
 describe("神煞计算", () => {
   // 2024-02-04 立春后：甲辰年 丙寅月 甲子日 庚午时

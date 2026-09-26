@@ -61,7 +61,7 @@ const PHP_JIU_ZONG_MEN_NAMES = [
 function compareJiuZongMen(
   php: any,
   ts: any,
-  caseName: string
+  _caseName: string,
 ): { match: boolean; details: string } {
   const phpMethod = php.jiuzongmen;
   const phpName = PHP_JIU_ZONG_MEN_NAMES[phpMethod] || `未知(${phpMethod})`;

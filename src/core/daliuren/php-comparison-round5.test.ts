@@ -32,7 +32,7 @@ function runTs(date: string, time: string): any {
 }
 
 /** 全面对比 */
-function comprehensiveCompare(php: any, ts: any, caseName: string): string[] {
+function comprehensiveCompare(php: any, ts: any, _caseName: string): string[] {
   const checks: string[] = [];
 
   // 1. 四柱
@@ -123,7 +123,7 @@ describe("全面综合对比测试（第 5 轮 - 最终轮）", () => {
     { date: "2025-01-01", time: "12:00", name: "2025元旦" },
     { date: "2025-07-07", time: "01:15", name: "小暑子时" },
     { date: "2025-12-31", time: "23:59", name: "年末" },
-    { date: "2026-01-01", time: "00:00", name: "2026元旦" }
+    { date: "2026-01-01", time: "00:00", name: "2026元旦" },
   );
 
   // 随机案例
@@ -159,7 +159,7 @@ describe("全面综合对比测试（第 5 轮 - 最终轮）", () => {
         checks.forEach(c => console.log(`  - ${c}`));
         console.log(`PHP 天将: ${JSON.stringify(phpResult.tianjiang)}`);
         console.log(
-          `TS 天将: ${JSON.stringify(tsResult.twelveGenerals.map((g: { general: number }) => g.general))}`
+          `TS 天将: ${JSON.stringify(tsResult.twelveGenerals.map((g: { general: number }) => g.general))}`,
         );
       }
 

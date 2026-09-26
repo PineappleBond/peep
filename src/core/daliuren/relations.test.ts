@@ -2,7 +2,7 @@
  * 地支刑冲破害合关系检测测试
  */
 import { describe, expect, it } from "vitest";
-import { findBranchRelations, type BranchRelation } from "./relations";
+import { findBranchRelations } from "./relations";
 
 describe("findBranchRelations 刑冲破害合检测", () => {
   it("六冲：子午冲", () => {
