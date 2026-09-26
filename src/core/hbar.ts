@@ -191,7 +191,15 @@ export function buildDays(
     try {
       const lunar = solar2lunar(solarDate);
       const lunarDay = lunar.lunarDay;
-      const lunarLabel = LUNAR_DAYS[lunarDay - 1] || `${lunarDay}日`;
+      const lunarMonth = lunar.lunarMonth;
+      const isLeap = lunar.isLeap;
+      // 如果是初一，显示农历月份名称；否则显示农历日名称
+      const lunarLabel =
+        lunarDay === 1
+          ? isLeap
+            ? `闰${LUNAR_MONTHS[lunarMonth - 1]}`
+            : LUNAR_MONTHS[lunarMonth - 1]
+          : LUNAR_DAYS[lunarDay - 1] || `${lunarDay}日`;
       const solarStr = `${pickYear}-${pickMonth}-${solarDay}`;
       const gz = dayGanZhi(solarStr);
       list.push({
