@@ -701,6 +701,45 @@
   width: 140px;
 }
 
+/* ── 字段级错误提示 ── */
+.field-error {
+  display: inline-block;
+  color: var(--danger);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+  animation: field-error-in 0.2s ease-out;
+}
+
+.field-error::before {
+  content: "⚠ ";
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+@keyframes field-error-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 输入框有错误时的边框高亮 */
+.field-has-error input,
+.field-has-error select,
+.field-has-error textarea,
+input.field-has-error,
+select.field-has-error,
+textarea.field-has-error {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 15%, transparent);
+}
+
 /* ── 响应式：弹窗 ── */
 @media (max-width: 760px) {
   .dlg-panel {

@@ -12,6 +12,16 @@ import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord, Person } from "../../core/personDb";
 import { useI18n } from "../../core/i18n";
 import { toast } from "../../core/toast";
+import {
+  useFormValidation,
+  requiredRule,
+  type ValidationRules,
+} from "../../core/useFormValidation";
+
+/** 大六壬表单验证规则 */
+const LIUREN_VALIDATION_RULES: ValidationRules<LiurenFormValues> = {
+  question: [requiredRule("validation.questionRequired")],
+};
 
 interface LiurenCreateDialogProps {
   open: boolean;
@@ -40,10 +50,28 @@ export function LiurenCreateDialog({
   const { t } = useI18n();
   const [values, setValues] = useState<LiurenFormValues>(EMPTY_LIUREN_FORM);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  // 统一表单验证
+  const validation = useFormValidation<LiurenFormValues>(LIUREN_VALIDATION_RULES);
 
   const updateValues = (patch: Partial<LiurenFormValues>) => {
-    setValues(prev => ({ ...prev, ...patch }));
+    setValues(prev => {
+      const next = { ...prev, ...patch };
+      // 如果字段已触碰过，实时验证
+      for (const key of Object.keys(patch) as (keyof LiurenFormValues)[]) {
+        if (validation.touched[key]) {
+          requestAnimationFrame(() => validation.validateField(key, next));
+        }
+      }
+      return next;
+    });
+  };
+
+  /** 字段失焦时触发验证 */
+  const handleBlur = (field: keyof LiurenFormValues) => {
+    validation.touchField(field);
+    validation.validateField(field, values);
   };
 
   // 当 Dialog 打开且有 initialData 时，预填充表单
@@ -80,7 +108,8 @@ export function LiurenCreateDialog({
 
   const resetForm = () => {
     setValues(EMPTY_LIUREN_FORM);
-    setError(null);
+    setServerError(null);
+    validation.reset();
   };
 
   const handleClose = () => {
@@ -89,17 +118,19 @@ export function LiurenCreateDialog({
   };
 
   const handleSubmit = async () => {
-    if (!values.question.trim()) {
-      setError(t("daliuren.questionRequired"));
+    setServerError(null);
+
+    // 使用统一验证
+    if (!validation.validateAll(values)) {
       return;
     }
+
     if (person.date == null) {
-      setError(t("daliuren.birthDateNotSet"));
+      setServerError(t("daliuren.birthDateNotSet"));
       return;
     }
 
     setSaving(true);
-    setError(null);
 
     try {
       const now = new Date();
@@ -130,7 +161,7 @@ export function LiurenCreateDialog({
       onClose();
       toast.success(t("common.saveSuccess"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("daliuren.createFailed"));
+      setServerError(e instanceof Error ? e.message : t("daliuren.createFailed"));
     } finally {
       setSaving(false);
     }
@@ -154,12 +185,20 @@ export function LiurenCreateDialog({
       }
     >
       <div className="liuren-dialog-form">
-        {error && (
+        {/* 服务端/业务逻辑错误仍用顶部 alert 显示 */}
+        {serverError && (
           <div className="liuren-form-error" role="alert">
-            {error}
+            {serverError}
           </div>
         )}
-        <LiurenFormFields values={values} onChange={updateValues} disabled={saving} />
+        <LiurenFormFields
+          values={values}
+          onChange={updateValues}
+          disabled={saving}
+          errors={validation.errors}
+          shouldShowError={validation.shouldShowError}
+          onBlur={handleBlur}
+        />
       </div>
     </Dialog>
   );

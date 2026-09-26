@@ -27,6 +27,34 @@ import type { Person } from "../core/personDb";
 import { Dialog } from "./Dialog";
 import { useI18n } from "../core/i18n";
 import { toast } from "../core/toast";
+import {
+  useFormValidation,
+  requiredRule,
+  patternRule,
+  rangeRule,
+  conditionalRequiredRule,
+  type ValidationRules,
+} from "../core/useFormValidation";
+import { FieldError } from "./FieldError";
+
+/** PersonDialog 表单验证规则 */
+const PERSON_VALIDATION_RULES: ValidationRules<BirthInput> = {
+  name: [requiredRule("validation.nameRequired")],
+  date: [
+    requiredRule("validation.invalidDateFormat"),
+    patternRule(/^\d{4}-\d{1,2}-\d{1,2}$/, "validation.invalidDateFormat"),
+  ],
+  timeIndex: [rangeRule(0, 12, "validation.timeIndexOutOfRange")],
+  exactTime: [
+    conditionalRequiredRule(vals => vals.useTrueSolar === true, "validation.trueSolarRequiresTime"),
+  ],
+  timezone: [
+    conditionalRequiredRule(
+      vals => vals.useTrueSolar === true && vals.placeMode === "overseas",
+      "validation.overseasRequiresTimezone",
+    ),
+  ],
+};
 
 type PersonDialogProps = {
   open: boolean;
@@ -44,15 +72,34 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
   const [draft, setDraft] = useState<BirthInput>(initialData || DEFAULT_BIRTH_INPUT);
   const [isDefault, setIsDefault] = useState(initialData?.isDefault ?? false);
 
+  // 统一表单验证
+  const validation = useFormValidation<BirthInput>(PERSON_VALIDATION_RULES);
+
   useEffect(() => {
     if (open) {
       setDraft(initialData || DEFAULT_BIRTH_INPUT);
       setIsDefault(initialData?.isDefault ?? false);
+      validation.reset();
     }
   }, [open, initialData]);
 
-  const set = <K extends keyof BirthInput>(k: K, v: BirthInput[K]) =>
-    setDraft(d => ({ ...d, [k]: v }));
+  const set = <K extends keyof BirthInput>(k: K, v: BirthInput[K]) => {
+    setDraft(d => {
+      const next = { ...d, [k]: v };
+      // 如果字段已触碰过，实时验证
+      if (validation.touched[k]) {
+        // 延迟验证，确保 state 已更新
+        requestAnimationFrame(() => validation.validateField(k, next));
+      }
+      return next;
+    });
+  };
+
+  /** 字段失焦时触发验证 */
+  const handleBlur = <K extends keyof BirthInput>(k: K) => {
+    validation.touchField(k);
+    validation.validateField(k, draft);
+  };
 
   /** 切流派：年界与四化表自动跟随该派默认 */
   const setAlgorithm = (alg: BirthInput["algorithm"]) =>
@@ -165,21 +212,9 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    // 客户端兜底校验（HTML5 校验可能因浏览器差异被绕过）
-    if (!draft.date || !/^\d{4}-\d{1,2}-\d{1,2}$/.test(draft.date)) {
-      toast.warn(t("person.invalidDateFormat"));
-      return;
-    }
-    if (draft.timeIndex < 0 || draft.timeIndex > 12) {
-      toast.warn(t("person.timeIndexOutOfRange"));
-      return;
-    }
-    if (draft.useTrueSolar && !draft.exactTime) {
-      toast.warn(t("person.trueSolarRequiresTime"));
-      return;
-    }
-    if (draft.useTrueSolar && draft.placeMode === "overseas" && !draft.timezone) {
-      toast.warn(t("person.overseasRequiresTimezone"));
+    // 使用统一验证，validateAll 会标记所有字段为已触碰并填充 errors
+    if (!validation.validateAll(draft)) {
+      toast.warn(t("validation.fixErrors"));
       return;
     }
     setSaving(true);
@@ -202,9 +237,15 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
             <input
               value={draft.name}
               onChange={e => set("name", e.target.value)}
+              onBlur={() => handleBlur("name")}
               placeholder={t("person.namePlaceholder")}
               maxLength={12}
               required
+              className={validation.shouldShowError("name") ? "field-has-error" : ""}
+            />
+            <FieldError
+              shouldShow={validation.shouldShowError("name")}
+              message={validation.errors.name ? t(validation.errors.name) : null}
             />
           </label>
 
@@ -269,6 +310,12 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
                 max="2100-12-31"
                 value={draft.date}
                 onChange={e => set("date", e.target.value)}
+                onBlur={() => handleBlur("date")}
+                className={validation.shouldShowError("date") ? "field-has-error" : ""}
+              />
+              <FieldError
+                shouldShow={validation.shouldShowError("date")}
+                message={validation.errors.date ? t(validation.errors.date) : null}
               />
             </label>
           ) : (
@@ -341,6 +388,8 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
               disabled={derivedIdx != null}
               title={derivedIdx != null ? t("person.trueSolarAuto") : undefined}
               onChange={e => set("timeIndex", Number(e.target.value))}
+              onBlur={() => handleBlur("timeIndex")}
+              className={validation.shouldShowError("timeIndex") ? "field-has-error" : ""}
             >
               {TIME_OPTIONS.map(item => (
                 <option key={item.index} value={item.index}>
@@ -348,6 +397,10 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
                 </option>
               ))}
             </select>
+            <FieldError
+              shouldShow={validation.shouldShowError("timeIndex")}
+              message={validation.errors.timeIndex ? t(validation.errors.timeIndex) : null}
+            />
           </label>
 
           <label className="fld">
@@ -446,6 +499,12 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
                 required
                 value={draft.exactTime}
                 onChange={e => set("exactTime", e.target.value)}
+                onBlur={() => handleBlur("exactTime")}
+                className={validation.shouldShowError("exactTime") ? "field-has-error" : ""}
+              />
+              <FieldError
+                shouldShow={validation.shouldShowError("exactTime")}
+                message={validation.errors.exactTime ? t(validation.errors.exactTime) : null}
               />
             </label>
 
@@ -481,6 +540,7 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
                   className="tz-select"
                   value={draft.timezone || browserTimezone()}
                   onChange={e => set("timezone", e.target.value)}
+                  onBlur={() => handleBlur("timezone")}
                 >
                   {timezones.map(tz => (
                     <option key={tz} value={tz}>
@@ -488,6 +548,10 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
                     </option>
                   ))}
                 </select>
+                <FieldError
+                  shouldShow={validation.shouldShowError("timezone")}
+                  message={validation.errors.timezone ? t(validation.errors.timezone) : null}
+                />
               </label>
             ) : (
               <>

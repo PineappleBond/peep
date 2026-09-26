@@ -287,6 +287,16 @@
   font-weight: var(--font-medium);
 }
 
+/* Wiki 编辑器字段级错误 */
+.wiki-editor-field .field-error {
+  margin-top: 2px;
+}
+
+.wiki-editor-field.field-has-error .wiki-editor-title,
+.wiki-editor-field.field-has-error .wiki-editor-textarea {
+  border-color: var(--danger);
+}
+
 /* ── 标题输入 ── */
 .wiki-editor-title {
   width: 100%;

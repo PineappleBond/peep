@@ -680,5 +680,16 @@
   "sync.done": "完成",
   "sync.payloadBad": "载荷格式错误",
   "sync.linkBad": "无效同步链接",
-  "sync.wrongPassword": "密码错误"
+  "sync.wrongPassword": "密码错误",
+
+  "validation.required": "此项不能为空",
+  "validation.nameRequired": "请输入姓名",
+  "validation.invalidDateFormat": "出生日期格式不正确，请使用 YYYY-MM-DD 格式",
+  "validation.timeIndexOutOfRange": "时辰索引超出范围（0~12）",
+  "validation.trueSolarRequiresTime": "启用真太阳时时必须填写出生时刻",
+  "validation.overseasRequiresTimezone": "海外出生时必须选择时区",
+  "validation.questionRequired": "占事问题不能为空",
+  "validation.titleRequired": "标题不能为空",
+  "validation.maxLength": "最多输入 {max} 个字符",
+  "validation.fixErrors": "请修正表单中的错误后再提交"
 }

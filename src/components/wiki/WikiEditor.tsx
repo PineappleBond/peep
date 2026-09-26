@@ -9,6 +9,23 @@ import { TagInput } from "../daliuren/TagInput";
 import { useI18n } from "../../core/i18n";
 import { useUnsavedChanges } from "../../core/useUnsavedChanges";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { FieldError } from "../FieldError";
+import {
+  useFormValidation,
+  requiredRule,
+  type ValidationRules,
+} from "../../core/useFormValidation";
+
+/** Wiki 表单值类型 */
+interface WikiFormValues {
+  title: string;
+  content: string;
+}
+
+/** Wiki 表单验证规则 */
+const WIKI_VALIDATION_RULES: ValidationRules<WikiFormValues> = {
+  title: [requiredRule("validation.titleRequired")],
+};
 
 export interface WikiEditorProps {
   /** 文档数据，undefined 表示新建模式 */
@@ -26,8 +43,7 @@ export interface WikiEditorProps {
 export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: WikiEditorProps) {
   const { t } = useI18n();
   // 表单状态
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [formValues, setFormValues] = useState<WikiFormValues>({ title: "", content: "" });
   const [tags, setTags] = useState<string[]>([]);
   const [linkTargetIds, setLinkTargetIds] = useState<number[]>([]);
   const [linkSearchText, setLinkSearchText] = useState("");
@@ -35,9 +51,12 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
   /** 已关联文档的标题映射（id -> title） */
   const [linkTargetTitles, setLinkTargetTitles] = useState<Record<number, string>>({});
 
+  // 统一表单验证
+  const validation = useFormValidation<WikiFormValues>(WIKI_VALIDATION_RULES);
+
   // UI 状态
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
   /** 是否有未保存的修改（用于离开前确认） */
   const [dirty, setDirty] = useState(false);
   /** 取消编辑时的二次确认弹窗 */
@@ -52,8 +71,7 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
   // 初始化：编辑模式加载数据（含已关联文档及标题），新建模式清空
   useEffect(() => {
     if (doc) {
-      setTitle(doc.title);
-      setContent(doc.content);
+      setFormValues({ title: doc.title, content: doc.content });
       setTags(doc.tags);
       // 加载已关联的文档 ID 及其标题
       (async () => {
@@ -76,8 +94,7 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
         }
       })();
     } else {
-      setTitle("");
-      setContent("");
+      setFormValues({ title: "", content: "" });
       setTags([]);
       setLinkTargetIds([]);
       setLinkTargetTitles({});
@@ -85,6 +102,8 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
     // 初始加载后重置 dirty 状态（避免加载本身触发）
     setDirty(false);
     setCancelConfirmOpen(false);
+    setServerError(null);
+    validation.reset();
   }, [doc]);
 
   // 用户编辑任意字段后标记 dirty
@@ -92,10 +111,30 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
     if (saving) return;
     const handle = setTimeout(() => {
       // 只要表单有内容（标题或正文不为空），就视为有修改
-      if (title.trim() || content.trim()) setDirty(true);
+      if (formValues.title.trim() || formValues.content.trim()) setDirty(true);
     }, 300);
     return () => clearTimeout(handle);
-  }, [title, content, tags, linkTargetIds, saving]);
+  }, [formValues.title, formValues.content, tags, linkTargetIds, saving]);
+
+  /** 更新表单值并实时验证 */
+  const updateFormValues = (patch: Partial<WikiFormValues>) => {
+    setFormValues(prev => {
+      const next = { ...prev, ...patch };
+      // 如果字段已触碰过，实时验证
+      for (const key of Object.keys(patch) as (keyof WikiFormValues)[]) {
+        if (validation.touched[key]) {
+          requestAnimationFrame(() => validation.validateField(key, next));
+        }
+      }
+      return next;
+    });
+  };
+
+  /** 字段失焦时触发验证 */
+  const handleBlur = (field: keyof WikiFormValues) => {
+    validation.touchField(field);
+    validation.validateField(field, formValues);
+  };
 
   // 关联文档搜索（防抖）
   useEffect(() => {
@@ -157,21 +196,22 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
 
   // 保存
   const handleSave = async () => {
-    if (!title.trim()) {
-      setError(t("wiki.editor.titleRequired"));
+    setServerError(null);
+
+    // 使用统一验证
+    if (!validation.validateAll(formValues)) {
       return;
     }
 
     setSaving(true);
-    setError(null);
 
     try {
       const now = Date.now();
       const wikiDoc: WikiDocument = {
         ...(doc?.id != null ? { id: doc.id } : {}),
         personId,
-        title: title.trim(),
-        content: content.trim(),
+        title: formValues.title.trim(),
+        content: formValues.content.trim(),
         tags,
         savedAt: doc?.savedAt ?? now,
         updatedAt: now,
@@ -181,7 +221,7 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
       setDirty(false);
       onCancel();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("common.saveFailed"));
+      setServerError(e instanceof Error ? e.message : t("common.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -210,24 +250,31 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
 
   return (
     <div className="wiki-editor">
-      {/* 错误提示 */}
-      {error && (
+      {/* 服务端/业务逻辑错误 */}
+      {serverError && (
         <div className="wiki-editor-error" role="alert">
-          {error}
+          {serverError}
         </div>
       )}
 
       {/* 标题输入 */}
-      <div className="wiki-editor-field">
+      <div
+        className={`wiki-editor-field${validation.shouldShowError("title") ? " field-has-error" : ""}`}
+      >
         <input
           type="text"
           className="wiki-editor-title"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
+          value={formValues.title}
+          onChange={e => updateFormValues({ title: e.target.value })}
+          onBlur={() => handleBlur("title")}
           placeholder={t("wiki.editor.docTitlePlaceholder")}
           maxLength={200}
           autoFocus
           aria-label={t("wiki.editor.docTitle")}
+        />
+        <FieldError
+          shouldShow={validation.shouldShowError("title")}
+          message={validation.errors.title ? t(validation.errors.title) : null}
         />
       </div>
 
@@ -235,8 +282,8 @@ export function WikiEditor({ doc, personId, existingTags, onSave, onCancel }: Wi
       <div className="wiki-editor-field">
         <textarea
           className="wiki-editor-textarea"
-          value={content}
-          onChange={e => setContent(e.target.value)}
+          value={formValues.content}
+          onChange={e => updateFormValues({ content: e.target.value })}
           placeholder={t("wiki.editor.contentPlaceholder")}
           rows={20}
           maxLength={100000}

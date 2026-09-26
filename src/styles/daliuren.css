@@ -851,6 +851,17 @@
   opacity: 0.7;
 }
 
+/* 大六壬表单字段级错误 */
+.liuren-form-field .field-error {
+  margin-top: 3px;
+}
+
+.liuren-form-field.field-has-error input,
+.liuren-form-field.field-has-error textarea {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 15%, transparent);
+}
+
 .liuren-form-static {
   background: var(--glass-bg-input);
   border: 1px solid color-mix(in srgb, var(--gold) 10%, transparent);

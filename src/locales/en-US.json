@@ -681,5 +681,16 @@
   "sync.done": "Done",
   "sync.payloadBad": "Payload format error",
   "sync.linkBad": "Invalid sync link",
-  "sync.wrongPassword": "Wrong password"
+  "sync.wrongPassword": "Wrong password",
+
+  "validation.required": "This field is required",
+  "validation.nameRequired": "Please enter a name",
+  "validation.invalidDateFormat": "Invalid birth date format, please use YYYY-MM-DD",
+  "validation.timeIndexOutOfRange": "Time index out of range (0~12)",
+  "validation.trueSolarRequiresTime": "Birth time is required when true solar time is enabled",
+  "validation.overseasRequiresTimezone": "Timezone is required for overseas birth",
+  "validation.questionRequired": "Question is required",
+  "validation.titleRequired": "Title is required",
+  "validation.maxLength": "Maximum {max} characters",
+  "validation.fixErrors": "Please fix the errors in the form before submitting"
 }
