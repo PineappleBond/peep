@@ -139,41 +139,34 @@ export function buildYears(
   return list;
 }
 
-/** 计算流月列表（含闰月）：从阳历月转换为农历月 */
+/** 计算流月列表（含闰月）：以农历月为主循环，闰年插入闰月位 */
 export function buildMonths(pickYear: number, yearLeapMonth: number): CellMonth[] {
   const list: CellMonth[] = [];
-  // 遍历阳历月 1-12
-  for (let solarMonth = 1; solarMonth <= 12; solarMonth++) {
-    // 取阳历月的第15天作为代表日期（避免月初跨月问题）
-    const solarDate = new Date(pickYear, solarMonth - 1, 15);
-    try {
-      const lunar = solar2lunar(solarDate);
-      const lunarMonth = lunar.lunarMonth;
-      const lunarYear = lunar.lunarYear;
-      const isLeap = lunar.isLeap;
-      // 如果是正月，显示干支年；否则显示农历月名称
-      const lunarLabel =
-        lunarMonth === 1 && !isLeap
-          ? `${yearGanZhi(lunarYear)}年`
-          : isLeap
-            ? `闰${LUNAR_MONTHS[lunarMonth - 1]}`
-            : LUNAR_MONTHS[lunarMonth - 1];
-      const gz = monthGanZhi(lunarYear, lunarMonth);
+  // 遍历农历月 1-12
+  for (let lunarMonth = 1; lunarMonth <= 12; lunarMonth++) {
+    // 用该农历月的初一近似对应阳历日（取该月15号作为代表）
+    // 通过 solar2lunar 反查：用 pickYear 的 1-12 阳历月15号近似映射
+    // 此处直接用 monthGanZhi 按农历年月计算干支
+    const lunarLabel =
+      lunarMonth === 1 ? `${yearGanZhi(pickYear)}年` : LUNAR_MONTHS[lunarMonth - 1];
+    const gz = monthGanZhi(pickYear, lunarMonth);
+    // 近似对应阳历月：农历月 + 1（粗略，仅用于 solarLabel 显示）
+    const approxSolarMonth = Math.min(lunarMonth + 1, 12);
+    list.push({
+      month: lunarMonth,
+      leap: false,
+      label: lunarLabel,
+      solarLabel: `${approxSolarMonth}月`,
+      gz,
+    });
+    // 如果当前月是闰月月份，在正月之后追加闰月位
+    if (yearLeapMonth > 0 && lunarMonth === yearLeapMonth) {
       list.push({
-        month: solarMonth,
-        leap: isLeap,
-        label: lunarLabel,
-        solarLabel: `${solarMonth}月`,
-        gz,
-      });
-    } catch {
-      // 转换失败时，按农历月处理
-      list.push({
-        month: solarMonth,
-        leap: false,
-        label: LUNAR_MONTHS[solarMonth - 1] || `${solarMonth}月`,
-        solarLabel: `${solarMonth}月`,
-        gz: monthGanZhi(pickYear, solarMonth),
+        month: lunarMonth, // 闰月单元格的 month 取农历闰月月份
+        leap: true,
+        label: `闰${LUNAR_MONTHS[lunarMonth - 1]}`,
+        solarLabel: `${approxSolarMonth}月`,
+        gz, // 闰月沿用本月干支
       });
     }
   }
@@ -188,10 +181,8 @@ export function buildDays(
   effLeap: boolean,
 ): CellDay[] {
   const list: CellDay[] = [];
-  // pickMonth 现在是阳历月，需要获取该月的天数
-  const daysInMonth = new Date(pickYear, pickMonth, 0).getDate(); // 阳历月天数
-
-  for (let solarDay = 1; solarDay <= daysInMonth; solarDay++) {
+  // 使用调用方传入的 monthDays（阳历月天数）
+  for (let solarDay = 1; solarDay <= monthDays; solarDay++) {
     const solarDate = new Date(pickYear, pickMonth - 1, solarDay);
     try {
       const lunar = solar2lunar(solarDate);

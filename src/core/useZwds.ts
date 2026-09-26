@@ -7,14 +7,7 @@ import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
 import type { MutagenTableKey, Scope } from "./utils";
 import { MUTAGEN_TABLES, applyTrueSolar } from "./utils";
-import {
-  daysInLunarMonth,
-  fmtSolar,
-  leapMonthOf,
-  lunarStrToSolarStr,
-  lunarToSolarStr,
-  todayLunar,
-} from "./lunar";
+import { leapMonthOf, lunarStrToSolarStr } from "./lunar";
 import { resolveBirthPlace } from "./place";
 import { buildLifeKline } from "./lifeKline";
 import { analyzeChart } from "./analysis";
@@ -130,9 +123,17 @@ export type TrueSolarInfo = {
 /** 各运限级别的可见状态（大限/流年/流月/流日/流时） */
 export type ScopeVisible = Record<Scope, boolean>;
 
+/** 初始拨盘状态：当前阳历日期+时辰（pick 统一使用阳历） */
 function initPick(): PickState {
-  const t = todayLunar();
-  return { year: t.year, month: t.month, day: t.day, hour: t.hour, leap: t.leap };
+  const now = new Date();
+  const hour = Math.floor((now.getHours() + 1) / 2) % 12; // 0~11 子~亥
+  return {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+    hour,
+    leap: false, // 阳历无闰月
+  };
 }
 
 /** 拨盘年份不早于出生农历年 */
@@ -289,13 +290,15 @@ export function useZwds(input: BirthInput) {
     [activeDecadeIdx, decades, childhood, birthLunarYear],
   );
 
-  /** 当年闰月（0=无）；拨盘的闰月选择仅当与当年闰月吻合时生效 */
+  /** 当年农历闰月（0=无）；buildMonths 需要此参数在正确位置插入闰月位 */
   const yearLeapMonth = useMemo(() => leapMonthOf(pick.year), [pick.year]);
-  const effLeap = pick.leap && pick.month === yearLeapMonth;
+  // pick 已统一为阳历，effLeap 始终为 false（阳历无闰月概念）
+  const effLeap = false;
 
+  /** 阳历月天数（与 buildHbarData 保持一致） */
   const monthDays = useMemo(
-    () => daysInLunarMonth(pick.year, pick.month, effLeap),
-    [pick.year, pick.month, effLeap],
+    () => new Date(pick.year, pick.month, 0).getDate(),
+    [pick.year, pick.month],
   );
   const clampedDay = Math.min(pick.day, monthDays);
 

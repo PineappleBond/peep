@@ -5,7 +5,7 @@
 import { astro } from "iztro";
 import { analyzeChart } from "./analysis";
 import { buildLifeKline, decadesOfChart } from "./lifeKline";
-import { dayGanZhi, daysInLunarMonth, lunarToSolarStr } from "./lunar";
+import { dayGanZhi } from "./lunar";
 import { BRANCHES, LUNAR_DAYS, LUNAR_MONTHS, hourGanZhi, monthGanZhi, yearGanZhi } from "./utils";
 import type { Astrolabe, BirthInput, Zwds } from "./useZwds";
 
@@ -45,23 +45,29 @@ export function makeZwdsFixture(): Zwds {
   const birthLunarYear = a.rawDates.lunarDate.lunarYear;
   const decades = decadesOfChart(a, birthLunarYear);
 
-  // 固定观测点：2026 年农历五月十五 午时（demo 盘 23~32 限内）
+  // 固定观测点：2026 年阳历 5 月 15 日 午时（demo 盘 23~32 限内）
   const pick = { year: 2026, month: 5, day: 15, hour: 6, leap: false };
-  const monthDays = daysInLunarMonth(pick.year, pick.month);
+  // 阳历月天数
+  const monthDays = new Date(pick.year, pick.month, 0).getDate();
   const clampedDay = Math.min(pick.day, monthDays);
-  const months = LUNAR_MONTHS.map((label, i) => ({
-    month: i + 1,
-    leap: false,
-    label,
-    gz: monthGanZhi(pick.year, i + 1),
-  }));
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const solarMonth = i + 1;
+    return {
+      month: solarMonth,
+      leap: false,
+      label: LUNAR_MONTHS[i] || `${solarMonth}月`,
+      solarLabel: `${solarMonth}月`,
+      gz: monthGanZhi(pick.year, solarMonth),
+    };
+  });
   const days = Array.from({ length: monthDays }, (_, i) => {
-    const solar = lunarToSolarStr(pick.year, pick.month, i + 1);
-    return { day: i + 1, label: LUNAR_DAYS[i], gz: solar ? dayGanZhi(solar) : "" };
+    const solarDay = i + 1;
+    const solarStr = `${pick.year}-${pick.month}-${solarDay}`;
+    return { day: solarDay, label: LUNAR_DAYS[i] || `${solarDay}日`, gz: dayGanZhi(solarStr) };
   });
   const dayStem = days[clampedDay - 1].gz.charAt(0);
   const hours = BRANCHES.map((b, i) => ({ hour: i, label: `${b}时`, gz: hourGanZhi(dayStem, i) }));
-  const targetSolar = lunarToSolarStr(pick.year, pick.month, clampedDay)!;
+  const targetSolar = `${pick.year}-${pick.month}-${clampedDay}`;
   const horoscope = a.horoscope(targetSolar, pick.hour);
 
   const age = pick.year - birthLunarYear + 1;
