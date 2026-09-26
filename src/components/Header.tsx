@@ -3,7 +3,7 @@
  * 包含标题、SVG Icon 导航、PersonSelector
  */
 import { useEffect } from "react";
-import { useLocation, NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
 import { LiurenIcon } from "./icons/LiurenIcon";
@@ -39,24 +39,6 @@ type HeaderProps = {
   pluginMenus?: PluginExtensionsView["menus"];
 };
 
-/** 根据路由获取标题键名 */
-function getTitleKeyByPath(pathname: string): string {
-  if (pathname.startsWith("/wiki")) return "nav.wiki";
-  if (pathname.startsWith("/liuren")) return "nav.daliuren";
-  if (pathname.startsWith("/viz")) return "nav.viz";
-  if (pathname.startsWith("/insights")) return "nav.insights";
-  return "nav.ziwei";
-}
-
-/** 根据路由获取副标题键名 */
-function getSubtitleKeyByPath(pathname: string): string {
-  if (pathname.startsWith("/wiki")) return "header.wiki.subtitle";
-  if (pathname.startsWith("/liuren")) return "header.daliuren.subtitle";
-  if (pathname.startsWith("/viz")) return "header.viz.subtitle";
-  if (pathname.startsWith("/insights")) return "header.insights.subtitle";
-  return "header.ziwei.subtitle";
-}
-
 export function Header({
   currentPersonId,
   onSelectPerson,
@@ -69,10 +51,7 @@ export function Header({
   onToggleLocale,
   pluginMenus,
 }: HeaderProps) {
-  const location = useLocation();
   const { t } = useI18n();
-  const titleKey = getTitleKeyByPath(location.pathname);
-  const subtitleKey = getSubtitleKeyByPath(location.pathname);
 
   /** 主题按钮显示文本 */
   const themeLabel = theme === "system" ? "⚙" : theme === "light" ? "☀" : "☾";
@@ -90,8 +69,7 @@ export function Header({
 
   return (
     <header className="top">
-      <h1>{t(titleKey)}</h1>
-      <span className="top-sub">{t(subtitleKey)}</span>
+      <h1>紫微斗数</h1>
       <nav className="top-nav" aria-label={t("nav.mainNav")} data-guide="nav">
         <NavLink
           to="/"
