@@ -54,13 +54,25 @@ declare module "@rtc-agent/component" {
     theme: "light" | "dark" | "system";
     lang: string;
     agentConfig: RtcAgentConfig["agentConfig"];
-    /** 窗口配置（ready 事件后设置） */
+    /**
+     * 窗口配置（ready 事件后设置）
+     *
+     * embedded: true 是快捷方式，等同于：
+     * - draggable: false
+     * - resizable: false
+     * - showMinimize: false
+     * - showMaximize: false
+     * - showClose: false
+     * - defaultMode: 'maximized'
+     */
     windowConfig: {
-      defaultMode?: string;
+      defaultMode?: "normal" | "maximized" | "minimized";
       draggable?: boolean;
       resizable?: boolean;
       showMinimize?: boolean;
       showMaximize?: boolean;
+      showClose?: boolean;
+      embedded?: boolean;
     };
     /** 活动栏配置（ready 事件后设置） */
     activityBarConfig: {
