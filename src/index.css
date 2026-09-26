@@ -42,6 +42,39 @@
   color-scheme: dark;
 }
 
+/* ── 公共工具类（消除跨模块重复样式） ── */
+
+/** 毛玻璃面板（多个容器共用） */
+.u-glass-panel {
+  background: rgba(10, 16, 34, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/** 页面加载占位（居中 + 弱化文字） */
+.u-page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--dim);
+  font-size: 0.95rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+}
+
+/** 淡入动画 */
+@keyframes u-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/** 脉动动画（加载状态） */
+@keyframes u-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -3187,7 +3220,9 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.liuren-loading {
+/* 大六壬 / Wiki 共用加载样式 */
+.liuren-loading,
+.wiki-loading {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3196,9 +3231,10 @@ body {
   font-size: 0.95rem;
   font-family: var(--font-display);
   letter-spacing: 0.08em;
-  animation: liurenPulse 2s ease-in-out infinite;
+  animation: u-pulse 2s ease-in-out infinite;
 }
 
+/* liurenPulse 已合并到全局 u-pulse，保留别名兼容旧引用 */
 @keyframes liurenPulse {
   0%, 100% { opacity: 0.6; }
   50%      { opacity: 1; }
@@ -3210,7 +3246,9 @@ body {
   align-items: flex-start;
 }
 
-.liuren-left {
+/* 大六壬 / Wiki 共用：左面板 */
+.liuren-left,
+.wiki-left {
   width: 340px;
   min-width: 280px;
   flex-shrink: 0;
@@ -3218,32 +3256,40 @@ body {
   scrollbar-color: rgba(96, 165, 250, 0.2) transparent;
 }
 
-.liuren-left::-webkit-scrollbar {
+.liuren-left::-webkit-scrollbar,
+.wiki-left::-webkit-scrollbar {
   width: 5px;
 }
-.liuren-left::-webkit-scrollbar-thumb {
+.liuren-left::-webkit-scrollbar-thumb,
+.wiki-left::-webkit-scrollbar-thumb {
   background: rgba(96, 165, 250, 0.18);
   border-radius: 3px;
 }
-.liuren-left::-webkit-scrollbar-track {
+.liuren-left::-webkit-scrollbar-track,
+.wiki-left::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.liuren-right {
+/* 大六壬 / Wiki 共用：右面板 */
+.liuren-right,
+.wiki-right {
   flex: 1;
   min-width: 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(96, 165, 250, 0.2) transparent;
 }
 
-.liuren-right::-webkit-scrollbar {
+.liuren-right::-webkit-scrollbar,
+.wiki-right::-webkit-scrollbar {
   width: 5px;
 }
-.liuren-right::-webkit-scrollbar-thumb {
+.liuren-right::-webkit-scrollbar-thumb,
+.wiki-right::-webkit-scrollbar-thumb {
   background: rgba(96, 165, 250, 0.18);
   border-radius: 3px;
 }
-.liuren-right::-webkit-scrollbar-track {
+.liuren-right::-webkit-scrollbar-track,
+.wiki-right::-webkit-scrollbar-track {
   background: transparent;
 }
 
@@ -4456,22 +4502,7 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.wiki-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 50vh;
-  color: var(--dim);
-  font-size: 0.95rem;
-  font-family: var(--font-display);
-  letter-spacing: 0.08em;
-  animation: wikiPulse 2s ease-in-out infinite;
-}
-
-@keyframes wikiPulse {
-  0%, 100% { opacity: 0.6; }
-  50%      { opacity: 1; }
-}
+/* wiki-loading 已合并到上方 .liuren-loading 分组选择器 */
 
 .wiki-header {
   display: flex;
@@ -4543,42 +4574,7 @@ body {
   align-items: flex-start;
 }
 
-.wiki-left {
-  width: 340px;
-  min-width: 280px;
-  flex-shrink: 0;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(96, 165, 250, 0.2) transparent;
-}
-
-.wiki-left::-webkit-scrollbar {
-  width: 5px;
-}
-.wiki-left::-webkit-scrollbar-thumb {
-  background: rgba(96, 165, 250, 0.18);
-  border-radius: 3px;
-}
-.wiki-left::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.wiki-right {
-  flex: 1;
-  min-width: 0;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(96, 165, 250, 0.2) transparent;
-}
-
-.wiki-right::-webkit-scrollbar {
-  width: 5px;
-}
-.wiki-right::-webkit-scrollbar-thumb {
-  background: rgba(96, 165, 250, 0.18);
-  border-radius: 3px;
-}
-.wiki-right::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* wiki-left / wiki-right 已合并到上方 .liuren-left / .liuren-right 分组选择器 */
 
 /* ── Wiki 响应式：≤900px 左右堆叠 ── */
 @media (max-width: 900px) {
