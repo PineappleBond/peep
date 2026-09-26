@@ -15,9 +15,18 @@ interface TagInputProps {
   disabled?: boolean;
   /** 可选的已有标签列表，输入时展示过滤后的建议 */
   suggestions?: string[];
+  /** 单个标签最大字符数（默认 30） */
+  maxTagLength?: number;
+  /** 标签最大数量（默认 20） */
+  maxTags?: number;
 }
 
-export function TagInput({ value, onChange, placeholder = "输入标签后按回车...", disabled, suggestions }: TagInputProps) {
+/** 单个标签最大长度 */
+const DEFAULT_MAX_TAG_LENGTH = 30;
+/** 标签最大数量 */
+const DEFAULT_MAX_TAGS = 20;
+
+export function TagInput({ value, onChange, placeholder = "输入标签后按回车...", disabled, suggestions, maxTagLength = DEFAULT_MAX_TAG_LENGTH, maxTags = DEFAULT_MAX_TAGS }: TagInputProps) {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -26,9 +35,13 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
     const newTags = raw
       .split(/[,，]/)
       .map((t) => t.trim())
-      .filter((t) => t && !value.includes(t));
-    if (newTags.length > 0) {
-      onChange([...value, ...newTags]);
+      // 过滤空标签、超长标签、重复标签
+      .filter((t) => t && t.length <= maxTagLength && !value.includes(t));
+    // 限制标签总数
+    const remaining = maxTags - value.length;
+    const toAdd = newTags.slice(0, remaining);
+    if (toAdd.length > 0) {
+      onChange([...value, ...toAdd]);
     }
     setInput("");
     setShowSuggestions(false);
@@ -108,7 +121,8 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
           onBlur={handleBlur}
           placeholder={value.length === 0 ? placeholder : ""}
           aria-label="添加标签"
-          disabled={disabled}
+          disabled={disabled || value.length >= maxTags}
+          maxLength={maxTagLength}
         />
       </div>
       {/* 标签建议下拉 */}
