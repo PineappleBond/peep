@@ -25,6 +25,7 @@ import {
   markWelcomeCompleted,
   type GuideStep,
 } from "../core/guide";
+import { usePluginExtensions } from "../core/pluginSystem";
 
 // ── 重型对话框懒加载：仅在用户触发时才下载对应 chunk，降低首屏 bundle 体积
 const CommandPalette = lazy(() =>
@@ -52,6 +53,7 @@ export function Layout({ children }: LayoutProps) {
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
   const [theme, setThemeState] = useState<Theme>(getTheme);
   const currentPersonRef = useRef<Person | null>(null);
+  const pluginExtensions = usePluginExtensions();
 
   /* ── 引导系统状态 ──────────────────────────── */
   const [guideSteps, setGuideSteps] = useState<GuideStep[] | null>(null);
@@ -283,6 +285,7 @@ export function Layout({ children }: LayoutProps) {
         onOpenThemeEditor={() => setThemeEditorOpen(true)}
         locale={locale}
         onToggleLocale={toggleLocale}
+        pluginMenus={pluginExtensions.menus}
       />
       <main id="main-content">{children}</main>
       <footer className="foot">
@@ -310,6 +313,11 @@ export function Layout({ children }: LayoutProps) {
             ?
           </button>
         )}
+        {/* 插件注入的 footer 扩展 */}
+        {pluginExtensions.slotComponents["layout.footer"].map((item, idx) => {
+          const Comp = item.component;
+          return <Comp key={`plugin-footer:${item.pluginId}:${idx}`} />;
+        })}
       </footer>
       {/* Toast 通知宿主：全局浮动层，渲染在 app 内以便继承主题 */}
       <ToastHost />

@@ -3,7 +3,7 @@
  * 使用 react-router-dom 实现路由分离
  * 非首页路由使用 React.lazy 懒加载，减少主 bundle 体积
  */
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Spinner } from "./components/Spinner";
@@ -12,6 +12,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { DevDashboard } from "./components/DevDashboard";
 import { initDebugApi } from "./core/debugApi";
 import { useI18n } from "./core/i18n";
+import { initPlugins } from "./core/pluginLoader";
+import { usePluginExtensions } from "./core/pluginSystem";
 
 // 大六壬 / Wiki 页面仅在访问时按需加载，降低首屏 bundle 体积
 const DaLiuRenPage = lazy(() =>
@@ -48,7 +50,32 @@ function NotFoundRedirect() {
   return <Navigate to="/" replace />;
 }
 
+/** 插件路由渲染器 —— 将插件注册的 routes 渲染为 <Route> 节点 */
+function PluginRoutes() {
+  const extensions = usePluginExtensions();
+  return (
+    <>
+      {extensions.routes.map(r => {
+        const Comp = r.element;
+        return <Route key={`plugin:${r.pluginId}:${r.path}`} path={r.path} element={<Comp />} />;
+      })}
+    </>
+  );
+}
+
 function App() {
+  // 插件系统异步初始化：仅首次挂载触发
+  const [pluginsReady, setPluginsReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    initPlugins().then(() => {
+      if (!cancelled) setPluginsReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>
@@ -59,6 +86,8 @@ function App() {
               <Route path="/liuren" element={<DaLiuRenPage />} />
               <Route path="/wiki" element={<WikiPage />} />
               <Route path="/viz" element={<VizPage />} />
+              {/* 插件路由：插件启用后自动注入 */}
+              {pluginsReady && <PluginRoutes />}
               {/* 兜底：未知路径重定向到首页 */}
               <Route path="*" element={<NotFoundRedirect />} />
             </Routes>

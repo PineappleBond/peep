@@ -13,6 +13,7 @@ import type { Person } from "../core/personDb";
 import { useI18n, type Locale } from "../core/i18n";
 import type { Theme } from "../core/theme";
 import { registerShortcut } from "../core/shortcuts";
+import type { PluginExtensionsView } from "../core/pluginTypes";
 
 type HeaderProps = {
   /** 当前选中人物 ID */
@@ -33,6 +34,8 @@ type HeaderProps = {
   locale: Locale;
   /** 切换语言 */
   onToggleLocale: () => void;
+  /** 插件注册的菜单扩展 */
+  pluginMenus?: PluginExtensionsView["menus"];
 };
 
 /** 根据路由获取标题键名 */
@@ -61,6 +64,7 @@ export function Header({
   onOpenThemeEditor,
   locale,
   onToggleLocale,
+  pluginMenus,
 }: HeaderProps) {
   const location = useLocation();
   const { t } = useI18n();
@@ -115,6 +119,23 @@ export function Header({
         >
           <VizIcon aria-hidden="true" />
         </NavLink>
+        {/* 插件注册的菜单扩展 */}
+        {pluginMenus?.map(menu => {
+          const Icon = menu.icon;
+          const label = t(menu.label) || menu.label;
+          return (
+            <NavLink
+              key={`plugin-menu:${menu.pluginId}:${menu.path}`}
+              to={menu.path}
+              end={menu.end}
+              className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
+              aria-label={label}
+              title={label}
+            >
+              {Icon ? <Icon aria-hidden={true} /> : null}
+            </NavLink>
+          );
+        })}
       </nav>
       <div className="top-actions">
         <button
