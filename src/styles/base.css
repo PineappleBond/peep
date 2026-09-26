@@ -1,0 +1,237 @@
+/* ════════════════════════════════════════════════════
+   base.css — CSS 变量、全局重置、可访问性、工具类
+   ════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════
+   react-zwds · 玄空霓虹主题
+   深空黑蓝底 × 鎏金主星 × 青蓝辉光 × 五色运限
+   ════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #04060d;
+  --panel: rgba(13, 20, 40, 0.72);
+  --line: rgba(96, 165, 250, 0.14);
+  --line-strong: rgba(125, 211, 252, 0.42);
+  --text: #d9e4ff;
+  --dim: #7787a8;
+  --faint: #586888;
+  --gold: #f3c96b;
+  --gold-deep: #c9992e;
+  --cyan: #55d7ff;
+
+  /* 运限五色 + 小限 */
+  --c-decadal: #2ee6c8;
+  --c-yearly: #5ba0ff;
+  --c-monthly: #ffa14e;
+  --c-daily: #c78bff;
+  --c-hourly: #ff77b7;
+  --c-age: #f2d264;
+
+  /* 四化 */
+  --m-lu: #34d399;
+  --m-quan: #38bdf8;
+  --m-ke: #fbbf24;
+  --m-ji: #e35bd8;
+
+  /* 语义色 */
+  --danger: #f87171;
+  --danger-soft: #ff7777;
+  --rose: #ff4d6d;
+
+  --font-body: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+    "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+  --font-display: "KaiTi", "STKaiti", "DFKai-SB", "BiauKai", var(--font-body);
+
+  /* 通用过渡时长（消除重复的 cubic-bezier 长定义） */
+  --ease: cubic-bezier(.4, 0, .2, 1);
+  --t-fast: color .15s var(--ease), background .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease), opacity .15s var(--ease), transform .15s var(--ease);
+  --t-normal: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease), opacity .2s var(--ease), transform .2s var(--ease);
+  --t-slow: color .25s var(--ease), background .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease), opacity .25s var(--ease), transform .25s var(--ease);
+
+  font-family: var(--font-body);
+  color-scheme: dark;
+}
+
+/* ── 公共工具类（消除跨模块重复样式） ── */
+
+/** 毛玻璃面板（多个容器共用） */
+.u-glass-panel {
+  background: rgba(10, 16, 34, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/** 页面加载占位（居中 + 弱化文字） */
+.u-page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--dim);
+  font-size: 0.95rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+}
+
+/** 淡入动画 */
+@keyframes u-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/** 脉动动画（加载状态） */
+@keyframes u-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ── 可访问性：跳过导航链接（键盘用户直达主内容） ── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 9999;
+  padding: 8px 16px;
+  border-radius: 0 0 8px 8px;
+  border: 2px solid var(--cyan);
+  background: var(--bg);
+  color: var(--cyan);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ── 可访问性：全局焦点指示器（键盘导航可见） ── */
+/* 为所有交互元素提供统一的 :focus-visible 焦点环 */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* 部分元素已有自定义焦点样式，覆盖全局 outline 以保持设计一致性 */
+.top-actions button:focus-visible,
+.nav-icon:focus-visible,
+.person-btn:focus-visible,
+.person-select:focus-visible,
+.hlabel:focus-visible,
+.hcell:focus-visible,
+.db:focus-visible,
+.p-detail-btn:focus-visible,
+.pd-close:focus-visible,
+.dlg-close:focus-visible {
+  outline: none;
+  /* 这些元素已有各自的 border-color / box-shadow 焦点反馈 */
+}
+
+/* 宫位卡片（可点击 div）焦点样式 */
+.palace:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+  box-shadow: 0 0 14px rgba(85, 215, 255, 0.3);
+}
+
+/* 列表项（可点击 div）焦点样式 */
+.record-list-item:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+  border-color: var(--line-strong);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.2);
+}
+
+/* 图标操作按钮焦点样式 */
+.record-action-btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+/* 分页按钮焦点样式 */
+.record-list-pagination button:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+/* 其他按钮焦点样式 */
+.btn-go:focus-visible,
+.btn-cancel:focus-visible,
+.btn-save:focus-visible,
+.btn-danger:focus-visible,
+.btn-primary:focus-visible,
+.arc-btn:focus-visible,
+.rf-chip:focus-visible,
+.rf-use:focus-visible,
+.kline-mbtn:focus-visible,
+.kline-tab:focus-visible,
+.wiki-export-btn:focus-visible,
+.wiki-edit-btn:focus-visible,
+.export-actions button:focus-visible,
+.export-tabs button:focus-visible,
+.seg button:focus-visible,
+.syn-foot button:focus-visible,
+.record-search-input:focus-visible {
+  outline: none;
+  border-color: var(--line-strong);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.3);
+}
+
+/* 搜索输入框使用 :focus-visible（与 :focus 区分键盘/鼠标） */
+.record-search-input:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* ── 可访问性：减弱动画偏好 ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(85, 215, 255, 0.3);
+}
+
+/* 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 165, 250, 0.3) transparent;
+}
+*::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.25);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+

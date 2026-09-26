@@ -1,0 +1,917 @@
+/* ════════════════════════════════════════════════════
+   daliuren.css — 大六壬页面
+   ════════════════════════════════════════════════════ */
+
+/* ── 大六壬页面 ── */
+.liuren-page {
+  padding: 20px 24px;
+  min-height: calc(100vh - 40px);
+  animation: liurenFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes liurenFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ── 大六壬响应式：≤900px 左右堆叠 ── */
+@media (max-width: 900px) {
+  .liuren-page {
+    padding: 16px;
+  }
+
+  .liuren-layout {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .liuren-left {
+    width: 100%;
+    min-width: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .liuren-right {
+    width: 100%;
+  }
+}
+
+/* ── 大六壬响应式：≤600px 紧凑 ── */
+@media (max-width: 600px) {
+  .liuren-page {
+    padding: 12px 10px;
+  }
+
+  .record-list {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .liuren-chart {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .liuren-board-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .liuren-four-pillars {
+    gap: 8px;
+  }
+
+  .liuren-pillar-value {
+    font-size: 0.95rem;
+    padding: 3px 8px;
+  }
+}
+
+
+/* ── 大六壬列表特有样式 ── */
+.record-list-empty.liuren-empty::before {
+  content: "☰";
+  animation: liurenEmptyFloat 4s ease-in-out infinite;
+}
+
+@keyframes liurenEmptyFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50%      { transform: translateY(-6px); opacity: 0.5; }
+}
+
+/* ── 右侧盘面区 ── */
+.liuren-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(10, 16, 34, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 22px 26px 18px;
+  min-height: calc(100vh - 100px);
+  overflow: hidden;
+  position: relative;
+}
+
+.liuren-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  padding: 60px 24px;
+  gap: 14px;
+}
+
+.liuren-chart-empty-icon {
+  font-size: 2.6rem;
+  color: var(--cyan);
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  animation: liurenEmptyIconFloat 4s ease-in-out infinite;
+}
+
+@keyframes liurenEmptyIconFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(-6px); opacity: 0.7; }
+}
+
+.liuren-chart-empty-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(243, 201, 107, 0.25);
+}
+
+.liuren-chart-empty-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+  line-height: 1.8;
+  max-width: 280px;
+}
+
+/* ── 盘面各区域 ── */
+.liuren-section {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.liuren-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.liuren-section-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 12px rgba(243, 201, 107, 0.2);
+}
+
+/* 四柱 */
+.liuren-four-pillars {
+  display: flex;
+  gap: 12px;
+}
+
+.liuren-pillar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.liuren-pillar-label {
+  font-size: 0.65rem;
+  color: var(--faint);
+}
+
+.liuren-pillar-value {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--text);
+  padding: 5px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.15));
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  text-shadow: 0 0 8px rgba(85, 215, 255, 0.1);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.liuren-pillar:hover .liuren-pillar-value {
+  border-color: rgba(243, 201, 107, 0.3);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2), 0 0 8px rgba(243, 201, 107, 0.12);
+}
+
+/* 月将 */
+.liuren-month-general {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(85, 215, 255, 0.15);
+}
+
+/* 天地盘 */
+.liuren-board-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.liuren-board-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+  font-size: 0.7rem;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.liuren-board-cell:hover {
+  border-color: rgba(85, 215, 255, 0.2);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.15));
+  box-shadow: 0 0 6px rgba(85, 215, 255, 0.08);
+}
+
+.liuren-board-heaven {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  text-shadow: 0 0 6px rgba(85, 215, 255, 0.08);
+}
+
+.liuren-board-earth {
+  font-size: 0.6rem;
+  color: var(--faint);
+}
+
+.liuren-board-general {
+  font-size: 0.55rem;
+  color: var(--gold);
+}
+
+.liuren-board-liuqin {
+  font-size: 0.5rem;
+  color: var(--cyan);
+}
+
+.liuren-board-xundun {
+  font-size: 0.5rem;
+  color: var(--dim);
+}
+
+.liuren-board-nayin {
+  font-size: 0.5rem;
+  color: var(--faint);
+}
+
+.liuren-board-wangxiang {
+  font-size: 0.55rem;
+  color: var(--dim);
+}
+
+/* 四课 */
+.liuren-four-lessons {
+  display: flex;
+  gap: 12px;
+}
+
+.liuren-lesson {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.liuren-lesson:hover {
+  border-color: rgba(85, 215, 255, 0.25);
+  box-shadow: 0 0 8px rgba(85, 215, 255, 0.08);
+}
+
+.liuren-lesson-num {
+  font-size: 0.55rem;
+  color: var(--faint);
+}
+
+.liuren-lesson-upper {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text);
+  text-shadow: 0 0 6px rgba(85, 215, 255, 0.08);
+}
+
+.liuren-lesson-arrow {
+  font-size: 0.6rem;
+  color: var(--faint);
+  opacity: 0.7;
+}
+
+.liuren-lesson-lower {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--cyan);
+  text-shadow: 0 0 8px rgba(85, 215, 255, 0.15);
+}
+
+/* 三传 */
+.liuren-three-transmissions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.liuren-transmission-method {
+  font-size: 0.75rem;
+  color: var(--gold);
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 8px rgba(243, 201, 107, 0.15);
+}
+
+.liuren-transmissions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liuren-transmission {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.liuren-transmission-label {
+  font-size: 0.6rem;
+  color: var(--faint);
+}
+
+.liuren-transmission-value {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--text);
+  padding: 5px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.15));
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  text-shadow: 0 0 8px rgba(243, 201, 107, 0.1);
+}
+
+.liuren-transmission-arrow {
+  font-size: 0.8rem;
+  color: var(--faint);
+  margin-top: 12px;
+}
+
+/* 旬空 */
+.liuren-xunkong {
+  font-size: 0.8rem;
+  color: var(--dim);
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+}
+
+/* 十二天将 */
+.liuren-twelve-generals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.liuren-general-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.7rem;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.08));
+  transition: border-color 0.2s;
+}
+
+.liuren-general-item:hover {
+  border-color: rgba(243, 201, 107, 0.25);
+}
+
+.liuren-general-branch {
+  color: var(--faint);
+}
+
+.liuren-general-name {
+  color: var(--gold);
+  font-family: var(--font-display);
+}
+
+/* 神煞 */
+.liuren-shensha-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.liuren-shensha-group:last-child {
+  margin-bottom: 0;
+}
+
+.liuren-shensha-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.liuren-shensha-label.ji {
+  color: var(--m-lu);
+}
+
+.liuren-shensha-label.xiong {
+  color: var(--danger);
+}
+
+.liuren-shensha-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.liuren-shensha-item {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  cursor: default;
+  transition: opacity 0.15s;
+}
+
+.liuren-shensha-item:hover {
+  opacity: 0.85;
+}
+
+.liuren-shensha-item.ji {
+  color: var(--m-lu);
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.liuren-shensha-item.xiong {
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+/* 课经 */
+.liuren-kejing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.liuren-kejing-item {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.08));
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.liuren-kejing-item:hover {
+  border-color: rgba(243, 201, 107, 0.2);
+  box-shadow: 0 0 6px rgba(243, 201, 107, 0.06);
+}
+
+.liuren-kejing-name {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--gold);
+  margin-bottom: 3px;
+}
+
+.liuren-kejing-desc {
+  font-size: 0.7rem;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+.liuren-kejing-evidence {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+}
+
+.liuren-kejing-evidence-item {
+  font-size: 0.6rem;
+  color: var(--faint);
+  line-height: 1.5;
+}
+
+/* 毕法 */
+.liuren-bifa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.liuren-bifa-item {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.08));
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.liuren-bifa-item:hover {
+  border-color: rgba(85, 215, 255, 0.2);
+  box-shadow: 0 0 6px rgba(85, 215, 255, 0.06);
+}
+
+.liuren-bifa-name {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--cyan);
+  margin-bottom: 3px;
+}
+
+.liuren-bifa-desc {
+  font-size: 0.7rem;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+.liuren-bifa-evidence {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+}
+
+.liuren-bifa-evidence-item {
+  font-size: 0.6rem;
+  color: var(--faint);
+  line-height: 1.5;
+}
+
+/* 占事信息 */
+.liuren-question-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.liuren-info-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.liuren-info-label {
+  font-size: 0.7rem;
+  color: var(--faint);
+  min-width: 56px;
+  flex-shrink: 0;
+}
+
+.liuren-info-value {
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.liuren-info-background {
+  white-space: pre-wrap;
+}
+
+.liuren-info-tag {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(85, 215, 255, 0.1), rgba(85, 215, 255, 0.04));
+  border: 1px solid rgba(85, 215, 255, 0.2);
+  color: var(--cyan);
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+}
+
+/* 旧版空状态（保留兼容） */
+.liuren-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 60px 24px;
+  gap: 14px;
+}
+
+.liuren-empty-icon {
+  font-size: 4rem;
+  color: var(--cyan);
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  animation: liurenEmptyIconFloat 4s ease-in-out infinite;
+}
+
+.liuren-empty-title {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.3em;
+  background: linear-gradient(120deg, var(--gold), #fff2cf 45%, var(--gold) 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 12px rgba(243, 201, 107, 0.35));
+}
+
+.liuren-empty-desc {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: var(--dim);
+  letter-spacing: 0.15em;
+  line-height: 1.8;
+}
+
+.liuren-empty-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--faint);
+  letter-spacing: 0.1em;
+}
+
+
+/* ============ 大六壬 Dialog 表单样式 ============ */
+
+.liuren-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.liuren-form-error {
+  padding: 10px 14px 10px 36px;
+  background: rgba(227, 91, 91, 0.10);
+  border: 1px solid rgba(227, 91, 91, 0.35);
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  position: relative;
+}
+
+.liuren-form-error::before {
+  content: "⚠";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  opacity: 0.85;
+}
+
+.liuren-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.liuren-form-field label {
+  font-size: 0.82rem;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+}
+
+.liuren-form-field label .required {
+  color: var(--gold);
+}
+
+.liuren-form-field input,
+.liuren-form-field textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(243, 201, 107, 0.2);
+  border-radius: 8px;
+  padding: 8px 11px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  transition: var(--t-slow);
+}
+
+.liuren-form-field input:focus,
+.liuren-form-field textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(243, 201, 107, 0.10), 0 0 10px rgba(243, 201, 107, 0.18);
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.liuren-form-field input::placeholder,
+.liuren-form-field textarea::placeholder {
+  color: var(--faint);
+  transition: opacity 0.2s;
+}
+
+.liuren-form-field input:focus::placeholder,
+.liuren-form-field textarea:focus::placeholder {
+  opacity: 0.5;
+}
+
+.liuren-form-field textarea {
+  resize: vertical;
+  min-height: 56px;
+}
+
+.liuren-form-field.readonly {
+  opacity: 0.7;
+}
+
+.liuren-form-static {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(243, 201, 107, 0.1);
+  border-radius: 8px;
+  padding: 8px 11px;
+  color: var(--dim);
+  font-size: 0.88rem;
+}
+
+/* 查看详情 Dialog */
+.liuren-view-dialog-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 165, 250, 0.2) transparent;
+}
+
+.liuren-view-dialog-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.liuren-view-dialog-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.liuren-view-dialog-content::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.18);
+  border-radius: 2px;
+}
+
+.liuren-view-dialog-content .liuren-chart {
+  padding: 0;
+}
+
+/* 删除确认 */
+.liuren-delete-confirm {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.liuren-delete-msg {
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+  color: var(--text);
+  letter-spacing: 0.03em;
+  line-height: 1.6;
+}
+
+.liuren-delete-info {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(243, 201, 107, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.82rem;
+  color: var(--dim);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.liuren-delete-info strong {
+  color: var(--gold);
+  margin-right: 4px;
+}
+
+/* ============ TagInput ============ */
+
+.tag-input {
+  width: 100%;
+  position: relative;
+}
+
+.tag-input-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(243, 201, 107, 0.2);
+  border-radius: 8px;
+  min-height: 36px;
+  align-items: center;
+  cursor: text;
+  transition: var(--t-slow);
+}
+
+.tag-input-tags:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(243, 201, 107, 0.10), 0 0 10px rgba(243, 201, 107, 0.18);
+}
+
+.tag-input-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  background: rgba(243, 201, 107, 0.12);
+  border: 1px solid rgba(243, 201, 107, 0.35);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  color: var(--gold);
+  letter-spacing: 0.03em;
+}
+
+.tag-input-tag-text {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-input-tag-remove {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+
+.tag-input-tag-remove:hover {
+  opacity: 1;
+}
+
+.tag-input-field {
+  flex: 1;
+  min-width: 80px;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  padding: 2px 0;
+}
+
+.tag-input-field::placeholder {
+  color: var(--faint);
+}
+
+/* 标签建议浮层（TagInput 带 suggestions 时展示） */
+.tag-input-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(14, 22, 44, 0.96);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(85, 215, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  padding: 4px;
+}
+
+.tag-input-suggestion-item {
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text);
+  border-radius: 7px;
+  transition:
+    background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.15s;
+}
+
+.tag-input-suggestion-item:hover {
+  background: rgba(85, 215, 255, 0.10);
+  color: var(--cyan);
+}
+
+
+/* ========================================
+ * Wiki 页面布局样式
+ * ======================================== */
+
