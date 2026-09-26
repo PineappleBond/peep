@@ -15,6 +15,7 @@ import { getTheme } from "./theme";
 import type { Locale } from "./i18n";
 import type { BirthInput } from "./useZwds";
 import { DEFAULT_BIRTH_INPUT } from "./useZwds";
+import { getInternalPeepApi } from "./debugApi";
 
 /* ============================================================
  * Logo：窥字 SVG（用于 RTC Agent 气泡图标，分亮/暗主题）
@@ -71,15 +72,12 @@ You hold the classics with warmth but not superstition: you care about textual l
  * ============================================================ */
 
 /**
- * 取 window.peep 的安全入口——peep 由 initDebugApi 在应用启动时注入，
- * RTC Agent 调用 Function 时 App 已挂载完毕，peep 必然存在。此处显式检查
- * 既安抚 TS（Window.peep 声明为 optional），也在异常场景给出清晰错误。
+ * 取内部 API 入口——RTC Agent Function handler 通过此函数调用 peep 方法。
+ * 走内部通道（getInternalPeepApi），不依赖 window.peep 全局变量，
+ * 确保生产环境即使 window.peep 被限制也能正常调用写操作。
  */
-function peepOrThrow() {
-  if (!window.peep) {
-    throw new Error("[rtc] window.peep 未初始化——请确认 initDebugApi 已在应用启动时调用");
-  }
-  return window.peep;
+function peepApi(): NonNullable<Window["peep"]> {
+  return getInternalPeepApi();
 }
 
 /**
@@ -100,7 +98,7 @@ const personListFunction = {
     "使用场景：查看当前有哪些命主可供分析，或获取命主 ID 以便调用其他接口。" +
     "示例调用：PersonList() 返回所有人物列表。",
   zodSchema: z.object({}),
-  handler: () => peepOrThrow().PersonList(),
+  handler: () => peepApi().PersonList(),
   returns: {
     schema: {
       type: "array" as const,
@@ -123,7 +121,7 @@ const personGetFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const input = personGetFunction.zodSchema.parse(args);
-    return peepOrThrow().PersonGet(input.personId);
+    return peepApi().PersonGet(input.personId);
   },
   returns: {
     schema: {
@@ -159,12 +157,26 @@ export function mergeBirthInput(partial: BirthInputFields): BirthInput {
   };
 }
 
+/**
+ * 写操作确认机制：对 Create/Update/Delete 等破坏性操作，
+ * handler 先返回操作摘要要求 AI 向用户确认，AI 再次调用时传入 confirmed=true 才真正执行。
+ * 这样即使 AI 幻觉或 prompt 注入，也不会直接执行不可逆操作。
+ */
+const CONFIRM_FIELD = withMeta(z.boolean(), { example: true })
+  .optional()
+  .describe(
+    "⚠️ 安全确认标志：首次调用时不传此字段，函数会返回操作摘要供用户确认；" +
+      "用户确认后，AI 再次调用并传入 confirmed: true 才会真正执行。" +
+      "这是为了防止 AI 误操作造成不可逆的数据变更。",
+  );
+
 const personCreateFunction = {
   name: "PersonCreate",
   description:
     "创建新的命主人物档案并自动切换为该人物。" +
+    "⚠️ 安全机制：首次调用会返回操作摘要（不执行创建），" +
+    "你需要将摘要展示给用户并获得确认后，再次调用并传入 confirmed: true 才会真正创建。" +
     "使用场景：当用户提到新的出生信息需要分析，但当前人物列表中不存在时使用。" +
-    "创建后系统会自动保存人物并触发排盘。" +
     "示例调用：PersonCreate({ name: '张三', date: '1990-05-15', timeIndex: 4, gender: '男' })。" +
     "注意：AI 只需提供核心出生信息，其余高级设置（真太阳时、流派等）使用默认值。",
   zodSchema: z.object({
@@ -183,12 +195,21 @@ const personCreateFunction = {
     isDefault: withMeta(z.boolean(), { example: false })
       .optional()
       .describe("是否设为默认人物（后续分析默认使用），默认 false"),
+    confirmed: CONFIRM_FIELD,
   }),
   handler: (args: Record<string, unknown>) => {
-    const input = personCreateFunction.zodSchema.parse(args) as BirthInputFields & {
-      isDefault?: boolean;
-    };
-    return peepOrThrow().PersonCreate(mergeBirthInput(input), input.isDefault);
+    type CreateInput = z.infer<typeof personCreateFunction.zodSchema>;
+    const input = personCreateFunction.zodSchema.parse(args) as CreateInput;
+    // 安全确认：首次调用返回操作摘要，等用户确认后再执行
+    if (!input.confirmed) {
+      return {
+        _needsConfirmation: true,
+        action: "创建人物",
+        summary: `即将创建人物：${input.name}，${input.date}，时辰${input.timeIndex}，${input.gender}`,
+        message: "请向用户确认以上信息是否正确，确认后再次调用并传入 confirmed: true",
+      };
+    }
+    return peepApi().PersonCreate(mergeBirthInput(input), input.isDefault);
   },
   returns: {
     schema: { type: "object" as const, description: "创建后的人物对象，包含分配的 id" },
@@ -197,7 +218,10 @@ const personCreateFunction = {
 
 const personUpdateFunction = {
   name: "PersonUpdate",
-  description: "更新指定人物的出生信息。",
+  description:
+    "更新指定人物的出生信息。" +
+    "⚠️ 安全机制：首次调用会返回操作摘要（不执行更新），" +
+    "你需要将摘要展示给用户并获得确认后，再次调用并传入 confirmed: true 才会真正更新。",
   zodSchema: z.object({
     personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
     name: withMeta(z.string(), { example: "张三" }).describe("姓名"),
@@ -213,14 +237,21 @@ const personUpdateFunction = {
     isDefault: withMeta(z.boolean(), { example: false })
       .optional()
       .describe("是否设为默认人物；不传则保持原值"),
+    confirmed: CONFIRM_FIELD,
   }),
   handler: (args: Record<string, unknown>) => {
-    const input = personUpdateFunction.zodSchema.parse(args) as {
-      personId: number;
-    } & BirthInputFields & {
-        isDefault?: boolean;
+    type UpdateInput = z.infer<typeof personUpdateFunction.zodSchema>;
+    const input = personUpdateFunction.zodSchema.parse(args) as UpdateInput;
+    // 安全确认：首次调用返回操作摘要
+    if (!input.confirmed) {
+      return {
+        _needsConfirmation: true,
+        action: "更新人物",
+        summary: `即将更新人物 #${input.personId}：${input.name}，${input.date}，时辰${input.timeIndex}，${input.gender}`,
+        message: "请向用户确认以上信息是否正确，确认后再次调用并传入 confirmed: true",
       };
-    return peepOrThrow().PersonUpdate(input.personId, mergeBirthInput(input), input.isDefault);
+    }
+    return peepApi().PersonUpdate(input.personId, mergeBirthInput(input), input.isDefault);
   },
   returns: {
     schema: { type: "object" as const, description: "更新后的人物" },
@@ -229,13 +260,27 @@ const personUpdateFunction = {
 
 const personDeleteFunction = {
   name: "PersonDelete",
-  description: "删除指定人物；默认人物不可删除。",
+  description:
+    "删除指定人物；默认人物不可删除。" +
+    "⚠️ 不可逆操作：首次调用会返回操作摘要（不执行删除），" +
+    "你必须明确告知用户此操作不可撤销，获得确认后再传入 confirmed: true 调用。",
   zodSchema: z.object({
     personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
+    confirmed: CONFIRM_FIELD,
   }),
   handler: (args: Record<string, unknown>) => {
-    const input = personDeleteFunction.zodSchema.parse(args);
-    return peepOrThrow().PersonDelete(input.personId);
+    type DeleteInput = z.infer<typeof personDeleteFunction.zodSchema>;
+    const input = personDeleteFunction.zodSchema.parse(args) as DeleteInput;
+    // 安全确认：不可逆操作，必须用户明确确认
+    if (!input.confirmed) {
+      return {
+        _needsConfirmation: true,
+        action: "删除人物",
+        summary: `即将删除人物 #${input.personId}（此操作不可撤销）`,
+        message: "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
+      };
+    }
+    return peepApi().PersonDelete(input.personId);
   },
   returns: {
     schema: { type: "object" as const, description: "删除结果" },
@@ -276,7 +321,7 @@ const ziweiFunction = {
   handler: async (args: Record<string, unknown>) => {
     const parsedArgs = ziweiFunction.zodSchema.parse(args);
     // RTC Agent 场景不需要操控 UI，直接走纯计算路径
-    return peepOrThrow().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time, {
+    return peepApi().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time, {
       skipUI: true,
     });
   },
@@ -316,7 +361,7 @@ const getScopeDataFunction = {
   }),
   handler: async (args: Record<string, unknown>) => {
     const parsedArgs = getScopeDataFunction.zodSchema.parse(args);
-    return peepOrThrow().GetScopeData(parsedArgs.solarDate, parsedArgs.personId);
+    return peepApi().GetScopeData(parsedArgs.solarDate, parsedArgs.personId);
   },
   returns: {
     schema: {
@@ -331,6 +376,9 @@ const daliurenCreateFunction = {
   name: "DaLiuRenCreate",
   description:
     "为命主起一课大六壬并以当前时间落库保存，返回带 id 的起课记录。" +
+    "\n\n" +
+    "⚠️ 安全机制：首次调用会返回操作摘要（不执行起课），" +
+    "你需要将摘要展示给用户并获得确认后，再次调用并传入 confirmed: true 才会真正起课。" +
     "\n\n" +
     "使用场景：用户想要占卜某个具体问题（如'这笔生意能不能做''考试能否通过'），需要起一课大六壬进行分析。" +
     "大六壬擅长占断具体事件，与紫微斗数看人生整体格局互补。" +
@@ -356,10 +404,24 @@ const daliurenCreateFunction = {
       .optional()
       .describe("背景信息——问题的上下文，有助于更准确的分析"),
     tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['求财', '合作']"),
+    confirmed: CONFIRM_FIELD,
   }),
   handler: (args: Record<string, unknown>) => {
-    const parsedArgs = daliurenCreateFunction.zodSchema.parse(args);
-    return peepOrThrow().DaLiuRenCreate(parsedArgs, { skipUI: true });
+    type CreateInput = z.infer<typeof daliurenCreateFunction.zodSchema>;
+    const parsedArgs = daliurenCreateFunction.zodSchema.parse(args) as CreateInput;
+    // 安全确认：首次调用返回操作摘要
+    if (!parsedArgs.confirmed) {
+      return {
+        _needsConfirmation: true,
+        action: "大六壬起课",
+        summary: `即将起课：「${parsedArgs.question}」${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
+        message: "请向用户确认起课信息，确认后再次调用并传入 confirmed: true",
+      };
+    }
+    // 去掉 confirmed 字段后传给 debugApi
+    const { confirmed: _c, ...params } = parsedArgs;
+    void _c;
+    return peepApi().DaLiuRenCreate(params, { skipUI: true });
   },
   returns: {
     schema: {
@@ -395,7 +457,7 @@ const daliurenListFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = daliurenListFunction.zodSchema.parse(args);
-    return peepOrThrow().DaLiuRenList(parsedArgs, { skipUI: true });
+    return peepApi().DaLiuRenList(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {
@@ -428,7 +490,7 @@ const daliurenViewFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = daliurenViewFunction.zodSchema.parse(args);
-    return peepOrThrow().DaLiuRenView(parsedArgs, { skipUI: true });
+    return peepApi().DaLiuRenView(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {
@@ -464,7 +526,7 @@ const wikiListFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = wikiListFunction.zodSchema.parse(args);
-    return peepOrThrow().WikiList(parsedArgs, { skipUI: true });
+    return peepApi().WikiList(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {
@@ -478,6 +540,9 @@ const wikiCreateFunction = {
   name: "WikiCreate",
   description:
     "创建一篇 Wiki 文档（Markdown 正文），可设置标签与关联文档。" +
+    "\n\n" +
+    "⚠️ 安全机制：首次调用会返回操作摘要（不执行创建），" +
+    "你需要将摘要展示给用户并获得确认后，再次调用并传入 confirmed: true 才会真正创建。" +
     "\n\n" +
     "使用场景：" +
     "(1) 记录命理知识学习笔记；" +
@@ -500,10 +565,24 @@ const wikiCreateFunction = {
       .array(z.number().int().positive())
       .optional()
       .describe("关联文档 ID 列表——建立文档间的链接关系，形成知识网络"),
+    confirmed: CONFIRM_FIELD,
   }),
   handler: (args: Record<string, unknown>) => {
-    const parsedArgs = wikiCreateFunction.zodSchema.parse(args);
-    return peepOrThrow().WikiCreate(parsedArgs, { skipUI: true });
+    type CreateInput = z.infer<typeof wikiCreateFunction.zodSchema>;
+    const parsedArgs = wikiCreateFunction.zodSchema.parse(args) as CreateInput;
+    // 安全确认：首次调用返回操作摘要
+    if (!parsedArgs.confirmed) {
+      return {
+        _needsConfirmation: true,
+        action: "创建 Wiki 文档",
+        summary: `即将创建文档：「${parsedArgs.title}」${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
+        message: "请向用户确认文档信息，确认后再次调用并传入 confirmed: true",
+      };
+    }
+    // 去掉 confirmed 字段后传给 debugApi
+    const { confirmed: _c, ...params } = parsedArgs;
+    void _c;
+    return peepApi().WikiCreate(params, { skipUI: true });
   },
   returns: {
     schema: { type: "object" as const, description: "保存后的文档对象，包含分配的 id" },
@@ -530,7 +609,7 @@ const wikiViewFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = wikiViewFunction.zodSchema.parse(args);
-    return peepOrThrow().WikiView(parsedArgs, { skipUI: true });
+    return peepApi().WikiView(parsedArgs, { skipUI: true });
   },
   returns: {
     schema: {

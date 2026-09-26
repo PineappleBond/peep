@@ -2736,14 +2736,49 @@ function clearCaches(): void {
   log("info", "cache", "全部缓存已清空");
 }
 
-/** 初始化 window.peep（开发/生产均暴露，供 RTC Agent Function 调用） */
+/**
+ * 内部 API 通道：供 RTC Agent Function handler 使用，不走 window 全局变量。
+ * 包含全部方法（含写操作），生产环境也不暴露到 window.peep。
+ */
+let _internalPeepApi: NonNullable<Window["peep"]> | null = null;
+
+/**
+ * 获取内部 API 入口——RTC Agent handler 调用此函数获取 peep 方法。
+ * 优先使用内部通道（_internalPeepApi），降级到 window.peep（开发环境）。
+ */
+export function getInternalPeepApi(): NonNullable<Window["peep"]> {
+  if (_internalPeepApi) return _internalPeepApi;
+  // 降级：initDebugApi 尚未调用时直接返回 window.peep（不应发生）
+  if (typeof window !== "undefined" && window.peep) {
+    return window.peep;
+  }
+  throw new Error("[debugApi] 内部 API 未初始化——请确认 initDebugApi 已在应用启动时调用");
+}
+
+/** 写操作方法名集合——生产环境不暴露到 window.peep，防止控制台或恶意脚本执行破坏性操作。
+ * RTC Agent 通过内部 _internalPeepApi 通道调用这些方法，不走全局变量。
+ */
+const WRITE_METHODS = new Set([
+  "PersonCreate",
+  "PersonUpdate",
+  "PersonDelete",
+  "DaLiuRenCreate",
+  "WikiCreate",
+]);
+
+/**
+ * 初始化 window.peep（供控制台调试和自动化测试使用）。
+ *
+ * 安全策略：
+ * - 开发环境：暴露全部方法（含写操作），方便调试
+ * - 生产环境：只暴露只读方法（查询/计算），写操作通过 _internalPeepApi 供 RTC Agent 使用
+ */
 export function initDebugApi() {
   if (typeof window === "undefined") return;
-  // 注：原本有 import.meta.env.DEV 守卫，但 RTC Agent Function 在生产环境也需要
-  // 通过 window.peep 调用排盘/起课/Wiki 能力，故移除。日志函数内部的 DEV 守卫保留，
-  // 避免生产控制台输出调试信息。
 
-  window.peep = {
+  // 内部 API 通道：始终包含全部方法，供 RTC Agent Function handler 调用
+  // 不挂到 window 全局，避免被控制台或恶意脚本访问
+  _internalPeepApi = {
     PersonList,
     PersonGet,
     PersonCreate,
@@ -2768,6 +2803,22 @@ export function initDebugApi() {
     clearCaches,
     resetDebugApi,
   };
+
+  // 生产环境：window.peep 只暴露只读方法
+  // 开发环境：暴露全部方法供调试
+  const allMethods = _internalPeepApi!;
+  if (import.meta.env.DEV) {
+    window.peep = { ...allMethods } as typeof window.peep;
+  } else {
+    // 生产环境：过滤掉写操作
+    const readOnly: Record<string, unknown> = {};
+    for (const [key, fn] of Object.entries(allMethods)) {
+      if (!WRITE_METHODS.has(key)) {
+        readOnly[key] = fn;
+      }
+    }
+    window.peep = readOnly as typeof window.peep;
+  }
 
   log("info", "init", "调试 API 已初始化——输入 peep.version() 查看可用方法");
 }
