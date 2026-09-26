@@ -72,6 +72,8 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
     } catch (err) {
       console.error("[PersonSelector] 保存人物失败", err);
       toast.error(err instanceof Error ? err.message : t("person.saveFailed"));
+      // 重新抛出错误，让 PersonDialog 保持弹窗打开以便用户重试
+      throw err;
     }
   };
 

@@ -1,7 +1,7 @@
 /**
  * Wiki 文档列表组件（左侧）
  */
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
 import type { WikiDocument } from "../../core/personDb";
 import { getPerson } from "../../core/personDb";
 import { listWikiDocs, getAllWikiTags, type WikiListFilters } from "../../core/wikiDb";
@@ -34,13 +34,29 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [searchText, setSearchText] = useState("");
+  /** 防抖后的搜索文本（实际用于查询） */
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [personName, setPersonName] = useState<string>("");
   /** 列表数据加载中 */
   const [loading, setLoading] = useState(true);
+  /** 是否首次加载（首次加载时清空旧数据，后续加载保留旧数据避免闪烁） */
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  /** 加载错误信息 */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const pageSize = 20;
+
+  // 搜索防抖（300ms）
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+      // 搜索文本变化时重置到第一页
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   // 暴露命令式接口：允许外部设置过滤条件
   useImperativeHandle(ref, () => ({
@@ -59,9 +75,10 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
 
   const loadDocs = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const filters: WikiListFilters = {
-        searchText,
+        searchText: debouncedSearchText,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
         page,
         pageSize,
@@ -71,11 +88,13 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
       setTotal(result.total);
     } catch (err) {
       console.error("[WikiList] 加载文档失败", err);
+      setLoadError(t("wiki.loadFailed"));
     } finally {
       setLoading(false);
+      setIsFirstLoad(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personId, searchText, selectedTags, page, refreshKey]);
+  }, [personId, debouncedSearchText, selectedTags, page, refreshKey]);
 
   useEffect(() => {
     loadDocs();
@@ -109,7 +128,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
 
   const handleSearchChange = (value: string) => {
     setSearchText(value);
-    setPage(1);
+    // 搜索文本变化时由防抖 effect 统一处理 setPage(1)
   };
 
   return (
@@ -151,74 +170,88 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
 
       {/* 列表区 */}
       <div className="record-list-items">
-        {loading ? (
+        {isFirstLoad && loading ? (
           <div className="record-list-empty wiki-empty">
             <Spinner size="sm" label={t("common.loading")} />
           </div>
+        ) : loadError ? (
+          <div className="record-list-empty wiki-empty err-box" role="alert">
+            {loadError}
+          </div>
         ) : docs.length === 0 ? (
           <div className="record-list-empty wiki-empty">
-            {searchText || selectedTags.length > 0 ? t("wiki.noMatch") : t("wiki.noDocs")}
+            {debouncedSearchText || selectedTags.length > 0 ? t("wiki.noMatch") : t("wiki.noDocs")}
           </div>
         ) : (
-          docs.map(doc => (
-            <div
-              key={doc.id}
-              className={`record-list-item ${selectedId === doc.id ? "active" : ""}`}
-              onClick={() => onSelect(doc)}
-              onMouseEnter={() => setHoveredId(doc.id ?? null)}
-              onMouseLeave={() => setHoveredId(null)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={e => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onSelect(doc);
-                }
-              }}
-            >
-              <div className="record-list-item-main">
-                <div className="record-list-item-time">{formatRelativeTime(doc.updatedAt)}</div>
-                <div className="record-list-item-text">{doc.title || t("wiki.noTitle")}</div>
-                {personName && <div className="record-list-item-person">{personName}</div>}
-                {doc.tags.length > 0 && (
-                  <div className="record-list-item-tags">
-                    {doc.tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="record-list-item-tag">
-                        {tag}
-                      </span>
-                    ))}
-                    {doc.tags.length > 3 && (
-                      <span className="record-list-item-tag-more">+{doc.tags.length - 3}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className={`record-list-item-actions${hoveredId === doc.id ? " visible" : ""}`}>
-                <button
-                  className="record-action-btn"
-                  onClick={e => {
-                    e.stopPropagation();
-                    onEditClick(doc);
-                  }}
-                  title={t("common.edit")}
-                  aria-label={t("common.edit")}
+          <>
+            {docs.map(doc => (
+              <div
+                key={doc.id}
+                className={`record-list-item ${selectedId === doc.id ? "active" : ""}`}
+                onClick={() => onSelect(doc)}
+                onMouseEnter={() => setHoveredId(doc.id ?? null)}
+                onMouseLeave={() => setHoveredId(null)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect(doc);
+                  }
+                }}
+              >
+                <div className="record-list-item-main">
+                  <div className="record-list-item-time">{formatRelativeTime(doc.updatedAt)}</div>
+                  <div className="record-list-item-text">{doc.title || t("wiki.noTitle")}</div>
+                  {personName && <div className="record-list-item-person">{personName}</div>}
+                  {doc.tags.length > 0 && (
+                    <div className="record-list-item-tags">
+                      {doc.tags.slice(0, 3).map(tag => (
+                        <span key={tag} className="record-list-item-tag">
+                          {tag}
+                        </span>
+                      ))}
+                      {doc.tags.length > 3 && (
+                        <span className="record-list-item-tag-more">+{doc.tags.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div
+                  className={`record-list-item-actions${hoveredId === doc.id ? " visible" : ""}`}
                 >
-                  ✎
-                </button>
-                <button
-                  className="record-action-btn record-action-delete"
-                  onClick={e => {
-                    e.stopPropagation();
-                    onDeleteClick(doc);
-                  }}
-                  title={t("common.delete")}
-                  aria-label={t("common.delete")}
-                >
-                  🗑
-                </button>
+                  <button
+                    className="record-action-btn"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onEditClick(doc);
+                    }}
+                    title={t("common.edit")}
+                    aria-label={t("common.edit")}
+                  >
+                    ✎
+                  </button>
+                  <button
+                    className="record-action-btn record-action-delete"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onDeleteClick(doc);
+                    }}
+                    title={t("common.delete")}
+                    aria-label={t("common.delete")}
+                  >
+                    🗑
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+            {/* 非首次加载时的轻量加载指示器（覆盖在列表顶部） */}
+            {loading && (
+              <div className="record-list-loading-bar" role="status" aria-live="polite">
+                <Spinner size="sm" label={t("common.loading")} />
+              </div>
+            )}
+          </>
         )}
       </div>
 

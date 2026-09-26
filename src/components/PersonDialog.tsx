@@ -161,7 +161,9 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
     );
   }, [draft.useTrueSolar, draft.exactTime, solarStr, resolvedPlace]);
 
-  const submit = (e: FormEvent) => {
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     // 客户端兜底校验（HTML5 校验可能因浏览器差异被绕过）
     if (!draft.date || !/^\d{4}-\d{1,2}-\d{1,2}$/.test(draft.date)) {
@@ -180,8 +182,15 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
       toast.warn(t("person.overseasRequiresTimezone"));
       return;
     }
-    onSave(draft, isDefault);
-    onClose();
+    setSaving(true);
+    try {
+      await onSave(draft, isDefault);
+      onClose();
+    } catch {
+      // onSave 内部已处理错误提示（toast），这里仅保持弹窗打开让用户可重试
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -543,11 +552,11 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
         </label>
 
         <div className="dlg-foot">
-          <button type="button" className="btn-cancel" onClick={onClose}>
+          <button type="button" className="btn-cancel" onClick={onClose} disabled={saving}>
             {t("common.cancel")}
           </button>
-          <button type="submit" className="btn-save">
-            {t("common.save")}
+          <button type="submit" className="btn-save" disabled={saving}>
+            {saving ? t("common.saving") : t("common.save")}
           </button>
         </div>
       </form>

@@ -327,6 +327,7 @@
   "wiki.deleteFailed": "删除文档失败，请重试",
   "wiki.saveFailed": "保存文档失败，请重试",
   "wiki.loadDocFailed": "无法加载文档详情，请重试",
+  "wiki.loadFailed": "加载文档列表失败，请重试",
   "wiki.loadRelatedFailed": "无法加载关联文档，请重试",
   "wiki.docNotFound": "文档不存在或已被删除",
   "wiki.exportFailed": "导出失败，请重试",

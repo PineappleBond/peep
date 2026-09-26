@@ -327,6 +327,7 @@
   "wiki.deleteFailed": "Delete document failed, please try again",
   "wiki.saveFailed": "Save document failed, please try again",
   "wiki.loadDocFailed": "Unable to load document details, please try again",
+  "wiki.loadFailed": "Unable to load document list, please try again",
   "wiki.loadRelatedFailed": "Unable to load related document, please try again",
   "wiki.docNotFound": "Document does not exist or has been deleted",
   "wiki.exportFailed": "Export failed, please try again",

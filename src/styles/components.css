@@ -1033,6 +1033,24 @@
   filter: grayscale(0.5);
 }
 
+/* 非首次加载时的轻量加载指示条（列表顶部浮动条） */
+.record-list-loading-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 4px 0;
+  background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+  font-size: 0.72rem;
+  color: var(--dim);
+}
+
 .record-list-item {
   position: relative;
   padding: 8px 10px;
