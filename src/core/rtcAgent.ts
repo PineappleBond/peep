@@ -390,7 +390,15 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
     groups: FUNCTION_GROUPS,
     // 嵌入式面板模式：embedded=true 自动禁用拖拽/缩放/最小化/最大化/关闭按钮，
     // 并设 defaultMode='maximized'——让 RTC 填满父容器（peep-v2 右侧 3/8 侧栏）
-    window: { embedded: true },
+    window: {
+      embedded: true,
+      defaultMode: "maximized",
+      draggable: false,
+      resizable: false,
+      showMinimize: false,
+      showMaximize: false,
+      showClose: false,
+    },
     // 只保留 chat 按钮，禁用文件/设置面板
     activityBar: {
       disabledActivities: ["files", "settings"],
