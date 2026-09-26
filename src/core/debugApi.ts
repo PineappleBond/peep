@@ -14,7 +14,6 @@ import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
 import { getWikiLinks, type WikiListFilters, type WikiListResult } from "./wikiDb";
 import { globalEvents } from "./events";
 import type { BirthInput } from "./useZwds";
-import { solar2lunar } from "lunar-lite";
 import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
 import { MUTAGEN_TABLES } from "./utils";
@@ -501,26 +500,10 @@ function setHoroscopeTime(z: Zwds, date: Date): void {
   // 转换为时辰索引（0-11）
   const hourIdx = Math.floor(((hour + 1) % 24) / 2);
 
-  // 公历转农历
-  let lunarYear = year;
-  let lunarMonth = month;
-  let lunarDay = day;
-  let isLeap = false;
-
-  try {
-    const lunar = solar2lunar(date);
-    lunarYear = lunar.lunarYear;
-    lunarMonth = lunar.lunarMonth;
-    lunarDay = lunar.lunarDay;
-    isLeap = lunar.isLeap;
-  } catch {
-    // 转换失败时使用公历值（兜底）
-    console.warn("[debugApi] 公历转农历失败，使用公历值");
-  }
-
-  z.actions.pickYear(lunarYear);
-  z.actions.pickMonth(lunarMonth, isLeap);
-  z.actions.pickDay(lunarDay);
+  // hbar 流月/流日按阳历排列，所以 pick 直接用阳历值
+  z.actions.pickYear(year);
+  z.actions.pickMonth(month, false);
+  z.actions.pickDay(day);
   z.actions.pickHour(hourIdx);
 }
 
