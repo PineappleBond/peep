@@ -716,6 +716,26 @@
   .form-grid {
     gap: 8px 10px;
   }
+  /* 弹窗关闭按钮触摸区域 ≥ 44px */
+  .dlg-close {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+  }
+}
+
+/* 移动端列表项操作按钮始终可见（触摸设备无 hover） */
+@media (hover: none) and (pointer: coarse) {
+  .record-list-item-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* 操作按钮触摸区域 ≥ 32px */
+  .record-action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.78rem;
+  }
 }
 
 /* 大六壬 / Wiki 共用加载样式 */
@@ -1114,8 +1134,8 @@
 }
 
 .record-list-pagination button {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1336,6 +1356,61 @@
     right: 12px;
     left: 12px;
     max-width: none;
+  }
+}
+
+/* ── 移动端列表项触摸优化 ── */
+@media (max-width: 760px) {
+  /* 列表项增大内边距，方便触摸 */
+  .record-list-item {
+    padding: 10px 12px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+  }
+  /* 列表项操作按钮在移动端始终可见 */
+  .record-list-item-actions {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .record-action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.78rem;
+  }
+  /* 分页按钮触摸区域 ≥ 40px */
+  .record-list-pagination button {
+    width: 40px;
+    height: 40px;
+  }
+  /* 标签筛选增大触摸区域 */
+  .record-tag-filter {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* ── 触摸设备全局反馈优化 ── */
+@media (hover: none) and (pointer: coarse) {
+  /* 触摸按下立即缩放反馈（替代 hover 效果） */
+  .nav-icon:active,
+  .person-btn:active,
+  .record-new-btn:active {
+    transform: scale(0.92);
+    transition-duration: 0.08s;
+  }
+  /* 禁用触摸设备上的 hover 位移动画（避免粘滞状态） */
+  .nav-icon:hover,
+  .person-btn:hover,
+  .record-new-btn:hover,
+  .top-actions button:hover {
+    transform: none;
   }
 }
 

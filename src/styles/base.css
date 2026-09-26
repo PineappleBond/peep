@@ -38,6 +38,42 @@
   --danger-soft: #ff7777;
   --rose: #ff4d6d;
 
+  /* ── 毛玻璃叠层（暗色底） ── */
+  --glass-bg: rgba(10, 16, 34, 0.6);
+  --glass-bg-deep: rgba(5, 9, 20, 0.8);
+  --glass-bg-soft: rgba(5, 9, 20, 0.6);
+  --glass-bg-card: rgba(6, 10, 22, 0.55);
+  --glass-bg-panel: rgba(7, 11, 24, 0.72);
+  --glass-bg-strong: rgba(7, 11, 24, 0.86);
+
+  /* ── 模糊量 ── */
+  --blur-sm: 4px;
+  --blur-md: 8px;
+  --blur-xl: 14px;
+
+  /* ── 星耀分类色 ── */
+  --star-soft: #7dd3fc;
+  --star-tough: #ff8896;
+  --star-lucun: #8be9c3;
+  --star-flower: #f9a8d4;
+  --star-helper: #9fb2d8;
+
+  /* ── 强调色上的深色文字 ── */
+  --text-on-accent: #04222e;
+
+  /* ── 运限单元格亮色文字 ── */
+  --cell-text-decadal: #d9fff7;
+  --cell-text-yearly: #e3edff;
+  --cell-text-monthly: #fff0e0;
+  --cell-text-daily: #f4eaff;
+  --cell-text-hourly: #ffe9f3;
+
+  /* ── 卡片渐变端点 ── */
+  --card-grad-from: rgba(16, 25, 50, 0.85);
+  --card-grad-to: rgba(9, 14, 30, 0.94);
+  --panel-grad-from: rgba(16, 25, 50, 0.97);
+  --panel-grad-to: rgba(9, 14, 30, 0.99);
+
   /* ── 间距 ── */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -142,6 +178,37 @@
   --danger-soft: #e53e3e;
   --rose: #d53f8c;
 
+  /* 毛玻璃叠层（亮色底） */
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-bg-deep: rgba(240, 245, 250, 0.9);
+  --glass-bg-soft: rgba(255, 255, 255, 0.7);
+  --glass-bg-card: rgba(255, 255, 255, 0.75);
+  --glass-bg-panel: rgba(248, 250, 252, 0.88);
+  --glass-bg-strong: rgba(240, 245, 250, 0.92);
+
+  /* 星耀分类色（暗化以满足亮色底对比度） */
+  --star-soft: #2563eb;
+  --star-tough: #dc2626;
+  --star-lucun: #047857;
+  --star-flower: #be185d;
+  --star-helper: #6366f1;
+
+  /* 强调色上的文字（亮色底改为白色或浅色） */
+  --text-on-accent: #ffffff;
+
+  /* 运限单元格文字（暗化以适应亮色背景） */
+  --cell-text-decadal: #065f46;
+  --cell-text-yearly: #1e3a5f;
+  --cell-text-monthly: #7c2d12;
+  --cell-text-daily: #4c1d95;
+  --cell-text-hourly: #831843;
+
+  /* 卡片渐变端点（亮色底用浅色渐变） */
+  --card-grad-from: rgba(235, 240, 250, 0.9);
+  --card-grad-to: rgba(225, 232, 245, 0.95);
+  --panel-grad-from: rgba(240, 245, 252, 0.97);
+  --panel-grad-to: rgba(230, 237, 248, 0.99);
+
   /* 阴影（亮色下更柔和） */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -154,7 +221,7 @@
 
 /* 亮色主题下的硬编码覆盖 */
 :root[data-theme="light"] .u-glass-panel {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--glass-bg);
 }
 :root[data-theme="light"] ::selection {
   background: rgba(43, 108, 176, 0.25);
@@ -196,6 +263,32 @@
     --danger-soft: #e53e3e;
     --rose: #d53f8c;
 
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-bg-deep: rgba(240, 245, 250, 0.9);
+    --glass-bg-soft: rgba(255, 255, 255, 0.7);
+    --glass-bg-card: rgba(255, 255, 255, 0.75);
+    --glass-bg-panel: rgba(248, 250, 252, 0.88);
+    --glass-bg-strong: rgba(240, 245, 250, 0.92);
+
+    --star-soft: #2563eb;
+    --star-tough: #dc2626;
+    --star-lucun: #047857;
+    --star-flower: #be185d;
+    --star-helper: #6366f1;
+
+    --text-on-accent: #ffffff;
+
+    --cell-text-decadal: #065f46;
+    --cell-text-yearly: #1e3a5f;
+    --cell-text-monthly: #7c2d12;
+    --cell-text-daily: #4c1d95;
+    --cell-text-hourly: #831843;
+
+    --card-grad-from: rgba(235, 240, 250, 0.9);
+    --card-grad-to: rgba(225, 232, 245, 0.95);
+    --panel-grad-from: rgba(240, 245, 252, 0.97);
+    --panel-grad-to: rgba(230, 237, 248, 0.99);
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
@@ -208,7 +301,7 @@
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) .u-glass-panel {
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--glass-bg);
   }
   :root:not([data-theme="dark"]) ::selection {
     background: rgba(43, 108, 176, 0.25);
@@ -239,9 +332,9 @@ body {
 
 /** 毛玻璃面板（多个容器共用） */
 .u-glass-panel {
-  background: rgba(10, 16, 34, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
 }
 
 /** 页面加载占位（居中 + 弱化文字） */
