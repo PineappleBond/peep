@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "./Header";
+import { ToastHost } from "./ToastHost";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
@@ -112,6 +113,8 @@ export function Layout({ children }: LayoutProps) {
         </a>{" "}
         · {t("layout.chartNote")}
       </footer>
+      {/* Toast 通知宿主：全局浮动层，渲染在 app 内以便继承主题 */}
+      <ToastHost />
     </div>
   );
 }
