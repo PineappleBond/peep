@@ -651,7 +651,7 @@
   font-size: 2.6rem;
   opacity: 0.5;
   filter: grayscale(0.3);
-  animation: wiki-empty-float 4s ease-in-out infinite;
+  animation: wiki-empty-float 4s var(--ease) infinite;
 }
 
 @keyframes wiki-empty-float {
@@ -674,7 +674,7 @@
   opacity: 0.3;
   top: 38%;
   right: 28%;
-  animation: wiki-empty-sparkle 3s ease-in-out infinite 0.5s;
+  animation: wiki-empty-sparkle 3s var(--ease) infinite 0.5s;
 }
 
 @keyframes wiki-empty-sparkle {

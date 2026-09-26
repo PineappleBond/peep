@@ -145,6 +145,11 @@
   --dur-slow: 0.35s; /* 慢速过渡：面板展开、大面积变化 */
   --dur-page: 0.35s; /* 页面过渡（= dur-slow） */
   --dur-enter: 0.4s; /* 入场动画 */
+  --dur-leave: 0.2s; /* 离场动画（离场宜快，不拖沓） */
+
+  /* ── 动画性能优化提示 ── */
+  /* 用于即将触发动画的元素，提示浏览器提前创建合成层 */
+  --will-animate: transform, opacity;
 
   --t-medium: 0.3s;
   --t-fast:
@@ -491,6 +496,68 @@ body {
   }
 }
 
+/* ════════════════════════════════════════════════════
+   动画工具类
+   语义化的进入/退出动画，供组件按需引用
+   ════════════════════════════════════════════════════ */
+
+/** 淡入（从下方 8px 滑入） */
+.u-anim-fade-in {
+  animation: u-fade-in var(--dur-enter) var(--ease-enter) both;
+}
+
+/** 淡出（向下方 8px 滑出） */
+.u-anim-fade-out {
+  animation: u-fade-out var(--dur-leave) var(--ease-exit) forwards;
+}
+
+/** 缩放入场（弹窗/浮层） */
+.u-anim-scale-in {
+  animation: u-scale-in var(--dur-component) var(--ease-exit) both;
+}
+
+/** 缩放离场 */
+.u-anim-scale-out {
+  animation: u-scale-out var(--dur-leave) var(--ease-enter) forwards;
+}
+
+/** 加载脉动 */
+.u-anim-pulse {
+  animation: u-pulse 2s var(--ease) infinite;
+}
+
+/* ── 动画性能优化：合成层提升 ── */
+/* 为频繁动画的元素提示 GPU 加速，仅使用 transform/opacity 避免布局抖动 */
+.u-will-animate {
+  will-change: var(--will-animate);
+}
+
+/* ════════════════════════════════════════════════════
+   用户可切换的减弱动画模式
+   通过 data-reduce-motion 属性手动控制
+   ════════════════════════════════════════════════════ */
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+[data-reduce-motion="true"] .center::before {
+  animation: none !important;
+}
+
+[data-reduce-motion="true"] .sline,
+[data-reduce-motion="true"] .fly-line {
+  animation: none !important;
+}
+
+[data-reduce-motion="true"] .spinner-ring {
+  animation-duration: 6s !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -626,6 +693,11 @@ textarea:focus-visible,
   /* Spinner 旋转降级：保留可见但极慢转动（用户仍可感知"加载中"） */
   .spinner-ring {
     animation-duration: 6s !important;
+  }
+
+  /* 清除 will-change 提示，避免不必要的合成层开销 */
+  .u-will-animate {
+    will-change: auto;
   }
 }
 

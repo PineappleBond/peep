@@ -137,7 +137,7 @@
 /* ── 大六壬列表特有样式 ── */
 .record-list-empty.liuren-empty::before {
   content: "☰";
-  animation: liurenEmptyFloat 4s ease-in-out infinite;
+  animation: liurenEmptyFloat 4s var(--ease) infinite;
 }
 
 @keyframes liurenEmptyFloat {
@@ -173,7 +173,7 @@
 }
 
 .liuren-chart-empty .empty-state-icon {
-  animation: liurenEmptyIconFloat 4s ease-in-out infinite;
+  animation: liurenEmptyIconFloat 4s var(--ease) infinite;
 }
 
 @keyframes liurenEmptyIconFloat {
@@ -704,7 +704,7 @@
   color: var(--cyan);
   opacity: 0.5;
   filter: grayscale(0.3);
-  animation: liurenEmptyIconFloat 4s ease-in-out infinite;
+  animation: liurenEmptyIconFloat 4s var(--ease) infinite;
 }
 
 .liuren-empty-title {
