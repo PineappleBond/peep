@@ -15,7 +15,7 @@ import {
   listWikiDocs,
   type WikiListFilters,
 } from "../core/wikiDb";
-import { registerWikiCallbacks } from "../core/debugApi";
+import { registerWikiCallbacks, unregisterPageCallbacks } from "../core/debugApi";
 import { WikiList, type WikiListHandle } from "../components/wiki/WikiList";
 import { WikiReader } from "../components/wiki/WikiReader";
 import { WikiEditor } from "../components/wiki/WikiEditor";
@@ -94,6 +94,9 @@ export function WikiPage() {
       },
       getSelectedWikiDoc: () => selectedDocRef.current,
     });
+    return () => {
+      unregisterPageCallbacks("wiki");
+    };
   }, [person, refreshList, t]);
 
   // 刷新已有标签列表

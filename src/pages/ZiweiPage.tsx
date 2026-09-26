@@ -9,7 +9,7 @@ import { Chart } from "../components/Chart";
 import { HoroscopeBar } from "../components/HoroscopeBar";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { globalEvents } from "../core/events";
-import { registerZiWeiCallbacks } from "../core/debugApi";
+import { registerZiWeiCallbacks, unregisterPageCallbacks } from "../core/debugApi";
 import type { Person } from "../core/personDb";
 import { useDefaultPerson } from "../core/usePageInit";
 
@@ -48,6 +48,9 @@ export function ZiweiPage() {
     registerZiWeiCallbacks({
       getZwds: () => zRef.current,
     });
+    return () => {
+      unregisterPageCallbacks("ziwei");
+    };
   }, []);
 
   return (

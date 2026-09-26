@@ -469,20 +469,83 @@ export function registerWikiCallbacks(opts: {
   log("debug", "init", "Wiki 页面回调注册完成");
 }
 
+/**
+ * 注销页面回调：页面组件卸载时调用，把对应 _callbacksReady[page] 设为 false，
+ * 避免下次 waitForCallbacks 白等超时（例如从大六壬页面切走后再调用 DaLiuRenView）。
+ *
+ * 注意：不清空回调函数本身（避免其他模块持有旧引用时报错），
+ * 仅重置就绪标志——下次同页面重新挂载时会由 register* 重新覆盖。
+ */
+export function unregisterPageCallbacks(page: "ziwei" | "daliuren" | "wiki") {
+  _callbacksReady[page] = false;
+  log("debug", "init", `${page} 页面回调已注销`);
+}
+
+/**
+ * 重置调试 API 全部模块级状态：供测试 teardown 和 HMR cleanup 使用。
+ *
+ * 清空范围：
+ * - 所有回调变量（_selectPerson / _getZwds / ... 等）
+ * - 回调就绪标志（_callbacksReady）
+ * - 当前日志级别（恢复为默认 "info"）
+ * - 本命盘缓存（astrolabeCache）
+ * - hbar / chartIndex 等外部缓存（通过 clearAllCaches / clearHbarCaches）
+ *
+ * 注：不会清空 LRUCache 注册表本身（由 cache.ts 管理），
+ * 但会清空各缓存实例的内容。
+ */
+export function resetDebugApi(): void {
+  // 1. 清空所有回调变量
+  _selectPerson = null;
+  _getZwds = null;
+  _getPerson = null;
+  _navigate = null;
+  _getDaLiuRenList = null;
+  _setListFilters = null;
+  _openCreateDialog = null;
+  _fillCreateForm = null;
+  _submitCreateForm = null;
+  _selectRecord = null;
+  _getSelectedRecord = null;
+  _getWikiList = null;
+  _setWikiListFilters = null;
+  _openWikiEditor = null;
+  _saveWikiDoc = null;
+  _selectWikiDoc = null;
+  _getSelectedWikiDoc = null;
+
+  // 2. 重置回调就绪标志
+  _callbacksReady.ziwei = false;
+  _callbacksReady.daliuren = false;
+  _callbacksReady.wiki = false;
+
+  // 3. 恢复日志级别为默认值
+  currentLogLevel = "info";
+
+  // 4. 清空本命盘缓存
+  astrolabeCache.clear();
+
+  // 5. 清空外部缓存（hbar / chartIndex 等注册到 cache.ts 的缓存）
+  clearAllCaches();
+  clearHbarCaches();
+
+  log("info", "init", "调试 API 全部状态已重置");
+}
+
 /** 等待页面回调注册完成 */
 async function waitForCallbacks(
   page: "ziwei" | "daliuren" | "wiki",
-  timeout = 3000,
+  timeout = 1000,
 ): Promise<void> {
   const start = Date.now();
   while (!_callbacksReady[page]) {
     if (Date.now() - start > timeout) {
       const err = new ZiWeiError(
-        `${page} 页面的调试 API 回调注册超时（${timeout}ms）`,
+        `${page} 页面的调试 API 回调注册超时（${timeout}ms）——页面可能未访问过或已卸载`,
         "waitForCallbacks",
         {
           context: { page, timeout, callbacksReady: _callbacksReady },
-          suggestion: `请确认 ${page} 页面组件已正确挂载并注册回调`,
+          suggestion: `请先访问 ${page} 页面使其挂载，或检查页面组件是否正确注册了回调`,
         },
       );
       log("error", page, "回调注册超时", { timeout, callbacksReady: _callbacksReady });
@@ -2417,16 +2480,16 @@ async function waitForDialogReady(): Promise<void> {
  * 辅助函数：等待大六壬页面回调注册完成。
  * 轮询验证替代盲等——检查 _callbacksReady.daliuren 标志。
  */
-async function waitForDaLiuRenCallbacks(timeout = 3000): Promise<void> {
+async function waitForDaLiuRenCallbacks(timeout = 1000): Promise<void> {
   const start = Date.now();
   while (!_callbacksReady.daliuren) {
     if (Date.now() - start > timeout) {
       throw new DaLiuRenError(
-        `大六壬页面回调注册超时（${timeout}ms）`,
+        `大六壬页面回调注册超时（${timeout}ms）——页面可能未访问过或已卸载`,
         "waitForDaLiuRenCallbacks",
         {
           context: { timeout, callbacksReady: _callbacksReady },
-          suggestion: "请确认 DaLiuRenPage 组件已正确挂载并注册回调",
+          suggestion: "请先访问大六壬页面使其挂载，或检查 DaLiuRenPage 是否正确注册了回调",
         },
       );
     }
@@ -2464,14 +2527,18 @@ async function waitForRecordSaved(recordId: number | undefined, timeout = 2000):
  * 辅助函数：等待 Wiki 页面回调注册完成。
  * 轮询验证替代盲等——检查 _callbacksReady.wiki 标志。
  */
-async function waitForWikiCallbacks(timeout = 3000): Promise<void> {
+async function waitForWikiCallbacks(timeout = 1000): Promise<void> {
   const start = Date.now();
   while (!_callbacksReady.wiki) {
     if (Date.now() - start > timeout) {
-      throw new WikiError(`Wiki 页面回调注册超时（${timeout}ms）`, "waitForWikiCallbacks", {
-        context: { timeout, callbacksReady: _callbacksReady },
-        suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
-      });
+      throw new WikiError(
+        `Wiki 页面回调注册超时（${timeout}ms）——页面可能未访问过或已卸载`,
+        "waitForWikiCallbacks",
+        {
+          context: { timeout, callbacksReady: _callbacksReady },
+          suggestion: "请先访问 Wiki 页面使其挂载，或检查 WikiPage 是否正确注册了回调",
+        },
+      );
     }
     await new Promise(r => setTimeout(r, 50));
   }
@@ -2596,6 +2663,7 @@ export function initDebugApi() {
     setLogLevel,
     getCacheStats,
     clearCaches,
+    resetDebugApi,
   };
 
   log("info", "init", "调试 API 已初始化——输入 peep.version() 查看可用方法");

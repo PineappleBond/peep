@@ -23,6 +23,7 @@ import type {
   WikiList,
   WikiView,
   getChartDataForScope,
+  resetDebugApi,
 } from "./core/debugApi";
 
 declare global {
@@ -66,6 +67,8 @@ declare global {
       >;
       /** 清空全部缓存（调试用） */
       clearCaches: () => void;
+      /** 重置全部调试 API 状态（测试 teardown / HMR cleanup 用） */
+      resetDebugApi: typeof resetDebugApi;
     };
   }
 

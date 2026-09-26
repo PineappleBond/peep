@@ -16,7 +16,7 @@ import { Spinner } from "../components/Spinner";
 import { ExportDialog } from "../components/ExportDialog";
 import type { LiurenRecord, Person } from "../core/personDb";
 import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
-import { registerDaLiuRenCallbacks } from "../core/debugApi";
+import { registerDaLiuRenCallbacks, unregisterPageCallbacks } from "../core/debugApi";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 import { registerShortcut } from "../core/shortcuts";
 
@@ -160,6 +160,9 @@ export function DaLiuRenPage() {
       },
       getSelectedRecord: () => selectedRecordRef.current,
     });
+    return () => {
+      unregisterPageCallbacks("daliuren");
+    };
   }, [person, t, listRefreshKeyRef]);
 
   // 当列表选中变化时，如果当前选中记录被删除/改变，需同步
