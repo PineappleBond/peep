@@ -19,6 +19,11 @@
       "file": "wiki-knowledge.md",
       "name": "Wiki 知识库使用",
       "description": "检索和创建命理知识文档"
+    },
+    {
+      "file": "hypothesis-elimination.md",
+      "name": "假设排除法",
+      "description": "用假设-验证-排除的方法论推断未来趋势"
     }
   ]
 }
