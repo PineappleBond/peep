@@ -4,6 +4,7 @@
  */
 import { BRANCHES, LUNAR_DAYS, LUNAR_MONTHS, hourGanZhi, monthGanZhi, yearGanZhi } from "./utils";
 import { daysInLunarMonth, dayGanZhi, leapMonthOf, lunarToSolarStr } from "./lunar";
+import { solar2lunar } from "lunar-lite";
 import type { Astrolabe } from "./useZwds";
 
 /* ─────────────── 类型定义 ─────────────── */
@@ -138,28 +139,43 @@ export function buildYears(
   return list;
 }
 
-/** 计算流月列表（含闰月） */
+/** 计算流月列表（含闰月）：从阳历月转换为农历月 */
 export function buildMonths(pickYear: number, yearLeapMonth: number): CellMonth[] {
-  const list: CellMonth[] = LUNAR_MONTHS.map((label, i) => ({
-    month: i + 1,
-    leap: false,
-    label,
-    solarLabel: `${i + 1}月`,
-    gz: monthGanZhi(pickYear, i + 1),
-  }));
-  if (yearLeapMonth > 0) {
-    list.splice(yearLeapMonth, 0, {
-      month: yearLeapMonth,
-      leap: true,
-      label: `闰${LUNAR_MONTHS[yearLeapMonth - 1]}`,
-      solarLabel: `闰${yearLeapMonth}月`,
-      gz: monthGanZhi(pickYear, yearLeapMonth),
-    });
+  const list: CellMonth[] = [];
+  // 遍历阳历月 1-12
+  for (let solarMonth = 1; solarMonth <= 12; solarMonth++) {
+    // 取阳历月的第15天作为代表日期（避免月初跨月问题）
+    const solarDate = new Date(pickYear, solarMonth - 1, 15);
+    try {
+      const lunar = solar2lunar(solarDate);
+      const lunarMonth = lunar.lunarMonth;
+      const isLeap = lunar.isLeap;
+      const lunarLabel = isLeap
+        ? `闰${LUNAR_MONTHS[lunarMonth - 1]}`
+        : LUNAR_MONTHS[lunarMonth - 1];
+      const gz = monthGanZhi(lunar.lunarYear, lunarMonth);
+      list.push({
+        month: solarMonth,
+        leap: isLeap,
+        label: lunarLabel,
+        solarLabel: `${solarMonth}月`,
+        gz,
+      });
+    } catch {
+      // 转换失败时，按农历月处理
+      list.push({
+        month: solarMonth,
+        leap: false,
+        label: LUNAR_MONTHS[solarMonth - 1] || `${solarMonth}月`,
+        solarLabel: `${solarMonth}月`,
+        gz: monthGanZhi(pickYear, solarMonth),
+      });
+    }
   }
   return list;
 }
 
-/** 计算流日列表 */
+/** 计算流日列表：从阳历日转换为农历日 */
 export function buildDays(
   pickYear: number,
   pickMonth: number,
@@ -167,14 +183,32 @@ export function buildDays(
   effLeap: boolean,
 ): CellDay[] {
   const list: CellDay[] = [];
-  for (let d = 1; d <= monthDays; d++) {
-    const solar = lunarToSolarStr(pickYear, pickMonth, d, effLeap);
-    list.push({
-      day: d,
-      label: LUNAR_DAYS[d - 1],
-      solarLabel: `${d}号`,
-      gz: solar ? dayGanZhi(solar) : "",
-    });
+  // pickMonth 现在是阳历月，需要获取该月的天数
+  const daysInMonth = new Date(pickYear, pickMonth, 0).getDate(); // 阳历月天数
+
+  for (let solarDay = 1; solarDay <= daysInMonth; solarDay++) {
+    const solarDate = new Date(pickYear, pickMonth - 1, solarDay);
+    try {
+      const lunar = solar2lunar(solarDate);
+      const lunarDay = lunar.lunarDay;
+      const lunarLabel = LUNAR_DAYS[lunarDay - 1] || `${lunarDay}日`;
+      const solarStr = `${pickYear}-${pickMonth}-${solarDay}`;
+      const gz = dayGanZhi(solarStr);
+      list.push({
+        day: solarDay,
+        label: lunarLabel,
+        solarLabel: `${solarDay}号`,
+        gz,
+      });
+    } catch {
+      // 转换失败时，按阳历日处理
+      list.push({
+        day: solarDay,
+        label: `${solarDay}日`,
+        solarLabel: `${solarDay}号`,
+        gz: "",
+      });
+    }
   }
   return list;
 }
@@ -205,7 +239,8 @@ export function buildHbarData(
 
   const yearLeapMonth = leapMonthOf(pick.year);
   const effLeap = pick.leap && pick.month === yearLeapMonth;
-  const monthDays = daysInLunarMonth(pick.year, pick.month, effLeap);
+  // 阳历月天数
+  const monthDays = new Date(pick.year, pick.month, 0).getDate();
   const clampedDay = Math.min(pick.day, monthDays);
 
   const months = buildMonths(pick.year, yearLeapMonth);
