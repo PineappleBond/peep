@@ -39,7 +39,7 @@ describe("cities 城市数据", () => {
 
   describe("getCityByName 城市查找", () => {
     it("查找存在的城市", () => {
-      const city = getCityByName("北京", "北京");
+      const city = getCityByName("北京");
       expect(city).toBeDefined();
       if (city) {
         expect(city.name).toBe("北京");
@@ -47,7 +47,7 @@ describe("cities 城市数据", () => {
     });
 
     it("查找不存在的城市返回 undefined", () => {
-      expect(getCityByName("不存在的省", "不存在的市")).toBeUndefined();
+      expect(getCityByName("不存在的市")).toBeUndefined();
     });
   });
 
