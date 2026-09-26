@@ -168,7 +168,7 @@ export function ThemeEditor({ open, onClose }: ThemeEditorProps) {
           setThemeName(imported.name);
           setIsDirty(false);
           toast.success(t("themeEditor.imported"));
-        } catch (_err) {
+        } catch {
           toast.error(t("themeEditor.importFailed"));
         }
       };
