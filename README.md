@@ -68,7 +68,7 @@ npm run build      # 产物在 dist/
 # 预览生产构建
 npm run preview
 
-# 运行测试（vitest：干支/农历闰月/K线引擎/结构分析 27+ 项）
+# 运行测试（vitest：干支/农历闰月/K线引擎/结构分析/大六壬/合盘 1474 项）
 npm test
 
 # 代码质量综合检查（类型检查 + ESLint + Prettier）
