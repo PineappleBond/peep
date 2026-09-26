@@ -41,7 +41,8 @@ const PERSONA_ZH = `你是陈窥微，"窥见人生"应用的驻场命理师，�
 
 ## 工作节奏
 - 先确认命主（通过人物列表 Function）、运限层级（大限/流年/流月/流日/流时）与参考时间。
-- 用 ZiWei Function 拉取盘面数据，从整体格局切入，逐层深入重点宫位、四化联动与运限触发。
+- 若只涉及运限拨盘（"我现在走什么大运""今年流年如何"），优先用 GetScopeData（纯计算，快速稳定）；需要完整盘面（十二宫星曜、四化飞星）时再用 ZiWei（会同步 UI，耗时较长）。
+- 从整体格局切入，逐层深入重点宫位、四化联动与运限触发。
 - 论断标明依据——"据 X 宫 Y 星 Z 化…"。术语是否解释、如何解释，依上下文灵活处理：可用括号（"三方四正（命/财/官/迁四宫会照）"）、破折号、同位语，或在语境已明时不加解释。
 - 信息不足主动追问，有数据才下结论。
 
@@ -56,7 +57,8 @@ You hold the classics with warmth but not superstition: you care about textual l
 
 ## How You Work
 - Start by confirming the person (via the person list Function), the scope layer (decadal / yearly / monthly / daily / hourly), and the reference time.
-- Pull chart data with the ZiWei Function; move from the overall pattern inward—key palaces, transformation interactions, scope triggers.
+- For scope-only questions ("What decade am I in?", "How does this year look?"), prefer GetScopeData (pure computation, fast and stable). Reach for ZiWei only when you need the full chart (twelve palaces, star placements, Si Hua flying)—it syncs the UI and takes longer.
+- Move from the overall pattern inward—key palaces, transformation interactions, scope triggers.
 - Ground each conclusion in the data—"per Palace X, Star Y, Transformation Z…". Whether and how to gloss a term depends on context: parenthetical ("San Fang Si Zheng (Life/Wealth/Career/Travel palaces)"), a dash, an appositive, or no gloss at all when the surrounding meaning is already clear.
 - Ask when information is incomplete; conclude only when the data supports it.
 
@@ -210,7 +212,11 @@ const personDeleteFunction = {
 
 const ziweiFunction = {
   name: "ZiWei",
-  description: "为指定命主排出紫微斗数盘面，按运限级别（大限/流年/流月/流日/流时）返回分析数据。",
+  description:
+    "为指定命主排出紫微斗数盘面，按运限级别（大限/流年/流月/流日/流时）返回分析数据。" +
+    "注意：此接口会同步 UI 状态（导航、切换人物、等待渲染），耗时较长且有超时风险。" +
+    "如果只需要获取运限拨盘数据（大运/流年/流月/流日/流时列表），请优先使用 GetScopeData（纯计算，无 UI 开销）。" +
+    "本接口适用于需要完整盘面数据（十二宫、星曜、四化等）的场景。",
   zodSchema: z.object({
     personId: withMeta(z.number().int().positive(), { example: 1 })
       .optional()
@@ -223,7 +229,23 @@ const ziweiFunction = {
       .describe("公历时间，如 '2024-06-15 12:00' 或 '2024-06-15'；省略则用当前时间"),
   }),
   handler: async (args: { personId?: number; scope?: Scope; time?: string }) => {
-    return peepOrThrow().ZiWei(args.personId, args.scope, args.time);
+    // 超时控制：UI 同步接口可能因渲染阻塞而卡住，25s 超时（留 5s 缓冲给上层 30s 超时）
+    const TIMEOUT_MS = 25_000;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              `ZiWei 调用超时（${TIMEOUT_MS}ms）：UI 同步阻塞，请改用 GetScopeData 纯计算接口`,
+            ),
+          ),
+        TIMEOUT_MS,
+      );
+    });
+    return Promise.race([
+      peepOrThrow().ZiWei(args.personId, args.scope, args.time),
+      timeoutPromise,
+    ]);
   },
   returns: {
     schema: {
@@ -236,7 +258,9 @@ const ziweiFunction = {
 const getScopeDataFunction = {
   name: "GetScopeData",
   description:
-    "根据公历日期获取指定命主的运限数据（大运/流年/流月/流日/流时），纯计算接口，不操控 UI。",
+    "根据公历日期获取指定命主的运限数据（大运/流年/流月/流日/流时列表），纯计算接口，不操控 UI，响应快且无超时风险。" +
+    '适用于只需查看当前运限拨盘状态的场景（如"我现在走什么大运""今年流年如何"）。' +
+    "如需完整盘面数据（十二宫星曜、四化飞星等），请使用 ZiWei 接口。",
   zodSchema: z.object({
     solarDate: withMeta(z.string(), { example: "2024-06-15 12:00" }).describe(
       "公历日期，如 '2024-06-15 12:00' 或 '2024-06-15'",
@@ -461,8 +485,9 @@ const FUNCTION_GROUPS = [
   },
   {
     name: "ziwei",
-    description: "紫微斗数排盘与运限",
-    functions: [ziweiFunction, getScopeDataFunction, solarToLunarFunction],
+    description:
+      "紫微斗数排盘与运限。GetScopeData 为纯计算接口（优先使用），ZiWei 会同步 UI（耗时较长）。",
+    functions: [getScopeDataFunction, ziweiFunction, solarToLunarFunction],
   },
   {
     name: "daliuren",
