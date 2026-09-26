@@ -5,7 +5,7 @@
  */
 import { useState, useEffect } from "react";
 import { Dialog } from "../Dialog";
-import { TagInput } from "./TagInput";
+import { LiurenFormFields, type LiurenFormValues } from "./LiurenFormFields";
 import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord } from "../../core/personDb";
 
@@ -16,26 +16,37 @@ interface LiurenEditDialogProps {
   onSaved: () => void;
 }
 
+/** 表单初始空值 */
+const EMPTY_FORM: LiurenFormValues = {
+  question: "",
+  note: "",
+  background: "",
+  tags: [],
+};
+
 export function LiurenEditDialog({
   open,
   onClose,
   record,
   onSaved,
 }: LiurenEditDialogProps) {
-  const [question, setQuestion] = useState("");
-  const [note, setNote] = useState("");
-  const [background, setBackground] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [values, setValues] = useState<LiurenFormValues>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const updateValues = (patch: Partial<LiurenFormValues>) => {
+    setValues((prev) => ({ ...prev, ...patch }));
+  };
 
   // 打开时填充现有数据
   useEffect(() => {
     if (record && open) {
-      setQuestion(record.question);
-      setNote(record.note);
-      setBackground(record.background);
-      setTags([...record.tags]);
+      setValues({
+        question: record.question,
+        note: record.note,
+        background: record.background,
+        tags: [...record.tags],
+      });
       setError(null);
     }
   }, [record, open]);
@@ -45,7 +56,7 @@ export function LiurenEditDialog({
       setError("未找到要编辑的记录");
       return;
     }
-    if (!question.trim()) {
+    if (!values.question.trim()) {
       setError("占事问题不能为空");
       return;
     }
@@ -56,10 +67,10 @@ export function LiurenEditDialog({
     try {
       const updated: LiurenRecord = {
         ...record,
-        question: question.trim(),
-        note: note.trim(),
-        background: background.trim(),
-        tags,
+        question: values.question.trim(),
+        note: values.note.trim(),
+        background: values.background.trim(),
+        tags: values.tags,
       };
       await saveLiurenRecord(updated);
       onSaved();
@@ -97,43 +108,7 @@ export function LiurenEditDialog({
           <div className="liuren-form-static">{record?.calculationTime}</div>
         </div>
 
-        <div className="liuren-form-field">
-          <label>
-            占事问题 <span className="required">*</span>
-          </label>
-          <input
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="例如：问事业、问感情..."
-            maxLength={200}
-            autoFocus
-          />
-        </div>
-        <div className="liuren-form-field">
-          <label>备注</label>
-          <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="选填"
-            maxLength={500}
-          />
-        </div>
-        <div className="liuren-form-field">
-          <label>背景信息</label>
-          <textarea
-            value={background}
-            onChange={(e) => setBackground(e.target.value)}
-            placeholder="选填，可描述当前背景..."
-            rows={3}
-            maxLength={2000}
-          />
-        </div>
-        <div className="liuren-form-field">
-          <label>标签</label>
-          <TagInput value={tags} onChange={setTags} placeholder="输入标签后按回车..." />
-        </div>
+        <LiurenFormFields values={values} onChange={updateValues} disabled={saving} />
       </div>
     </Dialog>
   );

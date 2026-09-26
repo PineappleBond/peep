@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { Dialog } from "../Dialog";
-import { TagInput } from "./TagInput";
+import { LiurenFormFields, type LiurenFormValues } from "./LiurenFormFields";
 import { calculateDaLiuRen } from "../../core/daliuren/calculator";
 import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord, Person } from "../../core/personDb";
@@ -26,6 +26,14 @@ interface LiurenCreateDialogProps {
   submitTrigger?: number;
 }
 
+/** 表单初始空值 */
+const EMPTY_FORM: LiurenFormValues = {
+  question: "",
+  note: "",
+  background: "",
+  tags: [],
+};
+
 export function LiurenCreateDialog({
   open,
   onClose,
@@ -34,20 +42,23 @@ export function LiurenCreateDialog({
   initialData,
   submitTrigger,
 }: LiurenCreateDialogProps) {
-  const [question, setQuestion] = useState("");
-  const [note, setNote] = useState("");
-  const [background, setBackground] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [values, setValues] = useState<LiurenFormValues>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const updateValues = (patch: Partial<LiurenFormValues>) => {
+    setValues((prev) => ({ ...prev, ...patch }));
+  };
 
   // 当 Dialog 打开且有 initialData 时，预填充表单
   useEffect(() => {
     if (open && initialData) {
-      setQuestion(initialData.question);
-      setNote(initialData.note);
-      setBackground(initialData.background);
-      setTags(initialData.tags);
+      setValues({
+        question: initialData.question,
+        note: initialData.note,
+        background: initialData.background,
+        tags: initialData.tags,
+      });
     }
   }, [open, initialData]);
 
@@ -64,10 +75,7 @@ export function LiurenCreateDialog({
   }, [submitTrigger, open, saving]);
 
   const resetForm = () => {
-    setQuestion("");
-    setNote("");
-    setBackground("");
-    setTags([]);
+    setValues(EMPTY_FORM);
     setError(null);
   };
 
@@ -77,7 +85,7 @@ export function LiurenCreateDialog({
   };
 
   const handleSubmit = async () => {
-    if (!question.trim()) {
+    if (!values.question.trim()) {
       setError("占事问题不能为空");
       return;
     }
@@ -104,10 +112,10 @@ export function LiurenCreateDialog({
       const record: LiurenRecord = {
         personId: person.id!,
         calculationTime: `${dateStr} ${timeStr}`,
-        question: question.trim(),
-        note: note.trim(),
-        background: background.trim(),
-        tags,
+        question: values.question.trim(),
+        note: values.note.trim(),
+        background: values.background.trim(),
+        tags: values.tags,
         result,
         savedAt: Date.now(),
       };
@@ -142,43 +150,7 @@ export function LiurenCreateDialog({
     >
       <div className="liuren-dialog-form">
         {error && <div className="liuren-form-error" role="alert">{error}</div>}
-        <div className="liuren-form-field">
-          <label>
-            占事问题 <span className="required">*</span>
-          </label>
-          <input
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="例如：问事业、问感情..."
-            maxLength={200}
-            autoFocus
-          />
-        </div>
-        <div className="liuren-form-field">
-          <label>备注</label>
-          <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="选填"
-            maxLength={500}
-          />
-        </div>
-        <div className="liuren-form-field">
-          <label>背景信息</label>
-          <textarea
-            value={background}
-            onChange={(e) => setBackground(e.target.value)}
-            placeholder="选填，可描述当前背景..."
-            rows={3}
-            maxLength={2000}
-          />
-        </div>
-        <div className="liuren-form-field">
-          <label>标签</label>
-          <TagInput value={tags} onChange={setTags} placeholder="输入标签后按回车..." />
-        </div>
+        <LiurenFormFields values={values} onChange={updateValues} disabled={saving} />
       </div>
     </Dialog>
   );

@@ -10,9 +10,11 @@ interface TagInputProps {
   value: string[];
   onChange: (tags: string[]) => void;
   placeholder?: string;
+  /** 是否禁用（保存中等场景） */
+  disabled?: boolean;
 }
 
-export function TagInput({ value, onChange, placeholder = "输入标签后按回车..." }: TagInputProps) {
+export function TagInput({ value, onChange, placeholder = "输入标签后按回车...", disabled }: TagInputProps) {
   const [input, setInput] = useState("");
 
   const addTags = (raw: string) => {
@@ -58,6 +60,7 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
               className="tag-input-tag-remove"
               onClick={() => handleRemove(tag)}
               aria-label={`删除 ${tag}`}
+              disabled={disabled}
             >
               ✕
             </button>
@@ -72,6 +75,7 @@ export function TagInput({ value, onChange, placeholder = "输入标签后按回
           onBlur={handleBlur}
           placeholder={value.length === 0 ? placeholder : ""}
           aria-label="添加标签"
+          disabled={disabled}
         />
       </div>
     </div>
