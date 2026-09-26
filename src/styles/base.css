@@ -46,6 +46,12 @@
   --glass-bg-panel: rgba(7, 11, 24, 0.72);
   --glass-bg-strong: rgba(7, 11, 24, 0.86);
 
+  /* 毛玻璃补充（覆盖更多透明度梯度） */
+  --glass-bg-light: rgba(8, 14, 30, 0.5);
+  --glass-bg-muted: rgba(6, 10, 22, 0.4);
+  --glass-bg-input: rgba(0, 0, 0, 0.25);
+  --glass-bg-input-deep: rgba(0, 0, 0, 0.35);
+
   /* ── 模糊量 ── */
   --blur-sm: 4px;
   --blur-md: 8px;
@@ -121,6 +127,7 @@
 
   /* 通用过渡时长（消除重复的 cubic-bezier 长定义） */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --t-medium: 0.3s;
   --t-fast:
     color 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease),
     box-shadow 0.15s var(--ease), opacity 0.15s var(--ease), transform 0.15s var(--ease);
@@ -185,6 +192,12 @@
   --glass-bg-card: rgba(255, 255, 255, 0.75);
   --glass-bg-panel: rgba(248, 250, 252, 0.88);
   --glass-bg-strong: rgba(240, 245, 250, 0.92);
+
+  /* 毛玻璃补充（亮色底更通透） */
+  --glass-bg-light: rgba(255, 255, 255, 0.6);
+  --glass-bg-muted: rgba(255, 255, 255, 0.5);
+  --glass-bg-input: rgba(0, 0, 0, 0.06);
+  --glass-bg-input-deep: rgba(0, 0, 0, 0.1);
 
   /* 星耀分类色（暗化以满足亮色底对比度） */
   --star-soft: #2563eb;
@@ -269,6 +282,10 @@
     --glass-bg-card: rgba(255, 255, 255, 0.75);
     --glass-bg-panel: rgba(248, 250, 252, 0.88);
     --glass-bg-strong: rgba(240, 245, 250, 0.92);
+    --glass-bg-light: rgba(255, 255, 255, 0.6);
+    --glass-bg-muted: rgba(255, 255, 255, 0.5);
+    --glass-bg-input: rgba(0, 0, 0, 0.06);
+    --glass-bg-input-deep: rgba(0, 0, 0, 0.1);
 
     --star-soft: #2563eb;
     --star-tough: #dc2626;

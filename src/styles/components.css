@@ -244,7 +244,12 @@
   font-family: var(--font-display);
   font-size: 1.15rem;
   letter-spacing: 3px;
-  background: linear-gradient(120deg, var(--gold), #fff3d1 50%, var(--gold));
+  background: linear-gradient(
+    120deg,
+    var(--gold),
+    color-mix(in srgb, var(--gold) 35%, var(--text)) 50%,
+    var(--gold)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -520,7 +525,7 @@
 }
 
 .person-select option {
-  background: rgba(13, 20, 40, 0.98);
+  background: var(--glass-bg-strong);
   color: var(--text);
   padding: var(--space-sm);
 }
