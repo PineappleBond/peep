@@ -4,6 +4,7 @@
  */
 import { db, type WikiDocument, type WikiLink } from "./personDb";
 import { createTagCache } from "./tagCache";
+import { filterAndPaginate } from "./dbUtils";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
 const tagCache = createTagCache(
@@ -50,36 +51,19 @@ export async function listWikiDocs(
   filters: WikiListFilters = {}
 ): Promise<WikiListResult> {
   try {
-    const { searchText = "", tags = [], page = 1, pageSize = 20 } = filters;
+    const allDocs = await db.wikiDocs
+      .where("personId")
+      .equals(personId)
+      .toArray();
 
-    // 基础查询：按人物 ID 过滤
-    let query = db.wikiDocs.where("personId").equals(personId);
+    const result = filterAndPaginate<WikiDocument>({
+      records: allDocs,
+      sortField: "updatedAt",
+      searchFields: ["title", "content"],
+      filters,
+    });
 
-    // 收集所有匹配的记录
-    let allDocs = await query.reverse().sortBy("updatedAt");
-
-    // 文本搜索：匹配 title、content
-    if (searchText.trim()) {
-      const keyword = searchText.trim().toLowerCase();
-      allDocs = allDocs.filter(
-        (d) =>
-          d.title.toLowerCase().includes(keyword) ||
-          d.content.toLowerCase().includes(keyword)
-      );
-    }
-
-    // Tag 筛选：多值匹配（文档包含任一选中的 tag）
-    if (tags.length > 0) {
-      allDocs = allDocs.filter((d) => d.tags.some((t) => tags.includes(t)));
-    }
-
-    const total = allDocs.length;
-
-    // 分页
-    const start = (page - 1) * pageSize;
-    const docs = allDocs.slice(start, start + pageSize);
-
-    return { docs, total, page, pageSize };
+    return { docs: result.items, total: result.total, page: result.page, pageSize: result.pageSize };
   } catch (err) {
     console.error("[wikiDb] 查询文档列表失败", err);
     throw new Error("无法读取文档列表");

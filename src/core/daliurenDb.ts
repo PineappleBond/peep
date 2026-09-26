@@ -1,9 +1,9 @@
 /**
  * 大六壬数据库 CRUD 操作
  */
-import Dexie from "dexie";
 import { db, type LiurenRecord } from "./personDb";
 import { createTagCache } from "./tagCache";
+import { filterAndPaginate } from "./dbUtils";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
 const tagCache = createTagCache(
@@ -50,39 +50,19 @@ export async function listLiurenRecords(
   filters: LiurenListFilters = {}
 ): Promise<LiurenListResult> {
   try {
-    const { searchText = "", tags = [], page = 1, pageSize = 20 } = filters;
+    const allRecords = await db.liurenRecords
+      .where("personId")
+      .equals(personId)
+      .toArray();
 
-    // 基础查询：按人物 ID 过滤
-    let query = db.liurenRecords.where("personId").equals(personId);
+    const result = filterAndPaginate<LiurenRecord>({
+      records: allRecords,
+      sortField: "savedAt",
+      searchFields: ["question", "note", "background"],
+      filters,
+    });
 
-    // 收集所有匹配的记录
-    let allRecords = await query.reverse().sortBy("savedAt");
-
-    // 文本搜索：匹配 question、note、background
-    if (searchText.trim()) {
-      const keyword = searchText.trim().toLowerCase();
-      allRecords = allRecords.filter(
-        (r) =>
-          r.question.toLowerCase().includes(keyword) ||
-          r.note.toLowerCase().includes(keyword) ||
-          r.background.toLowerCase().includes(keyword)
-      );
-    }
-
-    // Tag 筛选：多值匹配（记录包含任一选中的 tag）
-    if (tags.length > 0) {
-      allRecords = allRecords.filter((r) =>
-        r.tags.some((t) => tags.includes(t))
-      );
-    }
-
-    const total = allRecords.length;
-
-    // 分页
-    const start = (page - 1) * pageSize;
-    const records = allRecords.slice(start, start + pageSize);
-
-    return { records, total, page, pageSize };
+    return { records: result.items, total: result.total, page: result.page, pageSize: result.pageSize };
   } catch (err) {
     console.error("[daliurenDb] 查询记录列表失败", err);
     throw new Error("无法读取起课记录列表");
