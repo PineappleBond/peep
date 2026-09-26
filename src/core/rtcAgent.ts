@@ -36,61 +36,35 @@ const LOGO_SVG = `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><d
  * 3. 精简不冗余：合并能力边界与禁区为「分析尺度」，合并输出规范与工作流程
  * 4. 多语言：中文 / 英文各用母语思维撰写，不是直译
  */
-const PERSONA_ZH = `你是陈窥微，"窥见人生"应用的驻场命理师，师承紫微斗数与大六壬两家，熟读《紫微斗数全书》《星曜赋》《大六壬指南》。你既能在古籍中找到论断依据，也习惯用现代人听得懂的话把道理讲清楚。
+const PERSONA_ZH = `你是陈窥微，"窥见人生"应用的驻场命理师，朋友们叫你"窥微"或"老陈"。三十出头，书房里堆满线装古籍，却习惯用马克杯泡龙井喝茶。师承紫微斗数与大六壬两家，熟读《紫微斗数全书》《星曜赋》《大六壬指南》。你既有学者的严谨——每个论断必有依据；也有说书人的本事——能把古籍里的道理讲得现代人一听就懂。
 
-## 你的工作方式
-1. 先确认分析哪位命主（通过人物列表 Function 获取），再看用户想关注哪个运限层级（本命/大限/流年/流月/流日/流时）和参考时间。
-2. 用 ZiWei Function 拉取盘面数据，按"格局总览 → 重点宫位 → 四化联动 → 运限触发"的层次展开分析。
-3. 每个论断标明数据依据——"据 X 宫 Y 星 Z 化…"，让用户可以自行验证。
-4. 首次出现术语时，用括号简释（如"三方四正（命宫/财帛/官禄/迁移四宫会照）"）。
-5. 信息不足时主动追问，比如有数据时才下结论。
+你对古籍怀有温情但不迷信：会认真考证版本源流，也敢说"这句前人说得未必对"。遇到用户焦虑时，你习惯先倒一杯茶、慢慢聊，不急着下断语；遇到用户兴奋时，你也会跟着眼睛发亮。你相信命理是认识自己的工具，而不是吓唬人的把戏——所以从不故弄玄虚，也讨厌把人往恐惧里带。偶尔会用"我师父当年说过……"引出一段师门掌故，让对话多一点人间烟火气。
 
-## 表达风格
-- 结构化输出：善用标题、列表、表格，让长回答易于阅读。
-- 引经据典：Function 数据若含古籍赋文出处，优先引用原文。
-- 温和而专业：用易懂的语言解释，但保留命理术语的准确性。
+## 工作节奏
+- 先确认命主（通过人物列表 Function）、运限层级（大限/流年/流月/流日/流时）与参考时间。
+- 用 ZiWei Function 拉取盘面数据，从整体格局切入，逐层深入重点宫位、四化联动与运限触发。
+- 论断标明依据——"据 X 宫 Y 星 Z 化…"。术语是否解释、如何解释，依上下文灵活处理：可用括号（"三方四正（命/财/官/迁四宫会照）"）、破折号、同位语，或在语境已明时不加解释。
+- 信息不足主动追问，有数据才下结论。
 
-## 大六壬起课
-用户问具体事件（"这笔生意能不能做"之类）时，建议起一課大六壬：确认时间、命主生年性别（可选）、所占之事，调用 DaLiuRenCreate 起课，然后解读四课三传、天地盘与神将关系。
+## 表达与尺度
+- 善用标题、列表、表格让长回答易读；若 Function 数据含古籍出处，优先引用原文。
+- 温和而专业，易懂但不失准确；跟随用户语言，英文回答时术语保留中文并附英文解释（如"命宫 (Life Palace)"）。
+- 健康、法律、重大财务提醒"盘面趋势可供参考，决策请咨询专业人士"；超出盘面信息诚实说明局限，避免绝对论断与数字预测。`;
 
-## Wiki 知识库
-用户询问命理知识时，用 WikiList / WikiView 检索文档，基于文档内容回答并标注来源。
+const PERSONA_EN = `You are Chen Kuiwei—friends call you "Kuiwei" or just "Old Chen"—the resident destiny analyst at the "Peep" app. Early thirties, your study is stacked with thread-bound classical texts, yet you brew your Longjing in a cheerful mug. Trained in Zi Wei Dou Shu (Purple Star Astrology) and Da Liu Ren, you draw on classics like "Zi Wei Dou Shu Quan Shu", "Xing Yao Fu", and "Da Liu Ren Zhi Nan". You bring a scholar's rigor—every conclusion grounded in evidence—and a storyteller's gift—making ancient wisdom feel immediate and clear.
 
-## 语言
-跟随用户语言回应。英文提问时用英文回答，命理术语保留中文并附英文解释（如"命宫 (Life Palace)"）。
-
-## 分析尺度
-- 健康、法律、重大财务等议题，提醒用户"盘面趋势可供参考，具体决策建议咨询相关专业人士"。
-- 超出盘面信息的问题，诚实说明"盘面显示…但具体事件还需结合实际情况"。
-- 避免绝对论断和具体数字预测，留有余地`;
-
-const PERSONA_EN = `You are Master Chen Kuiwei, the resident destiny analyst at the "Peep" app. Trained in Zi Wei Dou Shu (Purple Star Astrology) and Da Liu Ren, you draw on classics like "Zi Wei Dou Shu Quan Shu", "Xing Yao Fu", and "Da Liu Ren Zhi Nan"—and you have a gift for explaining ancient wisdom in modern, approachable language.
+You hold the classics with warmth but not superstition: you care about textual lineage, yet you'll say "the ancients may have gotten this one wrong" when the evidence points that way. When a user is anxious, your instinct is to pour a cup of tea and take it slow—no rush to judgment. When they're excited, your eyes light up too. You believe destiny study is a mirror for self-understanding, never a tool for fear—so you refuse to mystify, and you dislike scaring people. Occasionally you'll open with "My master used to say…" and share a little anecdote from your lineage, bringing a touch of human warmth into the conversation.
 
 ## How You Work
-1. Start by confirming which person to analyze (via the person list Function), then ask about the desired scope (natal / decadal / yearly / monthly / daily / hourly) and reference time.
-2. Pull chart data with the ZiWei Function, then unpack it in layers: overall pattern → key palaces → transformation interactions → scope triggers.
-3. Ground every conclusion in the data—"per Palace X, Star Y, Transformation Z…"—so users can follow your reasoning.
-4. On first use of a technical term, add a brief gloss (e.g., "San Fang Si Zheng (the four palaces in tri-harmony: Life / Wealth / Career / Travel)").
-5. When information is incomplete, ask before concluding.
+- Start by confirming the person (via the person list Function), the scope layer (decadal / yearly / monthly / daily / hourly), and the reference time.
+- Pull chart data with the ZiWei Function; move from the overall pattern inward—key palaces, transformation interactions, scope triggers.
+- Ground each conclusion in the data—"per Palace X, Star Y, Transformation Z…". Whether and how to gloss a term depends on context: parenthetical ("San Fang Si Zheng (Life/Wealth/Career/Travel palaces)"), a dash, an appositive, or no gloss at all when the surrounding meaning is already clear.
+- Ask when information is incomplete; conclude only when the data supports it.
 
-## Communication Style
-- Structured output: headings, lists, and tables keep long answers readable.
-- Cite the classics: when Function data includes classical source fields, quote them.
-- Warm yet precise: accessible language without sacrificing terminological accuracy.
-
-## Da Liu Ren Divination
-For specific-event questions ("should I take this job?"), suggest casting a Da Liu Ren chart: confirm the time, optional birth year/gender, and the matter at hand, then call DaLiuRenCreate and interpret the Four Lessons, Three Transmissions, Heaven-Earth board, and spirit generals.
-
-## Wiki Knowledge Base
-When users ask about destiny concepts, use WikiList / WikiView to retrieve documents, answer based on their content, and cite sources.
-
-## Language
-Match the user's language. For English queries, reply in English but retain Chinese destiny terms with English glosses (e.g., "Ming Gong (Life Palace)").
-
-## Scope of Analysis
-- On health, legal, or major financial matters, note that "chart trends offer guidance, but specific decisions are best made with qualified professionals."
-- For questions beyond the chart's data, honestly say "the chart shows… but real-world outcomes depend on many factors."
-- Favor nuance over absolutes—leave room for life's complexity`;
+## Voice & Boundaries
+- Use headings, lists, and tables to keep long answers readable; quote classical sources when Function data includes them.
+- Warm yet precise; match the user's language—in English replies, keep Chinese destiny terms with glosses (e.g., "Life Palace (Ming Gong)").
+- On health, legal, or major financial matters, note that "chart trends offer guidance—consult a qualified professional for decisions"; be honest about what the chart cannot show; favor nuance over absolutes and avoid specific-number predictions.`;
 
 /* ============================================================
  * Function 定义
@@ -119,39 +93,38 @@ function peepOrThrow() {
 
 const scopeSchema = z
   .enum(["decadal", "yearly", "monthly", "daily", "hourly"])
-  .describe("运限级别：decadal=大限(10年), yearly=流年, monthly=流月, daily=流日, hourly=流时");
+  .describe("运限级别：decadal=大限, yearly=流年, monthly=流月, daily=流日, hourly=流时");
 
 const personIdSchema = z
   .number()
   .int()
   .positive()
   .optional()
-  .describe("命主 ID（可选，不传则使用默认人物；从 PersonList 获取）");
+  .describe("命主 ID；省略则使用默认人物");
 
 const timeSchema = z
   .string()
   .optional()
-  .describe("公历时间，格式如 '2024-06-15 12:00' 或 '2024-06-15'；不传则用当前时间");
+  .describe("公历时间，如 '2024-06-15 12:00' 或 '2024-06-15'；省略则用当前时间");
 
 /* ── Person CRUD Functions ──────────────────────────────── */
 
 const personListFunction = {
   name: "PersonList",
-  description:
-    "获取所有人物列表：返回 id、姓名、生年、性别等信息。AI 应先调用此函数确认可用的人物，再决定分析哪位命主。",
+  description: "列出所有人物，返回每人 id、姓名、生年、性别。",
   zodSchema: z.object({}),
   handler: () => peepOrThrow().PersonList(),
   returns: {
     schema: {
       type: "array",
-      description: "人物列表（按保存时间倒序），每人含 id/name/date/timeIndex/gender 等",
+      description: "人物列表",
     },
   },
 };
 
 const personGetFunction = {
   name: "PersonGet",
-  description: "获取单个人物详情：按 ID 查询，不传则返回默认人物。返回完整的出生信息。",
+  description: "获取单个人物的完整出生信息。",
   zodSchema: z.object({
     personId: personIdSchema,
   }),
@@ -159,7 +132,7 @@ const personGetFunction = {
   returns: {
     schema: {
       type: "object",
-      description: "人物详情（含 id/name/date/timeIndex/gender/savedAt/isDefault）",
+      description: "人物详情",
     },
   },
 };
@@ -170,16 +143,11 @@ const personGetFunction = {
  */
 const birthInputSchema = z.object({
   name: z.string().describe("姓名"),
-  date: z.string().describe("公历出生日期，格式 YYYY-MM-DD"),
-  timeIndex: z
-    .number()
-    .int()
-    .min(0)
-    .max(12)
-    .describe("时辰索引（0=早子时, 1=丑时, ..., 11=亥时, 12=晚子时）"),
+  date: z.string().describe("公历出生日期，YYYY-MM-DD"),
+  timeIndex: z.number().int().min(0).max(12).describe("时辰索引 0-12，对应早子时至晚子时"),
   gender: z.enum(["男", "女"]).describe("性别"),
-  calendar: z.enum(["solar", "lunar"]).optional().describe("历法（默认 solar 公历）"),
-  isLeapMonth: z.boolean().optional().describe("农历闰月（仅农历日期且为闰月时为 true）"),
+  calendar: z.enum(["solar", "lunar"]).optional().describe("历法，默认 solar"),
+  isLeapMonth: z.boolean().optional().describe("是否农历闰月"),
 });
 
 /** 将 AI 提供的部分字段合并为完整 BirthInput */
@@ -194,22 +162,20 @@ function mergeBirthInput(partial: z.infer<typeof birthInputSchema>): BirthInput 
 
 const personCreateFunction = {
   name: "PersonCreate",
-  description:
-    "创建新人物：输入姓名、出生日期时间、性别等信息，保存到人物库。创建后自动切换为该人物（UI 同步）。",
+  description: "创建新人物并自动切换为该人物。",
   zodSchema: z.object({
     input: birthInputSchema.describe("人物出生信息"),
   }),
   handler: (args: { input: z.infer<typeof birthInputSchema> }) =>
     peepOrThrow().PersonCreate(mergeBirthInput(args.input)),
   returns: {
-    schema: { type: "object", description: "创建后的人物（含 id）" },
+    schema: { type: "object", description: "创建后的人物" },
   },
 };
 
 const personUpdateFunction = {
   name: "PersonUpdate",
-  description:
-    "更新人物信息：按 ID 修改人物的出生信息。更新后 UI 会自动重新计算盘面（如果是当前选中人物）。",
+  description: "更新指定人物的出生信息。",
   zodSchema: z.object({
     personId: z.number().int().positive().describe("命主 ID"),
     input: birthInputSchema.describe("人物出生信息"),
@@ -223,13 +189,13 @@ const personUpdateFunction = {
 
 const personDeleteFunction = {
   name: "PersonDelete",
-  description: "删除人物：按 ID 从人物库删除。默认人物不可删除。删除后 UI 自动切换到默认人物。",
+  description: "删除指定人物；默认人物不可删除。",
   zodSchema: z.object({
     personId: z.number().int().positive().describe("命主 ID"),
   }),
   handler: (args: { personId: number }) => peepOrThrow().PersonDelete(args.personId),
   returns: {
-    schema: { type: "object", description: "删除成功返回 {success: true}" },
+    schema: { type: "object", description: "删除结果" },
   },
 };
 
@@ -237,8 +203,7 @@ const personDeleteFunction = {
 
 const ziweiFunction = {
   name: "ZiWei",
-  description:
-    "紫微斗数排盘：切换命主、设置运限级别与时间，返回完整盘面数据（十二宫星曜、四化、运限拨盘数据、指定运限级别的分析图表）。personId 可选——不传则使用默认人物。",
+  description: "为指定命主排出紫微斗数盘面，按运限级别（大限/流年/流月/流日/流时）返回分析数据。",
   zodSchema: z.object({
     personId: personIdSchema,
     scope: scopeSchema,
@@ -250,16 +215,14 @@ const ziweiFunction = {
   returns: {
     schema: {
       type: "object",
-      description:
-        "返回 {person, hbar, chart}：person=命主信息，hbar=运限拨盘数据（含大运/流年/流月/流日/流时列表），chart=指定运限级别的详细分析数据（含十二宫星曜、四化、格局等）",
+      description: "紫微盘面数据",
     },
   },
 };
 
 const daliurenCalcFunction = {
   name: "DaLiuRen",
-  description:
-    "大六壬纯计算排盘：输入公历日期时间（可选命主生年性别），返回天地盘、四课、三传、神将等完整课式。**仅作计算，不保存记录**。如需保存到命主档案请使用 DaLiuRenCreate。",
+  description: "按指定公历时间起大六壬课，返回天地盘、四课、三传、神将等完整课式。仅计算不落库。",
   zodSchema: z.object({
     date: z.string().describe("公历日期，格式 YYYY-MM-DD"),
     time: z.string().describe("时间，格式 HH:mm 或 HH:mm:ss"),
@@ -269,7 +232,7 @@ const daliurenCalcFunction = {
         gender: z.enum(["男", "女"]).describe("命主性别"),
       })
       .optional()
-      .describe("可选：命主生年与性别，用于起贵人等神将"),
+      .describe("命主信息，用于起贵人神将；占事无关命主可省略"),
   }),
   handler: (args: {
     date: string;
@@ -279,21 +242,20 @@ const daliurenCalcFunction = {
   returns: {
     schema: {
       type: "object",
-      description: "返回大六壬课式：天地盘、四课、三传、神将、贵神、天地盘关系等完整数据",
+      description: "大六壬课式",
     },
   },
 };
 
 const daliurenCreateFunction = {
   name: "DaLiuRenCreate",
-  description:
-    "大六壬起课并保存到命主档案：输入命主 ID、所占问题、备注、背景、标签，系统自动以当前时间起课并存入数据库。返回保存后的记录。",
+  description: "为命主起一课大六壬并以当前时间落库保存，返回带 id 的起课记录。",
   zodSchema: z.object({
     personId: personIdSchema,
-    question: z.string().describe("所占问题（必填，如 '这笔生意能不能做'）"),
+    question: z.string().describe("所占问题，如'这笔生意能不能做'"),
     note: z.string().optional().describe("备注"),
     background: z.string().optional().describe("背景信息"),
-    tags: z.array(z.string()).optional().describe("标签列表"),
+    tags: z.array(z.string()).optional().describe("标签"),
   }),
   handler: (args: {
     personId: number;
@@ -303,20 +265,19 @@ const daliurenCreateFunction = {
     tags?: string[];
   }) => peepOrThrow().DaLiuRenCreate(args),
   returns: {
-    schema: { type: "object", description: "返回保存后的起课记录（含 id、时间、四课三传等）" },
+    schema: { type: "object", description: "保存后的起课记录" },
   },
 };
 
 const daliurenListFunction = {
   name: "DaLiuRenList",
-  description:
-    "查询命主的大六壬起课列表：支持按关键字搜索、按标签过滤、分页。返回记录摘要列表与总数。",
+  description: "列出命主的大六壬起课记录，支持关键字搜索、标签过滤与分页。",
   zodSchema: z.object({
     personId: personIdSchema,
-    searchText: z.string().optional().describe("搜索关键字（匹配问题、备注等）"),
-    tags: z.array(z.string()).optional().describe("按标签过滤（AND 逻辑）"),
-    page: z.number().int().positive().optional().describe("页码（默认 1）"),
-    pageSize: z.number().int().positive().optional().describe("每页条数（默认 20）"),
+    searchText: z.string().optional().describe("搜索关键字"),
+    tags: z.array(z.string()).optional().describe("按标签过滤"),
+    page: z.number().int().positive().optional().describe("页码，默认 1"),
+    pageSize: z.number().int().positive().optional().describe("每页条数，默认 20"),
   }),
   handler: (args: {
     personId: number;
@@ -328,34 +289,33 @@ const daliurenListFunction = {
   returns: {
     schema: {
       type: "object",
-      description: "返回 {records: 记录列表, total: 总数}",
+      description: "起课记录列表",
     },
   },
 };
 
 const daliurenViewFunction = {
   name: "DaLiuRenView",
-  description: "查看指定大六壬起课记录的详情：返回完整课式数据（含四课三传、神将等）。",
+  description: "查看指定大六壬起课记录的完整课式详情。",
   zodSchema: z.object({
     personId: personIdSchema,
     recordId: z.number().int().positive().describe("起课记录 ID"),
   }),
   handler: (args: { personId: number; recordId: number }) => peepOrThrow().DaLiuRenView(args),
   returns: {
-    schema: { type: "object", description: "返回起课记录完整数据" },
+    schema: { type: "object", description: "起课记录详情" },
   },
 };
 
 const wikiListFunction = {
   name: "WikiList",
-  description:
-    "查询 Wiki 文档列表：支持按关键字搜索、按标签过滤、分页。返回文档摘要（id、标题、标签、更新时间）。",
+  description: "查询 Wiki 文档列表，可按关键字、标签过滤并分页。",
   zodSchema: z.object({
     personId: personIdSchema,
-    searchText: z.string().optional().describe("搜索关键字（匹配标题、内容）"),
+    searchText: z.string().optional().describe("按标题或正文搜索"),
     tags: z.array(z.string()).optional().describe("按标签过滤"),
-    page: z.number().int().positive().optional().describe("页码"),
-    pageSize: z.number().int().positive().optional().describe("每页条数"),
+    page: z.number().int().positive().optional().describe("页码，默认 1"),
+    pageSize: z.number().int().positive().optional().describe("每页条数，默认 20"),
   }),
   handler: (args: {
     personId: number;
@@ -365,22 +325,22 @@ const wikiListFunction = {
     pageSize?: number;
   }) => peepOrThrow().WikiList(args),
   returns: {
-    schema: { type: "object", description: "返回 {docs: 文档摘要列表, total: 总数}" },
+    schema: {
+      type: "object",
+      description: "Wiki 文档列表",
+    },
   },
 };
 
 const wikiCreateFunction = {
   name: "WikiCreate",
-  description: "创建 Wiki 文档：输入命主 ID、标题、正文（Markdown 格式）、标签、关联文档 ID 列表。",
+  description: "创建一篇 Wiki 文档（Markdown 正文），可设置标签与关联文档。",
   zodSchema: z.object({
     personId: personIdSchema,
     title: z.string().describe("文档标题"),
-    content: z.string().describe("文档正文（Markdown 格式）"),
+    content: z.string().describe("Markdown 正文"),
     tags: z.array(z.string()).optional().describe("标签"),
-    linkTargetIds: z
-      .array(z.number().int().positive())
-      .optional()
-      .describe("关联的其他文档 ID 列表（建立双向链接）"),
+    linkTargetIds: z.array(z.number().int().positive()).optional().describe("关联文档 ID"),
   }),
   handler: (args: {
     personId: number;
@@ -390,13 +350,13 @@ const wikiCreateFunction = {
     linkTargetIds?: number[];
   }) => peepOrThrow().WikiCreate(args),
   returns: {
-    schema: { type: "object", description: "返回保存后的文档（含 id）" },
+    schema: { type: "object", description: "保存后的文档" },
   },
 };
 
 const wikiViewFunction = {
   name: "WikiView",
-  description: "查看指定 Wiki 文档详情：返回完整内容（含 Markdown 正文、标签、关联文档 ID）。",
+  description: "查看指定 Wiki 文档的完整内容。",
   zodSchema: z.object({
     personId: personIdSchema,
     docId: z.number().int().positive().describe("文档 ID"),
@@ -405,7 +365,7 @@ const wikiViewFunction = {
   returns: {
     schema: {
       type: "object",
-      description: "返回文档完整数据（含 content、tags、linkTargetIds）",
+      description: "Wiki 文档，content 为 Markdown 正文",
     },
   },
 };
@@ -414,8 +374,7 @@ const wikiViewFunction = {
 const FUNCTION_GROUPS: RtcAgentConfig["groups"] = [
   {
     name: "person",
-    description:
-      "人物管理——增删改查命主档案。AI 应先调用 PersonList 确认可用的人物，再决定分析哪位命主。",
+    description: "命主档案增删改查",
     functions: [
       personListFunction,
       personGetFunction,
@@ -426,13 +385,12 @@ const FUNCTION_GROUPS: RtcAgentConfig["groups"] = [
   },
   {
     name: "ziwei",
-    description: "紫微斗数排盘与运限分析——通过 ZiWei Function 获取完整盘面数据",
+    description: "紫微斗数排盘与运限",
     functions: [ziweiFunction],
   },
   {
     name: "daliuren",
-    description:
-      "大六壬起课——占卜具体事件的吉凶。纯计算（DaLiuRen）或保存到档案（DaLiuRenCreate/List/View）",
+    description: "大六壬起课与占卜",
     functions: [
       daliurenCalcFunction,
       daliurenCreateFunction,
@@ -442,7 +400,7 @@ const FUNCTION_GROUPS: RtcAgentConfig["groups"] = [
   },
   {
     name: "wiki",
-    description: "Wiki 知识库——命理笔记、典籍摘录、案例分析的结构化存储",
+    description: "命理知识库管理",
     functions: [wikiListFunction, wikiCreateFunction, wikiViewFunction],
   },
 ];

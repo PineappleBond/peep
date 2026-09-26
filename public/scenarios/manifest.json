@@ -1,0 +1,24 @@
+{
+  "scenarios": [
+    {
+      "file": "ziwei-analysis.md",
+      "name": "紫微斗数排盘分析",
+      "description": "为命主进行紫微斗数排盘，分析本命盘格局与运限"
+    },
+    {
+      "file": "daliuren-divination.md",
+      "name": "大六壬起课占卜",
+      "description": "针对具体事件起课占卜，解读四课三传"
+    },
+    {
+      "file": "person-management.md",
+      "name": "人物档案管理",
+      "description": "创建、查看、更新、删除命主人物"
+    },
+    {
+      "file": "wiki-knowledge.md",
+      "name": "Wiki 知识库使用",
+      "description": "检索和创建命理知识文档"
+    }
+  ]
+}
