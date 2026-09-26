@@ -8,12 +8,37 @@ import { VitePWA } from "vite-plugin-pwa";
 // Bundle 分析：设 ANALYZE=1 启用；会生成 stats.html 可视化报告（gitignore 掉）
 const enableAnalyze = process.env.ANALYZE === "1";
 
+// base 尾斜杠兼容：Vite 8 在 base 配 '/peep/' 时，访问 '/peep'（无尾斜杠）会
+// 返回友好提示页而不是 301 重定向。浏览器地址栏输入 '/peep' 很常见，加个 middleware
+// 自动 redirect 到 '/peep/'，避免用户看到 Vite 的 did-you-mean 提示。
+const BASE_PATH = "/peep/";
+const BASE_WITHOUT_SLASH = BASE_PATH.replace(/\/$/, ""); // "/peep"
+function redirectBaseSlashPlugin() {
+  return {
+    name: "peep:redirect-base-slash",
+    configureServer(server: { middlewares: { use: (fn: (req: { url?: string }, res: { writeHead: (code: number, headers: Record<string, string>) => void; end: () => void }, next: () => void) => void) => void } }) {
+      server.middlewares.use((req, res, next) => {
+        // 精确匹配 '/peep'（带 query 也处理：'/peep?x=1' → '/peep/?x=1'）
+        if (req.url === BASE_WITHOUT_SLASH || req.url?.startsWith(BASE_WITHOUT_SLASH + "?")) {
+          const query = req.url.slice(BASE_WITHOUT_SLASH.length); // "?x=1" 或 ""
+          res.writeHead(301, { Location: BASE_PATH + query });
+          res.end();
+          return;
+        }
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig({
   // GitHub Pages 部署在子路径 https://<user>.github.io/peep/；
   // Vite 会据此给所有静态资源 URL 自动加前缀，并在 index.html 注入正确的 base 引用。
   // 尾斜杠必须带：'/peep/' 是目录，'/peep' 是文件——浏览器解析相对路径时两者行为不同。
   base: "/peep/",
   plugins: [
+    // 子路径尾斜杠兼容：'/peep' → 301 → '/peep/'
+    redirectBaseSlashPlugin(),
     react(),
     // 生产构建移除源码中的 console.log / console.debug / console.info（保留 error / warn）
     removeConsoleCalls(),

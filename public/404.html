@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>紫微斗数 · 跳转中…</title>
+    <!--
+      GitHub Pages SPA 重定向脚本
+
+      背景：GitHub Pages 是静态托管，不支持 URL 重写；当用户直接访问 /peep/liuren
+      这种 SPA 路由时，服务器会返回 404。本文件作为 GitHub Pages 的 404 响应页面，
+      通过 JS 把请求重定向回 /peep/，并把原始路径存入 sessionStorage 供主应用恢复。
+
+      部署：本文件由 Vite 在 build 时原样 copy 到 dist/404.html，部署到 gh-pages 分支
+      根目录即可生效。GitHub Pages 检测到仓库根存在 404.html 后，会把所有未命中文件
+      的请求交给它。
+
+      与主应用的配合：见 src/main.tsx 启动时的 sessionStorage 读取 + replaceState 逻辑。
+
+      ⚠️ 子路径前缀 '/peep' 必须与 vite.config.ts 的 base 保持一致。
+    -->
+    <script>
+      (function () {
+        // 子路径前缀（对应 vite.config.ts 的 base，去掉首尾斜杠）
+        var BASE_SEGMENT = "peep";
+        var path = window.location.pathname; // 例如 "/peep/liuren"
+        // 剥掉 '/peep' 前缀，得到 react-router 视角下的路径（如 "/liuren"）
+        var prefix = "/" + BASE_SEGMENT;
+        var routerPath = path.indexOf(prefix) === 0 ? path.slice(prefix.length) : path;
+        if (!routerPath) routerPath = "/";
+        try {
+          sessionStorage.setItem("spa-redirect-path", routerPath);
+          if (window.location.search) {
+            sessionStorage.setItem("spa-redirect-search", window.location.search);
+          }
+          if (window.location.hash) {
+            sessionStorage.setItem("spa-redirect-hash", window.location.hash);
+          }
+        } catch (_e) {
+          /* 隐私模式 / quota 超限，降级：直接跳首页，丢失原始路径 */
+        }
+        // 重定向到 /peep/（带尾斜杠，避免 GitHub Pages 再做一次路径规范化产生多余跳转）
+        window.location.replace(
+          "/" + BASE_SEGMENT + "/" + window.location.search + window.location.hash,
+        );
+      })();
+    </script>
+  </head>
+  <body>
+    <p>正在跳转…</p>
+  </body>
+</html>
