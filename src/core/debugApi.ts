@@ -425,21 +425,28 @@ export async function ZiWei(
     // 1. 切换人物（操控 UI）
     await _selectPerson(resolvedId);
 
-    // 等待 astrolabe 重新计算 + useEffect 重置 pick 完成
-    await new Promise(r => setTimeout(r, 100));
-
     const z = _getZwds();
     if (!z) {
       throw new Error("排盘数据未就绪");
     }
 
-    // 2. 设置时间（在 useEffect 重置之后）
+    // 等待 astrolabe 更新 + useEffect 重置 pick 完成（轮询验证替代盲等）
+    await waitForPersonMatch(resolvedId, 2000);
+    await waitForAstrolabeStable(z, 2000);
+    // useEffect 的 commit 阶段需要一帧才能执行重置，确保 pick 已到达"今天"
+    await nextFrame();
+
+    // 验证 pick 已被 useEffect 重置（轮询检测，非盲等）
+    await waitForPickReset(z, 1000);
+    log("debug", "ZiWei", "pick 已重置", { pick: z.pick });
+
+    // 2. 设置时间（在 useEffect 重置完成之后，带验证和重试）
     if (time) {
       const date = parseDate(time);
       if (isNaN(date.getTime())) {
         throw new Error(`无法解析时间：${time}`);
       }
-      setHoroscopeTime(z, date);
+      await setHoroscopeTimeWithRetry(z, date);
     }
 
     // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
@@ -447,9 +454,8 @@ export async function ZiWei(
       z.actions.showScope(scope);
     }
 
-    // 4. 等待所有状态更新完成（多次 rAF + 延时确保 React 状态更新和渲染完成）
-    await new Promise(r => setTimeout(r, 200));
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    // 4. 等待所有状态更新完成（轮询 + rAF 确保 React 状态和渲染完成）
+    await waitForStateUpdate();
 
     // 5. 获取数据
     const person = _getPerson();
@@ -491,8 +497,14 @@ function parseDate(time: Date | number | string): Date {
   return new Date(str);
 }
 
-/** 设置运限时间：根据 Date 设置年月日时 */
-function setHoroscopeTime(z: Zwds, date: Date): void {
+/**
+ * 设置运限时间：根据 Date 设置年月日时。
+ * 纯同步函数，仅调用 actions 不验证结果。
+ */
+function _setHoroscopeTime(
+  z: Zwds,
+  date: Date,
+): { year: number; month: number; day: number; hour: number } {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -506,6 +518,52 @@ function setHoroscopeTime(z: Zwds, date: Date): void {
   z.actions.pickMonth(month, false);
   z.actions.pickDay(day);
   z.actions.pickHour(hourIdx);
+
+  return { year, month, day, hour: hourIdx };
+}
+
+/**
+ * 设置运限时间（带验证和重试）：
+ * 1. 调用 _setHoroscopeTime 设置 pick
+ * 2. 等待 React 渲染
+ * 3. 验证 pick 是否匹配预期值
+ * 4. 如果不匹配（可能被 useEffect 重置），最多重试 2 次
+ */
+async function setHoroscopeTimeWithRetry(z: Zwds, date: Date, maxRetries = 2): Promise<void> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const expected = _setHoroscopeTime(z, date);
+
+    // 等待 React 处理状态更新（双 rAF）
+    await nextFrame();
+    await nextFrame();
+
+    // 验证 pick 是否匹配预期
+    const matched = await waitForPickMatch(z, expected, 300);
+    if (matched) {
+      if (attempt > 0) {
+        log("info", "ZiWei", `setHoroscopeTime 重试 ${attempt} 次后成功`, { expected });
+      } else {
+        log("debug", "ZiWei", "setHoroscopeTime 验证通过", { expected });
+      }
+      return;
+    }
+
+    // pick 不匹配，可能被 useEffect 重置——记录并重试
+    log("warn", "ZiWei", `setHoroscopeTime 验证失败，pick 被重置`, {
+      attempt: attempt + 1,
+      expected,
+      actual: z.pick,
+    });
+
+    if (attempt < maxRetries) {
+      // 等待一小段时间再重试，让 useEffect 完成
+      await new Promise(r => setTimeout(r, 50));
+    }
+  }
+
+  throw new Error(
+    `setHoroscopeTime 重试 ${maxRetries} 次后仍失败：pick=${JSON.stringify(z.pick)}，期望=${JSON.stringify(date)}`,
+  );
 }
 
 /**
@@ -956,14 +1014,165 @@ export async function WikiView(params: {
  * 辅助函数
  * ============================================================ */
 
-/** 辅助函数：等待页面加载 */
-function waitForPageLoad(): Promise<void> {
-  return new Promise(r => setTimeout(r, 200));
+/**
+ * 辅助函数：等待页面加载。
+ * 改进：轮询验证回调就绪状态（而非盲等 200ms），但保留最小延时确保 DOM 初次渲染完成。
+ */
+async function waitForPageLoad(): Promise<void> {
+  // 最小延时：确保 React 完成初次渲染（DOM 挂载、useEffect 执行）
+  await new Promise(r => setTimeout(r, 50));
+
+  // 轮询验证：等待回调注册完成（最多 500ms）
+  const start = Date.now();
+  const maxWait = 500;
+  while (Date.now() - start < maxWait) {
+    // 只要有任一回调查询接口就绪，认为页面已加载
+    if (_callbacksReady.ziwei || _callbacksReady.daliuren || _callbacksReady.wiki) {
+      log("debug", "wait", "页面加载完成", { elapsed: Date.now() - start });
+      return;
+    }
+    await new Promise(r => setTimeout(r, 20));
+  }
+  // 超时但不抛错——某些页面可能不注册回调（如纯展示页）
+  log("warn", "wait", "页面加载等待超时，继续执行", { maxWait });
 }
 
-/** 辅助函数：等待状态更新 */
-function waitForStateUpdate(): Promise<void> {
-  return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+/**
+ * 辅助函数：等待状态更新。
+ * 改进：双 rAF 确保 React 渲染完成，再轮询验证 pick 稳定（最多 300ms）。
+ */
+async function waitForStateUpdate(): Promise<void> {
+  // 双 rAF 确保 React commit 阶段完成
+  await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+  // 轮询验证 pick 稳定（如果在 ZiWei 上下文中）
+  if (!_getZwds) return;
+  const z = _getZwds();
+  if (!z) return;
+
+  const start = Date.now();
+  let lastPick = JSON.stringify(z.pick);
+  const maxWait = 300;
+  while (Date.now() - start < maxWait) {
+    await new Promise(r => setTimeout(r, 20));
+    const currentPick = JSON.stringify(z.pick);
+    if (currentPick === lastPick) {
+      // pick 连续两次采样相同，认为已稳定
+      return;
+    }
+    lastPick = currentPick;
+  }
+  log("warn", "wait", "状态更新等待超时", { maxWait });
+}
+
+/** 等待下一帧（确保 useEffect commit 阶段执行完成） */
+function nextFrame(): Promise<void> {
+  return new Promise(r => requestAnimationFrame(_ts => r()));
+}
+
+/**
+ * 等待人物匹配：轮询验证当前选中人物的 ID 是否符合预期。
+ * 替代盲等 100ms，通过检测 _getPerson() 的实际值判断切换是否完成。
+ */
+async function waitForPersonMatch(expectedId: number, timeout = 2000): Promise<void> {
+  if (!_getPerson) {
+    log("warn", "wait", "getPerson 回调未注册，跳过人物验证");
+    return;
+  }
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const person = _getPerson();
+    if (person && person.id === expectedId) {
+      log("debug", "wait", "人物匹配成功", {
+        expectedId,
+        actualId: person.id,
+        elapsed: Date.now() - start,
+      });
+      return;
+    }
+    await new Promise(r => setTimeout(r, 20));
+  }
+  throw new Error(`等待人物切换超时（期望 ID=${expectedId}，超时 ${timeout}ms）`);
+}
+
+/**
+ * 等待 astrolabe 稳定：轮询验证 astrolabe 引用不再变化。
+ * 解决竞态：selectPerson 触发 astrolabe 重新计算，需要等其稳定后再操作 pick。
+ */
+async function waitForAstrolabeStable(z: Zwds, timeout = 2000): Promise<void> {
+  const start = Date.now();
+  let lastAstrolabe = z.astrolabe;
+  let stableCount = 0;
+  const requiredStable = 2; // 连续 2 次采样（间隔 30ms）相同，认为已稳定
+
+  while (Date.now() - start < timeout) {
+    await new Promise(r => setTimeout(r, 30));
+    if (z.astrolabe === lastAstrolabe) {
+      stableCount++;
+      if (stableCount >= requiredStable) {
+        log("debug", "wait", "astrolabe 已稳定", { elapsed: Date.now() - start });
+        return;
+      }
+    } else {
+      lastAstrolabe = z.astrolabe;
+      stableCount = 0; // 重新计数
+    }
+  }
+  throw new Error(`等待 astrolabe 稳定超时（${timeout}ms）`);
+}
+
+/**
+ * 等待 pick 被 useEffect 重置为"今天"。
+ * 轮询验证 pick 的年月日是否为当前日期（clamped 到 birthLunarYear）。
+ */
+async function waitForPickReset(z: Zwds, timeout = 1000): Promise<void> {
+  const now = new Date();
+  const expectedYear = now.getFullYear();
+  const expectedMonth = now.getMonth() + 1;
+  const expectedDay = now.getDate();
+
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    // pick 已被重置：年月日匹配"今天"（birthLunarYear clamp 只影响远古出生者，现代日期不受影响）
+    if (
+      z.pick.year === expectedYear &&
+      z.pick.month === expectedMonth &&
+      z.pick.day === expectedDay
+    ) {
+      log("debug", "wait", "pick 已重置为今天", {
+        pick: z.pick,
+        elapsed: Date.now() - start,
+      });
+      return;
+    }
+    await new Promise(r => setTimeout(r, 20));
+  }
+  // 超时不抛错——可能是 birthLunarYear clamp 生效，或用户已在今天之前操作
+  log("warn", "wait", "pick 重置等待超时，当前值可能非今天", { pick: z.pick, timeout });
+}
+
+/**
+ * 等待 pick 匹配预期值：轮询验证 pick 的年月日时是否符合预期。
+ * 用于 setHoroscopeTime 后的验证，确保设置生效。
+ */
+async function waitForPickMatch(
+  z: Zwds,
+  expected: { year: number; month: number; day: number; hour: number },
+  timeout = 500,
+): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    if (
+      z.pick.year === expected.year &&
+      z.pick.month === expected.month &&
+      z.pick.day === expected.day &&
+      z.pick.hour === expected.hour
+    ) {
+      return true;
+    }
+    await new Promise(r => setTimeout(r, 15));
+  }
+  return false;
 }
 
 /**
