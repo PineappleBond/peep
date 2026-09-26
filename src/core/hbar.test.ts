@@ -167,16 +167,18 @@ describe("hbar 运限拨盘计算", () => {
       }
     });
 
-    it("闰年 13 个月（闰月插入正确位置）", () => {
+    it("闰年仍为 12 个阳历月——某个阳历月标签带闰月前缀", () => {
       const months = buildMonths(2025, 6); // 2025 闰六月
-      expect(months).toHaveLength(13);
-      const leapCell = months.find(m => m.leap);
-      expect(leapCell).toBeDefined();
-      expect(leapCell!.month).toBe(6);
-      expect(leapCell!.label).toBe("闰六月");
-      // 闰月与正六月干支相同
-      const normal6 = months.find(m => m.month === 6 && !m.leap);
-      expect(leapCell!.gz).toBe(normal6!.gz);
+      expect(months).toHaveLength(12);
+      // month 严格为阳历 1-12，顺序递增
+      for (let i = 0; i < 12; i++) {
+        expect(months[i].month).toBe(i + 1);
+        expect(months[i].leap).toBe(false);
+        expect(months[i].solarLabel).toBe(`${i + 1}月`);
+      }
+      // 某个阳历月的农历标签会带"闰六月"前缀（覆盖闰六月的阳历月）
+      const leapLabeled = months.find(m => m.label === "闰六月");
+      expect(leapLabeled).toBeDefined();
     });
   });
 

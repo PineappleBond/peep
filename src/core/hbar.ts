@@ -139,36 +139,43 @@ export function buildYears(
   return list;
 }
 
-/** 计算流月列表（含闰月）：以农历月为主循环，闰年插入闰月位 */
-export function buildMonths(pickYear: number, yearLeapMonth: number): CellMonth[] {
+/**
+ * 计算流月列表：以阳历月 1-12 为主循环，与 pick.month（阳历）语义一致。
+ * 每个月用 15 号作为代表日，通过 solar2lunar 反查农历月以计算干支与月名。
+ */
+export function buildMonths(pickYear: number, _yearLeapMonth: number): CellMonth[] {
   const list: CellMonth[] = [];
-  // 遍历农历月 1-12
-  for (let lunarMonth = 1; lunarMonth <= 12; lunarMonth++) {
-    // 用该农历月的初一近似对应阳历日（取该月15号作为代表）
-    // 通过 solar2lunar 反查：用 pickYear 的 1-12 阳历月15号近似映射
-    // 此处直接用 monthGanZhi 按农历年月计算干支
-    const lunarLabel =
-      lunarMonth === 1 ? `${yearGanZhi(pickYear)}年` : LUNAR_MONTHS[lunarMonth - 1];
+  for (let solarMonth = 1; solarMonth <= 12; solarMonth++) {
+    // 取该阳历月 15 号作为代表日，反查农历月
+    const solarDate = new Date(pickYear, solarMonth - 1, 15);
+    let lunarMonth: number;
+    let isLeap = false;
+    try {
+      const lunar = solar2lunar(solarDate);
+      lunarMonth = lunar.lunarMonth;
+      isLeap = lunar.isLeap;
+    } catch {
+      // 转换失败时退化为阳历月
+      lunarMonth = solarMonth;
+    }
+    // 干支按农历月计算（monthGanZhi 参数为农历）
     const gz = monthGanZhi(pickYear, lunarMonth);
-    // 近似对应阳历月：农历月 + 1（粗略，仅用于 solarLabel 显示）
-    const approxSolarMonth = Math.min(lunarMonth + 1, 12);
+    // 农历月标签：正月显示干支年，其余显示农历月名
+    // 若底层农历月为闰月，加"闰"前缀
+    const lunarName = LUNAR_MONTHS[lunarMonth - 1] ?? `${lunarMonth}月`;
+    const lunarLabel =
+      lunarMonth === 1 && !isLeap
+        ? `${yearGanZhi(pickYear)}年`
+        : isLeap
+          ? `闰${lunarName}`
+          : lunarName;
     list.push({
-      month: lunarMonth,
-      leap: false,
+      month: solarMonth, // 阳历月，与 pick.month 一致
+      leap: false, // 阳历主循环无闰月位
       label: lunarLabel,
-      solarLabel: `${approxSolarMonth}月`,
+      solarLabel: `${solarMonth}月`,
       gz,
     });
-    // 如果当前月是闰月月份，在正月之后追加闰月位
-    if (yearLeapMonth > 0 && lunarMonth === yearLeapMonth) {
-      list.push({
-        month: lunarMonth, // 闰月单元格的 month 取农历闰月月份
-        leap: true,
-        label: `闰${LUNAR_MONTHS[lunarMonth - 1]}`,
-        solarLabel: `${approxSolarMonth}月`,
-        gz, // 闰月沿用本月干支
-      });
-    }
   }
   return list;
 }
