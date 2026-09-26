@@ -11,16 +11,21 @@ import { LiurenViewDialog } from "../components/daliuren/LiurenViewDialog";
 import { LiurenEditDialog } from "../components/daliuren/LiurenEditDialog";
 import { LiurenDeleteDialog } from "../components/daliuren/LiurenDeleteDialog";
 import type { LiurenRecord, Person } from "../core/personDb";
-import { getDefaultPerson } from "../core/personDb";
 import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
-import { globalEvents } from "../core/events";
 import { registerDaLiuRenCallbacks } from "../core/debugApi";
+import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 
 export function DaLiuRenPage() {
-  const [person, setPerson] = useState<Person | null>(null);
+  // 列表刷新计数器（用于在 Dialog 操作后触发刷新）
+  const { refreshKey: listRefreshKey, refresh: refreshList, refreshRef: listRefreshKeyRef } = useRefreshKey();
+
+  // 默认人物加载 + 切换监听（切换后清空选中、刷新列表）
+  const { person, initError } = useDefaultPerson((newPerson: Person) => {
+    setSelectedRecord(null);
+    refreshList();
+  });
+
   const [selectedRecord, setSelectedRecord] = useState<LiurenRecord | null>(null);
-  /** 初始化失败时展示错误提示（避免无限 loading） */
-  const [initError, setInitError] = useState<string | null>(null);
 
   // Dialog 状态
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -28,11 +33,6 @@ export function DaLiuRenPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dialogRecord, setDialogRecord] = useState<LiurenRecord | null>(null);
-
-  // 列表刷新计数器（用于在 Dialog 操作后触发刷新）
-  const [listRefreshKey, setListRefreshKey] = useState(0);
-  const listRefreshKeyRef = useRef(0);
-  listRefreshKeyRef.current = listRefreshKey;
 
   // LiurenList 组件 ref（用于调试 API 设置过滤条件）
   const liurenListRef = useRef<LiurenListHandle>(null);
@@ -45,33 +45,6 @@ export function DaLiuRenPage() {
   const selectedRecordRef = useRef<LiurenRecord | null>(null);
   // 调试 API：submitCreateForm 轮询定时器（组件卸载时清理，防止泄漏）
   const submitPollRef = useRef<{ interval: ReturnType<typeof setInterval>; timeout: ReturnType<typeof setTimeout> } | null>(null);
-
-  // 获取当前人物（默认人物）
-  useEffect(() => {
-    getDefaultPerson()
-      .then((p) => {
-        if (p.id != null) setPerson(p);
-        else setInitError("未找到默认人物，请刷新页面重试");
-      })
-      .catch((err) => {
-        console.error("[DaLiuRenPage] 加载默认人物失败", err);
-        setInitError("加载人物信息失败，请检查浏览器存储设置后刷新页面");
-      });
-  }, []);
-
-  // 监听人物切换事件——切换后刷新列表、清空右侧盘面
-  useEffect(() => {
-    const handlePersonChanged = (newPerson: Person) => {
-      if (newPerson.id == null) return;
-      setPerson(newPerson);
-      setSelectedRecord(null);
-      setListRefreshKey((k) => k + 1);
-    };
-    globalEvents.on("person.changed", handlePersonChanged);
-    return () => {
-      globalEvents.off("person.changed", handlePersonChanged);
-    };
-  }, []);
 
   // 同步 selectedRecord 到 ref（供调试 API 的 getSelectedRecord 回调读取最新值）
   useEffect(() => {
@@ -193,11 +166,6 @@ export function DaLiuRenPage() {
     setDialogRecord(record);
     setViewDialogOpen(true);
   };
-
-  // Dialog 保存/删除后刷新列表，同步右侧盘面
-  const refreshList = useCallback(() => {
-    setListRefreshKey((k) => k + 1);
-  }, []);
 
   const handleCreateSaved = useCallback(() => {
     refreshList();

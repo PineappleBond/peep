@@ -4,41 +4,31 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Person, WikiDocument } from "../core/personDb";
-import { getDefaultPerson } from "../core/personDb";
 import { saveWikiDoc, deleteWikiDoc, saveWikiLinks, getWikiDoc, getAllWikiTags, listWikiDocs, type WikiListFilters } from "../core/wikiDb";
-import { globalEvents } from "../core/events";
 import { registerWikiCallbacks } from "../core/debugApi";
 import { WikiList, type WikiListHandle } from "../components/wiki/WikiList";
 import { WikiReader } from "../components/wiki/WikiReader";
 import { WikiEditor } from "../components/wiki/WikiEditor";
 import { Dialog } from "../components/Dialog";
+import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 
 export function WikiPage() {
-  const [person, setPerson] = useState<Person | null>(null);
+  const { refreshKey: listRefreshKey, refresh: refreshList } = useRefreshKey();
   const [selectedDoc, setSelectedDoc] = useState<WikiDocument | null>(null);
   const [mode, setMode] = useState<"read" | "edit">("read");
   const [editingDoc, setEditingDoc] = useState<WikiDocument | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingDoc, setDeletingDoc] = useState<WikiDocument | null>(null);
-  const [listRefreshKey, setListRefreshKey] = useState(0);
   const [existingTags, setExistingTags] = useState<string[]>([]);
-  /** 初始化失败时展示错误提示（避免无限 loading） */
-  const [initError, setInitError] = useState<string | null>(null);
   const wikiListRef = useRef<WikiListHandle>(null);
   const selectedDocRef = useRef<WikiDocument | null>(null);
 
-  // 初始化：获取默认人物
-  useEffect(() => {
-    getDefaultPerson()
-      .then((p) => {
-        if (p.id != null) setPerson(p);
-        else setInitError("未找到默认人物，请刷新页面重试");
-      })
-      .catch((err) => {
-        console.error("[WikiPage] 加载默认人物失败", err);
-        setInitError("加载人物信息失败，请检查浏览器存储设置后刷新页面");
-      });
-  }, []);
+  // 默认人物加载 + 切换监听（切换后清空选中、刷新列表、切回阅读模式）
+  const { person, initError } = useDefaultPerson(() => {
+    setSelectedDoc(null);
+    setMode("read");
+    refreshList();
+  });
 
   // 同步 selectedDoc 到 ref，避免闭包过时
   useEffect(() => {
@@ -67,7 +57,7 @@ export function WikiPage() {
       saveWikiDoc: async (doc: WikiDocument, linkTargetIds: number[]) => {
         const savedId = await saveWikiDoc(doc);
         await saveWikiLinks(savedId, linkTargetIds);
-        setListRefreshKey((k) => k + 1);
+        refreshList();
         const refreshed = await getWikiDoc(savedId);
         if (refreshed) {
           setSelectedDoc(refreshed);
@@ -87,22 +77,7 @@ export function WikiPage() {
       },
       getSelectedWikiDoc: () => selectedDocRef.current,
     });
-  }, [person]);
-
-  // 监听人物切换事件——切换后刷新列表、清空选中
-  useEffect(() => {
-    const handlePersonChanged = (newPerson: Person) => {
-      if (newPerson.id == null) return;
-      setPerson(newPerson);
-      setSelectedDoc(null);
-      setMode("read");
-      setListRefreshKey((k) => k + 1);
-    };
-    globalEvents.on("person.changed", handlePersonChanged);
-    return () => {
-      globalEvents.off("person.changed", handlePersonChanged);
-    };
-  }, []);
+  }, [person, refreshList]);
 
   // 刷新已有标签列表
   useEffect(() => {
@@ -156,12 +131,12 @@ export function WikiPage() {
       if (selectedDoc?.id === deletingDoc.id) {
         setSelectedDoc(null);
       }
-      setListRefreshKey((k) => k + 1);
+      refreshList();
     } catch (err) {
       console.error("[WikiPage] 删除文档失败", err);
       alert(err instanceof Error ? err.message : "删除文档失败，请重试");
     }
-  }, [deletingDoc, selectedDoc]);
+  }, [deletingDoc, selectedDoc, refreshList]);
 
   // 编辑保存
   const handleSave = useCallback(async (doc: WikiDocument, linkTargetIds: number[]) => {
@@ -171,7 +146,7 @@ export function WikiPage() {
       // 保存链接关系
       await saveWikiLinks(savedId, linkTargetIds);
       // 刷新列表
-      setListRefreshKey((k) => k + 1);
+      refreshList();
       // 切换到 read 模式，选中新/更新的文档
       const refreshed = await getWikiDoc(savedId);
       if (refreshed) {
