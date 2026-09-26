@@ -635,6 +635,10 @@
   "errorBoundary.heapPrefix": "堆栈",
   "errorBoundary.copied": "错误信息已复制到剪贴板",
   "errorBoundary.copyFailed": "复制失败",
+  "errorBoundary.reportError": "报告错误",
+  "errorBoundary.reportErrorTitle": "复制错误报告（JSON 格式）用于反馈",
+  "errorBoundary.autoRetrying": "正在自动重试（{current}/{max}）...",
+  "errorBoundary.autoRetried": "已自动重试 {count} 次仍未恢复",
 
   "devDashboard.title": "开发者性能仪表板",
   "devDashboard.group": "开发者",

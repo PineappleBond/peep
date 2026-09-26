@@ -56,7 +56,7 @@ export function ZiweiPage() {
   return (
     <div className="ziwei-page">
       {z.astrolabe ? (
-        <ErrorBoundary>
+        <ErrorBoundary name="ZiweiPage.Chart" maxAutoRetries={1}>
           <div data-guide="ziwei-dial">
             <HoroscopeBar z={z} />
           </div>

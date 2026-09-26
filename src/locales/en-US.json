@@ -636,6 +636,10 @@
   "errorBoundary.heapPrefix": "Stack",
   "errorBoundary.copied": "Error info copied to clipboard",
   "errorBoundary.copyFailed": "Copy failed",
+  "errorBoundary.reportError": "Report Error",
+  "errorBoundary.reportErrorTitle": "Copy error report (JSON) for feedback",
+  "errorBoundary.autoRetrying": "Auto-retrying ({current}/{max})...",
+  "errorBoundary.autoRetried": "Auto-retried {count} times without recovery",
 
   "devDashboard.title": "Dev Performance Dashboard",
   "devDashboard.group": "Developer",

@@ -91,7 +91,7 @@ function App() {
   }, [locale]);
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary name="App.Root">
       {/* 全局 5:3 双栏布局：左侧紫微斗数主内容，右侧 RTC Agent AI 助手 */}
       <div className="rtc-layout">
         <div className="rtc-layout-main">

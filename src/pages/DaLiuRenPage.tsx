@@ -14,6 +14,7 @@ import { LiurenEditDialog } from "../components/daliuren/LiurenEditDialog";
 import { LiurenDeleteDialog } from "../components/daliuren/LiurenDeleteDialog";
 import { Spinner } from "../components/Spinner";
 import { ExportDialog } from "../components/ExportDialog";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import type { LiurenRecord, Person } from "../core/personDb";
 import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
 import { registerDaLiuRenCallbacks, unregisterPageCallbacks } from "../core/debugApi";
@@ -253,26 +254,28 @@ export function DaLiuRenPage() {
 
   return (
     <div className="liuren-page">
-      <div className="liuren-layout">
-        <div className="liuren-left" data-guide="liuren-list">
-          <LiurenList
-            ref={liurenListRef}
-            personId={person.id!}
-            selectedId={selectedRecord?.id ?? null}
-            onSelect={handleSelect}
-            onNewClick={handleNewClick}
-            onEditClick={handleEditClick}
-            onDeleteClick={handleDeleteClick}
-            onViewClick={handleViewClick}
-            refreshKey={listRefreshKey}
-          />
-        </div>
-        <div className="liuren-right">
-          <div data-guide="liuren-chart">
-            <LiurenChart record={selectedRecord} />
+      <ErrorBoundary name="DaLiuRenPage" maxAutoRetries={1}>
+        <div className="liuren-layout">
+          <div className="liuren-left" data-guide="liuren-list">
+            <LiurenList
+              ref={liurenListRef}
+              personId={person.id!}
+              selectedId={selectedRecord?.id ?? null}
+              onSelect={handleSelect}
+              onNewClick={handleNewClick}
+              onEditClick={handleEditClick}
+              onDeleteClick={handleDeleteClick}
+              onViewClick={handleViewClick}
+              refreshKey={listRefreshKey}
+            />
+          </div>
+          <div className="liuren-right">
+            <div data-guide="liuren-chart">
+              <LiurenChart record={selectedRecord} />
+            </div>
           </div>
         </div>
-      </div>
+      </ErrorBoundary>
 
       {/* Dialogs */}
       <LiurenCreateDialog

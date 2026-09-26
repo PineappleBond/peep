@@ -409,7 +409,7 @@ export function Layout({ children }: LayoutProps) {
       {/* 快捷键帮助弹窗（体积较小，保持 eager 加载） */}
       <ShortcutHelp />
       {/* 重型对话框：懒加载 + 共享 Suspense 占位 + 错误边界兜底 */}
-      <ErrorBoundary>
+      <ErrorBoundary name="Layout.Dialogs">
         <Suspense>
           <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
           <ImportDialog

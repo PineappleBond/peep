@@ -22,6 +22,7 @@ import { WikiEditor } from "../components/wiki/WikiEditor";
 import { Dialog } from "../components/Dialog";
 import { Spinner } from "../components/Spinner";
 import { ExportDialog } from "../components/ExportDialog";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 import { toast } from "../core/toast";
 import { registerShortcuts } from "../core/shortcuts";
@@ -277,49 +278,51 @@ export function WikiPage() {
 
   return (
     <div className="wiki-page">
-      <div className="wiki-header">
-        <h2 className="wiki-title">{t("wiki.title")}</h2>
-        <button className="wiki-export-btn" onClick={handleExport} title={t("wiki.exportTitle")}>
-          {t("wiki.export")}
-        </button>
-      </div>
-      <div className="wiki-layout">
-        <div className="wiki-left" data-guide="wiki-list">
-          <WikiList
-            ref={wikiListRef}
-            personId={person.id!}
-            selectedId={selectedDoc?.id ?? null}
-            onSelect={handleSelect}
-            onNewClick={handleNewClick}
-            onEditClick={handleEditClick}
-            onDeleteClick={handleDeleteClick}
-            refreshKey={listRefreshKey}
-            personName={person.name || ""}
-          />
+      <ErrorBoundary name="WikiPage" maxAutoRetries={1}>
+        <div className="wiki-header">
+          <h2 className="wiki-title">{t("wiki.title")}</h2>
+          <button className="wiki-export-btn" onClick={handleExport} title={t("wiki.exportTitle")}>
+            {t("wiki.export")}
+          </button>
         </div>
-        <div className="wiki-right">
-          {mode === "read" ? (
-            <div data-guide="wiki-related">
-              <WikiReader
-                doc={selectedDoc}
-                personName={person.name || ""}
-                onEditClick={() => selectedDoc && handleEditClick(selectedDoc)}
-                onDocClick={handleDocClick}
-              />
-            </div>
-          ) : (
-            <div data-guide="wiki-editor">
-              <WikiEditor
-                doc={editingDoc}
-                personId={person.id!}
-                existingTags={existingTags}
-                onSave={handleSave}
-                onCancel={handleCancel}
-              />
-            </div>
-          )}
+        <div className="wiki-layout">
+          <div className="wiki-left" data-guide="wiki-list">
+            <WikiList
+              ref={wikiListRef}
+              personId={person.id!}
+              selectedId={selectedDoc?.id ?? null}
+              onSelect={handleSelect}
+              onNewClick={handleNewClick}
+              onEditClick={handleEditClick}
+              onDeleteClick={handleDeleteClick}
+              refreshKey={listRefreshKey}
+              personName={person.name || ""}
+            />
+          </div>
+          <div className="wiki-right">
+            {mode === "read" ? (
+              <div data-guide="wiki-related">
+                <WikiReader
+                  doc={selectedDoc}
+                  personName={person.name || ""}
+                  onEditClick={() => selectedDoc && handleEditClick(selectedDoc)}
+                  onDocClick={handleDocClick}
+                />
+              </div>
+            ) : (
+              <div data-guide="wiki-editor">
+                <WikiEditor
+                  doc={editingDoc}
+                  personId={person.id!}
+                  existingTags={existingTags}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
 
       {/* 删除确认 Dialog */}
       <Dialog
