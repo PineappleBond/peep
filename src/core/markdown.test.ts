@@ -9,9 +9,57 @@ describe("renderMarkdown HTML 转义", () => {
     expect(html).not.toContain("<script>");
   });
 
+  it("转义双引号和单引号，防止属性注入", () => {
+    const html = renderMarkdown('He said "hello" & it\'s fine');
+    expect(html).toContain("&quot;hello&quot;");
+    expect(html).toContain("&#39;");
+  });
+
   it("转义代码块内的 HTML 特殊字符", () => {
     const html = renderMarkdown("```\n<div>test</div>\n```");
     expect(html).toContain("&lt;div&gt;");
+  });
+
+  it("拒绝 javascript: 链接，防止 XSS", () => {
+    const html = renderMarkdown("[click](javascript:alert(1))");
+    // 不应生成包含 javascript: 的 href
+    expect(html).not.toContain("javascript:");
+    expect(html).not.toContain("<a ");
+    // 应仅渲染文本
+    expect(html).toContain("click");
+  });
+
+  it("拒绝 data: 链接，防止 XSS", () => {
+    const html = renderMarkdown("[click](data:text/html,<script>alert(1)</script>)");
+    expect(html).not.toContain("<a ");
+    expect(html).not.toContain("data:");
+  });
+
+  it("拒绝 vbscript: 链接", () => {
+    const html = renderMarkdown("[click](vbscript:MsgBox(1))");
+    expect(html).not.toContain("<a ");
+    expect(html).not.toContain("vbscript:");
+  });
+
+  it("允许 https 正常链接", () => {
+    const html = renderMarkdown("[click](https://example.com)");
+    expect(html).toContain('href="https://example.com"');
+    expect(html).toContain("<a ");
+  });
+
+  it("允许 http 正常链接", () => {
+    const html = renderMarkdown("[click](http://example.com)");
+    expect(html).toContain('href="http://example.com"');
+  });
+
+  it("允许 mailto 链接", () => {
+    const html = renderMarkdown("[email](mailto:test@example.com)");
+    expect(html).toContain('href="mailto:test@example.com"');
+  });
+
+  it("允许相对路径链接", () => {
+    const html = renderMarkdown("[link](/path/to/page)");
+    expect(html).toContain('href="/path/to/page"');
   });
 });
 

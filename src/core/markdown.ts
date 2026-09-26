@@ -12,7 +12,28 @@ function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * 校验链接 URL 是否安全。
+ * 仅允许 http/https/mailto 协议，拒绝 javascript: / data: / vbscript: 等危险协议。
+ * 防止通过 Markdown 链接语法注入可执行脚本（XSS）。
+ */
+function isSafeUrl(url: string): boolean {
+  // 去除转义后的空白字符（攻击者可能插入编码后的空白绕过检测）
+  const cleaned = url.replace(/%20|\s/g, "").toLowerCase();
+  // 仅允许 http:// https:// mailto: 开头，或相对路径（以 / 或 # 或字母数字开头）
+  if (/^(https?:\/\/|mailto:|\/|#|[a-z0-9])/.test(cleaned)) {
+    // 显式拒绝 javascript: / data: / vbscript: 等危险协议
+    if (/^(javascript|data|vbscript):/i.test(cleaned)) {
+      return false;
+    }
+    return true;
+  }
+  return false;
 }
 
 /** 处理行内格式：粗体、斜体、行内代码、链接 */
@@ -23,10 +44,21 @@ function renderInline(text: string): string {
   text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   // 斜体 *text*（排除已处理的粗体）
   text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
-  // 链接 [text](url)
+  // 链接 [text](url)——仅允许安全协议（http/https/mailto/相对路径），拒绝 javascript: 等
   text = text.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+    (_m, linkText, rawUrl) => {
+      // rawUrl 已被 escapeHtml 转义，需还原后再校验协议
+      const decodedUrl = rawUrl
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&");
+      if (!isSafeUrl(decodedUrl)) {
+        // 不安全 URL：仅渲染文本，不生成链接
+        return linkText;
+      }
+      return `<a href="${rawUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+    }
   );
   return text;
 }
