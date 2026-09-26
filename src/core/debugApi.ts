@@ -170,17 +170,8 @@ export async function ZiWei(
     throw new Error(`scope 无效：${scope}，需为 decadal/yearly/monthly/daily/hourly 之一`);
   }
   try {
-    // 跳转到 / 页面（紫微斗数）
-    if (_navigate) {
-      _navigate("/");
-    } else {
-      // 降级：直接跳转（会刷新页面）
-      window.location.href = "/";
-    }
-
-    // 等待 ZiweiPage 的回调注册完成
-    await waitForCallbacks("ziwei");
-    await waitForPageLoad();
+    // 跳转到 / 页面（紫微斗数）并等待回调注册
+    await navigateToPage("/", "ziwei");
 
     if (!_selectPerson || !_getZwds || !_getPerson) {
       throw new Error("调试 API 未初始化，请确认 App 已加载");
@@ -233,7 +224,7 @@ export async function ZiWei(
     return { person, hbar, chart };
   } catch (err) {
     console.error("[debugApi] ZiWei 执行失败", err);
-    throw err instanceof Error ? err : new Error(`ZiWei 执行失败：${String(err)}`);
+    throw wrapDebugError("ZiWei", err);
   }
 }
 
@@ -297,25 +288,15 @@ export async function DaLiuRenCreate(params: {
   tags?: string[];
 }): Promise<LiurenRecord> {
   try {
-    // 1. 跳转到 /liuren 页面
-    if (_navigate) {
-      _navigate("/liuren");
-    } else {
-      // 降级：直接跳转（会刷新页面）
-      window.location.href = "/liuren";
-    }
-
-    // 等待 DaLiuRenPage 的回调注册完成
-    await waitForCallbacks("daliuren");
-    await waitForPageLoad();
+    // 1. 跳转到 /liuren 页面并等待回调注册
+    await navigateToPage("/liuren", "daliuren");
 
     if (!_selectPerson || !_openCreateDialog || !_fillCreateForm || !_submitCreateForm) {
       throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
     }
 
     // 2. 选择人物
-    await _selectPerson(params.personId);
-    await waitForStateUpdate();
+    await selectPersonAndWait(params.personId);
 
     // 3. 填写表单（在打开 Dialog 之前设置初始数据）
     _fillCreateForm({
@@ -337,7 +318,7 @@ export async function DaLiuRenCreate(params: {
     return record;
   } catch (err) {
     console.error("[debugApi] DaLiuRenCreate 执行失败", err);
-    throw err instanceof Error ? err : new Error(`DaLiuRenCreate 执行失败：${String(err)}`);
+    throw wrapDebugError("DaLiuRenCreate", err);
   }
 }
 
@@ -353,25 +334,15 @@ export async function DaLiuRenList(params: {
   pageSize?: number;
 }): Promise<{ records: LiurenRecord[]; total: number }> {
   try {
-    // 1. 跳转到 /liuren 页面
-    if (_navigate) {
-      _navigate("/liuren");
-    } else {
-      // 降级：直接跳转（会刷新页面）
-      window.location.href = "/liuren";
-    }
-
-    // 等待 DaLiuRenPage 的回调注册完成
-    await waitForCallbacks("daliuren");
-    await waitForPageLoad();
+    // 1. 跳转到 /liuren 页面并等待回调注册
+    await navigateToPage("/liuren", "daliuren");
 
     if (!_selectPerson || !_getDaLiuRenList) {
       throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
     }
 
     // 2. 选择人物
-    await _selectPerson(params.personId);
-    await waitForStateUpdate();
+    await selectPersonAndWait(params.personId);
 
     // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
     if (_setListFilters && (params.searchText || params.tags || params.page)) {
@@ -395,7 +366,7 @@ export async function DaLiuRenList(params: {
     return { records: result.records, total: result.total };
   } catch (err) {
     console.error("[debugApi] DaLiuRenList 执行失败", err);
-    throw err instanceof Error ? err : new Error(`DaLiuRenList 执行失败：${String(err)}`);
+    throw wrapDebugError("DaLiuRenList", err);
   }
 }
 
@@ -408,25 +379,15 @@ export async function DaLiuRenView(params: {
   recordId: number;
 }): Promise<LiurenRecord> {
   try {
-    // 1. 跳转到 /liuren 页面
-    if (_navigate) {
-      _navigate("/liuren");
-    } else {
-      // 降级：直接跳转（会刷新页面）
-      window.location.href = "/liuren";
-    }
-
-    // 等待 DaLiuRenPage 的回调注册完成
-    await waitForCallbacks("daliuren");
-    await waitForPageLoad();
+    // 1. 跳转到 /liuren 页面并等待回调注册
+    await navigateToPage("/liuren", "daliuren");
 
     if (!_selectPerson || !_selectRecord || !_getSelectedRecord) {
       throw new Error("大六壬调试 API 未初始化，请确认 DaLiuRenPage 已加载");
     }
 
     // 2. 选择人物
-    await _selectPerson(params.personId);
-    await waitForStateUpdate();
+    await selectPersonAndWait(params.personId);
 
     // 3. 点击某条记录（selectRecord 直接返回记录数据）
     const record = await _selectRecord(params.recordId);
@@ -441,7 +402,7 @@ export async function DaLiuRenView(params: {
     return selectedRecord;
   } catch (err) {
     console.error("[debugApi] DaLiuRenView 执行失败", err);
-    throw err instanceof Error ? err : new Error(`DaLiuRenView 执行失败：${String(err)}`);
+    throw wrapDebugError("DaLiuRenView", err);
   }
 }
 
@@ -457,24 +418,15 @@ export async function WikiList(params: {
   pageSize?: number;
 }): Promise<{ docs: WikiDocument[]; total: number }> {
   try {
-    // 1. 跳转到 /wiki 页面
-    if (_navigate) {
-      _navigate("/wiki");
-    } else {
-      window.location.href = "/wiki";
-    }
-
-    // 等待 WikiPage 的回调注册完成
-    await waitForCallbacks("wiki");
-    await waitForPageLoad();
+    // 1. 跳转到 /wiki 页面并等待回调注册
+    await navigateToPage("/wiki", "wiki");
 
     if (!_selectPerson || !_getWikiList) {
       throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
     }
 
     // 2. 选择人物
-    await _selectPerson(params.personId);
-    await waitForStateUpdate();
+    await selectPersonAndWait(params.personId);
 
     // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
     if (_setWikiListFilters && (params.searchText || params.tags || params.page)) {
@@ -498,7 +450,7 @@ export async function WikiList(params: {
     return { docs: result.docs, total: result.total };
   } catch (err) {
     console.error("[debugApi] WikiList 执行失败", err);
-    throw err instanceof Error ? err : new Error(`WikiList 执行失败：${String(err)}`);
+    throw wrapDebugError("WikiList", err);
   }
 }
 
@@ -514,24 +466,15 @@ export async function WikiCreate(params: {
   linkTargetIds?: number[];
 }): Promise<WikiDocument> {
   try {
-    // 1. 跳转到 /wiki 页面
-    if (_navigate) {
-      _navigate("/wiki");
-    } else {
-      window.location.href = "/wiki";
-    }
-
-    // 等待 WikiPage 的回调注册完成
-    await waitForCallbacks("wiki");
-    await waitForPageLoad();
+    // 1. 跳转到 /wiki 页面并等待回调注册
+    await navigateToPage("/wiki", "wiki");
 
     if (!_selectPerson || !_openWikiEditor || !_saveWikiDoc) {
       throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
     }
 
     // 2. 选择人物
-    await _selectPerson(params.personId);
-    await waitForStateUpdate();
+    await selectPersonAndWait(params.personId);
 
     // 3. 打开编辑器
     _openWikiEditor();
@@ -554,7 +497,7 @@ export async function WikiCreate(params: {
     return saved;
   } catch (err) {
     console.error("[debugApi] WikiCreate 执行失败", err);
-    throw err instanceof Error ? err : new Error(`WikiCreate 执行失败：${String(err)}`);
+    throw wrapDebugError("WikiCreate", err);
   }
 }
 
@@ -567,24 +510,15 @@ export async function WikiView(params: {
   docId: number;
 }): Promise<WikiDocument & { linkTargetIds: number[] }> {
   try {
-    // 1. 跳转到 /wiki 页面
-    if (_navigate) {
-      _navigate("/wiki");
-    } else {
-      window.location.href = "/wiki";
-    }
-
-    // 等待 WikiPage 的回调注册完成
-    await waitForCallbacks("wiki");
-    await waitForPageLoad();
+    // 1. 跳转到 /wiki 页面并等待回调注册
+    await navigateToPage("/wiki", "wiki");
 
     if (!_selectPerson || !_selectWikiDoc || !_getSelectedWikiDoc) {
       throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
     }
 
     // 2. 选择人物
-    await _selectPerson(params.personId);
-    await waitForStateUpdate();
+    await selectPersonAndWait(params.personId);
 
     // 3. 打开指定文档（selectWikiDoc 直接返回文档数据）
     const doc = await _selectWikiDoc(params.docId);
@@ -601,7 +535,7 @@ export async function WikiView(params: {
     return { ...selectedDoc, linkTargetIds };
   } catch (err) {
     console.error("[debugApi] WikiView 执行失败", err);
-    throw err instanceof Error ? err : new Error(`WikiView 执行失败：${String(err)}`);
+    throw wrapDebugError("WikiView", err);
   }
 }
 
@@ -613,6 +547,41 @@ function waitForPageLoad(): Promise<void> {
 /** 辅助函数：等待状态更新 */
 function waitForStateUpdate(): Promise<void> {
   return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+}
+
+/**
+ * 导航到指定页面并等待回调注册完成。
+ * 消除 ZiWei / DaLiuRen* / Wiki* 共用的 navigate + waitForCallbacks + waitForPageLoad 样板。
+ */
+async function navigateToPage(
+  path: string,
+  page: "ziwei" | "daliuren" | "wiki"
+): Promise<void> {
+  if (_navigate) {
+    _navigate(path);
+  } else {
+    window.location.href = path;
+  }
+  await waitForCallbacks(page);
+  await waitForPageLoad();
+}
+
+/**
+ * 统一选择人物并等待状态更新。
+ * 消除多个调试 API 函数共用的 _selectPerson + waitForStateUpdate 样板。
+ */
+async function selectPersonAndWait(personId: number): Promise<void> {
+  await _selectPerson!(personId);
+  await waitForStateUpdate();
+}
+
+/**
+ * 错误包装：保证调试 API 抛出的错误始终是 Error 实例，
+ * 且消息包含来源标签便于排查。
+ */
+function wrapDebugError(label: string, err: unknown): Error {
+  if (err instanceof Error) return err;
+  return new Error(`${label} 执行失败：${String(err)}`);
 }
 
 /** 辅助函数：等待 Dialog 打开 */
