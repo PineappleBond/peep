@@ -13,7 +13,7 @@ import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
 import { getWikiLinks, type WikiListFilters, type WikiListResult } from "./wikiDb";
 
 /**
- * 运限级别（已统一使用 utils.Scope，此处为向后兼容保留别名）。
+ * 运限级别（已统一使用 utils/Scope，此处为向后兼容保留别名）。
  * @deprecated 请使用 `Scope`
  */
 export type ScopeName = Scope;
@@ -26,7 +26,69 @@ export type ZiWeiResult = {
   chart: ScopeChartData | null;
 };
 
-/** React 回调注册：从 App.tsx 注入 */
+/* ============================================================
+ * 结构化日志——分级、带分类标签、带时间戳。
+ * 相比直接 console.*，调试时更容易按类别过滤/定位问题。
+ * ============================================================ */
+
+/** 日志级别阈值（数值越大越严格） */
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
+
+/** 当前日志级别——开发环境默认 info，可通过 window.peep.setLogLevel 调整 */
+let currentLogLevel: LogLevel = "info";
+
+/** ANSI-free 颜色标记：让分类标签在控制台更醒目 */
+const LEVEL_STYLES: Record<LogLevel, string> = {
+  debug: "color:#888",
+  info: "color:#2196f3",
+  warn: "color:#ff9800",
+  error: "color:#f44336",
+};
+
+/**
+ * 核心日志函数——仅在 import.meta.env.DEV 下输出。
+ * 生产构建会被 tree-shaken 掉，零运行时开销。
+ */
+function log(level: LogLevel, category: string, message: string, data?: unknown): void {
+  if (!import.meta.env.DEV) return;
+  if (LOG_LEVELS[level] < LOG_LEVELS[currentLogLevel]) return;
+
+  const ts = new Date().toLocaleTimeString();
+  const prefix = `[peep ${ts}][${category}]`;
+  const method = level === "debug" ? "debug" : level === "info" ? "log" : level;
+
+  // 带 CSS 样式的 console 输出（浏览器支持 %c 占位符）
+  if (data !== undefined) {
+    // eslint-disable-next-line no-console
+    (console as any)[method](`%c${prefix}%c ${message}`, LEVEL_STYLES[level], "", data);
+  } else {
+    // eslint-disable-next-line no-console
+    (console as any)[method](`%c${prefix}%c ${message}`, LEVEL_STYLES[level], "");
+  }
+}
+
+/**
+ * 性能计时工具——返回一个 stop 函数，调用时打印耗时。
+ * 用法：const stop = timer("ZiWei"); ... stop(); // "ZiWei 耗时 23ms"
+ */
+function timer(category: string): () => void {
+  if (!import.meta.env.DEV) return () => {};
+  const start = performance.now();
+  return () => {
+    const duration = performance.now() - start;
+    log("debug", category, `耗时 ${duration.toFixed(1)}ms`);
+  };
+}
+
+/* ============================================================
+ * React 回调注册——从 App.tsx / 各页面注入
+ * ============================================================ */
+
 let _selectPerson: ((personId: number) => Promise<void>) | null = null;
 let _getZwds: (() => Zwds | null) | null = null;
 let _getPerson: (() => Person | null) | null = null;
@@ -93,6 +155,7 @@ export function registerZiWeiCallbacks(opts: {
 }) {
   _getZwds = opts.getZwds;
   _callbacksReady.ziwei = true;
+  log("debug", "init", "ZiWei 页面回调注册完成");
 }
 
 /** 注册大六壬页面回调（DaLiuRenPage.tsx 调用） */
@@ -113,6 +176,7 @@ export function registerDaLiuRenCallbacks(opts: {
   _selectRecord = opts.selectRecord;
   _getSelectedRecord = opts.getSelectedRecord;
   _callbacksReady.daliuren = true;
+  log("debug", "init", "DaLiuRen 页面回调注册完成");
 }
 
 /** 注册 Wiki 页面回调（WikiPage.tsx 调用） */
@@ -131,6 +195,7 @@ export function registerWikiCallbacks(opts: {
   _selectWikiDoc = opts.selectWikiDoc;
   _getSelectedWikiDoc = opts.getSelectedWikiDoc;
   _callbacksReady.wiki = true;
+  log("debug", "init", "Wiki 页面回调注册完成");
 }
 
 /** 等待页面回调注册完成 */
@@ -138,11 +203,17 @@ async function waitForCallbacks(page: "ziwei" | "daliuren" | "wiki", timeout = 3
   const start = Date.now();
   while (!_callbacksReady[page]) {
     if (Date.now() - start > timeout) {
-      throw new Error(`${page} 页面的调试 API 回调注册超时（${timeout}ms）`);
+      const err = new Error(`${page} 页面的调试 API 回调注册超时（${timeout}ms）`);
+      log("error", page, "回调注册超时", { timeout, callbacksReady: _callbacksReady });
+      throw err;
     }
     await new Promise((r) => setTimeout(r, 50));
   }
 }
+
+/* ============================================================
+ * 核心调试 API 方法
+ * ============================================================ */
 
 /**
  * 核心调试接口：切换人物 + 运限级别 + 时间，同时操控 UI 并返回数据
@@ -162,14 +233,18 @@ export async function ZiWei(
   scope?: Scope,
   time?: Date | number | string
 ): Promise<ZiWeiResult> {
-  // 输入校验
-  if (!Number.isFinite(personId) || personId <= 0) {
-    throw new Error(`personId 无效：${personId}，需为正整数`);
-  }
-  if (scope && !["decadal", "yearly", "monthly", "daily", "hourly"].includes(scope)) {
-    throw new Error(`scope 无效：${scope}，需为 decadal/yearly/monthly/daily/hourly 之一`);
-  }
+  const stop = timer("ZiWei");
   try {
+    // 输入校验
+    if (!Number.isFinite(personId) || personId <= 0) {
+      throw new Error(`personId 无效：${personId}，需为正整数`);
+    }
+    if (scope && !["decadal", "yearly", "monthly", "daily", "hourly"].includes(scope)) {
+      throw new Error(`scope 无效：${scope}，需为 decadal/yearly/monthly/daily/hourly 之一`);
+    }
+
+    log("info", "ZiWei", "开始执行", { personId, scope, time });
+
     // 跳转到 / 页面（紫微斗数）并等待回调注册
     await navigateToPage("/", "ziwei");
 
@@ -221,9 +296,11 @@ export async function ZiWei(
       });
     }
 
+    log("info", "ZiWei", "执行成功", { personId: person?.id, scope, hasChart: !!chart });
+    stop();
     return { person, hbar, chart };
   } catch (err) {
-    console.error("[debugApi] ZiWei 执行失败", err);
+    log("error", "ZiWei", "执行失败", err);
     throw wrapDebugError("ZiWei", err);
   }
 }
@@ -273,6 +350,7 @@ export function DaLiuRen(
   time: string,
   fateInput?: { birthYear: number; gender: "男" | "女" }
 ): DaLiuRenResult {
+  log("info", "DaLiuRen", "纯计算排盘", { date, time, fateInput });
   return calculateDaLiuRen(date, time, fateInput);
 }
 
@@ -287,7 +365,10 @@ export async function DaLiuRenCreate(params: {
   background?: string;
   tags?: string[];
 }): Promise<LiurenRecord> {
+  const stop = timer("DaLiuRenCreate");
   try {
+    log("info", "DaLiuRenCreate", "开始创建起课", { personId: params.personId, question: params.question });
+
     // 1. 跳转到 /liuren 页面并等待回调注册
     await navigateToPage("/liuren", "daliuren");
 
@@ -315,9 +396,11 @@ export async function DaLiuRenCreate(params: {
     const record = await _submitCreateForm();
     await waitForSaveComplete();
 
+    log("info", "DaLiuRenCreate", "创建成功", { recordId: record.id });
+    stop();
     return record;
   } catch (err) {
-    console.error("[debugApi] DaLiuRenCreate 执行失败", err);
+    log("error", "DaLiuRenCreate", "执行失败", err);
     throw wrapDebugError("DaLiuRenCreate", err);
   }
 }
@@ -333,7 +416,10 @@ export async function DaLiuRenList(params: {
   page?: number;
   pageSize?: number;
 }): Promise<{ records: LiurenRecord[]; total: number }> {
+  const stop = timer("DaLiuRenList");
   try {
+    log("info", "DaLiuRenList", "查询列表", { personId: params.personId, searchText: params.searchText, tags: params.tags });
+
     // 1. 跳转到 /liuren 页面并等待回调注册
     await navigateToPage("/liuren", "daliuren");
 
@@ -363,9 +449,11 @@ export async function DaLiuRenList(params: {
     };
     const result = await _getDaLiuRenList(filters);
 
+    log("info", "DaLiuRenList", "查询成功", { total: result.total, returned: result.records.length });
+    stop();
     return { records: result.records, total: result.total };
   } catch (err) {
-    console.error("[debugApi] DaLiuRenList 执行失败", err);
+    log("error", "DaLiuRenList", "执行失败", err);
     throw wrapDebugError("DaLiuRenList", err);
   }
 }
@@ -378,7 +466,10 @@ export async function DaLiuRenView(params: {
   personId: number;
   recordId: number;
 }): Promise<LiurenRecord> {
+  const stop = timer("DaLiuRenView");
   try {
+    log("info", "DaLiuRenView", "查看详情", { personId: params.personId, recordId: params.recordId });
+
     // 1. 跳转到 /liuren 页面并等待回调注册
     await navigateToPage("/liuren", "daliuren");
 
@@ -399,9 +490,11 @@ export async function DaLiuRenView(params: {
       throw new Error(`记录 ${params.recordId} 未找到或加载失败`);
     }
 
+    log("info", "DaLiuRenView", "查看成功", { recordId: selectedRecord.id });
+    stop();
     return selectedRecord;
   } catch (err) {
-    console.error("[debugApi] DaLiuRenView 执行失败", err);
+    log("error", "DaLiuRenView", "执行失败", err);
     throw wrapDebugError("DaLiuRenView", err);
   }
 }
@@ -417,7 +510,10 @@ export async function WikiList(params: {
   page?: number;
   pageSize?: number;
 }): Promise<{ docs: WikiDocument[]; total: number }> {
+  const stop = timer("WikiList");
   try {
+    log("info", "WikiList", "查询文档列表", { personId: params.personId, searchText: params.searchText });
+
     // 1. 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
 
@@ -447,9 +543,11 @@ export async function WikiList(params: {
     };
     const result = await _getWikiList(filters);
 
+    log("info", "WikiList", "查询成功", { total: result.total, returned: result.docs.length });
+    stop();
     return { docs: result.docs, total: result.total };
   } catch (err) {
-    console.error("[debugApi] WikiList 执行失败", err);
+    log("error", "WikiList", "执行失败", err);
     throw wrapDebugError("WikiList", err);
   }
 }
@@ -465,7 +563,10 @@ export async function WikiCreate(params: {
   tags?: string[];
   linkTargetIds?: number[];
 }): Promise<WikiDocument> {
+  const stop = timer("WikiCreate");
   try {
+    log("info", "WikiCreate", "创建文档", { personId: params.personId, title: params.title });
+
     // 1. 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
 
@@ -494,9 +595,11 @@ export async function WikiCreate(params: {
     const saved = await _saveWikiDoc(doc, params.linkTargetIds || []);
     await waitForSaveComplete();
 
+    log("info", "WikiCreate", "创建成功", { docId: saved.id });
+    stop();
     return saved;
   } catch (err) {
-    console.error("[debugApi] WikiCreate 执行失败", err);
+    log("error", "WikiCreate", "执行失败", err);
     throw wrapDebugError("WikiCreate", err);
   }
 }
@@ -509,7 +612,10 @@ export async function WikiView(params: {
   personId: number;
   docId: number;
 }): Promise<WikiDocument & { linkTargetIds: number[] }> {
+  const stop = timer("WikiView");
   try {
+    log("info", "WikiView", "查看文档", { personId: params.personId, docId: params.docId });
+
     // 1. 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
 
@@ -532,12 +638,19 @@ export async function WikiView(params: {
 
     // 5. 查询正向链接目标 ID，附加到返回结果
     const linkTargetIds = selectedDoc.id ? await getWikiLinks(selectedDoc.id) : [];
+
+    log("info", "WikiView", "查看成功", { docId: selectedDoc.id, links: linkTargetIds.length });
+    stop();
     return { ...selectedDoc, linkTargetIds };
   } catch (err) {
-    console.error("[debugApi] WikiView 执行失败", err);
+    log("error", "WikiView", "执行失败", err);
     throw wrapDebugError("WikiView", err);
   }
 }
+
+/* ============================================================
+ * 辅助函数
+ * ============================================================ */
 
 /** 辅助函数：等待页面加载 */
 function waitForPageLoad(): Promise<void> {
@@ -599,6 +712,47 @@ function waitForSaveComplete(): Promise<void> {
   return new Promise((r) => setTimeout(r, 150));
 }
 
+/* ============================================================
+ * window.peep 暴露 + 辅助控制台工具
+ * ============================================================ */
+
+/**
+ * 版本信息打印——在控制台快速查看当前部署版本/构建时间/可用 API。
+ * 启动调试时的第一个调用建议。
+ */
+function version(): void {
+  // eslint-disable-next-line no-console
+  console.log(
+    `%c[peep]%c 版本 ${__PEEP_VERSION__}  构建于 ${__PEEP_BUILD_TIME__}`,
+    "color:#2196f3;font-weight:bold",
+    ""
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    "%c[peep]%c 可用调试 API:",
+    "color:#2196f3;font-weight:bold",
+    ""
+  );
+  // eslint-disable-next-line no-console
+  console.table([
+    { 方法: "ZiWei(personId, scope?, time?)", 说明: "紫微斗数排盘+运限操控" },
+    { 方法: "DaLiuRen(date, time, fateInput?)", 说明: "大六壬纯计算排盘" },
+    { 方法: "DaLiuRenCreate(params)", 说明: "大六壬起课（创建记录）" },
+    { 方法: "DaLiuRenList(params)", 说明: "大六壬起课列表" },
+    { 方法: "DaLiuRenView(params)", 说明: "大六壬起课详情" },
+    { 方法: "WikiCreate(params)", 说明: "Wiki 文档创建" },
+    { 方法: "WikiList(params)", 说明: "Wiki 文档列表" },
+    { 方法: "WikiView(params)", 说明: "Wiki 文档详情" },
+    { 方法: "setLogLevel(level)", 说明: "调整日志级别：debug/info/warn/error" },
+  ]);
+}
+
+/** 调整日志级别（调试时动态开启/关闭详细输出） */
+function setLogLevel(level: LogLevel): void {
+  currentLogLevel = level;
+  log("info", "logger", `日志级别调整为 ${level}`);
+}
+
 /** 初始化 window.peep（仅在开发环境） */
 export function initDebugApi() {
   if (typeof window === "undefined") return;
@@ -614,5 +768,9 @@ export function initDebugApi() {
     WikiList,
     WikiView,
     getChartDataForScope,
+    version,
+    setLogLevel,
   };
+
+  log("info", "init", "调试 API 已初始化——输入 peep.version() 查看可用方法");
 }
