@@ -9,6 +9,7 @@ import { Layout } from "./components/Layout";
 import { Spinner } from "./components/Spinner";
 import { ZiweiPage } from "./pages/ZiweiPage";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { DevDashboard } from "./components/DevDashboard";
 import { initDebugApi } from "./core/debugApi";
 import { useI18n } from "./core/i18n";
 
@@ -61,6 +62,8 @@ function App() {
             </Routes>
           </Suspense>
         </Layout>
+        {/* 开发者性能仪表板（仅 DEV 环境渲染） */}
+        <DevDashboard />
       </BrowserRouter>
     </ErrorBoundary>
   );
