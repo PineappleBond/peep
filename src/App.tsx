@@ -53,22 +53,10 @@ function NotFoundRedirect() {
   return <Navigate to="/" replace />;
 }
 
-/** 插件路由渲染器 —— 将插件注册的 routes 渲染为 <Route> 节点 */
-function PluginRoutes() {
-  const extensions = usePluginExtensions();
-  return (
-    <>
-      {extensions.routes.map(r => {
-        const Comp = r.element;
-        return <Route key={`plugin:${r.pluginId}:${r.path}`} path={r.path} element={<Comp />} />;
-      })}
-    </>
-  );
-}
-
 function App() {
   // 插件系统异步初始化：仅首次挂载触发
   const [pluginsReady, setPluginsReady] = useState(false);
+  const extensions = usePluginExtensions();
   useEffect(() => {
     let cancelled = false;
     initPlugins().then(() => {
@@ -91,7 +79,17 @@ function App() {
               <Route path="/viz" element={<VizPage />} />
               <Route path="/insights" element={<InsightsPage />} />
               {/* 插件路由：插件启用后自动注入 */}
-              {pluginsReady && <PluginRoutes />}
+              {pluginsReady &&
+                extensions.routes.map(r => {
+                  const Comp = r.element;
+                  return (
+                    <Route
+                      key={`plugin:${r.pluginId}:${r.path}`}
+                      path={r.path}
+                      element={<Comp />}
+                    />
+                  );
+                })}
               {/* 兜底：未知路径重定向到首页 */}
               <Route path="*" element={<NotFoundRedirect />} />
             </Routes>
