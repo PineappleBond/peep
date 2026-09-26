@@ -20,6 +20,7 @@ import { WikiReader } from "../components/wiki/WikiReader";
 import { WikiEditor } from "../components/wiki/WikiEditor";
 import { Dialog } from "../components/Dialog";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
+import { toast } from "../core/toast";
 
 export function WikiPage() {
   const { t } = useI18n();
@@ -109,7 +110,7 @@ export function WikiPage() {
         setMode("read");
       } catch (err) {
         console.error("[WikiPage] 加载文档详情失败", err);
-        alert(t("wiki.loadDocFailed"));
+        toast.error(t("wiki.loadDocFailed"));
       }
     },
     [t],
@@ -145,9 +146,10 @@ export function WikiPage() {
         setSelectedDoc(null);
       }
       refreshList();
+      toast.success(t("common.deleteSuccess"));
     } catch (err) {
       console.error("[WikiPage] 删除文档失败", err);
-      alert(err instanceof Error ? err.message : t("wiki.deleteFailed"));
+      toast.error(err instanceof Error ? err.message : t("wiki.deleteFailed"));
     }
   }, [deletingDoc, selectedDoc, refreshList, t]);
 
@@ -167,9 +169,10 @@ export function WikiPage() {
           setSelectedDoc(refreshed);
         }
         setMode("read");
+        toast.success(t("common.saveSuccess"));
       } catch (err) {
         console.error("[WikiPage] 保存文档失败", err);
-        alert(err instanceof Error ? err.message : t("wiki.saveFailed"));
+        toast.error(err instanceof Error ? err.message : t("wiki.saveFailed"));
       }
     },
     [refreshList, t],
@@ -189,7 +192,7 @@ export function WikiPage() {
       const docs = result.docs;
 
       if (docs.length === 0) {
-        alert(t("wiki.noDocsToExport"));
+        toast.warn(t("wiki.noDocsToExport"));
         return;
       }
 
@@ -234,9 +237,10 @@ export function WikiPage() {
       a.download = `llms-${person.name || "wiki"}.txt`;
       a.click();
       URL.revokeObjectURL(url);
+      toast.success(t("common.exportSuccess"));
     } catch (err) {
       console.error("[WikiPage] 导出失败", err);
-      alert(t("wiki.exportFailed"));
+      toast.error(t("wiki.exportFailed"));
     }
   }, [person, t]);
 
@@ -249,11 +253,11 @@ export function WikiPage() {
           setSelectedDoc(doc);
           setMode("read");
         } else {
-          alert(t("wiki.docNotFound"));
+          toast.warn(t("wiki.docNotFound"));
         }
       } catch (err) {
         console.error("[WikiPage] 加载关联文档失败", err);
-        alert(t("wiki.loadRelatedFailed"));
+        toast.error(t("wiki.loadRelatedFailed"));
       }
     },
     [t],

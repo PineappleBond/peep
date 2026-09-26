@@ -31,6 +31,11 @@
   "common.saveFailed": "Save failed, please try again",
   "common.deleteFailed": "Delete failed, please try again",
   "common.operationFailed": "Operation failed, please try again",
+  "common.saveSuccess": "Saved successfully",
+  "common.deleteSuccess": "Deleted successfully",
+  "common.copySuccess": "Copied to clipboard",
+  "common.exportSuccess": "Exported successfully",
+  "common.copied": "Copied",
 
   "common.switchToEnglish": "Switch to English",
   "common.switchToChinese": "Switch to Chinese",

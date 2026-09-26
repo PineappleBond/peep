@@ -9,6 +9,7 @@ import { LiurenFormFields, EMPTY_LIUREN_FORM, type LiurenFormValues } from "./Li
 import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord } from "../../core/personDb";
 import { useI18n } from "../../core/i18n";
+import { toast } from "../../core/toast";
 
 interface LiurenEditDialogProps {
   open: boolean;
@@ -64,6 +65,7 @@ export function LiurenEditDialog({ open, onClose, record, onSaved }: LiurenEditD
       await saveLiurenRecord(updated);
       onSaved();
       onClose();
+      toast.success(t("common.saveSuccess"));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("daliuren.saveFailed"));
     } finally {

@@ -8,6 +8,7 @@ import type { BirthInput } from "../core/useZwds";
 import { PersonDialog } from "./PersonDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { useI18n } from "../core/i18n";
+import { toast } from "../core/toast";
 
 type PersonSelectorProps = {
   /** 当前选中人物 ID */
@@ -62,9 +63,10 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
       const saved = await savePerson(editingPerson?.id, input, isDefault);
       onSelect(saved);
       await loadPersons();
+      toast.success(t("common.saveSuccess"));
     } catch (err) {
       console.error("[PersonSelector] 保存人物失败", err);
-      alert(err instanceof Error ? err.message : t("person.saveFailed"));
+      toast.error(err instanceof Error ? err.message : t("person.saveFailed"));
     }
   };
 
@@ -81,9 +83,10 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
       onSelect(defaultPerson);
       setConfirmDelete(null);
       await loadPersons();
+      toast.success(t("common.deleteSuccess"));
     } catch (err) {
       console.error("[PersonSelector] 删除人物失败", err);
-      alert(err instanceof Error ? err.message : t("person.deleteFailed"));
+      toast.error(err instanceof Error ? err.message : t("person.deleteFailed"));
     }
   };
 

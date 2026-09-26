@@ -7,6 +7,7 @@ import { Dialog } from "../Dialog";
 import { deleteLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord } from "../../core/personDb";
 import { useI18n } from "../../core/i18n";
+import { toast } from "../../core/toast";
 
 interface LiurenDeleteDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ export function LiurenDeleteDialog({ open, onClose, record, onDeleted }: LiurenD
       await deleteLiurenRecord(record.id);
       onDeleted();
       onClose();
+      toast.success(t("common.deleteSuccess"));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("daliuren.deleteFailed"));
     } finally {

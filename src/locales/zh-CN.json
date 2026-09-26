@@ -31,6 +31,11 @@
   "common.saveFailed": "保存失败，请重试",
   "common.deleteFailed": "删除失败，请重试",
   "common.operationFailed": "操作失败，请重试",
+  "common.saveSuccess": "保存成功",
+  "common.deleteSuccess": "删除成功",
+  "common.copySuccess": "已复制到剪贴板",
+  "common.exportSuccess": "导出成功",
+  "common.copied": "已复制",
 
   "common.switchToEnglish": "切换到英文",
   "common.switchToChinese": "切换到中文",

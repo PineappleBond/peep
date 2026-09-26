@@ -11,6 +11,7 @@ import { formatDate, formatDateTime } from "../../core/utils";
 import { saveLiurenRecord } from "../../core/daliurenDb";
 import type { LiurenRecord, Person } from "../../core/personDb";
 import { useI18n } from "../../core/i18n";
+import { toast } from "../../core/toast";
 
 interface LiurenCreateDialogProps {
   open: boolean;
@@ -127,6 +128,7 @@ export function LiurenCreateDialog({
       resetForm();
       onSaved();
       onClose();
+      toast.success(t("common.saveSuccess"));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("daliuren.createFailed"));
     } finally {

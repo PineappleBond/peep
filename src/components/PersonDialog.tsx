@@ -26,6 +26,7 @@ import { DEFAULT_BIRTH_INPUT } from "../core/useZwds";
 import type { Person } from "../core/personDb";
 import { Dialog } from "./Dialog";
 import { useI18n } from "../core/i18n";
+import { toast } from "../core/toast";
 
 type PersonDialogProps = {
   open: boolean;
@@ -164,19 +165,19 @@ export function PersonDialog({ open, onClose, onSave, initialData, title }: Pers
     e.preventDefault();
     // 客户端兜底校验（HTML5 校验可能因浏览器差异被绕过）
     if (!draft.date || !/^\d{4}-\d{1,2}-\d{1,2}$/.test(draft.date)) {
-      alert(t("person.invalidDateFormat"));
+      toast.warn(t("person.invalidDateFormat"));
       return;
     }
     if (draft.timeIndex < 0 || draft.timeIndex > 12) {
-      alert(t("person.timeIndexOutOfRange"));
+      toast.warn(t("person.timeIndexOutOfRange"));
       return;
     }
     if (draft.useTrueSolar && !draft.exactTime) {
-      alert(t("person.trueSolarRequiresTime"));
+      toast.warn(t("person.trueSolarRequiresTime"));
       return;
     }
     if (draft.useTrueSolar && draft.placeMode === "overseas" && !draft.timezone) {
-      alert(t("person.overseasRequiresTimezone"));
+      toast.warn(t("person.overseasRequiresTimezone"));
       return;
     }
     onSave(draft, isDefault);
