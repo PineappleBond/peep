@@ -33,6 +33,116 @@ export type ZiWeiResult = {
 };
 
 /* ============================================================
+ * 自定义错误类——带上下文信息、错误链、恢复建议。
+ * 生产环境通过 import.meta.env.DEV 控制是否输出敏感细节。
+ * ============================================================ */
+
+/**
+ * 紫微斗数基础错误类：所有 debugApi 自定义错误的基类。
+ * 包含上下文信息（输入参数、中间状态）和恢复建议。
+ */
+export class ZiWeiError extends Error {
+  /** 错误来源标签（如 "ZiWei"、"computeScopeData"） */
+  public readonly source: string;
+  /** 上下文信息：输入参数、中间状态等（仅 DEV 环境包含完整数据） */
+  public readonly context: Record<string, unknown>;
+  /** 恢复建议（对开发者友好的调试提示） */
+  public readonly suggestion?: string;
+  /** 原始错误（错误链） */
+  public readonly cause?: unknown;
+
+  constructor(
+    message: string,
+    source: string,
+    options?: {
+      context?: Record<string, unknown>;
+      suggestion?: string;
+      cause?: unknown;
+    },
+  ) {
+    // 开发环境：消息包含完整上下文；生产环境：仅包含概要消息
+    const fullMessage =
+      import.meta.env.DEV && options?.context
+        ? `${message}\n  来源: ${source}\n  上下文: ${JSON.stringify(options.context, null, 2)}${options?.suggestion ? `\n  建议: ${options.suggestion}` : ""}`
+        : message;
+    super(fullMessage);
+    this.name = "ZiWeiError";
+    this.source = source;
+    this.context = options?.context ?? {};
+    this.suggestion = options?.suggestion;
+    this.cause = options?.cause;
+    // 确保堆栈追踪可用（V8 引擎）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ErrCtor = Error as any;
+    if (typeof ErrCtor.captureStackTrace === "function") {
+      ErrCtor.captureStackTrace(this, new.target);
+    }
+  }
+}
+
+/**
+ * 日期解析错误：包含原始输入、尝试的格式列表和失败原因。
+ */
+export class ParseDateError extends ZiWeiError {
+  /** 原始输入值 */
+  public readonly rawInput: Date | number | string;
+  /** 尝试过的格式列表 */
+  public readonly attemptedFormats: string[];
+
+  constructor(
+    rawInput: Date | number | string,
+    attemptedFormats: string[],
+    reason: string,
+    cause?: unknown,
+  ) {
+    const formatsDesc =
+      attemptedFormats.length > 0 ? `尝试的格式: ${attemptedFormats.join(", ")}` : "未尝试任何格式";
+    super(
+      `日期解析失败: "${String(rawInput)}" (${typeof rawInput})\n  原因: ${reason}\n  ${formatsDesc}`,
+      "parseDate",
+      {
+        context: { rawInput: String(rawInput), inputType: typeof rawInput, attemptedFormats },
+        suggestion:
+          "支持的格式: ISO 8601 (2024-06-15T12:00:00)、YYYY-MM-DD HH:mm、YYYY-MM-DD、时间戳 (毫秒)",
+        cause,
+      },
+    );
+    this.name = "ParseDateError";
+    this.rawInput = rawInput;
+    this.attemptedFormats = attemptedFormats;
+  }
+}
+
+/**
+ * 运限计算错误：包含人物信息和日期等上下文。
+ */
+export class ComputeScopeError extends ZiWeiError {
+  constructor(
+    message: string,
+    options?: {
+      personId?: number;
+      personName?: string;
+      solarDate?: string;
+      context?: Record<string, unknown>;
+      suggestion?: string;
+      cause?: unknown;
+    },
+  ) {
+    super(message, "computeScopeData", {
+      context: {
+        personId: options?.personId,
+        personName: options?.personName,
+        solarDate: options?.solarDate,
+        ...options?.context,
+      },
+      suggestion: options?.suggestion ?? "请检查人物数据是否完整（出生年月日时、性别、历法）",
+      cause: options?.cause,
+    });
+    this.name = "ComputeScopeError";
+  }
+}
+
+/* ============================================================
  * 结构化日志——分级、带分类标签、带时间戳。
  * 相比直接 console.*，调试时更容易按类别过滤/定位问题。
  * ============================================================ */
@@ -232,7 +342,14 @@ async function waitForCallbacks(
   const start = Date.now();
   while (!_callbacksReady[page]) {
     if (Date.now() - start > timeout) {
-      const err = new Error(`${page} 页面的调试 API 回调注册超时（${timeout}ms）`);
+      const err = new ZiWeiError(
+        `${page} 页面的调试 API 回调注册超时（${timeout}ms）`,
+        "waitForCallbacks",
+        {
+          context: { page, timeout, callbacksReady: _callbacksReady },
+          suggestion: `请确认 ${page} 页面组件已正确挂载并注册回调`,
+        },
+      );
       log("error", page, "回调注册超时", { timeout, callbacksReady: _callbacksReady });
       throw err;
     }
@@ -402,99 +519,219 @@ export async function ZiWei(
   time?: Date | number | string,
 ): Promise<ZiWeiResult> {
   const stop = timer("ZiWei");
-  try {
-    // 解析人物 ID（不传则用默认）
-    const resolvedId = await resolvePersonId(personId);
-    // 输入校验
-    if (!Number.isFinite(resolvedId) || resolvedId <= 0) {
-      throw new Error(`personId 无效：${resolvedId}，需为正整数`);
-    }
-    if (scope && !["decadal", "yearly", "monthly", "daily", "hourly"].includes(scope)) {
-      throw new Error(`scope 无效：${scope}，需为 decadal/yearly/monthly/daily/hourly 之一`);
-    }
+  const maxRetries = 2;
+  let lastError: unknown = null;
 
-    log("info", "ZiWei", "开始执行", { personId, scope, time });
-
-    // 跳转到 / 页面（紫微斗数）并等待回调注册
-    await navigateToPage("/", "ziwei");
-
-    if (!_selectPerson || !_getZwds || !_getPerson) {
-      throw new Error("调试 API 未初始化，请确认 App 已加载");
-    }
-
-    // 1. 切换人物（操控 UI）
-    await _selectPerson(resolvedId);
-
-    const z = _getZwds();
-    if (!z) {
-      throw new Error("排盘数据未就绪");
-    }
-
-    // 等待 astrolabe 更新 + useEffect 重置 pick 完成（轮询验证替代盲等）
-    await waitForPersonMatch(resolvedId, 2000);
-    await waitForAstrolabeStable(z, 2000);
-    // useEffect 的 commit 阶段需要一帧才能执行重置，确保 pick 已到达"今天"
-    await nextFrame();
-
-    // 验证 pick 已被 useEffect 重置（轮询检测，非盲等）
-    await waitForPickReset(z, 1000);
-    log("debug", "ZiWei", "pick 已重置", { pick: z.pick });
-
-    // 2. 设置时间（在 useEffect 重置完成之后，带验证和重试）
-    if (time) {
-      const date = parseDate(time);
-      if (isNaN(date.getTime())) {
-        throw new Error(`无法解析时间：${time}`);
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // 解析人物 ID（不传则用默认）
+      const resolvedId = await resolvePersonId(personId);
+      // 输入校验
+      if (!Number.isFinite(resolvedId) || resolvedId <= 0) {
+        throw new ZiWeiError(`personId 无效：${resolvedId}，需为正整数`, "ZiWei", {
+          context: { personId, resolvedId },
+          suggestion: "请传入有效的人物 ID（正整数），或不传以使用默认人物",
+        });
       }
-      await setHoroscopeTimeWithRetry(z, date);
+      if (scope && !["decadal", "yearly", "monthly", "daily", "hourly"].includes(scope)) {
+        throw new ZiWeiError(
+          `scope 无效：${scope}，需为 decadal/yearly/monthly/daily/hourly 之一`,
+          "ZiWei",
+          {
+            context: { scope },
+            suggestion: "请使用有效的运限级别：decadal/yearly/monthly/daily/hourly",
+          },
+        );
+      }
+
+      log("info", "ZiWei", "开始执行", { personId, scope, time, attempt: attempt + 1 });
+
+      // 跳转到 / 页面（紫微斗数）并等待回调注册
+      await navigateToPage("/", "ziwei");
+
+      if (!_selectPerson || !_getZwds || !_getPerson) {
+        throw new ZiWeiError("调试 API 未初始化，请确认 App 已加载", "ZiWei", {
+          context: {
+            selectPersonReady: !!_selectPerson,
+            getZwdsReady: !!_getZwds,
+            getPersonReady: !!_getPerson,
+          },
+          suggestion: "请确认 App.tsx 已完成挂载，或等待页面加载完成后重试",
+        });
+      }
+
+      // 1. 切换人物（操控 UI）
+      await _selectPerson(resolvedId);
+
+      const z = _getZwds();
+      if (!z) {
+        throw new ZiWeiError("排盘数据未就绪", "ZiWei", {
+          context: { personId: resolvedId },
+          suggestion: "排盘引擎尚未初始化，请稍后重试。如持续出现请检查人物出生数据是否完整",
+        });
+      }
+
+      // 等待 astrolabe 更新 + useEffect 重置 pick 完成（轮询验证替代盲等）
+      await waitForPersonMatch(resolvedId, 2000);
+      await waitForAstrolabeStable(z, 2000);
+      // useEffect 的 commit 阶段需要一帧才能执行重置，确保 pick 已到达"今天"
+      await nextFrame();
+
+      // 验证 pick 已被 useEffect 重置（轮询检测，非盲等）
+      await waitForPickReset(z, 1000);
+      log("debug", "ZiWei", "pick 已重置", { pick: z.pick });
+
+      // 2. 设置时间（在 useEffect 重置完成之后，带验证和重试）
+      // parseDate 失败时抛出 ParseDateError（包含详细的格式信息和失败原因）
+      if (time) {
+        const date = parseDate(time);
+        await setHoroscopeTimeWithRetry(z, date);
+      }
+
+      // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
+      if (scope) {
+        z.actions.showScope(scope);
+      }
+
+      // 4. 等待所有状态更新完成（轮询 + rAF 确保 React 状态和渲染完成）
+      await waitForStateUpdate();
+
+      // 5. 获取数据
+      const person = _getPerson();
+      const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
+      const hbar = hbarBase ? { ...hbarBase, visible: { ...z.visible } } : null;
+
+      let chart: ScopeChartData | null = null;
+      if (scope && z.astrolabe && z.horoscope) {
+        chart = getChartDataForScope({
+          astrolabe: z.astrolabe,
+          horoscope: z.horoscope,
+          scope,
+        });
+      }
+
+      log("info", "ZiWei", "执行成功", { personId: person?.id, scope, hasChart: !!chart });
+      stop();
+      return { person, hbar, chart };
+    } catch (err) {
+      lastError = err;
+
+      // 自定义错误（ParseDateError / ZiWeiError）：不重试，直接抛出
+      if (err instanceof ZiWeiError) {
+        log("error", "ZiWei", "执行失败（不重试）", {
+          errorType: err.name,
+          message: err.message.split("\n")[0],
+          attempt: attempt + 1,
+        });
+        stop();
+        throw wrapDebugError("ZiWei", err);
+      }
+
+      // 超时/临时性错误：记录并重试
+      const isTimeout = err instanceof Error && /超时|timeout/i.test(err.message);
+      if (isTimeout && attempt < maxRetries) {
+        log("warn", "ZiWei", `检测到超时错误，第 ${attempt + 1} 次重试`, {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        await new Promise(r => setTimeout(r, 100 * (attempt + 1)));
+        continue;
+      }
+
+      // 其他错误：不重试
+      log("error", "ZiWei", "执行失败", err);
+      stop();
+      throw wrapDebugError("ZiWei", err);
     }
-
-    // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
-    if (scope) {
-      z.actions.showScope(scope);
-    }
-
-    // 4. 等待所有状态更新完成（轮询 + rAF 确保 React 状态和渲染完成）
-    await waitForStateUpdate();
-
-    // 5. 获取数据
-    const person = _getPerson();
-    const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
-    const hbar = hbarBase ? { ...hbarBase, visible: { ...z.visible } } : null;
-
-    let chart: ScopeChartData | null = null;
-    if (scope && z.astrolabe && z.horoscope) {
-      chart = getChartDataForScope({
-        astrolabe: z.astrolabe,
-        horoscope: z.horoscope,
-        scope,
-      });
-    }
-
-    log("info", "ZiWei", "执行成功", { personId: person?.id, scope, hasChart: !!chart });
-    stop();
-    return { person, hbar, chart };
-  } catch (err) {
-    log("error", "ZiWei", "执行失败", err);
-    throw wrapDebugError("ZiWei", err);
   }
+
+  // 所有重试均失败（仅超时错误会到达这里）
+  stop();
+  throw new ZiWeiError(`ZiWei 重试 ${maxRetries} 次后仍失败`, "ZiWei", {
+    context: { personId, scope, time, attempts: maxRetries + 1 },
+    suggestion: "连续多次超时，请检查设备性能或刷新页面后重试",
+    cause: lastError,
+  });
 }
 
-/** 解析时间：支持 Date/数字/字符串（含 "2024-06-15 12" 这种简写） */
+/**
+ * 解析时间：支持多种日期格式，失败时抛出 ParseDateError 并附带详细信息。
+ *
+ * 支持的格式：
+ * - Date 实例（直接返回）
+ * - 数字（时间戳，毫秒或秒）
+ * - ISO 8601：2024-06-15T12:00:00、2024-06-15T12:00:00.000Z
+ * - YYYY-MM-DD HH:mm:ss 或 YYYY-MM-DD HH:mm
+ * - YYYY-MM-DD HH（简写，自动补全分钟秒）
+ * - YYYY-MM-DD（自动补全 00:00:00）
+ * - 纯数字字符串（当作时间戳）
+ */
 function parseDate(time: Date | number | string): Date {
-  if (time instanceof Date) return time;
-  if (typeof time === "number") return new Date(time);
-  // 字符串：尝试补全时间部分
-  let str = time.trim();
-  // "2024-06-15 12" → "2024-06-15 12:00:00"
+  const attemptedFormats: string[] = [];
+
+  // Date 实例直接返回
+  if (time instanceof Date) {
+    if (isNaN(time.getTime())) {
+      throw new ParseDateError(time, ["Date 实例"], "Date 实例的值为 Invalid Date");
+    }
+    return time;
+  }
+
+  // 数字：时间戳（毫秒或秒）
+  if (typeof time === "number") {
+    // 小于 1e11 认为是秒级时间戳，自动转毫秒
+    const ms = time < 1e11 ? time * 1000 : time;
+    const d = new Date(ms);
+    if (isNaN(d.getTime())) {
+      throw new ParseDateError(time, ["时间戳 (毫秒)"], `时间戳 ${time} 解析为 Invalid Date`);
+    }
+    log("debug", "parseDate", "时间戳解析成功", { input: time, result: d.toISOString() });
+    return d;
+  }
+
+  // 字符串解析
+  let str = String(time).trim();
+  if (!str) {
+    throw new ParseDateError(time, [], "输入为空字符串");
+  }
+
+  // 尝试 1：纯数字字符串 → 当作时间戳
+  if (/^\d+$/.test(str)) {
+    attemptedFormats.push("纯数字字符串 (时间戳)");
+    const num = Number(str);
+    const ms = num < 1e11 ? num * 1000 : num;
+    const d = new Date(ms);
+    if (!isNaN(d.getTime())) {
+      log("debug", "parseDate", "时间戳字符串解析成功", { input: str, result: d.toISOString() });
+      return d;
+    }
+  }
+
+  // 尝试 2：YYYY-MM-DD HH（补全分钟和秒）
   if (/^\d{4}-\d{2}-\d{2}\s+\d{1,2}$/.test(str)) {
+    attemptedFormats.push("YYYY-MM-DD HH → YYYY-MM-DD HH:00:00");
     str += ":00:00";
   }
-  // "2024-06-15" → "2024-06-15 00:00:00"
+
+  // 尝试 3：YYYY-MM-DD（补全时间部分）
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    attemptedFormats.push("YYYY-MM-DD → YYYY-MM-DD 00:00:00");
     str += " 00:00:00";
   }
-  return new Date(str);
+
+  // 尝试 4：ISO 8601 或浏览器原生解析
+  attemptedFormats.push("ISO 8601 / 浏览器原生 Date.parse");
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    log("debug", "parseDate", "字符串解析成功", {
+      input: time,
+      format: attemptedFormats[attemptedFormats.length - 1],
+      result: d.toISOString(),
+    });
+    return d;
+  }
+
+  // 所有格式均失败
+  throw new ParseDateError(time, attemptedFormats, "所有尝试的格式均无法解析为有效日期");
 }
 
 /**
@@ -561,8 +798,13 @@ async function setHoroscopeTimeWithRetry(z: Zwds, date: Date, maxRetries = 2): P
     }
   }
 
-  throw new Error(
+  throw new ZiWeiError(
     `setHoroscopeTime 重试 ${maxRetries} 次后仍失败：pick=${JSON.stringify(z.pick)}，期望=${JSON.stringify(date)}`,
+    "setHoroscopeTime",
+    {
+      context: { maxRetries, expectedPick: date.toISOString(), actualPick: z.pick },
+      suggestion: "pick 值持续被 useEffect 重置，可能是 React 状态更新冲突。请尝试刷新页面后重试",
+    },
   );
 }
 
@@ -570,7 +812,8 @@ async function setHoroscopeTimeWithRetry(z: Zwds, date: Date, maxRetries = 2): P
  * 纯函数：从 Person 数据计算紫微斗数本命盘（不依赖 React 状态）
  *
  * @param person 人物数据（包含完整 BirthInput）
- * @returns iztro 本命盘对象，计算失败返回 null
+ * @returns iztro 本命盘对象
+ * @throws ComputeScopeError 排盘失败时抛出，包含人物上下文和恢复建议
  */
 function computeAstrolabe(person: Person) {
   try {
@@ -593,7 +836,19 @@ function computeAstrolabe(person: Person) {
     });
   } catch (e) {
     log("error", "computeAstrolabe", "排盘失败", e);
-    return null;
+    throw new ComputeScopeError("本命盘计算失败", {
+      personId: person.id,
+      personName: person.name,
+      context: {
+        calendar: person.calendar,
+        date: person.date,
+        timeIndex: person.timeIndex,
+        gender: person.gender,
+        algorithm: person.algorithm,
+      },
+      suggestion: "请检查人物数据是否完整：出生年月日时、性别、历法类型、算法配置",
+      cause: e,
+    });
   }
 }
 
@@ -601,48 +856,95 @@ function computeAstrolabe(person: Person) {
  * 纯函数：根据阳历日期获取人物的运限数据（大运/流年/流月/流日/流时）
  *
  * 不依赖 React 状态，可在任意上下文调用（调试 API、RTC Agent 等）。
+ * 计算失败时抛出 ComputeScopeError（包含人物信息和日期上下文），不再静默返回 null。
+ * 对于临时性错误（如 iztro 内部异常）自动重试最多 2 次。
  *
  * @param person 人物数据（包含完整 BirthInput）
  * @param solarDate 阳历日期（Date 对象或 YYYY-MM-DD 格式字符串）
- * @returns 运限拨盘完整数据，计算失败返回 null
+ * @returns 运限拨盘完整数据（buildHbarData 返回 null 时仍可能为 null，表示无运限数据）
+ * @throws ComputeScopeError 本命盘计算或日期解析失败时抛出
  */
 export function computeScopeData(person: Person, solarDate: Date | string): HbarData | null {
   const stop = timer("computeScopeData");
-  try {
-    const astrolabe = computeAstrolabe(person);
-    if (!astrolabe) {
-      log("error", "computeScopeData", "本命盘计算失败");
-      return null;
+  const maxRetries = 2;
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // 本命盘计算（computeAstrolabe 失败时抛 ComputeScopeError）
+      const astrolabe = computeAstrolabe(person);
+
+      // 日期解析：使用 parseDate 确保多格式支持，失败时抛 ParseDateError
+      const d = parseDate(solarDate);
+      if (isNaN(d.getTime())) {
+        throw new ParseDateError(solarDate, ["Date.parse"], "解析结果为 Invalid Date");
+      }
+
+      const birthLunarYear = astrolabe.rawDates.lunarDate.lunarYear;
+      // hbar 流月/流日按阳历排列，所以 pick 直接用阳历值
+      const pick = {
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        day: d.getDate(),
+        hour: Math.floor((d.getHours() + 1) / 2) % 12,
+        leap: false,
+      };
+
+      // 确保 pick.year 不早于出生农历年
+      if (pick.year < birthLunarYear) {
+        pick.year = birthLunarYear;
+      }
+
+      const result = buildHbarData(astrolabe, birthLunarYear, pick);
+      log("info", "computeScopeData", "计算成功", {
+        personId: person.id,
+        personName: person.name,
+        birthLunarYear,
+        pick,
+        hasResult: !!result,
+        attempt: attempt + 1,
+      });
+      stop();
+      return result;
+    } catch (err) {
+      lastError = err;
+
+      // 自定义错误（ComputeScopeError / ParseDateError）：不重试，直接抛出
+      if (err instanceof ZiWeiError) {
+        log("error", "computeScopeData", "计算失败（不重试）", {
+          personId: person.id,
+          attempt: attempt + 1,
+        });
+        stop();
+        throw err;
+      }
+
+      // 其他意外错误：记录并重试（可能是临时性引擎异常）
+      log("warn", "computeScopeData", `计算出现意外错误，第 ${attempt + 1} 次尝试`, {
+        personId: person.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+
+      if (attempt < maxRetries) {
+        // 短暂延迟后重试
+        const delayMs = 10 * (attempt + 1);
+        const waitUntil = Date.now() + delayMs;
+        while (Date.now() < waitUntil) {
+          /* busy wait (同步函数无法用 setTimeout) */
+        }
+      }
     }
-
-    const birthLunarYear = astrolabe.rawDates.lunarDate.lunarYear;
-    const d = typeof solarDate === "string" ? new Date(solarDate) : solarDate;
-    // hbar 流月/流日按阳历排列，所以 pick 直接用阳历值
-    const pick = {
-      year: d.getFullYear(),
-      month: d.getMonth() + 1,
-      day: d.getDate(),
-      hour: Math.floor((d.getHours() + 1) / 2) % 12,
-      leap: false,
-    };
-
-    // 确保 pick.year 不早于出生农历年
-    if (pick.year < birthLunarYear) {
-      pick.year = birthLunarYear;
-    }
-
-    const result = buildHbarData(astrolabe, birthLunarYear, pick);
-    log("info", "computeScopeData", "计算成功", {
-      birthLunarYear,
-      pick,
-      hasResult: !!result,
-    });
-    stop();
-    return result;
-  } catch (err) {
-    log("error", "computeScopeData", "计算失败", err);
-    return null;
   }
+
+  // 所有重试均失败
+  stop();
+  throw new ComputeScopeError(`运限计算重试 ${maxRetries} 次后仍失败`, {
+    personId: person.id,
+    personName: person.name,
+    solarDate: String(solarDate),
+    suggestion: "请检查人物数据完整性和日期格式。如问题持续，请排查 iztro 引擎版本",
+    cause: lastError,
+  });
 }
 
 /**
@@ -1092,7 +1394,14 @@ async function waitForPersonMatch(expectedId: number, timeout = 2000): Promise<v
     }
     await new Promise(r => setTimeout(r, 20));
   }
-  throw new Error(`等待人物切换超时（期望 ID=${expectedId}，超时 ${timeout}ms）`);
+  throw new ZiWeiError(
+    `等待人物切换超时（期望 ID=${expectedId}，超时 ${timeout}ms）`,
+    "waitForPersonMatch",
+    {
+      context: { expectedId, timeout, currentPerson: _getPerson?.()?.id },
+      suggestion: "请检查人物是否存在，或尝试刷新页面后重新选择",
+    },
+  );
 }
 
 /**
@@ -1118,7 +1427,10 @@ async function waitForAstrolabeStable(z: Zwds, timeout = 2000): Promise<void> {
       stableCount = 0; // 重新计数
     }
   }
-  throw new Error(`等待 astrolabe 稳定超时（${timeout}ms）`);
+  throw new ZiWeiError(`等待 astrolabe 稳定超时（${timeout}ms）`, "waitForAstrolabeStable", {
+    context: { timeout },
+    suggestion: "排盘引擎持续重算，可能触发了循环更新。请检查人物数据是否有异常值",
+  });
 }
 
 /**
@@ -1199,7 +1511,9 @@ async function navigateToPage(path: string, page: "ziwei" | "daliuren" | "wiki")
  */
 async function selectPersonAndWait(personId: number): Promise<void> {
   if (!_selectPerson) {
-    throw new Error("调试 API 未初始化：selectPerson 回调未注册");
+    throw new ZiWeiError("调试 API 未初始化：selectPerson 回调未注册", "selectPersonAndWait", {
+      suggestion: "请确认页面已加载完成",
+    });
   }
   await _selectPerson(personId);
   await waitForStateUpdate();
@@ -1207,11 +1521,33 @@ async function selectPersonAndWait(personId: number): Promise<void> {
 
 /**
  * 错误包装：保证调试 API 抛出的错误始终是 Error 实例，
- * 且消息包含来源标签便于排查。
+ * 且消息包含来源标签、上下文信息和堆栈追踪。
+ *
+ * 对于自定义错误类（ZiWeiError 及其子类），直接返回（不重复包装）。
+ * 对于原生 Error，附加来源标签。
+ * 对于非 Error 值，包装为 ZiWeiError 并保留原始值作为 cause。
  */
 function wrapDebugError(label: string, err: unknown): Error {
-  if (err instanceof Error) return err;
-  return new Error(`${label} 执行失败：${String(err)}`);
+  // 已经是自定义错误，直接返回
+  if (err instanceof ZiWeiError) {
+    return err;
+  }
+
+  // 原生 Error：附加来源标签，保留原始堆栈
+  if (err instanceof Error) {
+    // 在消息前加上来源标签（如果还没有）
+    if (!err.message.startsWith(`[${label}]`)) {
+      err.message = `[${label}] ${err.message}`;
+    }
+    return err;
+  }
+
+  // 非 Error 值（string、number、object 等）：包装为 ZiWeiError
+  return new ZiWeiError(`${label} 执行失败：${String(err)}`, label, {
+    context: { rawError: typeof err === "object" ? JSON.stringify(err) : String(err) },
+    suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
+    cause: err,
+  });
 }
 
 /** 辅助函数：等待 Dialog 打开 */
