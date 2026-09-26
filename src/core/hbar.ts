@@ -30,10 +30,16 @@ export type Childhood = {
 
 /** 拨盘流年单元格数据：年份/干支/虚岁 */
 export type CellYear = { year: number; gz: string; age: number };
-/** 拨盘流月单元格：月份/闰月标志/月名/干支 */
-export type CellMonth = { month: number; leap: boolean; label: string; gz: string };
-/** 拨盘流日单元格：日号/日期标签/干支 */
-export type CellDay = { day: number; label: string; gz: string };
+/** 拨盘流月单元格：月份/闰月标志/农历月名/阳历月名/干支 */
+export type CellMonth = {
+  month: number;
+  leap: boolean;
+  label: string;
+  solarLabel: string;
+  gz: string;
+};
+/** 拨盘流日单元格：日号/农历日标签/阳历日标签/干支 */
+export type CellDay = { day: number; label: string; solarLabel: string; gz: string };
 /** 拨盘流时单元格：时辰索引/时辰名/干支 */
 export type CellHour = { hour: number; label: string; gz: string };
 
@@ -138,6 +144,7 @@ export function buildMonths(pickYear: number, yearLeapMonth: number): CellMonth[
     month: i + 1,
     leap: false,
     label,
+    solarLabel: `${i + 1}月`,
     gz: monthGanZhi(pickYear, i + 1),
   }));
   if (yearLeapMonth > 0) {
@@ -145,6 +152,7 @@ export function buildMonths(pickYear: number, yearLeapMonth: number): CellMonth[
       month: yearLeapMonth,
       leap: true,
       label: `闰${LUNAR_MONTHS[yearLeapMonth - 1]}`,
+      solarLabel: `闰${yearLeapMonth}月`,
       gz: monthGanZhi(pickYear, yearLeapMonth),
     });
   }
@@ -161,7 +169,12 @@ export function buildDays(
   const list: CellDay[] = [];
   for (let d = 1; d <= monthDays; d++) {
     const solar = lunarToSolarStr(pickYear, pickMonth, d, effLeap);
-    list.push({ day: d, label: LUNAR_DAYS[d - 1], gz: solar ? dayGanZhi(solar) : "" });
+    list.push({
+      day: d,
+      label: LUNAR_DAYS[d - 1],
+      solarLabel: `${d}号`,
+      gz: solar ? dayGanZhi(solar) : "",
+    });
   }
   return list;
 }

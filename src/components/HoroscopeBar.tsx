@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useEffect, useRef, memo } from "react";
+import { useEffect, useRef, memo, useMemo } from "react";
 import type { Scope } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
 import { useI18n } from "../core/i18n";
@@ -57,6 +57,7 @@ function Row({
 function Cell({
   main,
   sub,
+  solar,
   scope,
   active,
   onClick,
@@ -64,6 +65,7 @@ function Cell({
 }: {
   main: string;
   sub?: string;
+  solar?: string;
   scope: Scope;
   active: boolean;
   onClick: () => void;
@@ -77,6 +79,7 @@ function Cell({
       aria-selected={active}
     >
       <b>{main}</b>
+      {solar ? <i>{solar}</i> : null}
       {sub ? <i>{sub}</i> : null}
     </button>
   );
@@ -98,6 +101,22 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
     visible,
     actions,
   } = z;
+
+  // 构建干支链提示信息
+  const tooltipData = useMemo(() => {
+    const decade = activeDecadeIdx >= 0 ? decades[activeDecadeIdx] : null;
+    const decadeGz = decade ? `${decade.heavenlyStem}${decade.earthlyBranch}` : "";
+    const year = years.find(y => y.year === pick.year);
+    const yearGz = year?.gz ?? "";
+    const month = months.find(m => m.month === pick.month && m.leap === effLeap);
+    const monthGz = month?.gz ?? "";
+    const day = days.find(d => d.day === clampedDay);
+    const dayGz = day?.gz ?? "";
+    const hour = hours[pick.hour];
+    const hourGz = hour?.gz ?? "";
+
+    return { decadeGz, yearGz, monthGz, dayGz, hourGz };
+  }, [decades, activeDecadeIdx, years, months, days, hours, pick, effLeap, clampedDay]);
 
   return (
     <section className="hbar" aria-label={t("hbar.label")}>
@@ -148,6 +167,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
             scope="yearly"
             active={pick.year === y.year}
             onClick={() => actions.pickYear(y.year)}
+            title={tooltipData.decadeGz ? `${tooltipData.decadeGz} ${y.gz}` : y.gz}
           />
         ))}
       </Row>
@@ -160,17 +180,24 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         activeKey={`${pick.month}${effLeap ? "L" : ""}`}
         toggleTitle={visible.monthly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
-        {months.map(m => (
-          <Cell
-            key={`${m.month}${m.leap ? "L" : ""}`}
-            main={m.label}
-            sub={m.gz}
-            scope="monthly"
-            active={pick.month === m.month && effLeap === m.leap}
-            onClick={() => actions.pickMonth(m.month, m.leap)}
-            title={m.leap ? t("hbar.leapMonthHint") : undefined}
-          />
-        ))}
+        {months.map(m => {
+          const tooltipParts = [];
+          if (tooltipData.decadeGz) tooltipParts.push(tooltipData.decadeGz);
+          if (tooltipData.yearGz) tooltipParts.push(tooltipData.yearGz);
+          if (m.gz) tooltipParts.push(m.gz);
+          return (
+            <Cell
+              key={`${m.month}${m.leap ? "L" : ""}`}
+              main={m.solarLabel}
+              solar={m.label}
+              sub={m.gz}
+              scope="monthly"
+              active={pick.month === m.month && effLeap === m.leap}
+              onClick={() => actions.pickMonth(m.month, m.leap)}
+              title={m.leap ? t("hbar.leapMonthHint") : tooltipParts.join(" ")}
+            />
+          );
+        })}
       </Row>
 
       <Row
@@ -182,17 +209,25 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         wrap
         toggleTitle={visible.daily ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
-        {days.map(d => (
-          <Cell
-            key={d.day}
-            main={d.label}
-            sub={d.gz}
-            scope="daily"
-            active={clampedDay === d.day}
-            onClick={() => actions.pickDay(d.day)}
-            title={d.gz ? t("hbar.dayTitle", { label: d.label, gz: d.gz }) : d.label}
-          />
-        ))}
+        {days.map(d => {
+          const tooltipParts = [];
+          if (tooltipData.decadeGz) tooltipParts.push(tooltipData.decadeGz);
+          if (tooltipData.yearGz) tooltipParts.push(tooltipData.yearGz);
+          if (tooltipData.monthGz) tooltipParts.push(tooltipData.monthGz);
+          if (d.gz) tooltipParts.push(d.gz);
+          return (
+            <Cell
+              key={d.day}
+              main={d.solarLabel}
+              solar={d.label}
+              sub={d.gz}
+              scope="daily"
+              active={clampedDay === d.day}
+              onClick={() => actions.pickDay(d.day)}
+              title={tooltipParts.join(" ")}
+            />
+          );
+        })}
       </Row>
 
       <Row
@@ -203,16 +238,25 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         activeKey={pick.hour}
         toggleTitle={visible.hourly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
-        {hours.map(h => (
-          <Cell
-            key={h.hour}
-            main={h.label}
-            sub={h.gz}
-            scope="hourly"
-            active={pick.hour === h.hour}
-            onClick={() => actions.pickHour(h.hour)}
-          />
-        ))}
+        {hours.map(h => {
+          const tooltipParts = [];
+          if (tooltipData.decadeGz) tooltipParts.push(tooltipData.decadeGz);
+          if (tooltipData.yearGz) tooltipParts.push(tooltipData.yearGz);
+          if (tooltipData.monthGz) tooltipParts.push(tooltipData.monthGz);
+          if (tooltipData.dayGz) tooltipParts.push(tooltipData.dayGz);
+          if (h.gz) tooltipParts.push(h.gz);
+          return (
+            <Cell
+              key={h.hour}
+              main={h.label}
+              sub={h.gz}
+              scope="hourly"
+              active={pick.hour === h.hour}
+              onClick={() => actions.pickHour(h.hour)}
+              title={tooltipParts.join(" ")}
+            />
+          );
+        })}
       </Row>
     </section>
   );
