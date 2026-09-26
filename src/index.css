@@ -4408,6 +4408,7 @@ body {
 
 .tag-input {
   width: 100%;
+  position: relative;
 }
 
 .tag-input-tags {
@@ -4480,6 +4481,42 @@ body {
 
 .tag-input-field::placeholder {
   color: var(--faint);
+}
+
+/* 标签建议浮层（TagInput 带 suggestions 时展示） */
+.tag-input-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(14, 22, 44, 0.96);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(85, 215, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  padding: 4px;
+}
+
+.tag-input-suggestion-item {
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text);
+  border-radius: 7px;
+  transition:
+    background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.15s;
+}
+
+.tag-input-suggestion-item:hover {
+  background: rgba(85, 215, 255, 0.10);
+  color: var(--cyan);
 }
 
 
@@ -4738,29 +4775,7 @@ body {
   box-shadow: 0 0 0 2px rgba(85, 215, 255, 0.12), 0 0 14px rgba(85, 215, 255, 0.15);
 }
 
-/* ── 标签区 ── */
-.wiki-editor-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.15);
-  position: relative;
-  min-height: 40px;
-  align-items: center;
-  transition:
-    border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.wiki-editor-tags:focus-within {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 2px rgba(85, 215, 255, 0.10);
-}
-
-/* 标签 chip —— 对齐阅读器 tag-chip */
+/* 标签 chip（WikiReader 展示用） */
 .wiki-tag-chip {
   display: inline-flex;
   align-items: center;
@@ -4773,76 +4788,6 @@ body {
   font-size: 0.75rem;
   letter-spacing: 0.03em;
   line-height: 1.4;
-}
-
-.wiki-tag-remove {
-  background: none;
-  border: none;
-  color: var(--cyan);
-  cursor: pointer;
-  font-size: 0.95rem;
-  line-height: 1;
-  padding: 0;
-  margin-left: 1px;
-  opacity: 0.55;
-  transition: opacity 0.18s, color 0.18s;
-}
-
-.wiki-tag-remove:hover {
-  opacity: 1;
-  color: var(--danger);
-}
-
-.wiki-tag-input {
-  flex: 1;
-  min-width: 110px;
-  padding: 3px 4px;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  font-size: 0.82rem;
-  font-family: inherit;
-}
-
-.wiki-tag-input::placeholder {
-  color: var(--faint);
-}
-
-/* 标签建议浮层 */
-.wiki-tag-suggestions {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: rgba(14, 22, 44, 0.96);
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(85, 215, 255, 0.06);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 100;
-  padding: 4px;
-}
-
-.wiki-tag-suggestion-item {
-  padding: 7px 12px;
-  cursor: pointer;
-  font-size: 0.82rem;
-  color: var(--text);
-  border-radius: 7px;
-  transition:
-    background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-    color 0.15s;
-}
-
-.wiki-tag-suggestion-item:hover {
-  background: rgba(85, 215, 255, 0.10);
-  color: var(--cyan);
 }
 
 /* ── 关联文档 ── */

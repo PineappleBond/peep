@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { WikiDocument } from "../../core/personDb";
 import { listWikiDocs, getWikiLinks, getWikiDoc } from "../../core/wikiDb";
+import { TagInput } from "../daliuren/TagInput";
 
 export interface WikiEditorProps {
   /** 文档数据，undefined 表示新建模式 */
@@ -39,11 +40,8 @@ export function WikiEditor({
   // UI 状态
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
-  const [tagInput, setTagInput] = useState("");
 
   // Refs
-  const tagInputRef = useRef<HTMLInputElement>(null);
   const linkSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 初始化：编辑模式加载数据（含已关联文档及标题），新建模式清空
@@ -81,18 +79,6 @@ export function WikiEditor({
     }
   }, [doc]);
 
-  // 标签输入变化时显示建议
-  useEffect(() => {
-    if (tagInput.trim()) {
-      const filtered = existingTags.filter(
-        (t) => t.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(t)
-      );
-      setShowTagSuggestions(filtered.length > 0);
-    } else {
-      setShowTagSuggestions(false);
-    }
-  }, [tagInput, existingTags, tags]);
-
   // 关联文档搜索（防抖）
   useEffect(() => {
     if (linkSearchTimeoutRef.current) {
@@ -127,33 +113,6 @@ export function WikiEditor({
       }
     };
   }, [linkSearchText, personId, doc?.id, linkTargetIds]);
-
-  // 添加标签
-  const addTag = (tag: string) => {
-    const trimmed = tag.trim();
-    if (trimmed && !tags.includes(trimmed)) {
-      setTags([...tags, trimmed]);
-    }
-    setTagInput("");
-    setShowTagSuggestions(false);
-    tagInputRef.current?.focus();
-  };
-
-  // 删除标签
-  const removeTag = (tag: string) => {
-    setTags(tags.filter((t) => t !== tag));
-  };
-
-  // 标签输入按键处理
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addTag(tagInput);
-    } else if (e.key === "Backspace" && !tagInput && tags.length > 0) {
-      // 删除最后一个标签
-      removeTag(tags[tags.length - 1]);
-    }
-  };
 
   // 添加关联文档
   const addLinkTarget = async (targetId: number) => {
@@ -249,65 +208,12 @@ export function WikiEditor({
       {/* 标签输入 */}
       <div className="wiki-editor-field">
         <label>标签</label>
-        <div className="wiki-editor-tags">
-          {/* 已添加的标签 chips */}
-          {tags.map((tag) => (
-            <div key={tag} className="wiki-tag-chip">
-              <span>{tag}</span>
-              <button
-                type="button"
-                className="wiki-tag-remove"
-                onClick={() => removeTag(tag)}
-                aria-label={`删除标签 ${tag}`}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-
-          {/* 标签输入框 */}
-          <input
-            ref={tagInputRef}
-            type="text"
-            className="wiki-tag-input"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={handleTagKeyDown}
-            onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
-            placeholder={tags.length === 0 ? "输入标签后按回车..." : ""}
-            aria-label="添加标签"
-          />
-
-          {/* 标签建议下拉 */}
-          {showTagSuggestions && (
-            <div className="wiki-tag-suggestions">
-              {existingTags
-                .filter(
-                  (t) =>
-                    t.toLowerCase().includes(tagInput.toLowerCase()) &&
-                    !tags.includes(t)
-                )
-                .slice(0, 10)
-                .map((t) => (
-                  <div
-                    key={t}
-                    className="wiki-tag-suggestion-item"
-                    onClick={() => addTag(t)}
-                    role="option"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        addTag(t);
-                      }
-                    }}
-                  >
-                    {t}
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
+        <TagInput
+          value={tags}
+          onChange={setTags}
+          suggestions={existingTags}
+          disabled={saving}
+        />
       </div>
 
       {/* 关联文档选择 */}
