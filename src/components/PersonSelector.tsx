@@ -23,8 +23,11 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | undefined>();
   const [confirmDelete, setConfirmDelete] = useState<Person | null>(null);
+  /** 人物列表加载中 */
+  const [loading, setLoading] = useState(true);
 
   const loadPersons = async () => {
+    setLoading(true);
     try {
       const list = await listPersons();
       setPersons(list);
@@ -32,6 +35,8 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
       console.error("[PersonSelector] 加载人物列表失败", err);
       // 降级：显示空列表，避免整个组件崩溃
       setPersons([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,24 +106,39 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
           onChange={handleSelect}
           className="person-select"
           aria-label={t("person.selectPerson")}
+          disabled={loading}
         >
-          {persons.map(p => (
-            <option key={p.id} value={p.id}>
-              {p.name || t("person.unnamed")} ·{" "}
-              {p.gender === "男" ? t("common.male") : t("common.female")}
-            </option>
-          ))}
+          {loading ? (
+            <option value="">{t("common.loading")}</option>
+          ) : (
+            persons.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.name || t("person.unnamed")} ·{" "}
+                {p.gender === "男" ? t("common.male") : t("common.female")}
+              </option>
+            ))
+          )}
         </select>
-        <button className="person-btn" onClick={handleAdd} aria-label={t("person.addPerson")}>
+        <button
+          className="person-btn"
+          onClick={handleAdd}
+          aria-label={t("person.addPerson")}
+          disabled={loading}
+        >
           +
         </button>
-        <button className="person-btn" onClick={handleEdit} aria-label={t("person.editCurrent")}>
+        <button
+          className="person-btn"
+          onClick={handleEdit}
+          aria-label={t("person.editCurrent")}
+          disabled={loading}
+        >
           ✎
         </button>
         <button
           className="person-btn person-del"
           onClick={handleDeleteClick}
-          disabled={!canDelete}
+          disabled={!canDelete || loading}
           aria-label={canDelete ? t("person.deleteCurrent") : t("person.defaultCannotDelete")}
           title={canDelete ? t("person.deleteCurrent") : t("person.defaultCannotDelete")}
         >

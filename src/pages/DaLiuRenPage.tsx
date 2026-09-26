@@ -11,6 +11,7 @@ import { LiurenCreateDialog } from "../components/daliuren/LiurenCreateDialog";
 import { LiurenViewDialog } from "../components/daliuren/LiurenViewDialog";
 import { LiurenEditDialog } from "../components/daliuren/LiurenEditDialog";
 import { LiurenDeleteDialog } from "../components/daliuren/LiurenDeleteDialog";
+import { Spinner } from "../components/Spinner";
 import type { LiurenRecord, Person } from "../core/personDb";
 import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
 import { registerDaLiuRenCallbacks } from "../core/debugApi";
@@ -227,7 +228,7 @@ export function DaLiuRenPage() {
     return (
       <div className="liuren-page">
         <div className="liuren-loading" role="status" aria-live="polite">
-          {t("daliuren.loading")}
+          <Spinner size="md" text={t("daliuren.loading")} />
         </div>
       </div>
     );

@@ -19,6 +19,7 @@ import { WikiList, type WikiListHandle } from "../components/wiki/WikiList";
 import { WikiReader } from "../components/wiki/WikiReader";
 import { WikiEditor } from "../components/wiki/WikiEditor";
 import { Dialog } from "../components/Dialog";
+import { Spinner } from "../components/Spinner";
 import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
 import { toast } from "../core/toast";
 
@@ -277,7 +278,7 @@ export function WikiPage() {
     return (
       <div className="wiki-page">
         <div className="wiki-loading" role="status" aria-live="polite">
-          {t("wiki.loading")}
+          <Spinner size="md" text={t("wiki.loading")} />
         </div>
       </div>
     );

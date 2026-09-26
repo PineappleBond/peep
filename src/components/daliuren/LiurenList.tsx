@@ -6,6 +6,7 @@ import type { LiurenRecord } from "../../core/personDb";
 import { listLiurenRecords, getAllLiurenTags, type LiurenListFilters } from "../../core/daliurenDb";
 import { formatRelativeTime } from "../../core/utils";
 import { useI18n } from "../../core/i18n";
+import { Spinner } from "../Spinner";
 
 /** LiurenList 暴露给父组件的命令式接口 */
 export interface LiurenListHandle {
@@ -45,6 +46,8 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
+  /** 列表数据加载中（首次或过滤条件变化时） */
+  const [loading, setLoading] = useState(true);
   const pageSize = 20;
 
   // 暴露命令式接口：允许外部设置过滤条件
@@ -63,6 +66,7 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
   }));
 
   const loadRecords = useCallback(async () => {
+    setLoading(true);
     try {
       const filters: LiurenListFilters = {
         searchText,
@@ -75,6 +79,8 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
       setTotal(result.total);
     } catch (err) {
       console.error("[LiurenList] 加载记录失败", err);
+    } finally {
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, searchText, selectedTags, page, refreshKey]);
@@ -143,7 +149,11 @@ export const LiurenList = forwardRef<LiurenListHandle, LiurenListProps>(function
 
       {/* 列表区 */}
       <div className="record-list-items">
-        {records.length === 0 ? (
+        {loading ? (
+          <div className="record-list-empty liuren-empty">
+            <Spinner size="sm" label={t("common.loading")} />
+          </div>
+        ) : records.length === 0 ? (
           <div className="record-list-empty liuren-empty">
             {searchText || selectedTags.length > 0
               ? t("daliuren.noMatch")

@@ -7,6 +7,7 @@ import { getPerson } from "../../core/personDb";
 import { listWikiDocs, getAllWikiTags, type WikiListFilters } from "../../core/wikiDb";
 import { formatRelativeTime } from "../../core/utils";
 import { useI18n } from "../../core/i18n";
+import { Spinner } from "../Spinner";
 
 /** WikiList 暴露给父组件的命令式接口 */
 export interface WikiListHandle {
@@ -37,6 +38,8 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   const [allTags, setAllTags] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [personName, setPersonName] = useState<string>("");
+  /** 列表数据加载中 */
+  const [loading, setLoading] = useState(true);
   const pageSize = 20;
 
   // 暴露命令式接口：允许外部设置过滤条件
@@ -55,6 +58,7 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
   }));
 
   const loadDocs = useCallback(async () => {
+    setLoading(true);
     try {
       const filters: WikiListFilters = {
         searchText,
@@ -67,6 +71,8 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
       setTotal(result.total);
     } catch (err) {
       console.error("[WikiList] 加载文档失败", err);
+    } finally {
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId, searchText, selectedTags, page, refreshKey]);
@@ -144,7 +150,11 @@ export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiL
 
       {/* 列表区 */}
       <div className="record-list-items">
-        {docs.length === 0 ? (
+        {loading ? (
+          <div className="record-list-empty wiki-empty">
+            <Spinner size="sm" label={t("common.loading")} />
+          </div>
+        ) : docs.length === 0 ? (
           <div className="record-list-empty wiki-empty">
             {searchText || selectedTags.length > 0 ? t("wiki.noMatch") : t("wiki.noDocs")}
           </div>

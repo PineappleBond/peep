@@ -6,6 +6,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { Spinner } from "./components/Spinner";
 import { ZiweiPage } from "./pages/ZiweiPage";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { initDebugApi } from "./core/debugApi";
@@ -35,7 +36,7 @@ function LazyFallback() {
   const { t } = useI18n();
   return (
     <div className="lazy-loading" role="status" aria-live="polite">
-      {t("app.loading")}
+      <Spinner size="md" text={t("app.loading")} />
     </div>
   );
 }
