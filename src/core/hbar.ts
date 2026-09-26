@@ -149,11 +149,16 @@ export function buildMonths(pickYear: number, yearLeapMonth: number): CellMonth[
     try {
       const lunar = solar2lunar(solarDate);
       const lunarMonth = lunar.lunarMonth;
+      const lunarYear = lunar.lunarYear;
       const isLeap = lunar.isLeap;
-      const lunarLabel = isLeap
-        ? `闰${LUNAR_MONTHS[lunarMonth - 1]}`
-        : LUNAR_MONTHS[lunarMonth - 1];
-      const gz = monthGanZhi(lunar.lunarYear, lunarMonth);
+      // 如果是正月，显示干支年；否则显示农历月名称
+      const lunarLabel =
+        lunarMonth === 1 && !isLeap
+          ? `${yearGanZhi(lunarYear)}年`
+          : isLeap
+            ? `闰${LUNAR_MONTHS[lunarMonth - 1]}`
+            : LUNAR_MONTHS[lunarMonth - 1];
+      const gz = monthGanZhi(lunarYear, lunarMonth);
       list.push({
         month: solarMonth,
         leap: isLeap,
