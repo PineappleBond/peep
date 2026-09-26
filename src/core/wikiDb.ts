@@ -3,13 +3,18 @@
  * 提供文档增删改查、分页列表、标签查询、链接关系管理
  */
 import { db, type WikiDocument, type WikiLink } from "./personDb";
+import { createTagCache } from "./tagCache";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
-let _wikiTagCache: { personId: number; tags: string[] } | null = null;
+const tagCache = createTagCache(
+  (personId: number) =>
+    db.wikiDocs.where("personId").equals(personId).toArray(),
+  (d: WikiDocument) => d.tags
+);
 
 /** 写入/删除后使标签缓存失效 */
-function invalidateWikiTagCache() {
-  _wikiTagCache = null;
+function invalidateTagCache() {
+  tagCache.invalidate();
 }
 
 /** Wiki 列表查询过滤条件 */
@@ -103,13 +108,13 @@ export async function saveWikiDoc(doc: WikiDocument): Promise<number> {
     if (doc.id != null) {
       // 更新：保留原 savedAt，更新 updatedAt
       await db.wikiDocs.update(doc.id, { ...doc, updatedAt: now });
-      invalidateWikiTagCache();
+      invalidateTagCache();
       return doc.id;
     }
     // 新增：设置 savedAt 和 updatedAt
     const newDoc = { ...doc, savedAt: now, updatedAt: now };
     const id = await db.wikiDocs.add(newDoc);
-    invalidateWikiTagCache();
+    invalidateTagCache();
     return id;
   } catch (err) {
     console.error("[wikiDb] 保存文档失败", err);
@@ -139,7 +144,7 @@ export async function deleteWikiDoc(id: number): Promise<void> {
     console.error("[wikiDb] 删除文档失败", err);
     throw new Error("删除文档失败，请重试");
   } finally {
-    invalidateWikiTagCache();
+    invalidateTagCache();
   }
 }
 
@@ -149,23 +154,7 @@ export async function deleteWikiDoc(id: number): Promise<void> {
  */
 export async function getAllWikiTags(personId: number): Promise<string[]> {
   try {
-    if (_wikiTagCache && _wikiTagCache.personId === personId) {
-      return _wikiTagCache.tags;
-    }
-    const docs = await db.wikiDocs
-      .where("personId")
-      .equals(personId)
-      .toArray();
-
-    const tagSet = new Set<string>();
-    for (const d of docs) {
-      for (const t of d.tags) {
-        tagSet.add(t);
-      }
-    }
-    const tags = Array.from(tagSet).sort();
-    _wikiTagCache = { personId, tags };
-    return tags;
+    return await tagCache.get(personId);
   } catch (err) {
     console.error("[wikiDb] 获取标签列表失败", err);
     return [];

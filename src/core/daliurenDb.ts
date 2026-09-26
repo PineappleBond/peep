@@ -3,13 +3,18 @@
  */
 import Dexie from "dexie";
 import { db, type LiurenRecord } from "./personDb";
+import { createTagCache } from "./tagCache";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
-let _tagCache: { personId: number; tags: string[] } | null = null;
+const tagCache = createTagCache(
+  (personId: number) =>
+    db.liurenRecords.where("personId").equals(personId).toArray(),
+  (r: LiurenRecord) => r.tags
+);
 
 /** 写入/删除后使标签缓存失效 */
 export function invalidateLiurenTagCache() {
-  _tagCache = null;
+  tagCache.invalidate();
 }
 
 /** 列表查询过滤条件 */
@@ -130,23 +135,7 @@ export async function deleteLiurenRecord(id: number): Promise<void> {
  */
 export async function getAllLiurenTags(personId: number): Promise<string[]> {
   try {
-    if (_tagCache && _tagCache.personId === personId) {
-      return _tagCache.tags;
-    }
-    const records = await db.liurenRecords
-      .where("personId")
-      .equals(personId)
-      .toArray();
-
-    const tagSet = new Set<string>();
-    for (const r of records) {
-      for (const t of r.tags) {
-        tagSet.add(t);
-      }
-    }
-    const tags = Array.from(tagSet).sort();
-    _tagCache = { personId, tags };
-    return tags;
+    return await tagCache.get(personId);
   } catch (err) {
     console.error("[daliurenDb] 获取标签列表失败", err);
     return [];
