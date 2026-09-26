@@ -17,7 +17,16 @@ import {
   saveLiurenRecord,
   invalidateLiurenTagCache,
 } from "./daliurenDb";
-import { getWikiLinks, type WikiListFilters, type WikiListResult } from "./wikiDb";
+import {
+  listWikiDocs,
+  getWikiDoc,
+  saveWikiDoc as saveWikiDocToDb,
+  getWikiLinks,
+  getWikiBacklinks,
+  saveWikiLinks,
+  type WikiListFilters,
+  type WikiListResult,
+} from "./wikiDb";
 import { globalEvents } from "./events";
 import type { BirthInput } from "./useZwds";
 import { astro } from "iztro";
@@ -75,6 +84,24 @@ export type DaLiuRenOptions = {
 export type DaLiuRenViewResult = LiurenRecord & {
   /** 纯计算数据（skipUI=true 时包含，skipUI=false 时也包含以便 RTC Agent 使用） */
   computed?: DaLiuRenComputedData;
+};
+
+/** Wiki 接口选项 */
+export type WikiOptions = {
+  /**
+   * 为 true 时跳过 UI 操控（导航、切换人物、打开编辑器等），
+   * 仅执行纯数据库操作。
+   * 等价于纯 DB 路径，可在任意上下文调用（RTC Agent、自动化测试）。
+   */
+  skipUI?: boolean;
+};
+
+/** WikiView 返回数据：文档 + 链接目标 ID 列表 + 可选的计算数据 */
+export type WikiViewResult = WikiDocument & {
+  /** 正向链接目标文档 ID 列表 */
+  linkTargetIds: number[];
+  /** 反向链接源文档 ID 列表 */
+  backlinkSourceIds?: number[];
 };
 
 /* ============================================================
@@ -217,6 +244,49 @@ export class DaLiuRenError extends Error {
         : message;
     super(fullMessage);
     this.name = "DaLiuRenError";
+    this.source = source;
+    this.context = options?.context ?? {};
+    this.suggestion = options?.suggestion;
+    this.cause = options?.cause;
+    // 确保堆栈追踪可用（V8 引擎）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ErrCtor = Error as any;
+    if (typeof ErrCtor.captureStackTrace === "function") {
+      ErrCtor.captureStackTrace(this, new.target);
+    }
+  }
+}
+
+/**
+ * Wiki 错误类：Wiki 系列调试接口的专用错误。
+ * 包含上下文信息（输入参数、数据库操作状态）和恢复建议。
+ */
+export class WikiError extends Error {
+  /** 错误来源标签（如 "WikiCreate"、"WikiList"） */
+  public readonly source: string;
+  /** 上下文信息：输入参数、中间状态等（仅 DEV 环境包含完整数据） */
+  public readonly context: Record<string, unknown>;
+  /** 恢复建议（对开发者友好的调试提示） */
+  public readonly suggestion?: string;
+  /** 原始错误（错误链） */
+  public readonly cause?: unknown;
+
+  constructor(
+    message: string,
+    source: string,
+    options?: {
+      context?: Record<string, unknown>;
+      suggestion?: string;
+      cause?: unknown;
+    },
+  ) {
+    // 开发环境：消息包含完整上下文；生产环境：仅包含概要消息
+    const fullMessage =
+      import.meta.env.DEV && options?.context
+        ? `${message}\n  来源: ${source}\n  上下文: ${JSON.stringify(options.context, null, 2)}${options?.suggestion ? `\n  建议: ${options.suggestion}` : ""}`
+        : message;
+    super(fullMessage);
+    this.name = "WikiError";
     this.source = source;
     this.context = options?.context ?? {};
     this.suggestion = options?.suggestion;
@@ -1562,93 +1632,204 @@ export async function DaLiuRenView(
 }
 
 /**
- * Wiki 文档列表调试接口
- * 跳转到 /wiki 页面，选择人物，设置过滤条件，返回列表
+ * Wiki 文档列表调试接口——查询文档列表。
+ *
+ * 职责分为两层：
+ * - UI 操控层（skipUI=false 时）：导航页面、切换人物、设置 UI 过滤条件
+ * - 数据查询层（listWikiDocs）：直接查询数据库
+ *
+ * skipUI=true 时：跳过所有 UI 操控，直接查询数据库。
+ * 适用于 RTC Agent、自动化测试等无 UI 上下文。
+ *
+ * skipUI=false 时（默认）：执行完整 UI 流程。
+ *
+ * @param params 查询参数
+ * @param options 可选配置项（目前支持 skipUI）
  */
-export async function WikiList(params: {
-  personId?: number;
-  searchText?: string;
-  tags?: string[];
-  page?: number;
-  pageSize?: number;
-}): Promise<{ docs: WikiDocument[]; total: number }> {
+export async function WikiList(
+  params: {
+    personId?: number;
+    searchText?: string;
+    tags?: string[];
+    page?: number;
+    pageSize?: number;
+  },
+  options?: WikiOptions,
+): Promise<{ docs: WikiDocument[]; total: number }> {
   const stop = timer("WikiList");
   try {
     const personId = await resolvePersonId(params.personId);
     log("info", "WikiList", "查询文档列表", {
       personId,
       searchText: params.searchText,
+      tags: params.tags,
+      skipUI: !!options?.skipUI,
     });
 
-    // 1. 跳转到 /wiki 页面并等待回调注册
-    await navigateToPage("/wiki", "wiki");
-
-    if (!_selectPerson || !_getWikiList) {
-      throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
-    }
-
-    // 2. 选择人物
-    await selectPersonAndWait(personId);
-
-    // 3. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
-    if (_setWikiListFilters && (params.searchText || params.tags || params.page)) {
-      _setWikiListFilters({
-        searchText: params.searchText,
-        tags: params.tags,
-        page: params.page,
-      });
-      await waitForStateUpdate();
-    }
-
-    // 4. 获取列表
     const filters: WikiListFilters = {
       searchText: params.searchText,
       tags: params.tags,
       page: params.page,
       pageSize: params.pageSize,
     };
+
+    /* ── skipUI 模式：直接查询数据库，不操控 UI ── */
+    if (options?.skipUI) {
+      const result = await listWikiDocs(personId, filters);
+      log("info", "WikiList", "skipUI 模式查询成功", {
+        total: result.total,
+        returned: result.docs.length,
+      });
+      stop();
+      return { docs: result.docs, total: result.total };
+    }
+
+    /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /wiki 页面并等待回调注册
+    await navigateToPage("/wiki", "wiki");
+    await waitForWikiCallbacks();
+
+    if (!_selectPerson || !_getWikiList) {
+      throw new WikiError("Wiki 调试 API 未初始化", "WikiList", {
+        context: {
+          selectPersonReady: !!_selectPerson,
+          getWikiListReady: !!_getWikiList,
+        },
+        suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
+      });
+    }
+
+    // 1. 选择人物（带状态验证）
+    await selectPersonAndWait(personId);
+
+    // 2. 设置 UI 过滤条件（同步搜索框和标签筛选的显示状态）
+    if (_setWikiListFilters && (params.searchText || params.tags || params.page)) {
+      _setWikiListFilters({
+        searchText: params.searchText,
+        tags: params.tags,
+        page: params.page,
+      });
+      // 等待 UI 状态更新完成
+      await waitForStateUpdate();
+    }
+
+    // 3. 获取列表
     const result = await _getWikiList(filters);
 
     log("info", "WikiList", "查询成功", { total: result.total, returned: result.docs.length });
     stop();
     return { docs: result.docs, total: result.total };
   } catch (err) {
+    if (err instanceof WikiError) {
+      log("error", "WikiList", "执行失败（不重试）", {
+        errorType: err.name,
+        message: err.message.split("\n")[0],
+      });
+      stop();
+      throw err;
+    }
     log("error", "WikiList", "执行失败", err);
-    throw wrapDebugError("WikiList", err);
+    stop();
+    throw wrapWikiError("WikiList", err);
   }
 }
 
 /**
- * Wiki 文档创建调试接口
- * 跳转到 /wiki 页面，选择人物，打开编辑器，保存文档
+ * Wiki 文档创建调试接口——创建文档。
+ *
+ * 职责分为两层：
+ * - UI 操控层（skipUI=false 时）：导航页面、切换人物、打开编辑器
+ * - 数据写入层（DB 操作）：直接写入数据库
+ *
+ * skipUI=true 时：跳过所有 UI 操控，直接写入数据库。
+ * 适用于 RTC Agent、自动化测试等无 UI 上下文。
+ *
+ * skipUI=false 时（默认）：执行完整 UI 流程。
+ *
+ * @param params 文档参数
+ * @param options 可选配置项（目前支持 skipUI）
  */
-export async function WikiCreate(params: {
-  personId?: number;
-  title: string;
-  content: string;
-  tags?: string[];
-  linkTargetIds?: number[];
-}): Promise<WikiDocument> {
+export async function WikiCreate(
+  params: {
+    personId?: number;
+    title: string;
+    content: string;
+    tags?: string[];
+    linkTargetIds?: number[];
+  },
+  options?: WikiOptions,
+): Promise<WikiDocument> {
   const stop = timer("WikiCreate");
   try {
     const personId = await resolvePersonId(params.personId);
-    log("info", "WikiCreate", "创建文档", { personId, title: params.title });
+    log("info", "WikiCreate", "创建文档", {
+      personId,
+      title: params.title,
+      skipUI: !!options?.skipUI,
+    });
 
-    // 1. 跳转到 /wiki 页面并等待回调注册
-    await navigateToPage("/wiki", "wiki");
+    /* ── skipUI 模式：直接写入数据库，不操控 UI ── */
+    if (options?.skipUI) {
+      // 验证人物存在
+      const personCheck = await getPerson(personId);
+      if (!personCheck) {
+        throw new WikiError(`人物 ${personId} 不存在`, "WikiCreate", {
+          context: { personId },
+          suggestion: "请检查人物 ID 是否正确",
+        });
+      }
 
-    if (!_selectPerson || !_openWikiEditor || !_saveWikiDoc) {
-      throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
+      // 构造文档并写入数据库
+      const now = Date.now();
+      const doc: WikiDocument = {
+        personId,
+        title: params.title,
+        content: params.content,
+        tags: params.tags || [],
+        savedAt: now,
+        updatedAt: now,
+      };
+
+      const id = await saveWikiDocToDb(doc);
+
+      // 保存链接关系（如果有）
+      if (params.linkTargetIds && params.linkTargetIds.length > 0) {
+        await saveWikiLinks(id, params.linkTargetIds);
+      }
+
+      // 验证文档已保存
+      await waitForDocSaved(id, 2000);
+
+      log("info", "WikiCreate", "skipUI 模式创建成功", { docId: id });
+      stop();
+      return { ...doc, id };
     }
 
-    // 2. 选择人物
+    /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /wiki 页面并等待回调注册
+    await navigateToPage("/wiki", "wiki");
+    await waitForWikiCallbacks();
+
+    if (!_selectPerson || !_openWikiEditor || !_saveWikiDoc) {
+      throw new WikiError("Wiki 调试 API 未初始化", "WikiCreate", {
+        context: {
+          selectPersonReady: !!_selectPerson,
+          openWikiEditorReady: !!_openWikiEditor,
+          saveWikiDocReady: !!_saveWikiDoc,
+        },
+        suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
+      });
+    }
+
+    // 1. 选择人物（带状态验证）
     await selectPersonAndWait(personId);
 
-    // 3. 打开编辑器
+    // 2. 打开编辑器
     _openWikiEditor();
-    await waitForDialogOpen();
+    // 等待 Dialog DOM 渲染完成（双 rAF 替代盲等）
+    await waitForDialogReady();
 
-    // 4. 构造文档并保存
+    // 3. 构造文档并保存
     const now = Date.now();
     const doc: WikiDocument = {
       personId,
@@ -1660,59 +1841,150 @@ export async function WikiCreate(params: {
     };
 
     const saved = await _saveWikiDoc(doc, params.linkTargetIds || []);
-    await waitForSaveComplete();
+
+    // 4. 等待保存完成并验证文档存在
+    await waitForDocSaved(saved.id, 2000);
 
     log("info", "WikiCreate", "创建成功", { docId: saved.id });
     stop();
     return saved;
   } catch (err) {
+    if (err instanceof WikiError) {
+      log("error", "WikiCreate", "执行失败（不重试）", {
+        errorType: err.name,
+        message: err.message.split("\n")[0],
+      });
+      stop();
+      throw err;
+    }
     log("error", "WikiCreate", "执行失败", err);
-    throw wrapDebugError("WikiCreate", err);
+    stop();
+    throw wrapWikiError("WikiCreate", err);
   }
 }
 
 /**
- * Wiki 文档详情调试接口
- * 跳转到 /wiki 页面，选择人物，打开指定文档，返回详情
+ * Wiki 文档详情调试接口——查看文档详情。
+ *
+ * 职责分为两层：
+ * - UI 操控层（skipUI=false 时）：导航页面、切换人物、选择文档
+ * - 数据查询层（DB 操作）：直接查询数据库
+ *
+ * skipUI=true 时：直接查询数据库获取文档，并查询链接关系。
+ * 适用于 RTC Agent、自动化测试等无 UI 上下文。
+ *
+ * skipUI=false 时（默认）：执行完整 UI 流程。
+ *
+ * @param params 查看参数（personId 可选，docId 必填）
+ * @param options 可选配置项（目前支持 skipUI）
  */
-export async function WikiView(params: {
-  personId?: number;
-  docId: number;
-}): Promise<WikiDocument & { linkTargetIds: number[] }> {
+export async function WikiView(
+  params: {
+    personId?: number;
+    docId: number;
+    /** 是否查询反向链接（谁链接到了本文档） */
+    includeBacklinks?: boolean;
+  },
+  options?: WikiOptions,
+): Promise<WikiViewResult> {
   const stop = timer("WikiView");
   try {
     const personId = await resolvePersonId(params.personId);
-    log("info", "WikiView", "查看文档", { personId, docId: params.docId });
+    log("info", "WikiView", "查看文档", {
+      personId,
+      docId: params.docId,
+      includeBacklinks: !!params.includeBacklinks,
+      skipUI: !!options?.skipUI,
+    });
 
-    // 1. 跳转到 /wiki 页面并等待回调注册
-    await navigateToPage("/wiki", "wiki");
+    /* ── skipUI 模式：直接查询数据库，不操控 UI ── */
+    if (options?.skipUI) {
+      const doc = await getWikiDoc(params.docId);
+      if (!doc) {
+        throw new WikiError(`文档 ${params.docId} 不存在`, "WikiView", {
+          context: { docId: params.docId },
+          suggestion: "请检查文档 ID 是否正确，该文档可能已被删除",
+        });
+      }
 
-    if (!_selectPerson || !_selectWikiDoc || !_getSelectedWikiDoc) {
-      throw new Error("Wiki 调试 API 未初始化，请确认 WikiPage 已加载");
+      // 查询正向链接目标 ID
+      const linkTargetIds = doc.id ? await getWikiLinks(doc.id) : [];
+
+      // 可选：查询反向链接源 ID
+      let backlinkSourceIds: number[] | undefined;
+      if (params.includeBacklinks && doc.id) {
+        backlinkSourceIds = await getWikiBacklinks(doc.id);
+      }
+
+      log("info", "WikiView", "skipUI 模式查看成功", {
+        docId: doc.id,
+        links: linkTargetIds.length,
+        backlinks: backlinkSourceIds?.length ?? 0,
+      });
+      stop();
+      return { ...doc, linkTargetIds, backlinkSourceIds };
     }
 
-    // 2. 选择人物
+    /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /wiki 页面并等待回调注册
+    await navigateToPage("/wiki", "wiki");
+    await waitForWikiCallbacks();
+
+    if (!_selectPerson || !_selectWikiDoc || !_getSelectedWikiDoc) {
+      throw new WikiError("Wiki 调试 API 未初始化", "WikiView", {
+        context: {
+          selectPersonReady: !!_selectPerson,
+          selectWikiDocReady: !!_selectWikiDoc,
+          getSelectedWikiDocReady: !!_getSelectedWikiDoc,
+        },
+        suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
+      });
+    }
+
+    // 1. 选择人物（带状态验证）
     await selectPersonAndWait(personId);
 
-    // 3. 打开指定文档（selectWikiDoc 直接返回文档数据）
+    // 2. 打开指定文档（selectWikiDoc 直接返回文档数据）
     const doc = await _selectWikiDoc(params.docId);
     await waitForStateUpdate();
 
-    // 4. 获取详情（优先使用 selectWikiDoc 返回值，回退到 getSelectedWikiDoc）
+    // 3. 获取详情（优先使用 selectWikiDoc 返回值，回退到 getSelectedWikiDoc）
     const selectedDoc = doc ?? _getSelectedWikiDoc();
     if (!selectedDoc) {
-      throw new Error(`文档 ${params.docId} 未找到或加载失败`);
+      throw new WikiError(`文档 ${params.docId} 未找到或加载失败`, "WikiView", {
+        context: { docId: params.docId, selectWikiDocReturned: !!doc },
+        suggestion: "请检查文档 ID 是否正确，或尝试刷新页面后重试",
+      });
     }
 
-    // 5. 查询正向链接目标 ID，附加到返回结果
+    // 4. 查询正向链接目标 ID，附加到返回结果
     const linkTargetIds = selectedDoc.id ? await getWikiLinks(selectedDoc.id) : [];
 
-    log("info", "WikiView", "查看成功", { docId: selectedDoc.id, links: linkTargetIds.length });
+    // 5. 可选：查询反向链接源 ID
+    let backlinkSourceIds: number[] | undefined;
+    if (params.includeBacklinks && selectedDoc.id) {
+      backlinkSourceIds = await getWikiBacklinks(selectedDoc.id);
+    }
+
+    log("info", "WikiView", "查看成功", {
+      docId: selectedDoc.id,
+      links: linkTargetIds.length,
+      backlinks: backlinkSourceIds?.length ?? 0,
+    });
     stop();
-    return { ...selectedDoc, linkTargetIds };
+    return { ...selectedDoc, linkTargetIds, backlinkSourceIds };
   } catch (err) {
+    if (err instanceof WikiError) {
+      log("error", "WikiView", "执行失败（不重试）", {
+        errorType: err.name,
+        message: err.message.split("\n")[0],
+      });
+      stop();
+      throw err;
+    }
     log("error", "WikiView", "执行失败", err);
-    throw wrapDebugError("WikiView", err);
+    stop();
+    throw wrapWikiError("WikiView", err);
   }
 }
 
@@ -1954,11 +2226,6 @@ function wrapDebugError(label: string, err: unknown): Error {
   });
 }
 
-/** 辅助函数：等待 Dialog 打开（Wiki 函数共用） */
-function waitForDialogOpen(): Promise<void> {
-  return new Promise(r => setTimeout(r, 100));
-}
-
 /**
  * 辅助函数：等待 Dialog DOM 渲染就绪（改进版）。
  * 使用双 rAF 确保 React commit 阶段完成，替代固定 100ms 盲等。
@@ -1968,11 +2235,6 @@ async function waitForDialogReady(): Promise<void> {
   await nextFrame();
   // 额外等待一帧确保 Dialog 动画/过渡完成
   await new Promise(r => setTimeout(r, 50));
-}
-
-/** 辅助函数：等待保存完成（Wiki 函数共用） */
-function waitForSaveComplete(): Promise<void> {
-  return new Promise(r => setTimeout(r, 150));
 }
 
 /**
@@ -2023,6 +2285,49 @@ async function waitForRecordSaved(recordId: number | undefined, timeout = 2000):
 }
 
 /**
+ * 辅助函数：等待 Wiki 页面回调注册完成。
+ * 轮询验证替代盲等——检查 _callbacksReady.wiki 标志。
+ */
+async function waitForWikiCallbacks(timeout = 3000): Promise<void> {
+  const start = Date.now();
+  while (!_callbacksReady.wiki) {
+    if (Date.now() - start > timeout) {
+      throw new WikiError(`Wiki 页面回调注册超时（${timeout}ms）`, "waitForWikiCallbacks", {
+        context: { timeout, callbacksReady: _callbacksReady },
+        suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
+      });
+    }
+    await new Promise(r => setTimeout(r, 50));
+  }
+}
+
+/**
+ * 辅助函数：等待 Wiki 文档保存到数据库（轮询验证）。
+ * 替代盲等——通过查询 DB 确认文档确实存在。
+ */
+async function waitForDocSaved(docId: number | undefined, timeout = 2000): Promise<void> {
+  // 无 ID 时跳过验证（新建文档可能尚未分配 ID）
+  if (docId == null) {
+    await new Promise(r => setTimeout(r, 150));
+    return;
+  }
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const doc = await getWikiDoc(docId);
+    if (doc) {
+      log("debug", "wait", "文档保存验证成功", {
+        docId,
+        elapsed: Date.now() - start,
+      });
+      return;
+    }
+    await new Promise(r => setTimeout(r, 50));
+  }
+  // 超时不抛错——文档可能已通过回调成功保存但 DB 查询有延迟
+  log("warn", "wait", "文档保存等待超时，继续执行", { docId, timeout });
+}
+
+/**
  * DaLiuRen 错误包装：保证调试 API 抛出的错误始终是 Error 实例，
  * 且消息包含来源标签。对于 DaLiuRenError 直接返回。
  */
@@ -2044,6 +2349,34 @@ function wrapDaLiuRenError(label: string, err: unknown): Error {
   }
   // 非 Error 值：包装为 DaLiuRenError
   return new DaLiuRenError(`${label} 执行失败：${String(err)}`, label, {
+    context: { rawError: typeof err === "object" ? JSON.stringify(err) : String(err) },
+    suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
+    cause: err,
+  });
+}
+
+/**
+ * Wiki 错误包装：保证调试 API 抛出的错误始终是 Error 实例，
+ * 且消息包含来源标签。对于 WikiError 直接返回。
+ */
+function wrapWikiError(label: string, err: unknown): Error {
+  // WikiError 直接返回
+  if (err instanceof WikiError) {
+    return err;
+  }
+  // ZiWeiError 也直接返回（兼容）
+  if (err instanceof ZiWeiError) {
+    return err;
+  }
+  // 原生 Error：附加来源标签
+  if (err instanceof Error) {
+    if (!err.message.startsWith(`[${label}]`)) {
+      err.message = `[${label}] ${err.message}`;
+    }
+    return err;
+  }
+  // 非 Error 值：包装为 WikiError
+  return new WikiError(`${label} 执行失败：${String(err)}`, label, {
     context: { rawError: typeof err === "object" ? JSON.stringify(err) : String(err) },
     suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
     cause: err,
@@ -2080,9 +2413,9 @@ function version(): void {
     { 方法: "DaLiuRenCreate(params, options?)", 说明: "大六壬起课（创建记录，支持 skipUI）" },
     { 方法: "DaLiuRenList(params, options?)", 说明: "大六壬起课列表（支持 skipUI）" },
     { 方法: "DaLiuRenView(params, options?)", 说明: "大六壬起课详情（支持 skipUI）" },
-    { 方法: "WikiCreate(params)", 说明: "Wiki 文档创建" },
-    { 方法: "WikiList(params)", 说明: "Wiki 文档列表" },
-    { 方法: "WikiView(params)", 说明: "Wiki 文档详情" },
+    { 方法: "WikiCreate(params, options?)", 说明: "Wiki 文档创建（支持 skipUI）" },
+    { 方法: "WikiList(params, options?)", 说明: "Wiki 文档列表（支持 skipUI）" },
+    { 方法: "WikiView(params, options?)", 说明: "Wiki 文档详情（支持 skipUI）" },
     { 方法: "setLogLevel(level)", 说明: "调整日志级别：debug/info/warn/error" },
     { 方法: "getCacheStats()", 说明: "获取缓存统计（命中率/大小/淘汰数）" },
     { 方法: "clearCaches()", 说明: "清空全部缓存（调试用）" },
