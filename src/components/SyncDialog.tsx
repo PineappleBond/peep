@@ -132,9 +132,13 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
     setGeneratedLink("");
     try {
       const pwd = password || config.defaultPassword;
-      const link = await generateSyncLink(pwd, (percent, text) => {
-        setUploadProgress({ percent, text });
-      });
+      const link = await generateSyncLink(
+        pwd,
+        (percent, text) => {
+          setUploadProgress({ percent, text });
+        },
+        t,
+      );
       setGeneratedLink(link);
       setUploadState("done");
       setHistory(loadSyncHistory());
@@ -167,7 +171,7 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
     setPreviewData(null);
     setConflicts(null);
     try {
-      const data = await previewFromLink(inputLink, inputPassword);
+      const data = await previewFromLink(inputLink, inputPassword, t);
       setPreviewData(data);
       const c = await detectConflicts(data);
       setConflicts(c);
@@ -177,7 +181,7 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
       setDownloadError(msg);
       setDownloadState("error");
     }
-  }, [inputLink, inputPassword]);
+  }, [inputLink, inputPassword, t]);
 
   /* ── 执行还原 ── */
   const handleRestore = useCallback(async () => {
@@ -186,7 +190,7 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
     setDownloadError("");
     setDownloadProgress({ percent: 30, text: t("sync.restoring") });
     try {
-      await restoreFromLink(inputLink, inputPassword, restoreMode);
+      await restoreFromLink(inputLink, inputPassword, restoreMode, t);
       setDownloadProgress({ percent: 100, text: t("sync.restoreComplete") });
       setDownloadState("done");
       setHistory(loadSyncHistory());

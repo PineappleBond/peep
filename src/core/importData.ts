@@ -100,23 +100,27 @@ function assertFileSize(file: File): void {
 export async function importFromJson(
   file: File,
   onProgress?: (percent: number, text: string) => void,
+  t?: (key: string, params?: Record<string, string | number>) => string,
 ): Promise<ImportResult> {
+  /** 翻译兜底：如果没传 t，直接用 key 中默认的中文文本 */
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
+
   const result: ImportResult = { persons: 0, liuren: 0, wiki: 0, errors: [] };
 
   try {
     assertFileSize(file);
-    onProgress?.(10, "读取文件...");
+    onProgress?.(10, tr("importData.readingFile", "读取文件..."));
     const text = await file.text();
     const data: BackupData = JSON.parse(text);
 
-    onProgress?.(20, "验证数据...");
-    await validateBackupData(data);
+    onProgress?.(20, tr("importData.validating", "验证数据..."));
+    await validateBackupData(data, t);
 
     // 获取默认人物 ID（用于关联导入的记录）
     const defaultPerson = await getDefaultPerson();
     const defaultPersonId = defaultPerson.id ?? 1;
 
-    onProgress?.(30, "导入人物...");
+    onProgress?.(30, tr("importData.importingPersons", "导入人物..."));
     // 导入人物数据
     if (data.person) {
       try {
@@ -151,7 +155,7 @@ export async function importFromJson(
       }
     }
 
-    onProgress?.(50, "导入大六壬记录...");
+    onProgress?.(50, tr("importData.importingLiuren", "导入大六壬记录..."));
     // 导入大六壬记录
     if (data.liuren && data.liuren.length > 0) {
       for (const record of data.liuren) {
@@ -174,7 +178,7 @@ export async function importFromJson(
       }
     }
 
-    onProgress?.(70, "导入Wiki文档...");
+    onProgress?.(70, tr("importData.importingWiki", "导入Wiki文档..."));
     // 导入 Wiki 文档
     if (data.wiki && data.wiki.length > 0) {
       for (const doc of data.wiki) {
@@ -195,7 +199,7 @@ export async function importFromJson(
       }
     }
 
-    onProgress?.(100, "导入完成");
+    onProgress?.(100, tr("importData.importComplete", "导入完成"));
   } catch (err) {
     result.errors.push(`导入失败: ${err}`);
   }
@@ -206,15 +210,20 @@ export async function importFromJson(
 /**
  * 验证备份数据结构
  */
-async function validateBackupData(data: BackupData): Promise<void> {
+async function validateBackupData(
+  data: BackupData,
+  t?: (key: string, params?: Record<string, string | number>) => string,
+): Promise<void> {
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
+
   if (!data.person && !data.liuren && !data.wiki) {
-    throw new Error("备份文件中没有可导入的数据");
+    throw new Error(tr("importData.noData", "备份文件中没有可导入的数据"));
   }
 
   // 验证人物数据
   if (data.person) {
     if (!data.person.name || !data.person.date || data.person.timeIndex === undefined) {
-      throw new Error("人物数据不完整：缺少必要字段");
+      throw new Error(tr("importData.personIncomplete", "人物数据不完整：缺少必要字段"));
     }
   }
 
@@ -222,7 +231,7 @@ async function validateBackupData(data: BackupData): Promise<void> {
   if (data.liuren) {
     for (const record of data.liuren) {
       if (!record.calculationTime || !record.question || !record.result) {
-        throw new Error("大六壬记录数据不完整");
+        throw new Error(tr("importData.liurenIncomplete", "大六壬记录数据不完整"));
       }
     }
   }
@@ -231,7 +240,7 @@ async function validateBackupData(data: BackupData): Promise<void> {
   if (data.wiki) {
     for (const doc of data.wiki) {
       if (!doc.title || !doc.content) {
-        throw new Error("Wiki文档数据不完整");
+        throw new Error(tr("importData.wikiIncomplete", "Wiki文档数据不完整"));
       }
     }
   }
@@ -246,13 +255,15 @@ export async function importFromCsv(
   file: File,
   type: "liuren" | "wiki",
   onProgress?: (percent: number, text: string) => void,
+  t?: (key: string, params?: Record<string, string | number>) => string,
 ): Promise<number> {
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
   assertFileSize(file);
   const text = await file.text();
   const lines = text.split("\n").filter(line => line.trim());
 
   if (lines.length < 2) {
-    throw new Error("CSV 文件为空或格式不正确");
+    throw new Error(tr("importData.csvEmptyOrBad", "CSV 文件为空或格式不正确"));
   }
 
   const headers = parseCsvLine(lines[0]);
@@ -294,7 +305,7 @@ export async function importFromCsv(
     }
   }
 
-  onProgress?.(100, "导入完成");
+  onProgress?.(100, tr("importData.importComplete", "导入完成"));
   return importedCount;
 }
 
@@ -402,17 +413,21 @@ export async function previewJsonBackup(file: File): Promise<{
 /**
  * 预览 CSV 数据
  */
-export async function previewCsvData(file: File): Promise<{
+export async function previewCsvData(
+  file: File,
+  t?: (key: string, params?: Record<string, string | number>) => string,
+): Promise<{
   headers: string[];
   rowCount: number;
   sampleRows: string[][];
 }> {
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
   assertFileSize(file);
   const text = await file.text();
   const lines = text.split("\n").filter(line => line.trim());
 
   if (lines.length < 1) {
-    throw new Error("CSV 文件为空");
+    throw new Error(tr("importData.csvEmpty", "CSV 文件为空"));
   }
 
   const headers = parseCsvLine(lines[0]);

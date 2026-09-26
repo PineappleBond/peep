@@ -31,6 +31,7 @@ const Row = memo(function Row({
   children: ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (wrap) return;
@@ -53,7 +54,7 @@ const Row = memo(function Row({
         ref={box}
         className={`hcells ${wrap ? "hcells-grid" : ""}`}
         role="listbox"
-        aria-label={`${label}列表`}
+        aria-label={t("hbar.listBox", { label })}
       >
         {children}
       </div>

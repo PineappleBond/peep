@@ -73,49 +73,52 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
   }, [state, resetState, onClose]);
 
   /** 处理文件选择 */
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
-    setFile(selectedFile);
-    setState("previewing");
-    setError("");
+  const handleFileSelect = useCallback(
+    async (selectedFile: File) => {
+      setFile(selectedFile);
+      setState("previewing");
+      setError("");
 
-    try {
-      const fileName = selectedFile.name.toLowerCase();
+      try {
+        const fileName = selectedFile.name.toLowerCase();
 
-      if (fileName.endsWith(".json")) {
-        // JSON 备份预览
-        const data = await previewJsonBackup(selectedFile);
-        setPreview({
-          type: "json",
-          hasPerson: data.hasPerson,
-          liurenCount: data.liurenCount,
-          wikiCount: data.wikiCount,
-          exportedAt: data.exportedAt,
-        });
-      } else if (fileName.endsWith(".csv")) {
-        // CSV 预览
-        const data = await previewCsvData(selectedFile);
-        // 根据表头自动检测类型
-        const csvType = data.headers.includes("占事") ? "liuren" : "wiki";
-        setPreview({
-          type: "csv",
-          csvType,
-          hasPerson: false,
-          liurenCount: csvType === "liuren" ? data.rowCount : 0,
-          wikiCount: csvType === "wiki" ? data.rowCount : 0,
-          csvHeaders: data.headers,
-          csvRowCount: data.rowCount,
-          csvSampleRows: data.sampleRows,
-        });
-      } else {
-        throw new Error("不支持的文件格式，请选择 JSON 或 CSV 文件");
+        if (fileName.endsWith(".json")) {
+          // JSON 备份预览
+          const data = await previewJsonBackup(selectedFile);
+          setPreview({
+            type: "json",
+            hasPerson: data.hasPerson,
+            liurenCount: data.liurenCount,
+            wikiCount: data.wikiCount,
+            exportedAt: data.exportedAt,
+          });
+        } else if (fileName.endsWith(".csv")) {
+          // CSV 预览
+          const data = await previewCsvData(selectedFile, t);
+          // 根据表头自动检测类型
+          const csvType = data.headers.includes("占事") ? "liuren" : "wiki";
+          setPreview({
+            type: "csv",
+            csvType,
+            hasPerson: false,
+            liurenCount: csvType === "liuren" ? data.rowCount : 0,
+            wikiCount: csvType === "wiki" ? data.rowCount : 0,
+            csvHeaders: data.headers,
+            csvRowCount: data.rowCount,
+            csvSampleRows: data.sampleRows,
+          });
+        } else {
+          throw new Error(t("import.unsupportedFormat"));
+        }
+
+        setState("idle");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("import.parseFailed"));
+        setState("error");
       }
-
-      setState("idle");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "文件解析失败");
-      setState("error");
-    }
-  }, []);
+    },
+    [t],
+  );
 
   /** 拖拽处理 */
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -141,19 +144,28 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
     if (!file || !preview) return;
 
     setState("importing");
-    setProgress({ percent: 0, text: "准备导入..." });
+    setProgress({ percent: 0, text: t("import.preparing") });
 
     try {
       let importResult: ImportResult;
 
       if (preview.type === "json") {
-        importResult = await importFromJson(file, (percent, text) => {
-          setProgress({ percent, text });
-        });
+        importResult = await importFromJson(
+          file,
+          (percent, text) => {
+            setProgress({ percent, text });
+          },
+          t,
+        );
       } else if (preview.type === "csv" && preview.csvType) {
-        const count = await importFromCsv(file, preview.csvType, (percent, text) => {
-          setProgress({ percent, text });
-        });
+        const count = await importFromCsv(
+          file,
+          preview.csvType,
+          (percent, text) => {
+            setProgress({ percent, text });
+          },
+          t,
+        );
         importResult = {
           persons: 0,
           liuren: preview.csvType === "liuren" ? count : 0,
@@ -161,7 +173,7 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
           errors: [],
         };
       } else {
-        throw new Error("导入类型错误");
+        throw new Error(t("import.typeError"));
       }
 
       setResult(importResult);
@@ -174,7 +186,7 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
         toast.warn(t("import.partialSuccess"));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "导入失败");
+      setError(err instanceof Error ? err.message : t("import.importFailed"));
       setState("error");
       toast.error(t("import.failed"));
     }
@@ -273,7 +285,7 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
               <div className="import-preview-info">
                 <div className="import-preview-filename">{file?.name}</div>
                 <div className="import-preview-type">
-                  {preview.type === "json" ? "JSON 备份" : "CSV 数据"}
+                  {preview.type === "json" ? t("import.jsonBackup") : t("import.csvData")}
                 </div>
               </div>
             </div>
@@ -284,26 +296,26 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
                 <>
                   {preview.exportedAt && (
                     <div className="import-preview-item">
-                      <span className="import-preview-label">导出时间：</span>
+                      <span className="import-preview-label">{t("import.exportedAtLabel")}</span>
                       <span>{new Date(preview.exportedAt).toLocaleString()}</span>
                     </div>
                   )}
                   {preview.hasPerson && (
                     <div className="import-preview-item">
-                      <span className="import-preview-label">人物数据：</span>
+                      <span className="import-preview-label">{t("import.personDataLabel")}</span>
                       <span>✓</span>
                     </div>
                   )}
                   {preview.liurenCount > 0 && (
                     <div className="import-preview-item">
-                      <span className="import-preview-label">大六壬记录：</span>
-                      <span>{preview.liurenCount} 条</span>
+                      <span className="import-preview-label">{t("import.liurenRecordsLabel")}</span>
+                      <span>{t("import.unitTiao", { count: preview.liurenCount })}</span>
                     </div>
                   )}
                   {preview.wikiCount > 0 && (
                     <div className="import-preview-item">
-                      <span className="import-preview-label">Wiki文档：</span>
-                      <span>{preview.wikiCount} 篇</span>
+                      <span className="import-preview-label">{t("import.wikiDocsLabel")}</span>
+                      <span>{t("import.unitPian", { count: preview.wikiCount })}</span>
                     </div>
                   )}
                 </>
@@ -312,16 +324,22 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
               {preview.type === "csv" && (
                 <>
                   <div className="import-preview-item">
-                    <span className="import-preview-label">数据类型：</span>
-                    <span>{preview.csvType === "liuren" ? "大六壬记录" : "Wiki文档"}</span>
+                    <span className="import-preview-label">{t("import.dataTypeLabel")}</span>
+                    <span>
+                      {preview.csvType === "liuren"
+                        ? t("import.csvTypeLiuren")
+                        : t("import.csvTypeWiki")}
+                    </span>
                   </div>
                   <div className="import-preview-item">
-                    <span className="import-preview-label">数据行数：</span>
-                    <span>{preview.csvRowCount} 行</span>
+                    <span className="import-preview-label">{t("import.rowCountLabel")}</span>
+                    <span>{t("import.rowUnit", { count: preview.csvRowCount ?? 0 })}</span>
                   </div>
                   {preview.csvSampleRows && preview.csvSampleRows.length > 0 && (
                     <div className="import-preview-sample">
-                      <div className="import-preview-sample-title">数据预览（前 5 行）：</div>
+                      <div className="import-preview-sample-title">
+                        {t("import.dataPreviewSample")}
+                      </div>
                       <div className="import-preview-table">
                         <div className="import-preview-table-header">
                           {preview.csvHeaders?.map((h, i) => (
@@ -373,26 +391,26 @@ export function ImportDialog({ open, onClose, onImportSuccess }: ImportDialogPro
             <div className="import-result-stats">
               {result.persons > 0 && (
                 <div className="import-result-stat">
-                  <span>人物：</span>
+                  <span>{t("import.personsStat")}</span>
                   <span>{result.persons}</span>
                 </div>
               )}
               {result.liuren > 0 && (
                 <div className="import-result-stat">
-                  <span>大六壬记录：</span>
+                  <span>{t("import.liurenRecordsLabel")}</span>
                   <span>{result.liuren}</span>
                 </div>
               )}
               {result.wiki > 0 && (
                 <div className="import-result-stat">
-                  <span>Wiki文档：</span>
+                  <span>{t("import.wikiDocsLabel")}</span>
                   <span>{result.wiki}</span>
                 </div>
               )}
             </div>
             {result.errors.length > 0 && (
               <div className="import-result-errors">
-                <div className="import-result-errors-title">部分数据导入失败：</div>
+                <div className="import-result-errors-title">{t("import.partialFailedTitle")}</div>
                 <ul>
                   {result.errors.map((err, i) => (
                     <li key={i}>{err}</li>

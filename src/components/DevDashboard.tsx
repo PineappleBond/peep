@@ -15,6 +15,7 @@ import {
 } from "../core/performance";
 import { getRecordedErrors, type ErrorReport } from "../core/errorTracking";
 import { registerShortcut } from "../core/shortcuts";
+import { useI18n } from "../core/i18n";
 
 /** 仪表板可见性变更的监听器（供外部模块在快捷键触发时响应） */
 type VisibilityListener = (visible: boolean) => void;
@@ -187,9 +188,17 @@ const VitalCard = memo(function VitalCard({
 });
 
 /** 迷你趋势图：使用 memo 避免每秒刷新时不必要的重渲染 */
-const Sparkline = memo(function Sparkline({ values, color }: { values: number[]; color: string }) {
+const Sparkline = memo(function Sparkline({
+  values,
+  color,
+  emptyText,
+}: {
+  values: number[];
+  color: string;
+  emptyText?: string;
+}) {
   if (values.length < 2) {
-    return <div className="dev-dash-sparkline dev-dash-empty">尚无历史数据</div>;
+    return <div className="dev-dash-sparkline dev-dash-empty">{emptyText}</div>;
   }
   const max = Math.max(...values);
   const min = Math.min(...values);
@@ -215,6 +224,7 @@ export function DevDashboard() {
   const [errors, setErrors] = useState<ErrorReport[]>([]);
   const [expandedError, setExpandedError] = useState<string | null>(null);
   const historyRef = useRef<SnapshotRecord[]>([]);
+  const { t } = useI18n();
 
   // 订阅可见性变化（快捷键触发时由外部切换）
   useEffect(() => {
@@ -227,11 +237,11 @@ export function DevDashboard() {
     const unreg = registerShortcut({
       key: "Ctrl+Shift+D",
       handler: () => toggleDevDashboard(),
-      description: "开发者性能仪表板",
-      group: "开发者",
+      description: t("devDashboard.title"),
+      group: t("devDashboard.group"),
     });
     return unreg;
-  }, []);
+  }, [t]);
 
   // 定时刷新数据
   useEffect(() => {
@@ -305,7 +315,7 @@ export function DevDashboard() {
       <div className="dev-dash-panel">
         <header className="dev-dash-header">
           <div className="dev-dash-title">
-            <span id="dev-dash-title">开发者性能仪表板</span>
+            <span id="dev-dash-title">{t("devDashboard.title")}</span>
             <span className="dev-dash-env">DEV</span>
           </div>
           <div className="dev-dash-actions">
@@ -313,17 +323,17 @@ export function DevDashboard() {
               type="button"
               className="dev-dash-btn"
               onClick={handleExport}
-              title="导出 JSON 报告"
-              aria-label="导出 JSON 报告"
+              title={t("devDashboard.exportJson")}
+              aria-label={t("devDashboard.exportJson")}
             >
-              导出
+              {t("devDashboard.export")}
             </button>
             <button
               type="button"
               className="dev-dash-btn dev-dash-close"
               onClick={handleClose}
-              title="关闭（Ctrl+Shift+D）"
-              aria-label="关闭开发者仪表板"
+              title={t("devDashboard.closeTitle")}
+              aria-label={t("devDashboard.closeAria")}
             >
               ×
             </button>
@@ -345,37 +355,55 @@ export function DevDashboard() {
           </div>
           <div className="dev-dash-trends">
             <div>
-              <span className="dev-dash-trend-label">FCP 趋势</span>
-              <Sparkline values={trendFCP} color="#16a34a" />
+              <span className="dev-dash-trend-label">
+                {t("devDashboard.trend", { name: "FCP" })}
+              </span>
+              <Sparkline
+                values={trendFCP}
+                color="#16a34a"
+                emptyText={t("devDashboard.noHistory")}
+              />
             </div>
             <div>
-              <span className="dev-dash-trend-label">LCP 趋势</span>
-              <Sparkline values={trendLCP} color="#d97706" />
+              <span className="dev-dash-trend-label">
+                {t("devDashboard.trend", { name: "LCP" })}
+              </span>
+              <Sparkline
+                values={trendLCP}
+                color="#d97706"
+                emptyText={t("devDashboard.noHistory")}
+              />
             </div>
             <div>
-              <span className="dev-dash-trend-label">CLS 趋势</span>
-              <Sparkline values={trendCLS} color="#6366f1" />
+              <span className="dev-dash-trend-label">
+                {t("devDashboard.trend", { name: "CLS" })}
+              </span>
+              <Sparkline
+                values={trendCLS}
+                color="#6366f1"
+                emptyText={t("devDashboard.noHistory")}
+              />
             </div>
           </div>
         </section>
 
         <section className="dev-dash-section">
-          <h3>系统信息</h3>
+          <h3>{t("devDashboard.systemInfo")}</h3>
           <ul className="dev-dash-kv">
             <li>
-              <span>DOM 节点数</span>
+              <span>{t("devDashboard.domNodes")}</span>
               <strong>{sysInfo.domNodeCount}</strong>
             </li>
             <li>
-              <span>JS 堆内存</span>
+              <span>{t("devDashboard.jsHeap")}</span>
               <strong>
                 {sysInfo.usedJSHeapMB !== undefined
                   ? `${sysInfo.usedJSHeapMB.toFixed(1)} / ${sysInfo.totalJSHeapMB?.toFixed(1)} MB`
-                  : "当前浏览器不支持"}
+                  : t("devDashboard.notSupported")}
               </strong>
             </li>
             <li>
-              <span>IndexedDB 占用</span>
+              <span>{t("devDashboard.idbUsage")}</span>
               <strong>
                 {sysInfo.idbUsage !== undefined
                   ? `${fmtBytes(sysInfo.idbUsage)} / ${fmtBytes(sysInfo.idbQuota)}（${idbPercent.toFixed(1)}%）`
@@ -383,22 +411,24 @@ export function DevDashboard() {
               </strong>
             </li>
             <li>
-              <span>Service Worker</span>
-              <strong>{sysInfo.swControlled ? "已激活" : "未激活"}</strong>
+              <span>{t("devDashboard.serviceWorker")}</span>
+              <strong>
+                {sysInfo.swControlled ? t("devDashboard.swActive") : t("devDashboard.swInactive")}
+              </strong>
             </li>
           </ul>
         </section>
 
         <section className="dev-dash-section">
-          <h3>自定义计时（performance.measure）</h3>
+          <h3>{t("devDashboard.customMeasures")}</h3>
           {measures.length === 0 ? (
-            <div className="dev-dash-empty">暂无自定义计时</div>
+            <div className="dev-dash-empty">{t("devDashboard.noMeasures")}</div>
           ) : (
             <table className="dev-dash-table">
               <thead>
                 <tr>
-                  <th>名称</th>
-                  <th>耗时</th>
+                  <th>{t("devDashboard.measureName")}</th>
+                  <th>{t("devDashboard.measureDuration")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -414,9 +444,9 @@ export function DevDashboard() {
         </section>
 
         <section className="dev-dash-section">
-          <h3>错误日志（最近 {errors.length} 条）</h3>
+          <h3>{t("devDashboard.errorLog", { count: errors.length })}</h3>
           {errors.length === 0 ? (
-            <div className="dev-dash-empty">暂无错误记录</div>
+            <div className="dev-dash-empty">{t("devDashboard.noErrors")}</div>
           ) : (
             <ul className="dev-dash-errors">
               {errors.map(e => (
@@ -441,12 +471,12 @@ export function DevDashboard() {
                       </div>
                       {e.lineno !== undefined && (
                         <div>
-                          <em>位置:</em> {e.lineno}:{e.colno}
+                          <em>{t("devDashboard.location")}</em> {e.lineno}:{e.colno}
                         </div>
                       )}
                       {e.resourceUrl && (
                         <div>
-                          <em>资源:</em> {e.resourceUrl}
+                          <em>{t("devDashboard.resource")}</em> {e.resourceUrl}
                         </div>
                       )}
                       {e.stack && <pre>{e.stack}</pre>}
@@ -458,7 +488,7 @@ export function DevDashboard() {
           )}
         </section>
 
-        <footer className="dev-dash-footer">每秒刷新 · 数据仅存于本地 · 快捷键 Ctrl+Shift+D</footer>
+        <footer className="dev-dash-footer">{t("devDashboard.footer")}</footer>
       </div>
     </div>
   );

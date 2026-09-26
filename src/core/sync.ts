@@ -295,10 +295,15 @@ async function encryptPayload(plaintext: string, password: string): Promise<stri
 /**
  * 解密 URL 安全载荷为 JSON 字符串
  */
-async function decryptPayload(payload: string, password: string): Promise<string> {
+async function decryptPayload(
+  payload: string,
+  password: string,
+  t?: (key: string, params?: Record<string, string | number>) => string,
+): Promise<string> {
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
   const combined = fromBase64Url(payload);
   if (combined.byteLength < SALT_BYTES + IV_BYTES + 1) {
-    throw new Error("载荷格式错误");
+    throw new Error(tr("sync.payloadBad", "载荷格式错误"));
   }
   const salt = combined.slice(0, SALT_BYTES);
   const iv = combined.slice(SALT_BYTES, SALT_BYTES + IV_BYTES);
@@ -320,23 +325,25 @@ export const LINK_KEY = "restore";
 export async function generateSyncLink(
   password: string,
   onProgress?: (percent: number, text: string) => void,
+  t?: (key: string, params?: Record<string, string | number>) => string,
 ): Promise<string> {
-  onProgress?.(10, "收集数据...");
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
+  onProgress?.(10, tr("sync.collecting", "收集数据..."));
   const snapshot = await collectSnapshot();
   const json = JSON.stringify(snapshot);
 
-  onProgress?.(40, "加密中...");
+  onProgress?.(40, tr("sync.encrypting", "加密中..."));
   const payload = password
     ? await encryptPayload(json, password)
     : toBase64Url(new TextEncoder().encode(json));
 
-  onProgress?.(80, "生成链接...");
+  onProgress?.(80, tr("sync.generatingLink", "生成链接..."));
 
   // 将载荷放入 URL 哈希，避免发送到服务器
   const base = globalThis.location?.href?.split("#")[0] ?? "";
   const link = `${base}#${LINK_KEY}=${payload}`;
 
-  onProgress?.(100, "完成");
+  onProgress?.(100, tr("sync.done", "完成"));
 
   // 记录同步历史
   appendSyncHistory({
@@ -383,16 +390,18 @@ export async function restoreFromLink(
   url: string,
   password: string,
   mode: RestoreMode,
+  t?: (key: string, params?: Record<string, string | number>) => string,
 ): Promise<BackupData> {
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
   const parsed = parseSyncLink(url);
-  if (!parsed) throw new Error("无效同步链接");
+  if (!parsed) throw new Error(tr("sync.linkBad", "无效同步链接"));
 
   let json: string;
   if (password) {
     try {
-      json = await decryptPayload(parsed.payload, password);
+      json = await decryptPayload(parsed.payload, password, t);
     } catch {
-      throw new Error("密码错误");
+      throw new Error(tr("sync.wrongPassword", "密码错误"));
     }
   } else {
     json = new TextDecoder().decode(fromBase64Url(parsed.payload));
@@ -415,16 +424,21 @@ export async function restoreFromLink(
 /**
  * 直接解析链接为 BackupData（不写入数据库，用于预览）
  */
-export async function previewFromLink(url: string, password: string): Promise<BackupData> {
+export async function previewFromLink(
+  url: string,
+  password: string,
+  t?: (key: string, params?: Record<string, string | number>) => string,
+): Promise<BackupData> {
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
   const parsed = parseSyncLink(url);
-  if (!parsed) throw new Error("无效同步链接");
+  if (!parsed) throw new Error(tr("sync.linkBad", "无效同步链接"));
 
   let json: string;
   if (password) {
     try {
-      json = await decryptPayload(parsed.payload, password);
+      json = await decryptPayload(parsed.payload, password, t);
     } catch {
-      throw new Error("密码错误");
+      throw new Error(tr("sync.wrongPassword", "密码错误"));
     }
   } else {
     json = new TextDecoder().decode(fromBase64Url(parsed.payload));

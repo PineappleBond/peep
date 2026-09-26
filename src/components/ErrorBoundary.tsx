@@ -93,7 +93,6 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
         console.log("%c[ErrorBoundary] 错误信息已复制到剪贴板", "color:#4caf50");
       })
       .catch(err => {
-         
         console.error("[ErrorBoundary] 复制失败", err);
       });
   };
@@ -124,15 +123,17 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
             }}
           >
             <div style={{ fontWeight: "bold", color: "#f44336", marginBottom: 8 }}>
-              渲染异常（开发模式）
+              {t("errorBoundary.devTitle")}
             </div>
             <div style={{ marginBottom: 8, color: "#ff9800" }}>
-              <strong>错误：</strong>
+              <strong>{t("errorBoundary.errorLabel")}</strong>
               {this.state.error.message}
             </div>
             {this.state.componentStack && (
               <details style={{ marginBottom: 8 }}>
-                <summary style={{ cursor: "pointer", color: "#2196f3" }}>查看组件栈</summary>
+                <summary style={{ cursor: "pointer", color: "#2196f3" }}>
+                  {t("errorBoundary.viewStack")}
+                </summary>
                 <pre
                   style={{
                     marginTop: 8,
@@ -150,7 +151,8 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
               </details>
             )}
             <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 8 }}>
-              发生时间：{new Date(this.state.timestamp).toLocaleString()}
+              {t("errorBoundary.occurredAt")}
+              {new Date(this.state.timestamp).toLocaleString()}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <button type="button" className="btn-cancel" onClick={this.reset}>
@@ -160,13 +162,13 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
                 type="button"
                 className="btn-cancel"
                 onClick={this.copyError}
-                title="复制错误信息到剪贴板"
+                title={t("errorBoundary.copyErrorTitle")}
               >
-                复制错误
+                {t("errorBoundary.copyError")}
               </button>
             </div>
             <div style={{ marginTop: 8, fontSize: 11, opacity: 0.7 }}>
-              提示：请查看浏览器控制台获取完整错误堆栈
+              {t("errorBoundary.devHint")}
             </div>
           </div>
         );

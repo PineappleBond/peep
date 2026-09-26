@@ -62,8 +62,13 @@ export const Header = memo(function Header({
     [theme],
   );
   const themeTitle = useMemo(
-    () => (theme === "system" ? "跟随系统" : theme === "light" ? "亮色主题" : "暗色主题"),
-    [theme],
+    () =>
+      theme === "system"
+        ? t("theme.system")
+        : theme === "light"
+          ? t("theme.light")
+          : t("theme.dark"),
+    [theme, t],
   );
 
   // ── 主题切换快捷键 T ────────────────────────────
