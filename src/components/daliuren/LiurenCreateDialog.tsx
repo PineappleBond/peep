@@ -59,6 +59,8 @@ export function LiurenCreateDialog({
 
   // 调试 API：当 submitTrigger 变化时，自动提交
   const prevSubmitTriggerRef = useRef<number | undefined>(undefined);
+  /* eslint-disable react-hooks/exhaustive-deps -- handleSubmit 依赖 values/error 等表单状态，
+     加入 deps 会在每次输入时触发 effect；当前通过 submitTrigger 变化驱动，刻意不依赖 handleSubmit */
   useEffect(() => {
     if (
       submitTrigger !== undefined &&
@@ -73,6 +75,7 @@ export function LiurenCreateDialog({
       }, 50);
     }
   }, [submitTrigger, open, saving]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const resetForm = () => {
     setValues(EMPTY_LIUREN_FORM);

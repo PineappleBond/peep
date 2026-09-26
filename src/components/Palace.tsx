@@ -45,7 +45,7 @@ export const PalaceCard = memo(function PalaceCard({
   /* 自化（离心）：宫干四化命中本宫星耀；跟随流派 config */
   const selfMutagens = useMemo(
     () => util.getMutagensByHeavenlyStem(palace.heavenlyStem) as string[],
-    [palace.heavenlyStem, z.input.algorithm],
+    [palace.heavenlyStem],
   );
 
   /* 运限宫名徽章：从 scopeData 获取 */

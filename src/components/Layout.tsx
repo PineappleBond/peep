@@ -60,6 +60,20 @@ export function Layout({ children }: LayoutProps) {
     init();
   }, []);
 
+  const handleSelectPerson = useCallback((person: Person) => {
+    if (person.id) {
+      setCurrentPersonId(person.id);
+      try {
+        localStorage.setItem(STORAGE_KEY, String(person.id));
+      } catch (err) {
+        console.warn("[Layout] 写入 localStorage 失败（存储已满或被禁用）", err);
+      }
+    }
+    currentPersonRef.current = person;
+    // 通知页面组件人物已变更
+    globalEvents.emit("person.changed", person);
+  }, []);
+
   // 注册调试 API 回调
   useEffect(() => {
     registerDebugApi({
@@ -75,21 +89,7 @@ export function Layout({ children }: LayoutProps) {
         navigate(path);
       },
     });
-  }, [navigate]);
-
-  const handleSelectPerson = useCallback((person: Person) => {
-    if (person.id) {
-      setCurrentPersonId(person.id);
-      try {
-        localStorage.setItem(STORAGE_KEY, String(person.id));
-      } catch (err) {
-        console.warn("[Layout] 写入 localStorage 失败（存储已满或被禁用）", err);
-      }
-    }
-    currentPersonRef.current = person;
-    // 通知页面组件人物已变更
-    globalEvents.emit("person.changed", person);
-  }, []);
+  }, [navigate, handleSelectPerson]);
 
   return (
     <div className="app">

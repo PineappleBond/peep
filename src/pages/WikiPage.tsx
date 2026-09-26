@@ -87,7 +87,7 @@ export function WikiPage() {
       },
       getSelectedWikiDoc: () => selectedDocRef.current,
     });
-  }, [person, refreshList]);
+  }, [person, refreshList, t]);
 
   // 刷新已有标签列表
   useEffect(() => {
@@ -100,17 +100,20 @@ export function WikiPage() {
   }, [person?.id, listRefreshKey]);
 
   // 列表选中：加载文档详情，切换到 read 模式
-  const handleSelect = useCallback(async (doc: WikiDocument) => {
-    if (doc.id == null) return;
-    try {
-      const full = await getWikiDoc(doc.id);
-      setSelectedDoc(full || doc);
-      setMode("read");
-    } catch (err) {
-      console.error("[WikiPage] 加载文档详情失败", err);
-      alert(t("wiki.loadDocFailed"));
-    }
-  }, []);
+  const handleSelect = useCallback(
+    async (doc: WikiDocument) => {
+      if (doc.id == null) return;
+      try {
+        const full = await getWikiDoc(doc.id);
+        setSelectedDoc(full || doc);
+        setMode("read");
+      } catch (err) {
+        console.error("[WikiPage] 加载文档详情失败", err);
+        alert(t("wiki.loadDocFailed"));
+      }
+    },
+    [t],
+  );
 
   // 新建：清空 editingDoc，切换到 edit 模式
   const handleNewClick = useCallback(() => {
@@ -146,28 +149,31 @@ export function WikiPage() {
       console.error("[WikiPage] 删除文档失败", err);
       alert(err instanceof Error ? err.message : t("wiki.deleteFailed"));
     }
-  }, [deletingDoc, selectedDoc, refreshList]);
+  }, [deletingDoc, selectedDoc, refreshList, t]);
 
   // 编辑保存
-  const handleSave = useCallback(async (doc: WikiDocument, linkTargetIds: number[]) => {
-    try {
-      // 保存文档
-      const savedId = await saveWikiDoc(doc);
-      // 保存链接关系
-      await saveWikiLinks(savedId, linkTargetIds);
-      // 刷新列表
-      refreshList();
-      // 切换到 read 模式，选中新/更新的文档
-      const refreshed = await getWikiDoc(savedId);
-      if (refreshed) {
-        setSelectedDoc(refreshed);
+  const handleSave = useCallback(
+    async (doc: WikiDocument, linkTargetIds: number[]) => {
+      try {
+        // 保存文档
+        const savedId = await saveWikiDoc(doc);
+        // 保存链接关系
+        await saveWikiLinks(savedId, linkTargetIds);
+        // 刷新列表
+        refreshList();
+        // 切换到 read 模式，选中新/更新的文档
+        const refreshed = await getWikiDoc(savedId);
+        if (refreshed) {
+          setSelectedDoc(refreshed);
+        }
+        setMode("read");
+      } catch (err) {
+        console.error("[WikiPage] 保存文档失败", err);
+        alert(err instanceof Error ? err.message : t("wiki.saveFailed"));
       }
-      setMode("read");
-    } catch (err) {
-      console.error("[WikiPage] 保存文档失败", err);
-      alert(err instanceof Error ? err.message : t("wiki.saveFailed"));
-    }
-  }, []);
+    },
+    [refreshList, t],
+  );
 
   // 取消编辑
   const handleCancel = useCallback(() => {
@@ -232,23 +238,26 @@ export function WikiPage() {
       console.error("[WikiPage] 导出失败", err);
       alert(t("wiki.exportFailed"));
     }
-  }, [person]);
+  }, [person, t]);
 
   // 关联文档跳转：加载目标文档，显示在右侧
-  const handleDocClick = useCallback(async (docId: number) => {
-    try {
-      const doc = await getWikiDoc(docId);
-      if (doc) {
-        setSelectedDoc(doc);
-        setMode("read");
-      } else {
-        alert(t("wiki.docNotFound"));
+  const handleDocClick = useCallback(
+    async (docId: number) => {
+      try {
+        const doc = await getWikiDoc(docId);
+        if (doc) {
+          setSelectedDoc(doc);
+          setMode("read");
+        } else {
+          alert(t("wiki.docNotFound"));
+        }
+      } catch (err) {
+        console.error("[WikiPage] 加载关联文档失败", err);
+        alert(t("wiki.loadRelatedFailed"));
       }
-    } catch (err) {
-      console.error("[WikiPage] 加载关联文档失败", err);
-      alert(t("wiki.loadRelatedFailed"));
-    }
-  }, []);
+    },
+    [t],
+  );
 
   // 加载中状态
   if (person === null) {

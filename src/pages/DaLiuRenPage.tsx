@@ -155,7 +155,7 @@ export function DaLiuRenPage() {
       },
       getSelectedRecord: () => selectedRecordRef.current,
     });
-  }, [person]);
+  }, [person, t, listRefreshKeyRef]);
 
   // 当列表选中变化时，如果当前选中记录被删除/改变，需同步
   const handleSelect = useCallback((record: LiurenRecord) => {
