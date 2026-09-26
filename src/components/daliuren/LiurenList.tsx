@@ -1,7 +1,7 @@
 /**
  * 大六壬历史列表组件（左侧）
  */
-import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import type { LiurenRecord } from "../../core/personDb";
 import { listLiurenRecords, getAllLiurenTags, type LiurenListFilters } from "../../core/daliurenDb";
 import { formatRelativeTime } from "../../core/utils";

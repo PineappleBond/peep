@@ -25,7 +25,7 @@ try {
     const target = `/peep${savedPath}${search}${hash}`;
     window.history.replaceState(window.history.state, "", target);
   }
-} catch (_e) {
+} catch {
   /* 隐私模式 / sessionStorage 不可用：降级丢失原始路径，回退到首页 */
 }
 

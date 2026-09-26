@@ -1,7 +1,7 @@
 /**
  * Wiki 文档列表组件（左侧）
  */
-import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import type { WikiDocument } from "../../core/personDb";
 import { getPerson } from "../../core/personDb";
 import { listWikiDocs, getAllWikiTags, type WikiListFilters } from "../../core/wikiDb";

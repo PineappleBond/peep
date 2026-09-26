@@ -12,7 +12,7 @@ import globals from "globals";
 
 export default [
   // 全局忽略——构建产物 / 依赖 / 测试产物 / 文档目录 / 配置文件自身
-  { ignores: ["dist/**", "node_modules/**", "test-results/**", "playwright-report/**", "docs/kb/**", "eslint.config.js", "prettier.config.js"] },
+  { ignores: ["dist/**", "node_modules/**", "test-results/**", "playwright-report/**", "docs/kb/**", "public/**", "eslint.config.js", "prettier.config.js"] },
 
   // 推荐规则基线（ESLint 内建 + TS 推荐）
   js.configs.recommended,

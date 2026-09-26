@@ -790,10 +790,12 @@ function setLogLevel(level: LogLevel): void {
   log("info", "logger", `日志级别调整为 ${level}`);
 }
 
-/** 初始化 window.peep（仅在开发环境） */
+/** 初始化 window.peep（开发/生产均暴露，供 RTC Agent Function 调用） */
 export function initDebugApi() {
   if (typeof window === "undefined") return;
-  if (!import.meta.env.DEV) return;
+  // 注：原本有 import.meta.env.DEV 守卫，但 RTC Agent Function 在生产环境也需要
+  // 通过 window.peep 调用排盘/起课/Wiki 能力，故移除。日志函数内部的 DEV 守卫保留，
+  // 避免生产控制台输出调试信息。
 
   window.peep = {
     ZiWei,

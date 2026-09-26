@@ -9,6 +9,8 @@
  * 用户偏好存储在 localStorage("theme")，通过 data-theme 属性应用到 :root。
  */
 
+import { clearCustomTheme } from "./themeEditor";
+
 export type Theme = "light" | "dark" | "system";
 
 const STORAGE_KEY = "theme";
@@ -22,10 +24,15 @@ export function getTheme(): Theme {
   return "system";
 }
 
-/** 设置主题并持久化 */
+/**
+ * 设置主题并持久化
+ * 切换主题模式时会清除自定义主题，因为自定义主题只保存一套颜色值
+ */
 export function setTheme(theme: Theme): void {
   localStorage.setItem(STORAGE_KEY, theme);
   applyTheme(theme);
+  // 切换主题模式时清除自定义主题，避免亮色预设覆盖暗色模式
+  clearCustomTheme();
 }
 
 /** 将主题应用到 DOM */
