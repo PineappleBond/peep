@@ -4,8 +4,9 @@
  * - 删除标签（点击 X）
  * - 显示已添加标签
  * - 可选建议列表（suggestions），输入时自动过滤匹配项并展示下拉
+ * - 键盘导航建议（↑↓ 选择，Enter 确认）
  */
-import { useState, useRef, type KeyboardEvent } from "react";
+import { useState, useRef, useCallback, type KeyboardEvent } from "react";
 import { useI18n } from "../../core/i18n";
 
 interface TagInputProps {
@@ -40,26 +41,50 @@ export function TagInput({
   const resolvedPlaceholder = placeholder ?? t("tagInput.placeholder");
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  /** 当前高亮的建议项索引（键盘导航） */
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const addTags = (raw: string) => {
-    const newTags = raw
-      .split(/[,，]/)
-      .map(s => s.trim())
-      // 过滤空标签、超长标签、重复标签
-      .filter(s => s && s.length <= maxTagLength && !value.includes(s));
-    // 限制标签总数
-    const remaining = maxTags - value.length;
-    const toAdd = newTags.slice(0, remaining);
-    if (toAdd.length > 0) {
-      onChange([...value, ...toAdd]);
-    }
-    setInput("");
-    setShowSuggestions(false);
-    inputRef.current?.focus();
-  };
+  const addTags = useCallback(
+    (raw: string) => {
+      const newTags = raw
+        .split(/[,，]/)
+        .map(s => s.trim())
+        // 过滤空标签、超长标签、重复标签
+        .filter(s => s && s.length <= maxTagLength && !value.includes(s));
+      // 限制标签总数
+      const remaining = maxTags - value.length;
+      const toAdd = newTags.slice(0, remaining);
+      if (toAdd.length > 0) {
+        onChange([...value, ...toAdd]);
+      }
+      setInput("");
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+      inputRef.current?.focus();
+    },
+    [value, maxTagLength, maxTags, onChange],
+  );
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // 建议列表打开时的键盘导航
+    if (showSuggestions && filteredSuggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev < filteredSuggestions.length - 1 ? prev + 1 : 0));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev > 0 ? prev - 1 : filteredSuggestions.length - 1));
+        return;
+      }
+      if (e.key === "Enter" && highlightedIndex >= 0) {
+        e.preventDefault();
+        addTags(filteredSuggestions[highlightedIndex]);
+        return;
+      }
+    }
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       if (input.trim()) {
@@ -81,6 +106,7 @@ export function TagInput({
 
   const handleInputChange = (val: string) => {
     setInput(val);
+    setHighlightedIndex(-1); // 输入变化时重置高亮
     if (suggestions && val.trim()) {
       const filtered = suggestions.filter(
         s => s.toLowerCase().includes(val.toLowerCase()) && !value.includes(s),
@@ -91,11 +117,14 @@ export function TagInput({
     }
   };
 
-  const handleRemove = (tag: string) => {
-    onChange(value.filter(s => s !== tag));
-  };
+  const handleRemove = useCallback(
+    (tag: string) => {
+      onChange(value.filter(s => s !== tag));
+    },
+    [value, onChange],
+  );
 
-  // 计算建议列表
+  // 计算建议列表（移到此处以便 handleKeyDown 引用）
   const filteredSuggestions = suggestions
     ? suggestions
         .filter(s => s.toLowerCase().includes(input.toLowerCase()) && !value.includes(s))
@@ -129,6 +158,11 @@ export function TagInput({
           onBlur={handleBlur}
           placeholder={value.length === 0 ? resolvedPlaceholder : ""}
           aria-label={t("tagInput.addTag")}
+          aria-autocomplete="list"
+          aria-controls="tag-input-suggestions"
+          aria-activedescendant={
+            highlightedIndex >= 0 ? `tag-suggestion-${highlightedIndex}` : undefined
+          }
           disabled={disabled || value.length >= maxTags}
           maxLength={maxTagLength}
         />
@@ -136,18 +170,21 @@ export function TagInput({
       {/* 标签建议下拉 */}
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div
+          id="tag-input-suggestions"
           className="tag-input-suggestions"
           role="listbox"
           aria-label={t("tagInput.suggestions")}
         >
-          {filteredSuggestions.map(s => (
+          {filteredSuggestions.map((s, idx) => (
             <div
               key={s}
-              className="tag-input-suggestion-item"
+              id={`tag-suggestion-${idx}`}
+              className={`tag-input-suggestion-item${idx === highlightedIndex ? " active" : ""}`}
               role="option"
-              aria-selected={false}
+              aria-selected={idx === highlightedIndex}
               tabIndex={0}
               onClick={() => addTags(s)}
+              onMouseEnter={() => setHighlightedIndex(idx)}
               onKeyDown={e => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();

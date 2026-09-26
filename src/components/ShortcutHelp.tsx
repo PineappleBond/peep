@@ -3,7 +3,7 @@
  * 展示所有已注册的可用快捷键，按分组排列
  * 按 "?" 键打开/关闭
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "../core/i18n";
 import {
   getRegisteredShortcuts,
@@ -11,6 +11,7 @@ import {
   isHelpVisible,
   type ShortcutDef,
 } from "../core/shortcuts";
+import { useFocusTrap } from "../core/useFocusTrap";
 
 /** 将快捷键键名渲染为用户友好的格式 */
 function formatKeyCombo(key: string): string {
@@ -59,49 +60,24 @@ function groupShortcuts(shortcuts: ShortcutDef[]): Map<string, ShortcutDef[]> {
 export function ShortcutHelp() {
   const { t } = useI18n();
   const [visible, setVisible] = useState(isHelpVisible);
-  const panelRef = useRef<HTMLDivElement>(null);
   const titleId = "shortcut-help-title";
+
+  // 使用通用焦点陷阱 hook（ESC 关闭 + 焦点循环 + 自动聚焦）
+  const panelRef = useFocusTrap<HTMLDivElement>(visible, {
+    autoFocus: true,
+    returnFocus: true,
+  });
 
   useEffect(() => {
     return onHelpVisibility(setVisible);
   }, []);
 
-  /* ESC 关闭 + 焦点陷阱 */
+  // ESC 关闭
   useEffect(() => {
     if (!visible) return;
-
-    /* 打开后自动聚焦面板 */
-    requestAnimationFrame(() => {
-      panelRef.current?.focus();
-    });
-
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setVisible(false);
-        return;
-      }
-      /* 焦点陷阱 */
-      if (e.key === "Tab" && panelRef.current) {
-        const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey) {
-          if (document.activeElement === first || document.activeElement === panelRef.current) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
-      }
+      if (e.key === "Escape") setVisible(false);
     };
-
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [visible]);

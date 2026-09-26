@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
+import { useEffect, useMemo, useState, useCallback, memo } from "react";
 import { SCOPES, SCOPE_META } from "../core/utils";
 import { getSelfMarksForScope, buildChartIndex } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
 import { useI18n } from "../core/i18n";
+import { useFocusTrap } from "../core/useFocusTrap";
 
 /** 离场动画时长（毫秒），与 CSS --dur-component 保持一致 */
 const CLOSE_DURATION = 250;
@@ -33,8 +34,14 @@ export const PalaceDetail = memo(function PalaceDetail({
 
   /* 生成稳定的标题 id，供 aria-labelledby 引用 */
   const titleId = `pd-title-${index}`;
-  const panelRef = useRef<HTMLDivElement>(null);
 
+  // 使用通用焦点陷阱 hook（ESC 关闭 + 焦点循环 + 自动聚焦）
+  const panelRef = useFocusTrap<HTMLDivElement>(true, {
+    autoFocus: true,
+    returnFocus: true,
+  });
+
+  /* ESC 关闭 */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleClose();
@@ -42,49 +49,6 @@ export const PalaceDetail = memo(function PalaceDetail({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [handleClose]);
-
-  /* 焦点陷阱：Tab / Shift+Tab 在弹层内循环 */
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-
-    const focusableSelector =
-      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
-      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector)).filter(
-        el => el.offsetParent !== null,
-      ); // 仅可见元素
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    panel.addEventListener("keydown", onKey);
-    return () => panel.removeEventListener("keydown", onKey);
-  }, []);
-
-  /* 打开时自动聚焦弹层内第一个可聚焦元素 */
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const focusableSelector =
-      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-    const first = panel.querySelector<HTMLElement>(focusableSelector);
-    first?.focus();
-  }, []);
 
   /* 运限自化：按 visible scope 计算 —— 移到条件 return 之前以满足 hooks 规则 */
   const scopeSelfMarks = useMemo(() => {

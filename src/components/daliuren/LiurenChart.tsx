@@ -20,7 +20,11 @@ function branchText(idx: number): string {
 }
 
 /** 四柱展示 */
-function FourPillarsSection({ result }: { result: DaLiuRenResult }) {
+const FourPillarsSection = memo(function FourPillarsSection({
+  result,
+}: {
+  result: DaLiuRenResult;
+}) {
   const { t } = useI18n();
   const { fourPillars: fp } = result;
   return (
@@ -46,10 +50,14 @@ function FourPillarsSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 月将展示 */
-function MonthGeneralSection({ result }: { result: DaLiuRenResult }) {
+const MonthGeneralSection = memo(function MonthGeneralSection({
+  result,
+}: {
+  result: DaLiuRenResult;
+}) {
   const { t } = useI18n();
   return (
     <section className="liuren-section" aria-label={t("daliuren.monthGeneral")}>
@@ -62,10 +70,14 @@ function MonthGeneralSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 天地盘展示（12 宫格） */
-function HeavenEarthBoardSection({ result }: { result: DaLiuRenResult }) {
+const HeavenEarthBoardSection = memo(function HeavenEarthBoardSection({
+  result,
+}: {
+  result: DaLiuRenResult;
+}) {
   const { t } = useI18n();
   // 地盘固定：子至亥（0-11），天盘旋转
   // 简化为 4x3 网格，每格显示：天盘/地盘 + 天将/六亲/遁干/纳音
@@ -100,10 +112,14 @@ function HeavenEarthBoardSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 四课展示 */
-function FourLessonsSection({ result }: { result: DaLiuRenResult }) {
+const FourLessonsSection = memo(function FourLessonsSection({
+  result,
+}: {
+  result: DaLiuRenResult;
+}) {
   const { t } = useI18n();
   return (
     <section className="liuren-section" aria-label={t("daliuren.fourCourses")}>
@@ -120,10 +136,14 @@ function FourLessonsSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 三传展示 */
-function ThreeTransmissionsSection({ result }: { result: DaLiuRenResult }) {
+const ThreeTransmissionsSection = memo(function ThreeTransmissionsSection({
+  result,
+}: {
+  result: DaLiuRenResult;
+}) {
   const { t } = useI18n();
   const { threeTransmissions: tt } = result;
   return (
@@ -150,10 +170,10 @@ function ThreeTransmissionsSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 旬空展示 */
-function XunKongSection({ result }: { result: DaLiuRenResult }) {
+const XunKongSection = memo(function XunKongSection({ result }: { result: DaLiuRenResult }) {
   const { t } = useI18n();
   const { xunKong } = result;
   return (
@@ -167,10 +187,14 @@ function XunKongSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 十二天将展示 */
-function TwelveGeneralsSection({ result }: { result: DaLiuRenResult }) {
+const TwelveGeneralsSection = memo(function TwelveGeneralsSection({
+  result,
+}: {
+  result: DaLiuRenResult;
+}) {
   const { t } = useI18n();
   return (
     <section className="liuren-section" aria-label={t("daliuren.twelveGenerals")}>
@@ -185,10 +209,10 @@ function TwelveGeneralsSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 神煞展示 */
-function ShenShaSection({ result }: { result: DaLiuRenResult }) {
+const ShenShaSection = memo(function ShenShaSection({ result }: { result: DaLiuRenResult }) {
   const { t } = useI18n();
   const { shenSha } = result;
   if (shenSha.length === 0) return null;
@@ -225,10 +249,10 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
       )}
     </section>
   );
-}
+});
 
 /** 课经展示 */
-function KeJingSection({ result }: { result: DaLiuRenResult }) {
+const KeJingSection = memo(function KeJingSection({ result }: { result: DaLiuRenResult }) {
   const { t } = useI18n();
   const { keJing } = result;
   if (keJing.length === 0) return null;
@@ -255,10 +279,10 @@ function KeJingSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 毕法展示 */
-function BiFaSection({ result }: { result: DaLiuRenResult }) {
+const BiFaSection = memo(function BiFaSection({ result }: { result: DaLiuRenResult }) {
   const { t } = useI18n();
   const { biFa } = result;
   if (biFa.length === 0) return null;
@@ -285,10 +309,14 @@ function BiFaSection({ result }: { result: DaLiuRenResult }) {
       </div>
     </section>
   );
-}
+});
 
 /** 占事信息展示 */
-function QuestionInfoSection({ record }: { record: LiurenRecord }) {
+const QuestionInfoSection = memo(function QuestionInfoSection({
+  record,
+}: {
+  record: LiurenRecord;
+}) {
   const { t } = useI18n();
   return (
     <section className="liuren-section" aria-label={t("daliuren.questionInfo")}>
@@ -331,7 +359,7 @@ function QuestionInfoSection({ record }: { record: LiurenRecord }) {
       </div>
     </section>
   );
-}
+});
 
 export const LiurenChart = memo(function LiurenChart({ record }: LiurenChartProps) {
   if (!record) {

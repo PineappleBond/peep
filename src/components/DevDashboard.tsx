@@ -6,7 +6,7 @@
  * 生产环境下组件渲染为空，避免被误引入。
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getCurrentVitals,
   getCustomMeasures,
@@ -165,7 +165,16 @@ function useSystemInfo(tick: number): SystemInfo {
 
 /* ===================== 子组件 ===================== */
 
-function VitalCard({ label, value, rate }: { label: string; value: string; rate: string }) {
+/** 指标卡片：使用 memo 避免每秒刷新时不必要的重渲染 */
+const VitalCard = memo(function VitalCard({
+  label,
+  value,
+  rate,
+}: {
+  label: string;
+  value: string;
+  rate: string;
+}) {
   return (
     <div className="dev-dash-card" style={{ borderLeftColor: rateColor(rate) }}>
       <div className="dev-dash-card-label">{label}</div>
@@ -175,9 +184,10 @@ function VitalCard({ label, value, rate }: { label: string; value: string; rate:
       </div>
     </div>
   );
-}
+});
 
-function Sparkline({ values, color }: { values: number[]; color: string }) {
+/** 迷你趋势图：使用 memo 避免每秒刷新时不必要的重渲染 */
+const Sparkline = memo(function Sparkline({ values, color }: { values: number[]; color: string }) {
   if (values.length < 2) {
     return <div className="dev-dash-sparkline dev-dash-empty">尚无历史数据</div>;
   }
@@ -195,7 +205,7 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
       <polyline fill="none" stroke={color} strokeWidth="1.5" points={points} />
     </svg>
   );
-}
+});
 
 /* ===================== 主组件 ===================== */
 

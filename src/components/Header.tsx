@@ -2,7 +2,7 @@
  * Header 组件 - 全局共用
  * 包含标题、SVG Icon 导航、PersonSelector
  */
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
@@ -51,9 +51,15 @@ export function Header({
 }: HeaderProps) {
   const { t } = useI18n();
 
-  /** 主题按钮显示文本 */
-  const themeLabel = theme === "system" ? "⚙" : theme === "light" ? "☀" : "☾";
-  const themeTitle = theme === "system" ? "跟随系统" : theme === "light" ? "亮色主题" : "暗色主题";
+  /** 主题按钮显示文本（使用 useMemo 避免每次渲染重新计算） */
+  const themeLabel = useMemo(
+    () => (theme === "system" ? "⚙" : theme === "light" ? "☀" : "☾"),
+    [theme],
+  );
+  const themeTitle = useMemo(
+    () => (theme === "system" ? "跟随系统" : theme === "light" ? "亮色主题" : "暗色主题"),
+    [theme],
+  );
 
   // ── 主题切换快捷键 T ────────────────────────────
   useEffect(() => {

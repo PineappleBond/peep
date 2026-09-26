@@ -2,6 +2,7 @@
  * 确认弹窗：基于 Dialog 的二次确认
  * 视觉风格匹配项目主题
  */
+import { memo } from "react";
 import { Dialog } from "./Dialog";
 import { useI18n } from "../core/i18n";
 
@@ -15,7 +16,7 @@ type ConfirmDialogProps = {
   cancelText?: string;
 };
 
-export function ConfirmDialog({
+export const ConfirmDialog = memo(function ConfirmDialog({
   open,
   onConfirm,
   onCancel,
@@ -43,4 +44,4 @@ export function ConfirmDialog({
       </div>
     </Dialog>
   );
-}
+});

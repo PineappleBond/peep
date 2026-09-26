@@ -8,7 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { ToastHost } from "./ToastHost";
 import { ShortcutHelp } from "./ShortcutHelp";
-// import { Spinner } from "./Spinner"; // 暂未使用，保留以备后续需要
+import { ErrorBoundary } from "./ErrorBoundary";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
@@ -321,30 +321,32 @@ export function Layout({ children }: LayoutProps) {
       <ToastHost />
       {/* 快捷键帮助弹窗（体积较小，保持 eager 加载） */}
       <ShortcutHelp />
-      {/* 重型对话框：懒加载 + 共享 Suspense 占位 */}
-      <Suspense>
-        <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
-        <ImportDialog
-          open={importOpen}
-          onClose={() => setImportOpen(false)}
-          onImportSuccess={handleImportSuccess}
-        />
-        <SyncDialog
-          open={syncOpen}
-          onClose={() => setSyncOpen(false)}
-          onRestored={handleImportSuccess}
-        />
-        <ThemeEditor open={themeEditorOpen} onClose={() => setThemeEditorOpen(false)} />
-        {guideSteps && (
-          <GuideOverlay
-            steps={guideSteps}
-            currentStep={guideCurrentStep}
-            onGoTo={setGuideCurrentStep}
-            onComplete={handleGuideComplete}
-            onSkip={handleGuideSkip}
+      {/* 重型对话框：懒加载 + 共享 Suspense 占位 + 错误边界兜底 */}
+      <ErrorBoundary>
+        <Suspense>
+          <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
+          <ImportDialog
+            open={importOpen}
+            onClose={() => setImportOpen(false)}
+            onImportSuccess={handleImportSuccess}
           />
-        )}
-      </Suspense>
+          <SyncDialog
+            open={syncOpen}
+            onClose={() => setSyncOpen(false)}
+            onRestored={handleImportSuccess}
+          />
+          <ThemeEditor open={themeEditorOpen} onClose={() => setThemeEditorOpen(false)} />
+          {guideSteps && (
+            <GuideOverlay
+              steps={guideSteps}
+              currentStep={guideCurrentStep}
+              onGoTo={setGuideCurrentStep}
+              onComplete={handleGuideComplete}
+              onSkip={handleGuideSkip}
+            />
+          )}
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }

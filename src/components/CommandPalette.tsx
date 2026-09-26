@@ -12,7 +12,7 @@
  * - 过滤 chip 展示当前生效的语法过滤
  * - 关键词高亮（支持拼音/正则命中区间）
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../core/i18n";
 import {
   searchAll,
@@ -122,8 +122,14 @@ function groupByType(items: SearchResultItem[]): Map<SearchResultType, SearchRes
   return groups;
 }
 
-/** 过滤 chip：显示当前生效的过滤条件 */
-function FilterChips({ parsed, t }: { parsed: ParsedQuery; t: (k: string) => string }) {
+/** 过滤 chip：显示当前生效的过滤条件。使用 memo 避免每次输入变化时重渲染 */
+const FilterChips = memo(function FilterChips({
+  parsed,
+  t,
+}: {
+  parsed: ParsedQuery;
+  t: (k: string) => string;
+}) {
   const chips: Array<{ label: string; kind: string }> = [];
   for (const ty of parsed.types) {
     chips.push({ label: `${t("search.filter.type")}:${t(CATEGORY_LABELS[ty])}`, kind: "type" });
@@ -156,10 +162,10 @@ function FilterChips({ parsed, t }: { parsed: ParsedQuery; t: (k: string) => str
       ))}
     </div>
   );
-}
+});
 
-/** 搜索历史视图 */
-function HistoryList({
+/** 搜索历史视图。使用 memo 避免每次输入变化时重渲染 */
+const HistoryList = memo(function HistoryList({
   history,
   onSelect,
   onDelete,
@@ -225,7 +231,7 @@ function HistoryList({
       </ul>
     </div>
   );
-}
+});
 
 export function CommandPalette({ open, onClose, context }: CommandPaletteProps) {
   const { t } = useI18n();

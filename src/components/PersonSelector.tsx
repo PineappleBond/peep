@@ -1,7 +1,7 @@
 /**
  * Header 人物选择器：下拉选择 + 新增/编辑/删除
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { Person } from "../core/personDb";
 import { listPersons, savePerson, deletePerson, getDefaultPerson } from "../core/personDb";
 import type { BirthInput } from "../core/useZwds";
@@ -27,7 +27,8 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
   /** 人物列表加载中 */
   const [loading, setLoading] = useState(true);
 
-  const loadPersons = async () => {
+  // 稳定化加载函数，避免 useEffect 依赖变化导致重复加载
+  const loadPersons = useCallback(async () => {
     setLoading(true);
     try {
       const list = await listPersons();
@@ -39,7 +40,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadPersons();
@@ -49,7 +50,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
     return () => {
       globalEvents.off("person.changed", handlePersonChanged);
     };
-  }, []);
+  }, [loadPersons]);
 
   const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = Number(e.target.value);

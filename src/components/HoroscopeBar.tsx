@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useEffect, useRef, memo, useMemo } from "react";
+import { useEffect, useRef, memo, useMemo, useCallback } from "react";
 import type { Scope } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
 import { useI18n } from "../core/i18n";
@@ -10,7 +10,8 @@ import { useI18n } from "../core/i18n";
  * 点行首标签开/关该层级在盘面上的显示。
  */
 
-function Row({
+/** 行组件：使用 memo 避免父组件重渲染时不必要的更新 */
+const Row = memo(function Row({
   label,
   scope,
   on,
@@ -38,23 +39,30 @@ function Row({
   }, [activeKey, wrap]);
 
   return (
-    <div className={`hrow hrow-${scope}`}>
+    <div className={`hrow hrow-${scope}`} role="group" aria-label={label}>
       <button
         className={`hlabel ${on ? "on" : ""}`}
         onClick={onToggle}
         title={toggleTitle}
         aria-pressed={on}
+        type="button"
       >
         {label}
       </button>
-      <div ref={box} className={`hcells ${wrap ? "hcells-grid" : ""}`}>
+      <div
+        ref={box}
+        className={`hcells ${wrap ? "hcells-grid" : ""}`}
+        role="listbox"
+        aria-label={`${label}列表`}
+      >
         {children}
       </div>
     </div>
   );
-}
+});
 
-function Cell({
+/** 单元格组件：使用 memo 避免父组件重渲染时不必要的更新 */
+const Cell = memo(function Cell({
   main,
   sub,
   solar,
@@ -77,13 +85,15 @@ function Cell({
       onClick={onClick}
       title={title}
       aria-selected={active}
+      type="button"
+      role="option"
     >
       <b>{main}</b>
       {solar ? <i>{solar}</i> : null}
       {sub ? <i>{sub}</i> : null}
     </button>
   );
-}
+});
 
 export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
   const { t } = useI18n();
@@ -101,6 +111,13 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
     visible,
     actions,
   } = z;
+
+  // 稳定化 toggle 回调，避免 Row 组件因新函数引用而重渲染
+  const toggleDecadal = useCallback(() => actions.toggleScope("decadal"), [actions]);
+  const toggleYearly = useCallback(() => actions.toggleScope("yearly"), [actions]);
+  const toggleMonthly = useCallback(() => actions.toggleScope("monthly"), [actions]);
+  const toggleDaily = useCallback(() => actions.toggleScope("daily"), [actions]);
+  const toggleHourly = useCallback(() => actions.toggleScope("hourly"), [actions]);
 
   // 构建干支链提示信息
   const tooltipData = useMemo(() => {
@@ -124,7 +141,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         label={t("hbar.decadal")}
         scope="decadal"
         on={visible.decadal}
-        onToggle={() => actions.toggleScope("decadal")}
+        onToggle={toggleDecadal}
         activeKey={activeDecadeIdx}
         toggleTitle={visible.decadal ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
@@ -155,7 +172,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         label={t("hbar.yearly")}
         scope="yearly"
         on={visible.yearly}
-        onToggle={() => actions.toggleScope("yearly")}
+        onToggle={toggleYearly}
         activeKey={pick.year}
         toggleTitle={visible.yearly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
@@ -176,7 +193,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         label={t("hbar.monthly")}
         scope="monthly"
         on={visible.monthly}
-        onToggle={() => actions.toggleScope("monthly")}
+        onToggle={toggleMonthly}
         activeKey={`${pick.month}${effLeap ? "L" : ""}`}
         toggleTitle={visible.monthly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
@@ -204,7 +221,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         label={t("hbar.daily")}
         scope="daily"
         on={visible.daily}
-        onToggle={() => actions.toggleScope("daily")}
+        onToggle={toggleDaily}
         activeKey={`${pick.year}-${pick.month}-${clampedDay}`}
         wrap
         toggleTitle={visible.daily ? t("hbar.toggleOff") : t("hbar.toggleOn")}
@@ -234,7 +251,7 @@ export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
         label={t("hbar.hourly")}
         scope="hourly"
         on={visible.hourly}
-        onToggle={() => actions.toggleScope("hourly")}
+        onToggle={toggleHourly}
         activeKey={pick.hour}
         toggleTitle={visible.hourly ? t("hbar.toggleOff") : t("hbar.toggleOn")}
       >
