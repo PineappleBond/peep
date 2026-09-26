@@ -19,6 +19,7 @@ export type ChartIndex = {
   /** 生年四化星 [禄,权,科,忌] */
   natal: string[];
   yearStem: string;
+  yearBranch: string;
 };
 
 export function starNamesAt(a: Astrolabe, i: number): string[] {
@@ -35,7 +36,9 @@ export function buildChartIndex(a: Astrolabe): ChartIndex {
       if (s.brightness) bright.set(s.name as string, s.brightness as string);
     }
   }
-  const yearStem = a.chineseDate.split(" ")[0]?.charAt(0) ?? "";
+  const gz = a.chineseDate.split(" ")[0] ?? "";
+  const yearStem = gz.charAt(0);
+  const yearBranch = gz.charAt(1);
   const natal = yearStem ? (util.getMutagensByHeavenlyStem(yearStem as never) as string[]) : [];
   return {
     a,
@@ -44,6 +47,7 @@ export function buildChartIndex(a: Astrolabe): ChartIndex {
     bright,
     natal,
     yearStem,
+    yearBranch,
   };
 }
 
@@ -54,6 +58,25 @@ export const sanfangIdx = (P: number) => [
   fixIndex(P + 4),
   fixIndex(P - 4),
 ];
+
+/**
+ * 指定天干对应的四化星命中：返回每颗四化星所在的宫索引、
+ * 化类序号（0=禄 1=权 2=科 3=忌）与星名。未命中（星不在盘面）的化类不包含在结果中。
+ * 用于 analysis / lifeKline / patterns 等多个模块的统一四化定位。
+ */
+export function mutagenHits(
+  ix: ChartIndex,
+  stem: string
+): { idx: number; k: number; star: string }[] {
+  if (!stem) return [];
+  const stars = util.getMutagensByHeavenlyStem(stem as never) as string[];
+  const hits: { idx: number; k: number; star: string }[] = [];
+  stars.forEach((star, k) => {
+    const idx = ix.pos.get(star);
+    if (idx !== undefined) hits.push({ idx, k, star });
+  });
+  return hits;
+}
 
 export const SEAT_ROLES = ["本宫", "对宫", "三合", "三合"] as const;
 

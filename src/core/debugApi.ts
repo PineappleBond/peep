@@ -12,8 +12,11 @@ import type { DaLiuRenResult } from "./daliuren/types";
 import type { LiurenListFilters, LiurenListResult } from "./daliurenDb";
 import { getWikiLinks, type WikiListFilters, type WikiListResult } from "./wikiDb";
 
-/** 运限级别 */
-export type ScopeName = "decadal" | "yearly" | "monthly" | "daily" | "hourly";
+/**
+ * 运限级别（已统一使用 utils.Scope，此处为向后兼容保留别名）。
+ * @deprecated 请使用 `Scope`
+ */
+export type ScopeName = Scope;
 
 /** ZiWei 返回数据 */
 export type ZiWeiResult = {
@@ -156,7 +159,7 @@ async function waitForCallbacks(page: "ziwei" | "daliuren" | "wiki", timeout = 3
  */
 export async function ZiWei(
   personId: number,
-  scope?: ScopeName,
+  scope?: Scope,
   time?: Date | number | string
 ): Promise<ZiWeiResult> {
   // 输入校验

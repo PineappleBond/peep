@@ -27,9 +27,9 @@
  *          + 命宫域岁限并临 -2
  *   收敛 [8,92]；K 线 open=上年 close,high/low 由进/出两股动能撑开。
  */
-import { util } from "iztro";
 import { getHoroscopeStar } from "iztro/lib/star/horoscopeStar";
 import type { Astrolabe, DecadeInfo } from "./useZwds";
+import { buildChartIndex, mutagenHits, sanfangIdx } from "./chartIndex";
 import {
   BRANCHES,
   BRANCH_CHONG as CHONG,
@@ -217,12 +217,9 @@ const fmt = (n: number) => `${n > 0 ? "+" : ""}${round(n)}`;
 
 /** i 的三方四正及位权（本宫1.0 对宫0.6 三合0.4） */
 function tsWeights(i: number): Map<number, number> {
-  const m = new Map<number, number>();
-  m.set(fixIndex(i), 1.0);
-  m.set(fixIndex(i + 6), 0.6);
-  m.set(fixIndex(i + 4), 0.4);
-  m.set(fixIndex(i - 4), 0.4);
-  return m;
+  const idxs = sanfangIdx(i);
+  const weights = [1.0, 0.6, 0.4, 0.4];
+  return new Map(idxs.map((idx, k) => [idx, weights[k]]));
 }
 
 function palaceStarScore(a: Astrolabe, idx: number): { s: number; badNames: string[] } {
@@ -244,19 +241,11 @@ function palaceStarScore(a: Astrolabe, idx: number): { s: number; badNames: stri
   return { s: bright + clamp(good, 0, 6) + clamp(bad, -8, 0), badNames };
 }
 
-/** 从命盘提取十二大限（与 useZwds 同口径），供合盘/校时等场景独立构建 K 线 */
-export function decadesOfChart(a: Astrolabe, birthLunarYear: number): DecadeInfo[] {
-  return a.palaces
-    .map((p) => ({
-      palaceIndex: p.index,
-      range: p.decadal.range as [number, number],
-      heavenlyStem: p.decadal.heavenlyStem as string,
-      earthlyBranch: p.decadal.earthlyBranch as string,
-      startYear: birthLunarYear + p.decadal.range[0] - 1,
-      endYear: birthLunarYear + p.decadal.range[1] - 1,
-    }))
-    .sort((a2, b2) => a2.range[0] - b2.range[0]);
-}
+/**
+ * 从命盘提取十二大限（与 useZwds 同口径），供合盘/校时等场景独立构建 K 线。
+ * 已统一使用 hbar.ts 的 buildDecades 实现，避免重复定义。
+ */
+export { buildDecades as decadesOfChart } from "./hbar";
 
 export function buildLifeKline(
   astrolabe: Astrolabe | null,
@@ -266,34 +255,27 @@ export function buildLifeKline(
   if (!astrolabe || !decades.length) return null;
   const a = astrolabe;
 
-  const starPalace = new Map<string, number>();
-  for (const p of a.palaces) {
-    for (const st of [...p.majorStars, ...p.minorStars]) starPalace.set(st.name as string, p.index);
-  }
+  // 构建星→宫索引（含主星+辅星+杂耀），避免重复遍历
+  const ix = buildChartIndex(a);
 
-  /** 某天干四化落宫命中：[{宫index, 四化k, 星名}] */
+  /** 某天干四化落宫命中（带缓存，避免重复计算；底层使用共享 mutagenHits） */
   const mutCache = new Map<string, { idx: number; k: number; star: string }[]>();
   const mutHits = (stem: string) => {
     if (!stem) return [];
     const c = mutCache.get(stem);
     if (c) return c;
-    const stars = util.getMutagensByHeavenlyStem(stem as never) as string[];
-    const hits: { idx: number; k: number; star: string }[] = [];
-    stars.forEach((star, k) => {
-      const idx = starPalace.get(star);
-      if (idx != null) hits.push({ idx, k, star });
-    });
+    const hits = mutagenHits(ix, stem);
     mutCache.set(stem, hits);
     return hits;
   };
 
-  const natalYearStem = a.chineseDate.split(" ")[0]?.charAt(0) ?? "";
+  const natalYearStem = ix.yearStem;
   /** 生年四化星 → 四化位（0禄1权2科3忌），同星叠象判定用 */
   const natalMutMap = new Map(mutHits(natalYearStem).map((h) => [h.star, h.k]));
   const lastAge = Math.min(100, decades[decades.length - 1].range[1]);
 
   /* 小限：生年支三合定起宫（寅午戌辰起…），男顺女逆，一岁一宫 */
-  const natalYearBranch = a.chineseDate.split(" ")[0]?.charAt(1) ?? "";
+  const natalYearBranch = ix.yearBranch;
   const ageStartIdx = AGE_START_BRANCH[natalYearBranch]
     ? branchPalaceIdx(AGE_START_BRANCH[natalYearBranch])
     : -1;
@@ -673,20 +655,9 @@ export function buildMonthlyKline(
   const wmap = tsWeights(P);
   const pBranch = palace.earthlyBranch as string;
 
-  const starPalace = new Map<string, number>();
-  for (const p of a.palaces) {
-    for (const st of [...p.majorStars, ...p.minorStars]) starPalace.set(st.name as string, p.index);
-  }
-  const mutHits = (stem: string) => {
-    if (!stem) return [] as { idx: number; k: number; star: string }[];
-    const stars = util.getMutagensByHeavenlyStem(stem as never) as string[];
-    const hits: { idx: number; k: number; star: string }[] = [];
-    stars.forEach((star, k) => {
-      const idx = starPalace.get(star);
-      if (idx != null) hits.push({ idx, k, star });
-    });
-    return hits;
-  };
+  // 构建星→宫索引（使用共享 chartIndex）
+  const ix = buildChartIndex(a);
+  const mutHits = (stem: string) => mutagenHits(ix, stem);
 
   /* 月序（含闰月位，闰月沿用本月干支） */
   const leapM = leapMonthOf(year);

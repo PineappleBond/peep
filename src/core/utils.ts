@@ -34,6 +34,9 @@ export const TIME_OPTIONS = [
 export const mod = (n: number, m: number) => ((n % m) + m) % m;
 export const fixIndex = (n: number) => mod(n, 12);
 
+/** 对宫索引：本宫 +6（十二宫循环） */
+export const oppositeIndex = (i: number) => fixIndex(i + 6);
+
 /* ── 地支关系表（K线引动/合盘共用） ── */
 
 /** 六冲 */
