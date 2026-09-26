@@ -24,6 +24,7 @@
   "common.name": "Name",
   "common.namePlaceholder": "Enter name",
   "common.unnamed": "Unnamed",
+  "common.personNotSelected": "No person selected",
   "common.male": "Male",
   "common.female": "Female",
   "common.required": "*",

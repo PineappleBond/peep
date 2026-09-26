@@ -57,7 +57,7 @@ export function WikiPage() {
     if (!person?.id) return;
     registerWikiCallbacks({
       getWikiList: async (filters: WikiListFilters) => {
-        if (!person?.id) throw new Error(t("daliuren.personNotSelected"));
+        if (!person?.id) throw new Error(t("common.personNotSelected"));
         return listWikiDocs(person.id, filters);
       },
       setWikiListFilters: filters => {

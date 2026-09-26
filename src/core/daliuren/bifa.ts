@@ -12,24 +12,14 @@
  * 参考 PHP BiFaRuleEngine / Rules/*.php。
  */
 
-import {
-  DI_ZHI,
-  XUN_HEAD,
-  NOBLEMAN_TABLE,
-  SAN_HE_TRIPLES as _SAN_HE_TRIPLES,
-  DAY_VIRTUES,
-  DAY_ORIGIN,
-  DAY_LU,
-} from "./constants";
+import { DI_ZHI, XUN_HEAD, NOBLEMAN_TABLE, DAY_VIRTUES, DAY_ORIGIN, DAY_LU } from "./constants";
 import type { DaLiuRenResult } from "./types";
 import {
   elemB,
   shengOf,
   stemLodgingBranch,
   sexagenaryIndex,
-  getGeneralRidingBranch as _getGeneralRidingBranch,
   findGeneralPosition,
-  inFourLessons as _inFourLessons,
   isFuyin,
 } from "./utils";
 
@@ -56,8 +46,6 @@ export interface BiFaMatch {
 }
 
 // ─── 辅助函数 ────────────────────────────────────────────
-// elemB, shengOf, stemLodgingBranch, getGeneralRidingBranch,
-// findGeneralPosition, inFourLessons, isFuyin, sexagenaryIndex 已从 utils.ts 导入
 
 /**
  * 计算六十甲子日序号（0-59），调用共享的 sexagenaryIndex
@@ -82,18 +70,10 @@ function xunTailBranch(r: DaLiuRenResult): number {
   return (xunHeadBranch(r) + 9) % 12;
 }
 
-/** 判断地支是否旬空 */
-function _isXunVoid(branch: number, r: DaLiuRenResult): boolean {
-  const xunHead = xunHeadBranch(r);
-  return branch === (xunHead + 10) % 12 || branch === (xunHead + 11) % 12;
-}
-
 /** 天盘某支所在地盘宫位（-1 表示不存在） */
 function heavenBranchGround(branch: number, r: DaLiuRenResult): number {
   return r.heavenBoard.indexOf(branch);
 }
-
-// findGeneralPosition, getGeneralRidingBranch 已从 utils.ts 导入
 
 /** 判断三传是否为三合局，返回五行（-1 表示不合局） */
 function sanChuanSanHeElement(r: DaLiuRenResult): number {
@@ -113,8 +93,6 @@ function flanks(a: number, b: number, target: number): boolean {
   const back = (target + 11) % 12;
   return (a === front && b === back) || (a === back && b === front);
 }
-
-// inFourLessons, isFuyin 已从 utils.ts 导入
 
 // ─── 毕法规则列表 ─────────────────────────────────────────
 
@@ -153,7 +131,7 @@ const rules: BiFaRule[] = [
         ((initial === dayNoble && final === nightNoble) ||
           (initial === nightNoble && final === dayNoble));
       if (liangGui) return true;
-      // 干支拱日禄（伏吟）（DAY_LU 已从 constants.ts 导入）
+      // 干支拱日禄（伏吟）
       const lu = DAY_LU[dayStem];
       if (isFuyin(r) && flanks(lodging, dayBranch, lu)) return true;
       // 干支拱昼贵/夜贵（伏吟）
@@ -228,7 +206,7 @@ const rules: BiFaRule[] = [
       if (xunHead === curtain && ganShang === xunHead) return true;
       // 辰戌旬首临干年命
       if ((xunHead === 4 || xunHead === 10) && ganShang === xunHead) return true;
-      // 德入天门：日德加临地盘亥宫（DAY_VIRTUES 已从 constants.ts 导入）
+      // 德入天门：日德加临地盘亥宫
       const dayVirtue = DAY_VIRTUES[dayStem];
       if (r.heavenBoard[11] === dayVirtue && r.threeTransmissions.initial === dayVirtue)
         return true;
@@ -277,7 +255,7 @@ const rules: BiFaRule[] = [
           return true;
         }
       }
-      // 恩主举荐·长生作贵人：当前贵人的天盘支 = 日干长生位（DAY_ORIGIN 已从 constants.ts 导入）
+      // 恩主举荐·长生作贵人：当前贵人的天盘支 = 日干长生位
       const origin = DAY_ORIGIN[dayStem];
       const [dayNoble] = NOBLEMAN_TABLE[dayStem];
       if (dayNoble === origin) return true;

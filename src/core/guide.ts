@@ -86,7 +86,7 @@ const guides: Record<string, GuideStep[]> = {
       id: "ziwei-4",
       target: "[data-guide='ziwei-palace']",
       title: "宫位详情",
-      content: "点击宫位后，这里显示本宫主星、辅星、四化、杂耀及详细解读。",
+      content: "点击宫位后，这里显示本宫主星、辅星、四化、杂曜及详细解读。",
       position: "left",
     },
     {

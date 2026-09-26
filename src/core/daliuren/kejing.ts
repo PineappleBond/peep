@@ -27,7 +27,6 @@ import {
   isFanyin,
   inFourLessons,
   getGeneralRidingBranch,
-  findGeneralPosition as _findGeneralPosition,
 } from "./utils";
 
 // ─── 课经接口 ─────────────────────────────────────────
@@ -55,14 +54,6 @@ export interface KeJingMatch {
 }
 
 // ─── 辅助函数 ─────────────────────────────────────────
-// elemB, keOf, shengOf, isFuyin, isFanyin, inFourLessons,
-// getGeneralRidingBranch, findGeneralPosition 已从 utils.ts 导入
-
-/** 天盘某支是否在三传中（保留为工具函数） */
-function _inSanChuan(branch: number, r: DaLiuRenResult): boolean {
-  const { initial, middle, final } = r.threeTransmissions;
-  return initial === branch || middle === branch || final === branch;
-}
 
 /** 三传递生（初生中、中生末） */
 function sanChuanDiSheng(r: DaLiuRenResult): boolean {
@@ -70,26 +61,11 @@ function sanChuanDiSheng(r: DaLiuRenResult): boolean {
   return shengOf(elemB(initial)) === elemB(middle) && shengOf(elemB(middle)) === elemB(final);
 }
 
-/** 三传递克（初克中、中克末） */
-function _sanChuanDiKe(r: DaLiuRenResult): boolean {
-  const { initial, middle, final } = r.threeTransmissions;
-  return keOf(elemB(initial)) === elemB(middle) && keOf(elemB(middle)) === elemB(final);
-}
-
 /** 三传是否三合局 */
 function sanChuanSanHe(r: DaLiuRenResult): boolean {
   const { initial, middle, final } = r.threeTransmissions;
   const sorted = [initial, middle, final].sort((a, b) => a - b);
   return SAN_HE_TRIPLES.some(t => t[0] === sorted[0] && t[1] === sorted[1] && t[2] === sorted[2]);
-}
-
-// findGeneralPosition, getGeneralRidingBranch 已从 utils.ts 导入
-
-/** 天将某是否在天盘某支（按天将落宫的天盘支判断） */
-function _generalOnBranch(generalName: string, branch: number, r: DaLiuRenResult): boolean {
-  const g = r.twelveGenerals.find(g => g.name === generalName);
-  if (!g) return false;
-  return r.heavenBoard[g.position] === branch;
 }
 
 /**
@@ -113,8 +89,6 @@ function travelHorse(branch: number): number {
       return -1;
   }
 }
-
-// stemLodgingBranch 已从 utils.ts 导入
 
 /**
  * 计算六十甲子日序号所在的旬索引（0-5）
@@ -142,7 +116,6 @@ function isBranchWangXiang(branch: number, r: DaLiuRenResult): boolean {
  * 日干按五行是否旺相
  */
 function isStemWangXiang(stem: number, r: DaLiuRenResult): boolean {
-  const _elem = STEM_ELEMENT[stem];
   // 找与日干同五行的地支（如甲=木→看寅卯）
   // 简化：用日干寄宫上神的旺相状态
   const lodging = stemLodgingBranch(stem);
@@ -153,7 +126,7 @@ function isStemWangXiang(stem: number, r: DaLiuRenResult): boolean {
 const AUSPICIOUS_GENERALS = new Set([0, 3, 5, 8, 10, 11]);
 
 /** 六凶将编号 */
-const INauspicious_GENERALS = new Set([1, 2, 4, 6, 7, 9]);
+const INAUSPICIOUS_GENERALS = new Set([1, 2, 4, 6, 7, 9]);
 
 /**
  * 旬奇表（索引 0-5 对应六甲旬）
@@ -171,11 +144,6 @@ const XUN_WONDERS = [1, 1, 0, 0, 11, 11];
  * 出处：《奇门遁甲》日奇贵人起法。
  */
 const DAY_WONDERS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10];
-
-// DAY_VIRTUES 已从 constants.ts 导入
-
-/** 支仪表（六仪课用）：子→午、丑→巳、寅→辰、卯→卯(3)、辰→寅、巳→丑、午→未、未→申、申→酉、酉→戌、戌→亥、亥→子 */
-const _BRANCH_INSTRUMENTS = [6, 5, 4, 3, 2, 1, 7, 8, 9, 10, 11, 0];
 
 /**
  * 九丑十日表：日干→允许的日支列表
@@ -629,7 +597,7 @@ const rules: KeJingRule[] = [
       if (ganShang === undefined || zhiShang === undefined) return false;
       // 干上神生支上神
       const generates = shengOf(elemB(ganShang)) === elemB(zhiShang);
-      // 初传为日干长生位（DAY_ORIGIN 已从 constants.ts 导入）
+      // 初传为日干长生位
       const origin = DAY_ORIGIN[dayStem];
       const initial = r.threeTransmissions.initial;
       return generates && initial === origin;
@@ -733,7 +701,7 @@ const rules: KeJingRule[] = [
       const general = getGeneralRidingBranch(ganShang, r);
       const isWangXiang = isBranchWangXiang(ganShang, r);
       const keStem = keOf(elemB(ganShang)) === STEM_ELEMENT[dayStem];
-      return !isWangXiang && keStem && INauspicious_GENERALS.has(general);
+      return !isWangXiang && keStem && INAUSPICIOUS_GENERALS.has(general);
     },
   },
   {

@@ -90,9 +90,6 @@ export const mod = (n: number, m: number) => ((n % m) + m) % m;
 /** 十二宫索引修正（mod 12） */
 export const fixIndex = (n: number) => mod(n, 12);
 
-/** 对宫索引：本宫 +6（十二宫循环） */
-export const oppositeIndex = (i: number) => fixIndex(i + 6);
-
 /* ── 地支关系表（K线引动/合盘共用） ── */
 
 /** 六冲 */
@@ -127,7 +124,7 @@ export const BRANCH_LIUHE: Record<string, string> = {
   未: "午",
 };
 
-/** 三合局（同组两支即为三合） */
+/** 三合局（同组两支即为三合）；目前仅测试使用 */
 export const BRANCH_SANHE_GROUP: Record<string, string> = {
   申: "水",
   子: "水",
@@ -143,7 +140,7 @@ export const BRANCH_SANHE_GROUP: Record<string, string> = {
   丑: "金",
 };
 
-/** 六害 */
+/** 六害；目前仅测试使用 */
 export const BRANCH_HAI: Record<string, string> = {
   子: "未",
   未: "子",
@@ -159,7 +156,7 @@ export const BRANCH_HAI: Record<string, string> = {
   戌: "酉",
 };
 
-/** 相刑（无恩/恃势/无礼，双向展开）；辰午酉亥为自刑（同支论） */
+/** 相刑（无恩/恃势/无礼，双向展开）；辰午酉亥为自刑（同支论）；目前仅测试使用 */
 export const BRANCH_XING: Record<string, string[]> = {
   寅: ["巳", "申"],
   巳: ["申", "寅"],
@@ -171,9 +168,10 @@ export const BRANCH_XING: Record<string, string[]> = {
   卯: ["子"],
 };
 
+/** 自刑集合；目前仅测试使用 */
 export const BRANCH_SELF_XING = new Set(["辰", "午", "酉", "亥"]);
 
-/** 两地支关系（按 合>三合>冲>刑>害>自刑/同支 优先级取一） */
+/** 两地支关系（按 合>三合>冲>刑>害>自刑/同支 优先级取一）；目前仅测试使用 */
 export function branchRelation(
   x: string,
   y: string,

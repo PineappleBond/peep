@@ -24,6 +24,7 @@
   "common.name": "姓名",
   "common.namePlaceholder": "请输入姓名",
   "common.unnamed": "无名",
+  "common.personNotSelected": "人物未选择",
   "common.male": "男",
   "common.female": "女",
   "common.required": "*",

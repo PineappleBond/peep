@@ -6,8 +6,8 @@
  * - 按顺序安装并启用
  * - 失败不阻塞主应用启动
  */
-import { registerAndEnable } from "../core/pluginSystem";
-import type { Plugin } from "../core/pluginTypes";
+import { registerAndEnable } from "./pluginSystem";
+import type { Plugin } from "./pluginTypes";
 
 /** 内建插件清单：新增插件在此追加 */
 const BUILTIN_PLUGINS: Plugin[] = [];

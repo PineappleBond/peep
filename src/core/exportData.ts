@@ -10,22 +10,22 @@
  * - AI 导出不携带人生K线量化数据（含月K线、十年规划表的均值/高光/低谷列）
  * - 流日/流时默认不随导出（择日/择时场景由 UI 勾选附加）
  * - 小限保留导出但带口径备注（辅助年系统，勿与流年混同）
- * - 杂耀带 weight 权重档（中=可参与断事，低=仅叠加参考）
+ * - 杂曜带 weight 权重档（中=可参与断事，低=仅叠加参考）
  */
 import type { Person, LiurenRecord, WikiDocument } from "./personDb";
 import type { Zwds } from "./useZwds";
 import type { ChartAnalysis } from "./analysis";
 import { BRANCHES } from "./utils";
 
-/* ─────────────── 杂耀权重档 ─────────────── */
+/* ─────────────── 杂曜权重档 ─────────────── */
 
 /**
- * 杂耀权重：导出时附带每颗杂耀的参考权重。
+ * 杂曜权重：导出时附带每颗杂曜的参考权重。
  * - 中：可参与断事（对宫位含义有较明确影响）
  * - 低：仅叠加参考（象征性点缀，不作为主要依据）
  */
 export const ADJ_MID_WEIGHT: Record<string, "中" | "低"> = {
-  // 中等权重杂耀（有一定断事意义）
+  // 中等权重杂曜（有一定断事意义）
   天官: "中",
   天福: "中",
   天才: "中",
@@ -52,7 +52,7 @@ export const ADJ_MID_WEIGHT: Record<string, "中" | "低"> = {
   天巫: "中",
   天德: "中",
   月德: "中",
-  // 低权重杂耀（仅叠加参考）
+  // 低权重杂曜（仅叠加参考）
   天空: "低",
   截空: "低",
   旬空: "低",
@@ -60,11 +60,11 @@ export const ADJ_MID_WEIGHT: Record<string, "中" | "低"> = {
   空亡: "低",
 };
 
-/** 未列入上表的杂耀默认权重 */
+/** 未列入上表的杂曜默认权重 */
 export const ADJ_DEFAULT_WEIGHT: "中" | "低" = "低";
 
 /**
- * 获取杂耀权重档
+ * 获取杂曜权重档
  */
 export function getMinorWeight(starName: string): "中" | "低" {
   return ADJ_MID_WEIGHT[starName] ?? ADJ_DEFAULT_WEIGHT;
@@ -187,7 +187,7 @@ export function zwdsToMarkdown(
     }
 
     if (p.adjectiveStars.length > 0) {
-      md += `**杂耀**：`;
+      md += `**杂曜**：`;
       md += p.adjectiveStars
         .map(s => {
           const name = s.name as string;

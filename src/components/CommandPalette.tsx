@@ -418,9 +418,6 @@ export function CommandPalette({ open, onClose, context }: CommandPaletteProps) 
   // 计算每个结果在扁平列表中的索引
   let flatIdx = 0;
 
-  // 是否展示历史视图（当显式切换或 query 为空且用户请求）
-  const showingHistory = showHistory;
-
   return (
     <div className="cp-mask" onClick={onClose}>
       <div
@@ -468,9 +465,9 @@ export function CommandPalette({ open, onClose, context }: CommandPaletteProps) 
             Esc
           </kbd>
         </div>
-        {parsed && !showingHistory && <FilterChips parsed={parsed} t={t} />}
+        {parsed && !showHistory && <FilterChips parsed={parsed} t={t} />}
         <div className="cp-body" ref={listRef}>
-          {showingHistory ? (
+          {showHistory ? (
             <HistoryList
               history={history}
               onSelect={handleHistorySelect}

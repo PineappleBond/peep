@@ -21,7 +21,7 @@ export const SHA_STARS = ["擎羊", "陀罗", "火星", "铃星", "地空", "地
 export type ChartIndex = {
   a: Astrolabe;
   soulIdx: number;
-  /** 星名 → 宫索引（主星+辅星+杂耀） */
+  /** 星名 → 宫索引（主星+辅星+杂曜） */
   pos: Map<string, number>;
   /** 星名 → 亮度（有则填） */
   bright: Map<string, string>;
@@ -32,7 +32,7 @@ export type ChartIndex = {
 };
 
 /**
- * 获取某宫全部星耀名称（主星+辅星+杂耀）。
+ * 获取某宫全部星耀名称（主星+辅星+杂曜）。
  * @param a - 本命盘对象
  * @param i - 宫位索引（自动 mod 12）
  */

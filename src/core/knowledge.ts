@@ -92,9 +92,8 @@ export const STAR_MUTAGEN_MD = `## 附录C：十四主星·星情与四化要诀
 - **破军**〔耗星·水〕破旧立新，先破后成，消耗型开创。化禄=破中得禄——变革/转型得利（换赛道之财）；化权=破坏性执行力、攻坚。不化科忌（通行）。
 `;
 
-/** 主题推理指引条目 */
-/** 主题知识指引：特定议题（如考运/财运/婚恋）的 AI 推理辅助 */
-export type TopicGuide = { key: string; label: string; md: string };
+/** 主题知识指引：特定议题（如考运/财运/婚恋）的 AI 推理辅助条目 */
+type TopicGuide = { key: string; label: string; md: string };
 
 /**
  * 附录D：分主题推理指引（L3 主题分册）。

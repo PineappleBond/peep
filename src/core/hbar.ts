@@ -212,6 +212,8 @@ export function buildYears(
  * 每个月用 15 号作为代表日，通过 solar2lunar 反查农历月以计算干支与月名。
  *
  * 缓存：按年份缓存（同一年的月列表固定不变），避免重复调用 12 次 solar2lunar。
+ *
+ * @param _yearLeapMonth 保留参数——阳历排盘不需要闰月插入，但保持接口以备扩展
  */
 export function buildMonths(pickYear: number, _yearLeapMonth: number): CellMonth[] {
   const cached = buildMonthsCache.get(pickYear);

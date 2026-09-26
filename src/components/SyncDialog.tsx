@@ -237,7 +237,9 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
     if (!open) return;
     estimateSnapshotSize()
       .then(setSnapshotSize)
-      .catch(() => {});
+      .catch(() => {
+        /* 估算失败不影响功能，snapshotSize 保持 undefined */
+      });
   }, [open]);
 
   const tabs: { id: Tab; label: string }[] = [

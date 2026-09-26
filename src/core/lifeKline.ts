@@ -61,9 +61,13 @@ const BAD_STARS: Record<string, number> = {
   地空: -2.5,
   地劫: -2.5,
 };
+/** 四化权重 [禄, 权, 科, 忌]：流年层（引动力最强，权重最高） */
 const MUT_YEARLY = [8, 5, 4, -8];
+/** 四化权重 [禄, 权, 科, 忌]：大限层（阶段背景，权重次之） */
 const MUT_DECADAL = [6, 4, 3, -6];
+/** 四化权重 [禄, 权, 科, 忌]：本命层（底层基调，权重最低） */
 const MUT_NATAL_BASE = [3, 2, 2, -4];
+/** 四化权重 [禄, 权, 科, 忌]：流月层（月度波动，权重介于流年与大限之间） */
 const MUT_MONTHLY = [5, 3, 2, -5];
 /** 忌的落位权重：忌坐对宫=冲本宫，冲比坐烈（0.9），高于常规对宫权 0.6 */
 const JI_WEIGHTS: [number, number, number] = [1.0, 0.9, 0.4]; // [本宫, 对宫(冲), 三合]
@@ -316,7 +320,7 @@ export function buildLifeKline(
   if (!astrolabe || !decades.length) return null;
   const a = astrolabe;
 
-  // 构建星→宫索引（含主星+辅星+杂耀），避免重复遍历
+  // 构建星→宫索引（含主星+辅星+杂曜），避免重复遍历
   const ix = buildChartIndex(a);
 
   /** 某天干四化落宫命中（带缓存，避免重复计算；底层使用共享 mutagenHits） */
@@ -600,6 +604,7 @@ export function buildLifeKline(
 
       const net = gain - drain;
       const magnitude = gain + drain;
+      // 收盘价：基准 50 + 净值，钳位到 [8, 92] 留出视觉余量（0/100 会贴边）
       const close = clamp(round(50 + baseline + net), 8, 92);
 
       let pattern = "平稳";
@@ -634,6 +639,7 @@ export function buildLifeKline(
     for (const y of years) {
       y.open = round(prevClose);
       y.delta = y.close - y.open;
+      // 高低点：在实体基础上按进/出比例延伸，钳位到 [2, 98] 留边
       y.high = clamp(round(Math.max(y.open, y.close) + y.gain * 0.5), 2, 98);
       y.low = clamp(round(Math.min(y.open, y.close) - y.drain * 0.5), 2, 98);
       prevClose = y.close;

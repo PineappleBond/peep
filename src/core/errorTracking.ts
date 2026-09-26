@@ -188,8 +188,7 @@ function flushErrors() {
   // 优先使用 sendBeacon（页面卸载时也能可靠发送）
   if (errorConfig.enabled && typeof navigator.sendBeacon === "function") {
     try {
-      // 预留上报端点，目前用 console.log 模拟
-      // navigator.sendBeacon("/api/errors", new Blob([JSON.stringify(batch)], { type: "application/json" }));
+      // TODO: 接入上报端点后替换为 navigator.sendBeacon("/api/errors", ...)
       errorConfig.onReport(batch);
     } catch {
       // sendBeacon 失败时降级

@@ -20,7 +20,7 @@ type ScopeDataItem = {
 };
 
 /**
- * 单个宫位卡片：显示宫名/地支/主星/辅星/杂耀/四化徽章/运限宫名/长生十二神等。
+ * 单个宫位卡片：显示宫名/地支/主星/辅星/杂曜/四化徽章/运限宫名/长生十二神等。
  * 使用 memo 优化，避免无关渲染。
  */
 export const PalaceCard = memo(function PalaceCard({

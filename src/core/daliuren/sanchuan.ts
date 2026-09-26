@@ -42,8 +42,6 @@ function lessonUpperElement(lesson: FourLesson): number {
   return elemB(lesson.upper);
 }
 
-// keOf 已从 utils.ts 导入
-
 /** 上克下：上课五行克下课五行 */
 function isShangKeXia(lesson: FourLesson, dayStem: number): boolean {
   return keOf(lessonUpperElement(lesson)) === lessonLowerElement(lesson, dayStem);

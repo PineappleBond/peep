@@ -24,9 +24,9 @@ import type { BackupData } from "./importData";
 export interface SyncConfig {
   /** 默认密码（留空=不加密） */
   defaultPassword: string;
-  /** 自动同步间隔（分钟），0 表示不自动 */
+  /** 自动同步间隔（分钟），0 表示不自动；TODO: 自动同步定时器尚未实现 */
   autoSyncInterval: number;
-  /** 自动上传开关 */
+  /** 自动上传开关；TODO: 自动上传逻辑尚未实现 */
   autoUpload: boolean;
 }
 

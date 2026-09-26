@@ -4714,22 +4714,3 @@ export function getLongitude(
   const dist = city?.districts.find(d => d.name === districtName);
   return dist?.longitude;
 }
-
-/** 真太阳时校正：真太阳时 ≈ 北京时间 + (经度 - 120) × 4 分钟 */
-export function applyTrueSolarTime(
-  hour: number,
-  minute: number,
-  longitude: number,
-): { hour: number; minute: number; offsetMin: number } {
-  const offsetMin = Math.round((longitude - 120) * 4);
-  let totalMin = hour * 60 + minute + offsetMin;
-  totalMin = ((totalMin % 1440) + 1440) % 1440;
-  return { hour: Math.floor(totalMin / 60), minute: totalMin % 60, offsetMin };
-}
-
-/** 根据小时+分钟判断时辰索引（iztro 0~12） */
-export function hourToBirthTimeIndex(h: number, _m: number): number {
-  if (h === 23) return 12; // 23:00~23:59 = 晚子时
-  if (h === 0) return 0; // 00:00~00:59 = 早子时
-  return Math.floor((h + 1) / 2);
-}

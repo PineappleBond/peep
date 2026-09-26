@@ -383,7 +383,7 @@ export function useZwds(input: BirthInput) {
   // pick 已统一为阳历，effLeap 始终为 false（阳历无闰月概念）
   const effLeap = false;
 
-  /** 阳历月天数（与 buildHbarData 保持一致） */
+  /** 阳历月天数 */
   const monthDays = useMemo(
     () => new Date(pick.year, pick.month, 0).getDate(),
     [pick.year, pick.month],

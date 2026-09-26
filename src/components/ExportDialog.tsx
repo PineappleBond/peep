@@ -28,8 +28,6 @@ type ExportDialogProps = {
   liurenRecords?: LiurenRecord[];
   /** Wiki 文档（可选） */
   wikiDocs?: WikiDocument[];
-  /** 所有人物的紫微盘数据（scope="all" 时可选） */
-  allZwds?: Map<number, Zwds>;
 };
 
 /** 导出进度状态 */
