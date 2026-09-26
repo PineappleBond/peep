@@ -18,7 +18,6 @@ import { solar2lunar } from "lunar-lite";
 import { astro } from "iztro";
 import type { GenderName } from "iztro/lib/i18n";
 import { MUTAGEN_TABLES } from "./utils";
-import { solarToPickState } from "./lunar";
 
 /**
  * 运限级别（已统一使用 utils/Scope，此处为向后兼容保留别名）。
@@ -575,7 +574,15 @@ export function computeScopeData(person: Person, solarDate: Date | string): Hbar
     }
 
     const birthLunarYear = astrolabe.rawDates.lunarDate.lunarYear;
-    const pick = solarToPickState(solarDate);
+    const d = typeof solarDate === "string" ? new Date(solarDate) : solarDate;
+    // hbar 流月/流日按阳历排列，所以 pick 直接用阳历值
+    const pick = {
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+      hour: Math.floor((d.getHours() + 1) / 2) % 12,
+      leap: false,
+    };
 
     // 确保 pick.year 不早于出生农历年
     if (pick.year < birthLunarYear) {
