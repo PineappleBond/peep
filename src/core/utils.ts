@@ -225,6 +225,27 @@ export function timeIndexFromClock(hour: number): number {
   return Math.floor((hour + 1) / 2);
 }
 
+/**
+ * 相对时间格式化：将时间戳转为"刚刚 / N分钟前 / N小时前 / 昨天 / N天前 / YYYY-MM-DD"
+ * 用于列表项的时间展示（大六壬起课记录、Wiki 文档等）
+ */
+export function formatRelativeTime(savedAt: number): string {
+  const now = Date.now();
+  const diff = now - savedAt;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return "刚刚";
+  if (minutes < 60) return `${minutes}分钟前`;
+  if (hours < 24) return `${hours}小时前`;
+  if (days < 2) return "昨天";
+  if (days < 30) return `${days}天前`;
+  const date = new Date(savedAt);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 /** 均时差（分钟），N 为年内第几日 */
 export function equationOfTime(dayOfYear: number): number {
   const b = (2 * Math.PI * (dayOfYear - 81)) / 364;

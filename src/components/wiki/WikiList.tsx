@@ -9,6 +9,7 @@ import {
   getAllWikiTags,
   type WikiListFilters,
 } from "../../core/wikiDb";
+import { formatRelativeTime } from "../../core/utils";
 
 /** WikiList 暴露给父组件的命令式接口 */
 export interface WikiListHandle {
@@ -24,24 +25,6 @@ interface WikiListProps {
   onDeleteClick: (doc: WikiDocument) => void;
   /** 刷新计数器，变化时重新加载列表 */
   refreshKey?: number;
-}
-
-/** 相对时间格式化 */
-function formatRelativeTime(savedAt: number): string {
-  const now = Date.now();
-  const diff = now - savedAt;
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (seconds < 60) return "刚刚";
-  if (minutes < 60) return `${minutes}分钟前`;
-  if (hours < 24) return `${hours}小时前`;
-  if (days < 2) return "昨天";
-  if (days < 30) return `${days}天前`;
-  const date = new Date(savedAt);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export const WikiList = forwardRef<WikiListHandle, WikiListProps>(function WikiList({
