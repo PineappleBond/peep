@@ -220,7 +220,7 @@ function ShenShaSection({ result }: { result: DaLiuRenResult }) {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -230,7 +230,7 @@ function KeJingSection({ result }: { result: DaLiuRenResult }) {
   if (keJing.length === 0) return null;
 
   return (
-    <div className="liuren-section">
+    <section className="liuren-section" aria-label="课经">
       <h4 className="liuren-section-title">课经</h4>
       <div className="liuren-kejing-list">
         {keJing.map((k, i) => (
@@ -319,7 +319,7 @@ function QuestionInfoSection({ record }: { record: LiurenRecord }) {
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
