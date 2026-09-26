@@ -158,10 +158,13 @@ export class ZiWeiError extends Error {
     this.suggestion = options?.suggestion;
     this.cause = options?.cause;
     // 确保堆栈追踪可用（V8 引擎）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ErrCtor = Error as any;
+    // captureStackTrace 是 Node.js/V8 特有的 API，标准 TypeScript 类型定义中未包含
+    // 使用 never 类型避免严格的构造函数签名检查
+    const ErrCtor = Error as unknown as {
+      captureStackTrace?: (target: object, ctor?: never) => void;
+    };
     if (typeof ErrCtor.captureStackTrace === "function") {
-      ErrCtor.captureStackTrace(this, new.target);
+      ErrCtor.captureStackTrace(this, new.target as never);
     }
   }
 }
@@ -263,10 +266,13 @@ export class DaLiuRenError extends Error {
     this.suggestion = options?.suggestion;
     this.cause = options?.cause;
     // 确保堆栈追踪可用（V8 引擎）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ErrCtor = Error as any;
+    // captureStackTrace 是 Node.js/V8 特有的 API，标准 TypeScript 类型定义中未包含
+    // 使用 never 类型避免严格的构造函数签名检查
+    const ErrCtor = Error as unknown as {
+      captureStackTrace?: (target: object, ctor?: never) => void;
+    };
     if (typeof ErrCtor.captureStackTrace === "function") {
-      ErrCtor.captureStackTrace(this, new.target);
+      ErrCtor.captureStackTrace(this, new.target as never);
     }
   }
 }
@@ -306,10 +312,13 @@ export class WikiError extends Error {
     this.suggestion = options?.suggestion;
     this.cause = options?.cause;
     // 确保堆栈追踪可用（V8 引擎）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ErrCtor = Error as any;
+    // captureStackTrace 是 Node.js/V8 特有的 API，标准 TypeScript 类型定义中未包含
+    // 使用 never 类型避免严格的构造函数签名检查
+    const ErrCtor = Error as unknown as {
+      captureStackTrace?: (target: object, ctor?: never) => void;
+    };
     if (typeof ErrCtor.captureStackTrace === "function") {
-      ErrCtor.captureStackTrace(this, new.target);
+      ErrCtor.captureStackTrace(this, new.target as never);
     }
   }
 }

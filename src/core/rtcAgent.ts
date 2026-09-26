@@ -84,6 +84,14 @@ function peepOrThrow() {
 }
 
 /**
+ * 辅助函数：从 Record<string, unknown> 安全提取指定类型的参数
+ * RTC Agent 的 handler 接受 Record<string, unknown>，此函数提供类型安全的访问
+ */
+function extractParam<T>(args: Record<string, unknown>, key: string): T | undefined {
+  return args[key] as T | undefined;
+}
+
+/**
  * 参数 Schema：用 Zod 描述每个 Function 的参数，RTC Agent 会据此让 AI 生成正确调用。
  *
  * 约定：
@@ -122,7 +130,8 @@ const personGetFunction = {
       "命主 ID（可选），省略则返回默认人物",
     ),
   }),
-  handler: (args: { personId?: number }) => peepOrThrow().PersonGet(args.personId),
+  handler: (args: Record<string, unknown>) =>
+    peepOrThrow().PersonGet(extractParam<number>(args, "personId")),
   returns: {
     schema: {
       type: "object" as const,
@@ -180,8 +189,10 @@ const personCreateFunction = {
       .optional()
       .describe("是否设为默认人物（后续分析默认使用），默认 false"),
   }),
-  handler: (args: BirthInputFields & { isDefault?: boolean }) =>
-    peepOrThrow().PersonCreate(mergeBirthInput(args), args.isDefault),
+  handler: (args: Record<string, unknown>) => {
+    const input = args as unknown as BirthInputFields & { isDefault?: boolean };
+    return peepOrThrow().PersonCreate(mergeBirthInput(input), input.isDefault);
+  },
   returns: {
     schema: { type: "object" as const, description: "创建后的人物对象，包含分配的 id" },
   },
@@ -206,8 +217,12 @@ const personUpdateFunction = {
       .optional()
       .describe("是否设为默认人物；不传则保持原值"),
   }),
-  handler: (args: { personId: number } & BirthInputFields & { isDefault?: boolean }) =>
-    peepOrThrow().PersonUpdate(args.personId, mergeBirthInput(args), args.isDefault),
+  handler: (args: Record<string, unknown>) => {
+    const input = args as unknown as { personId: number } & BirthInputFields & {
+        isDefault?: boolean;
+      };
+    return peepOrThrow().PersonUpdate(input.personId, mergeBirthInput(input), input.isDefault);
+  },
   returns: {
     schema: { type: "object" as const, description: "更新后的人物" },
   },
@@ -219,7 +234,7 @@ const personDeleteFunction = {
   zodSchema: z.object({
     personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
   }),
-  handler: (args: { personId: number }) => peepOrThrow().PersonDelete(args.personId),
+  handler: (args: Record<string, unknown>) => peepOrThrow().PersonDelete(args.personId as number),
   returns: {
     schema: { type: "object" as const, description: "删除结果" },
   },
@@ -256,7 +271,8 @@ const ziweiFunction = {
         "公历观测时间（可选），如 '2024-06-15 12:00' 或 '2024-06-15'；省略则用当前时间。用于指定分析的时间点",
       ),
   }),
-  handler: async (args: { personId?: number; scope?: Scope; time?: string }) => {
+  handler: async (args: Record<string, unknown>) => {
+    const parsedArgs = args as unknown as { personId?: number; scope?: Scope; time?: string };
     // 超时控制：UI 同步接口可能因渲染阻塞而卡住，25s 超时（留 5s 缓冲给上层 30s 超时）
     const TIMEOUT_MS = 25_000;
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -271,7 +287,7 @@ const ziweiFunction = {
       );
     });
     return Promise.race([
-      peepOrThrow().ZiWei(args.personId, args.scope, args.time),
+      peepOrThrow().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time),
       timeoutPromise,
     ]);
   },
@@ -309,8 +325,9 @@ const getScopeDataFunction = {
       .optional()
       .describe("命主 ID（可选）；省略则使用默认人物。可先调用 PersonList 获取 ID"),
   }),
-  handler: async (args: { solarDate: string; personId?: number }) => {
-    return peepOrThrow().GetScopeData(args.solarDate, args.personId);
+  handler: async (args: Record<string, unknown>) => {
+    const parsedArgs = args as unknown as { solarDate: string; personId?: number };
+    return peepOrThrow().GetScopeData(parsedArgs.solarDate, parsedArgs.personId);
   },
   returns: {
     schema: {
@@ -351,13 +368,16 @@ const daliurenCreateFunction = {
       .describe("背景信息——问题的上下文，有助于更准确的分析"),
     tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['求财', '合作']"),
   }),
-  handler: (args: {
-    personId?: number;
-    question: string;
-    note?: string;
-    background?: string;
-    tags?: string[];
-  }) => peepOrThrow().DaLiuRenCreate(args),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = args as unknown as {
+      personId?: number;
+      question: string;
+      note?: string;
+      background?: string;
+      tags?: string[];
+    };
+    return peepOrThrow().DaLiuRenCreate(parsedArgs);
+  },
   returns: {
     schema: {
       type: "object" as const,
@@ -390,13 +410,16 @@ const daliurenListFunction = {
       .optional()
       .describe("每页条数，默认 20"),
   }),
-  handler: (args: {
-    personId?: number;
-    searchText?: string;
-    tags?: string[];
-    page?: number;
-    pageSize?: number;
-  }) => peepOrThrow().DaLiuRenList(args),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = args as unknown as {
+      personId?: number;
+      searchText?: string;
+      tags?: string[];
+      page?: number;
+      pageSize?: number;
+    };
+    return peepOrThrow().DaLiuRenList(parsedArgs);
+  },
   returns: {
     schema: {
       type: "object" as const,
@@ -426,7 +449,10 @@ const daliurenViewFunction = {
       "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
     ),
   }),
-  handler: (args: { personId?: number; recordId: number }) => peepOrThrow().DaLiuRenView(args),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = args as unknown as { personId?: number; recordId: number };
+    return peepOrThrow().DaLiuRenView(parsedArgs);
+  },
   returns: {
     schema: {
       type: "object" as const,
@@ -459,13 +485,16 @@ const wikiListFunction = {
       .optional()
       .describe("每页条数，默认 20"),
   }),
-  handler: (args: {
-    personId?: number;
-    searchText?: string;
-    tags?: string[];
-    page?: number;
-    pageSize?: number;
-  }) => peepOrThrow().WikiList(args),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = args as unknown as {
+      personId?: number;
+      searchText?: string;
+      tags?: string[];
+      page?: number;
+      pageSize?: number;
+    };
+    return peepOrThrow().WikiList(parsedArgs);
+  },
   returns: {
     schema: {
       type: "object" as const,
@@ -501,13 +530,16 @@ const wikiCreateFunction = {
       .optional()
       .describe("关联文档 ID 列表——建立文档间的链接关系，形成知识网络"),
   }),
-  handler: (args: {
-    personId?: number;
-    title: string;
-    content: string;
-    tags?: string[];
-    linkTargetIds?: number[];
-  }) => peepOrThrow().WikiCreate(args),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = args as unknown as {
+      personId?: number;
+      title: string;
+      content: string;
+      tags?: string[];
+      linkTargetIds?: number[];
+    };
+    return peepOrThrow().WikiCreate(parsedArgs);
+  },
   returns: {
     schema: { type: "object" as const, description: "保存后的文档对象，包含分配的 id" },
   },
@@ -531,7 +563,10 @@ const wikiViewFunction = {
       "文档 ID——从 WikiList 返回的 docs 中获取",
     ),
   }),
-  handler: (args: { personId?: number; docId: number }) => peepOrThrow().WikiView(args),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = args as unknown as { personId?: number; docId: number };
+    return peepOrThrow().WikiView(parsedArgs);
+  },
   returns: {
     schema: {
       type: "object" as const,
@@ -626,8 +661,8 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
     agentName: "PeepAstro",
     agentDescription: "紫微斗数 · 大六壬 · 知识库 —— 命理分析 AI 助手",
     persona: document.documentElement.lang === "en-US" ? PERSONA_EN : PERSONA_ZH,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    groups: FUNCTION_GROUPS as any,
+    // Function 注册：groups 符合 AgentFunctionGroup[] 类型
+    groups: FUNCTION_GROUPS,
     // 嵌入式面板模式：embedded=true 自动禁用拖拽/缩放/最小化/最大化/关闭按钮，
     // 并设 defaultMode='maximized'——让 RTC 填满父容器（peep-v2 右侧 3/8 侧栏）
     window: {

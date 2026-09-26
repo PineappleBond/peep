@@ -32,16 +32,20 @@ export type LRUCacheOptions = {
  * - 超限时删除最久未使用的键（Map 第一个键）
  */
 export class LRUCache<K, V> {
-  private cache = new Map<K, V>();
-  private maxSize: number;
-  private name: string;
-  private hits = 0;
-  private misses = 0;
-  private evictions = 0;
+  private readonly cache: Map<K, V>;
+  private readonly maxSize: number;
+  private readonly name: string;
+  private hits: number;
+  private misses: number;
+  private evictions: number;
 
   constructor(options: LRUCacheOptions = {}) {
+    this.cache = new Map<K, V>();
     this.maxSize = options.maxSize ?? 100;
     this.name = options.name ?? "unnamed";
+    this.hits = 0;
+    this.misses = 0;
+    this.evictions = 0;
   }
 
   get(key: K): V | undefined {
@@ -63,7 +67,7 @@ export class LRUCache<K, V> {
       this.cache.delete(key);
     } else if (this.cache.size >= this.maxSize) {
       // 删除最久未使用（Map 第一个键）
-      const firstKey = this.cache.keys().next().value;
+      const firstKey = this.cache.keys().next().value as K | undefined;
       if (firstKey !== undefined) {
         this.cache.delete(firstKey);
         this.evictions++;
