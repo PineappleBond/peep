@@ -1,0 +1,97 @@
+/* ════════════════════════════════════════════════════
+   RTC Agent 全局布局样式
+
+   整体 5:3 双栏：左侧紫微斗数主内容，右侧 AI 助手。
+   主内容区包含 Header / main / footer（即原 .app 全部内容），
+   切路由时 RTC 组件保持在右侧常驻（它挂在 App.tsx 的 shell 层，
+   不受 react-router 影响）。
+   ════════════════════════════════════════════════════ */
+
+/* Shell：flex 横向双栏，占满整个视口 */
+.rtc-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh; /* 移动端适配：dynamic viewport 高度 */
+}
+
+/* 主内容区：占 5 份，内部可垂直滚动 */
+.rtc-layout-main {
+  flex: 5;
+  min-width: 0; /* 防止 flex item 内容撑破布局 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 让背景/装饰元素（.bg-fx）正常显示：position relative 作为参考 */
+  position: relative;
+}
+
+/* 左侧主内容内的 .app 容器：取消居中限制，改为宽度 100% */
+.rtc-layout-main .app {
+  max-width: none;
+  margin: 0;
+  /* 保留 padding——内容内边距仍由 .app 控制 */
+}
+
+/* AI 助手侧栏：占 3 份，sticky 到顶部 */
+.rtc-layout-side {
+  flex: 3;
+  min-width: 0;
+  height: 100vh;
+  height: 100dvh;
+  position: sticky;
+  top: 0;
+  border-left: 1px solid var(--line);
+  background: var(--glass-bg, rgba(13, 20, 40, 0.72));
+  /* 让 RTC 组件填满侧栏 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* RTC 组件容器：填满侧栏 */
+#rtc-slot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* RTC Web Component 自身：填满容器 */
+#rtc-slot rtc-agent {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+/* ── 响应式降级 ─────────────────────────────────────
+   窄屏（笔记本 / 平板竖屏）下 5:3 太挤，AI 助手降级为底部抽屉
+   （抽屉行为由 RTC 组件自己的 window 模式控制，此处仅隐藏固定侧栏） */
+@media (max-width: 960px) {
+  .rtc-layout {
+    flex-direction: column;
+    min-height: auto;
+  }
+  .rtc-layout-main {
+    flex: none;
+    overflow-y: visible;
+  }
+  .rtc-layout-main .app {
+    max-width: 1280px;
+    margin: 0 auto;
+    /* 恢复原 .app 默认 padding */
+  }
+  .rtc-layout-side {
+    flex: none;
+    height: auto;
+    position: static;
+    border-left: none;
+    border-top: 1px solid var(--line);
+    min-height: 480px;
+  }
+}
+
+/* 超小屏（手机）：AI 助手侧栏高度进一步收缩，避免占比过大 */
+@media (max-width: 480px) {
+  .rtc-layout-side {
+    min-height: 360px;
+  }
+}

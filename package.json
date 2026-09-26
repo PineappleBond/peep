@@ -19,9 +19,9 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@rtc-agent/component": "^0.2.6",
+    "@rtc-agent/component": "^0.2.7-rc.0",
     "@toon-format/toon": "^2.3.1",
-    "dexie": "^4.4.6",
+    "dexie": "^4.4.5",
     "iztro": "^2.5.8",
     "lunar-lite": "^0.2.7",
     "lunar-typescript": "^1.8.6",

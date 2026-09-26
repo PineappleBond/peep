@@ -67,6 +67,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // RTC Agent 组件分包后仍有 ~2.5MB（含 Lit + Dexie + 内部工具链），
+        // 超过 workbox 默认 2MB 限制，提升到 5MB 避免构建失败。
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // 静态资源使用 stale-while-revalidate：先展示缓存，后台更新
         // 文档页使用 NetworkFirst：优先网络，离线时回退缓存
         runtimeCaching: [
@@ -217,6 +220,11 @@ export default defineConfig({
           // Dexie（IndexedDB 封装）单独分包——仅 PersonDialog 等编辑流程使用
           if (/\/node_modules\/dexie\//.test(id)) {
             return "db";
+          }
+          // RTC Agent 组件单独分包——体积较大（~1.5MB），与主 bundle 解耦避免触发
+          // workbox 默认 2MB 上限；同时便于浏览器缓存（RTC 升级频率低于主应用）
+          if (/\/node_modules\/@rtc-agent\/component\//.test(id)) {
+            return "rtc";
           }
         },
       },
