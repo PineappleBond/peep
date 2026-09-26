@@ -280,26 +280,6 @@ const getScopeDataFunction = {
   },
 };
 
-const solarToLunarFunction = {
-  name: "SolarToLunar",
-  description: "将公历日期转换为农历日期，返回年月日时、干支、闰月等信息。",
-  zodSchema: z.object({
-    date: withMeta(z.string(), { example: "2024-06-15 12:00" }).describe(
-      "公历日期，如 '2024-06-15 12:00' 或 '2024-06-15'",
-    ),
-  }),
-  handler: (args: { date: string }) => {
-    // 从 lunar.ts 导入的 solarToLunar 函数
-    return import("./lunar").then(({ solarToLunar }) => solarToLunar(args.date));
-  },
-  returns: {
-    schema: {
-      type: "object" as const,
-      description: "农历日期信息",
-    },
-  },
-};
-
 const daliurenCalcFunction = {
   name: "DaLiuRen",
   description: "按指定公历时间起大六壬课，返回天地盘、四课、三传、神将等完整课式。仅计算不落库。",
@@ -487,7 +467,7 @@ const FUNCTION_GROUPS = [
     name: "ziwei",
     description:
       "紫微斗数排盘与运限。GetScopeData 为纯计算接口（优先使用），ZiWei 会同步 UI（耗时较长）。",
-    functions: [getScopeDataFunction, ziweiFunction, solarToLunarFunction],
+    functions: [getScopeDataFunction, ziweiFunction],
   },
   {
     name: "daliuren",
