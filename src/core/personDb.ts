@@ -199,12 +199,43 @@ export async function savePerson(
   }
 }
 
-/** 删除人物（默认人物不可删除） */
+/**
+ * 删除人物（默认人物不可删除）。
+ * 级联删除该人物下的全部关联数据（大六壬记录、Wiki 文档及链接），避免孤立数据。
+ */
 export async function deletePerson(id: number): Promise<void> {
   try {
-    const person = await db.persons.get(id);
-    if (person?.isDefault) throw new Error(t("db.defaultCannotDelete"));
-    await db.persons.delete(id);
+    await db.transaction(
+      "rw",
+      db.persons,
+      db.liurenRecords,
+      db.wikiDocs,
+      db.wikiLinks,
+      async () => {
+        const person = await db.persons.get(id);
+        if (!person) return; // 不存在则幂等
+        if (person.isDefault) throw new Error(t("db.defaultCannotDelete"));
+
+        // 级联删除 Wiki 文档的链接关系
+        const wikiDocs = await db.wikiDocs.where("personId").equals(id).toArray();
+        const docIds = wikiDocs.map(d => d.id!);
+        if (docIds.length > 0) {
+          // 删除以这些文档为源或目标的链接
+          for (const docId of docIds) {
+            await db.wikiLinks.where("sourceDocId").equals(docId).delete();
+            await db.wikiLinks.where("targetDocId").equals(docId).delete();
+          }
+          // 删除文档本身
+          await db.wikiDocs.where("personId").equals(id).delete();
+        }
+
+        // 级联删除大六壬记录
+        await db.liurenRecords.where("personId").equals(id).delete();
+
+        // 删除人物本身
+        await db.persons.delete(id);
+      },
+    );
   } catch (err) {
     // 保留业务错误（默认人物不可删除），包装其他错误
     if (err instanceof Error && err.message === t("db.defaultCannotDelete")) throw err;

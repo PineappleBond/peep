@@ -85,11 +85,16 @@ export async function getWikiDoc(id: number): Promise<WikiDocument | undefined> 
 }
 
 /**
- * 保存 Wiki 文档（新增或更新）
- * 自动维护 savedAt（首次创建）和 updatedAt（每次保存）
+ * 保存 Wiki 文档（新增或更新）。
+ * 自动维护 savedAt（首次创建）和 updatedAt（每次保存）。
+ * @throws 标题为空时抛出错误
  */
 export async function saveWikiDoc(doc: WikiDocument): Promise<number> {
   try {
+    // 输入验证
+    if (!doc.title || !doc.title.trim()) {
+      throw new Error(t("db.wikiTitleRequired"));
+    }
     const now = Date.now();
     if (doc.id != null) {
       // 更新：保留原 savedAt，更新 updatedAt
@@ -103,6 +108,8 @@ export async function saveWikiDoc(doc: WikiDocument): Promise<number> {
     invalidateTagCache();
     return id;
   } catch (err) {
+    // 保留业务错误（标题必填），包装其他错误
+    if (err instanceof Error && err.message === t("db.wikiTitleRequired")) throw err;
     console.error("[wikiDb] 保存文档失败", err);
     throw new Error(t("db.saveWikiFailed"));
   }

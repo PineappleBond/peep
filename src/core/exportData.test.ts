@@ -9,12 +9,14 @@ import {
   liurenToCsv,
   wikiToCsv,
   wikiToMarkdown,
+  analysisToMarkdown,
   toJson,
   performExport,
   type ExportOptions,
 } from "./exportData";
 import type { LiurenRecord, WikiDocument } from "./personDb";
 import { makeZwdsFixture } from "./testFixtures";
+import { analyzeChart } from "./analysis";
 
 describe("safeFilename", () => {
   it("将特殊字符替换为下划线", () => {
@@ -250,6 +252,51 @@ describe("performExport", () => {
 
     expect(result.content).toContain("导出时间");
     expect(result.content).toContain("版本");
+  });
+});
+
+describe("analysisToMarkdown 完整性", () => {
+  it("输出包含飞宫四化、传导链、夹宫、借星各节", () => {
+    const z = makeZwdsFixture();
+    const analysis = analyzeChart(z.astrolabe!);
+    const md = analysisToMarkdown(analysis);
+
+    // 格局
+    if (analysis.patterns.length > 0) {
+      expect(md).toContain("### 格局");
+    }
+    // 三方四正（含会吉/会煞/四化会入/借星）
+    expect(md).toContain("### 三方四正");
+    // 飞宫四化
+    expect(md).toContain("### 飞宫四化");
+    // 四化传导链
+    expect(md).toContain("### 四化传导链");
+    if (analysis.mutagenChains.lu.length > 0) expect(md).toContain("**禄链**");
+    if (analysis.mutagenChains.ji.length > 0) expect(md).toContain("**忌链**");
+    // 夹宫
+    if (analysis.jiaGong.length > 0) {
+      expect(md).toContain("### 夹宫关系");
+    }
+    // 借星
+    if (analysis.borrowed.length > 0) {
+      expect(md).toContain("### 空宫借星");
+    }
+  });
+
+  it("空分析结果不抛错且返回基本结构", () => {
+    const emptyAnalysis = {
+      note: "",
+      patterns: [],
+      sanfang: [],
+      flyMatrix: { palaces: [], sentences: [], note: "" },
+      mutagenChains: { ji: [], lu: [], note: "" },
+      jiaGong: [],
+      borrowed: [],
+    };
+    const md = analysisToMarkdown(emptyAnalysis);
+    expect(md).toContain("## 结构分析");
+    expect(md).not.toContain("### 格局");
+    expect(md).not.toContain("### 飞宫四化");
   });
 });
 

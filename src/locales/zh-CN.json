@@ -375,6 +375,7 @@
   "db.saveWikiFailed": "保存文档失败，请重试",
   "db.deleteWikiFailed": "删除文档失败，请重试",
   "db.saveWikiLinkFailed": "保存文档链接失败，请重试",
+  "db.wikiTitleRequired": "文档标题不能为空",
 
   "shortcut.helpTitle": "键盘快捷键",
   "shortcut.showHelp": "显示快捷键帮助",

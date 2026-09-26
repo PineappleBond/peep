@@ -84,12 +84,16 @@ export async function getLiurenRecord(id: number): Promise<LiurenRecord | undefi
 }
 
 /**
- * 保存大六壬记录（新增或更新）
+ * 保存大六壬记录（新增或更新）。
+ * 新增时自动设置 savedAt 时间戳；更新时保留原 savedAt。
+ * 不修改入参对象，返回新对象写入数据库。
  */
 export async function saveLiurenRecord(record: LiurenRecord): Promise<number> {
   try {
+    // 新增时自动设置 savedAt（不修改入参）
+    const data = record.id == null && !record.savedAt ? { ...record, savedAt: Date.now() } : record;
     // put：有 id 则更新，无 id 则新增
-    const id = await db.liurenRecords.put(record);
+    const id = await db.liurenRecords.put(data);
     invalidateLiurenTagCache();
     return id;
   } catch (err) {

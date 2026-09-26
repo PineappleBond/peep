@@ -7,8 +7,8 @@
 export interface FilterPaginateOptions<T> {
   /** 原始记录数组（已按 personId 过滤） */
   records: T[];
-  /** 排序字段名（倒序，最新在前） */
-  sortField: keyof T;
+  /** 排序字段名（倒序，最新在前）；字段值必须为数字（时间戳等） */
+  sortField: { [K in keyof T]: T[K] extends number ? K : never }[keyof T];
   /** 文本搜索匹配的字段名列表 */
   searchFields: (keyof T)[];
   /** 过滤条件 */
@@ -43,7 +43,7 @@ export function filterAndPaginate<T>(opts: FilterPaginateOptions<T>): PaginatedR
   const { records, sortField, searchFields, filters } = opts;
   const { searchText = "", tags = [], page = 1, pageSize = 20 } = filters;
 
-  // 1. 按指定字段倒序排序
+  // 1. 按指定字段倒序排序（字段值保证为数字）
   const sorted = [...records].sort((a, b) => {
     const va = a[sortField] as number;
     const vb = b[sortField] as number;

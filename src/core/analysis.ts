@@ -598,12 +598,14 @@ export function getChartDataForScope(params: ChartDataForScopeParams): ScopeChar
   // 计算运限命宫的离心 + 向心自化
   const rawMarks = getSelfMarksForScope(scopePalaceIdx, scopeStem, astrolabe, ix);
 
+  // 预计算本命四化（生年天干）— 所有宫共享，只需计算一次
+  const pillars = astrolabe.chineseDate.split(" ");
+  const natalStem = pillars[0]?.charAt(0) ?? "";
+  const natalMutagenStars = util.getMutagensByHeavenlyStem(natalStem as never) as string[];
+
   // 构建 12 宫完整数据
   const palaces = astrolabe.palaces.map(palace => {
     // 本命四化（生年天干）
-    const pillars = astrolabe.chineseDate.split(" ");
-    const natalStem = pillars[0]?.charAt(0) ?? "";
-    const natalMutagenStars = util.getMutagensByHeavenlyStem(natalStem as never) as string[];
     const natalMutagens = natalMutagenStars
       .map((star, k) => {
         const pos = ix.pos.get(star) ?? -1;

@@ -109,7 +109,7 @@ export function safeFilename(name: string): string {
   return name.replace(/[^\w一-鿿-]/g, "_").replace(/_+/g, "_") || "export";
 }
 
-/** 触发浏览器下载 */
+/** 触发浏览器下载（延迟释放 ObjectURL 确保下载启动） */
 export function downloadFile(content: string, filename: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -117,7 +117,8 @@ export function downloadFile(content: string, filename: string, mimeType: string
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // 延迟释放，确保浏览器有足够时间启动下载
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /** 当前 ISO 时间戳（用于元数据） */
@@ -271,7 +272,7 @@ export function zwdsToMarkdown(
 }
 
 /**
- * 结构分析 → Markdown
+ * 结构分析 → Markdown（完整输出格局/三方/飞宫/传导链/夹宫/借星）
  */
 export function analysisToMarkdown(analysis: ChartAnalysis): string {
   let md = `## 结构分析\n\n`;
@@ -293,8 +294,58 @@ export function analysisToMarkdown(analysis: ChartAnalysis): string {
       for (const seat of s.seats) {
         md += `- ${seat.role}：${seat.palaceName}（${seat.branch}）— ${seat.majors || "无主星"}\n`;
       }
+      if (s.auspicious.length > 0) md += `- 会吉：${s.auspicious.join("、")}\n`;
+      if (s.inauspicious.length > 0) md += `- 会煞：${s.inauspicious.join("、")}\n`;
+      if (s.natalMutagens.length > 0) md += `- 生年四化会入：${s.natalMutagens.join("、")}\n`;
+      if (s.borrowed) md += `- ${s.borrowed}\n`;
       md += `\n`;
     }
+  }
+
+  // 飞宫四化
+  if (analysis.flyMatrix.palaces.length > 0) {
+    md += `### 飞宫四化\n\n`;
+    for (const sentence of analysis.flyMatrix.sentences) {
+      md += `- ${sentence}\n`;
+    }
+    md += `\n`;
+  }
+
+  // 四化传导链
+  if (analysis.mutagenChains.ji.length > 0 || analysis.mutagenChains.lu.length > 0) {
+    md += `### 四化传导链\n\n`;
+    if (analysis.mutagenChains.lu.length > 0) {
+      md += `**禄链**\n\n`;
+      for (const c of analysis.mutagenChains.lu) {
+        md += `- ${c.text}\n`;
+      }
+      md += `\n`;
+    }
+    if (analysis.mutagenChains.ji.length > 0) {
+      md += `**忌链**\n\n`;
+      for (const c of analysis.mutagenChains.ji) {
+        md += `- ${c.text}\n`;
+      }
+      md += `\n`;
+    }
+  }
+
+  // 夹宫关系
+  if (analysis.jiaGong.length > 0) {
+    md += `### 夹宫关系\n\n`;
+    for (const j of analysis.jiaGong) {
+      md += `- **${j.palaceName}（${j.branch}）**${j.kind}：${j.detail}（${j.good ? "吉" : "注意"}）\n`;
+    }
+    md += `\n`;
+  }
+
+  // 空宫借星
+  if (analysis.borrowed.length > 0) {
+    md += `### 空宫借星\n\n`;
+    for (const b of analysis.borrowed) {
+      md += `- **${b.palaceName}（${b.branch}）**借对宫【${b.oppositeName}】${b.borrowed.join("、")}\n`;
+    }
+    md += `\n`;
   }
 
   return md;
@@ -572,12 +623,13 @@ export function wikiToCsv(docs: WikiDocument[]): string {
   return [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
 }
 
-/** CSV 字段转义 */
-function escapeCsvField(field: string): string {
-  if (field.includes(",") || field.includes('"') || field.includes("\n")) {
-    return `"${field.replace(/"/g, '""')}"`;
+/** CSV 字段转义（处理逗号、双引号、换行符） */
+function escapeCsvField(field: string | number | undefined): string {
+  const str = String(field ?? "");
+  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+    return `"${str.replace(/"/g, '""')}"`;
   }
-  return field;
+  return str;
 }
 
 /* ─────────────── 统一导出入口 ─────────────── */
