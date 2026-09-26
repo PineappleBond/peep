@@ -13,7 +13,6 @@ export function ZiweiIcon(props: SVGAttributes<SVGSVGElement>) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="紫微斗数"
       {...props}
     >
       {/* 北斗七星 - 简化版 */}

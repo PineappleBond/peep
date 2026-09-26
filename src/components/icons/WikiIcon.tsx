@@ -13,7 +13,6 @@ export function WikiIcon(props: SVGAttributes<SVGSVGElement>) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="知识库"
       {...props}
     >
       {/* 后层文档（偏移，营造层次感） */}

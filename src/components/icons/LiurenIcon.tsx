@@ -13,7 +13,6 @@ export function LiurenIcon(props: SVGAttributes<SVGSVGElement>) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="大六壬"
       {...props}
     >
       {/* 地盘（外圈，固定） */}
