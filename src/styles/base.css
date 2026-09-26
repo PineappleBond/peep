@@ -236,6 +236,12 @@
 :root[data-theme="light"] .u-glass-panel {
   background: var(--glass-bg);
 }
+:root[data-theme="light"] .bg-fx {
+  background:
+    radial-gradient(900px 520px at 82% -12%, rgba(43, 108, 176, 0.08), transparent 65%),
+    radial-gradient(720px 430px at 6% 10%, rgba(39, 103, 73, 0.04), transparent 60%),
+    radial-gradient(1000px 720px at 50% 118%, rgba(107, 70, 193, 0.05), transparent 65%);
+}
 :root[data-theme="light"] ::selection {
   background: rgba(43, 108, 176, 0.25);
 }
@@ -319,6 +325,12 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) .u-glass-panel {
     background: var(--glass-bg);
+  }
+  :root:not([data-theme="dark"]) .bg-fx {
+    background:
+      radial-gradient(900px 520px at 82% -12%, rgba(43, 108, 176, 0.08), transparent 65%),
+      radial-gradient(720px 430px at 6% 10%, rgba(39, 103, 73, 0.04), transparent 60%),
+      radial-gradient(1000px 720px at 50% 118%, rgba(107, 70, 193, 0.05), transparent 65%);
   }
   :root:not([data-theme="dark"]) ::selection {
     background: rgba(43, 108, 176, 0.25);
