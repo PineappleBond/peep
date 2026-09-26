@@ -27,6 +27,8 @@ type HeaderProps = {
   theme: Theme;
   /** 循环切换主题 */
   onCycleTheme: () => void;
+  /** 打开主题编辑器 */
+  onOpenThemeEditor?: () => void;
   /** 当前语言 */
   locale: Locale;
   /** 切换语言 */
@@ -56,6 +58,7 @@ export function Header({
   onOpenSync,
   theme,
   onCycleTheme,
+  onOpenThemeEditor,
   locale,
   onToggleLocale,
 }: HeaderProps) {
@@ -123,6 +126,16 @@ export function Header({
         >
           {themeLabel}
         </button>
+        {onOpenThemeEditor && (
+          <button
+            className="theme-editor-toggle"
+            onClick={onOpenThemeEditor}
+            title={t("themeEditor.openEditor")}
+            aria-label={t("themeEditor.openEditor")}
+          >
+            🎨
+          </button>
+        )}
         <button
           className="lang-toggle"
           onClick={onToggleLocale}

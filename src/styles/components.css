@@ -3592,3 +3592,260 @@
 :root[data-theme="light"] .dev-dash-section h3 {
   color: #475569;
 }
+
+/* ════════════════════════════════════════════════════
+   主题编辑器按钮（Header 调色板按钮）
+   ════════════════════════════════════════════════════ */
+
+.theme-editor-toggle {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-exit);
+  font-size: 1.1rem;
+}
+
+.theme-editor-toggle:hover {
+  background: var(--glass-bg);
+  color: var(--gold);
+}
+
+.theme-editor-toggle:active {
+  transform: scale(0.95);
+}
+
+/* ════════════════════════════════════════════════════
+   主题编辑器弹窗内容
+   ════════════════════════════════════════════════════ */
+
+.te-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.te-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.te-label {
+  font-size: 0.85rem;
+  font-weight: var(--font-medium);
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.te-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg-input);
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.te-input:focus {
+  border-color: var(--cyan);
+}
+
+/* 预设主题网格 */
+.te-presets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.te-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg-input);
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.te-preset:hover {
+  border-color: var(--line-strong);
+  background: var(--glass-bg-input-deep);
+  transform: translateY(-1px);
+}
+
+.te-preset-swatch {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+}
+
+.te-preset-swatch span {
+  flex: 1;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.te-preset-name {
+  font-size: 0.75rem;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* 颜色变量列表 */
+.te-colors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.te-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.te-color-label {
+  font-size: 0.85rem;
+  color: var(--dim);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.te-color-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.te-color-picker {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.te-color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.te-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+.te-color-text {
+  width: 140px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-input);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-family: var(--font-mono, monospace);
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.te-color-text:focus {
+  border-color: var(--cyan);
+}
+
+/* 底部按钮区 */
+.te-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+}
+
+.te-footer-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.te-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+  white-space: nowrap;
+}
+
+.te-btn:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--glass-bg);
+}
+
+.te-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.te-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.te-btn-ghost {
+  background: transparent;
+}
+
+.te-btn-primary {
+  background: var(--cyan);
+  color: var(--text-on-accent);
+  border-color: var(--cyan);
+  font-weight: var(--font-medium);
+}
+
+.te-btn-primary:hover:not(:disabled) {
+  background: var(--cyan);
+  filter: brightness(1.1);
+  border-color: var(--cyan);
+}
+
+/* 亮色主题适配 */
+:root[data-theme="light"] .te-preset {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+:root[data-theme="light"] .te-preset:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="light"] .te-preset-swatch span {
+  border-color: rgba(0, 0, 0, 0.1);
+}

@@ -12,12 +12,14 @@ import { ImportDialog } from "./ImportDialog";
 import { SyncDialog } from "./SyncDialog";
 import { CommandPalette } from "./CommandPalette";
 import { GuideOverlay } from "./GuideOverlay";
+import { ThemeEditor } from "./ThemeEditor";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
 import { registerDebugApi } from "../core/debugApi";
 import { globalEvents } from "../core/events";
 import { useI18n } from "../core/i18n";
 import { registerShortcuts, toggleHelp } from "../core/shortcuts";
 import { getTheme, setTheme, type Theme } from "../core/theme";
+import { initCustomTheme } from "../core/themeEditor";
 import type { SearchContext } from "../core/globalSearch";
 import {
   getGuideSteps,
@@ -42,6 +44,7 @@ export function Layout({ children }: LayoutProps) {
   const [importOpen, setImportOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [themeEditorOpen, setThemeEditorOpen] = useState(false);
   const [theme, setThemeState] = useState<Theme>(getTheme);
   const currentPersonRef = useRef<Person | null>(null);
 
@@ -49,8 +52,11 @@ export function Layout({ children }: LayoutProps) {
   const [guideSteps, setGuideSteps] = useState<GuideStep[] | null>(null);
   const [guideCurrentStep, setGuideCurrentStep] = useState(0);
 
-  // 初始化：加载默认人物
+  // 初始化：加载默认人物 + 自定义主题
   useEffect(() => {
+    // 初始化自定义主题（应用上次保存的自定义颜色）
+    initCustomTheme();
+
     const init = async () => {
       try {
         let savedId: string | null = null;
@@ -269,6 +275,7 @@ export function Layout({ children }: LayoutProps) {
         onOpenSync={() => setSyncOpen(true)}
         theme={theme}
         onCycleTheme={cycleTheme}
+        onOpenThemeEditor={() => setThemeEditorOpen(true)}
         locale={locale}
         onToggleLocale={toggleLocale}
       />
@@ -317,6 +324,8 @@ export function Layout({ children }: LayoutProps) {
         onClose={() => setSyncOpen(false)}
         onRestored={handleImportSuccess}
       />
+      {/* 主题编辑器 */}
+      <ThemeEditor open={themeEditorOpen} onClose={() => setThemeEditorOpen(false)} />
       {/* 用户引导浮层 */}
       {guideSteps && (
         <GuideOverlay
