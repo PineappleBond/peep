@@ -33,6 +33,18 @@ export interface BackupData {
     exportedAt: string;
     scope: string;
   };
+  /** 人物列表（同步快照使用，可能包含多条） */
+  persons?: Array<{
+    id?: number;
+    name: string;
+    gender: string;
+    date: string;
+    timeIndex: number;
+    calendar?: string;
+    residence?: string;
+    [k: string]: unknown;
+  }>;
+  /** 单条人物（老版导出兼容） */
   person?: {
     id?: number;
     name: string;
@@ -59,6 +71,12 @@ export interface BackupData {
     tags: string[];
     savedAt: number;
     updatedAt: number;
+  }>;
+  /** Wiki 文档间链接（同步快照使用） */
+  wikiLinks?: Array<{
+    id?: number;
+    sourceDocId: number;
+    targetDocId: number;
   }>;
 }
 
@@ -343,7 +361,7 @@ export async function previewJsonBackup(file: File): Promise<{
   const data: BackupData = JSON.parse(text);
 
   return {
-    hasPerson: !!data.person,
+    hasPerson: !!data.person || (Array.isArray(data.persons) && data.persons.length > 0),
     liurenCount: data.liuren?.length || 0,
     wikiCount: data.wiki?.length || 0,
     exportedAt: data.meta?.exportedAt,

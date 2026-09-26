@@ -9,6 +9,7 @@ import { Header } from "./Header";
 import { ToastHost } from "./ToastHost";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { ImportDialog } from "./ImportDialog";
+import { SyncDialog } from "./SyncDialog";
 import { CommandPalette } from "./CommandPalette";
 import { GuideOverlay } from "./GuideOverlay";
 import { getDefaultPerson, listPersons, type Person } from "../core/personDb";
@@ -39,6 +40,7 @@ export function Layout({ children }: LayoutProps) {
   const { t, locale, setLocale } = useI18n();
   const [currentPersonId, setCurrentPersonId] = useState<number | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [syncOpen, setSyncOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [theme, setThemeState] = useState<Theme>(getTheme);
   const currentPersonRef = useRef<Person | null>(null);
@@ -264,6 +266,7 @@ export function Layout({ children }: LayoutProps) {
         currentPersonId={currentPersonId}
         onSelectPerson={handleSelectPerson}
         onOpenImport={() => setImportOpen(true)}
+        onOpenSync={() => setSyncOpen(true)}
         theme={theme}
         onCycleTheme={cycleTheme}
         locale={locale}
@@ -307,6 +310,12 @@ export function Layout({ children }: LayoutProps) {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         onImportSuccess={handleImportSuccess}
+      />
+      {/* 多设备同步对话框 */}
+      <SyncDialog
+        open={syncOpen}
+        onClose={() => setSyncOpen(false)}
+        onRestored={handleImportSuccess}
       />
       {/* 用户引导浮层 */}
       {guideSteps && (

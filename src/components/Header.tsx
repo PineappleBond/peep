@@ -21,6 +21,8 @@ type HeaderProps = {
   onSelectPerson: (person: Person) => void;
   /** 打开导入对话框 */
   onOpenImport?: () => void;
+  /** 打开同步对话框 */
+  onOpenSync?: () => void;
   /** 当前主题 */
   theme: Theme;
   /** 循环切换主题 */
@@ -51,6 +53,7 @@ export function Header({
   currentPersonId,
   onSelectPerson,
   onOpenImport,
+  onOpenSync,
   theme,
   onCycleTheme,
   locale,
@@ -138,6 +141,16 @@ export function Header({
             aria-label={t("import.title")}
           >
             📥
+          </button>
+        )}
+        {onOpenSync && (
+          <button
+            className="sync-toggle"
+            onClick={onOpenSync}
+            title={t("sync.title")}
+            aria-label={t("sync.title")}
+          >
+            🔗
           </button>
         )}
         <PersonSelector currentId={currentPersonId} onSelect={onSelectPerson} />
