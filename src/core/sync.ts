@@ -33,6 +33,9 @@ export interface SyncConfig {
 }
 
 const CONFIG_KEY = "peep-sync-config";
+// 默认密码单独存放在 sessionStorage，避免 XSS 攻击从 localStorage 长期窃取。
+// sessionStorage 在标签页/浏览器关闭后自动清空，缩小密码暴露窗口。
+const PASSWORD_KEY = "peep-sync-password";
 
 const DEFAULT_CONFIG: SyncConfig = {
   defaultPassword: "",
@@ -43,8 +46,31 @@ const DEFAULT_CONFIG: SyncConfig = {
 export function loadSyncConfig(): SyncConfig {
   try {
     const raw = localStorage.getItem(CONFIG_KEY);
-    if (!raw) return { ...DEFAULT_CONFIG };
-    return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+    const parsed = raw ? JSON.parse(raw) : {};
+    // 兼容旧版：如果 localStorage 中还残留 defaultPassword，迁移到 sessionStorage 后从 localStorage 清除
+    if (parsed && typeof parsed.defaultPassword === "string" && parsed.defaultPassword) {
+      try {
+        if (!sessionStorage.getItem(PASSWORD_KEY)) {
+          sessionStorage.setItem(PASSWORD_KEY, parsed.defaultPassword);
+        }
+      } catch {
+        /* sessionStorage 不可用（隐私模式等），忽略 */
+      }
+      delete parsed.defaultPassword;
+      try {
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(parsed));
+      } catch {
+        /* ignore */
+      }
+    }
+    // 从 sessionStorage 读取密码（每次会话独立）
+    let password = "";
+    try {
+      password = sessionStorage.getItem(PASSWORD_KEY) ?? "";
+    } catch {
+      /* ignore */
+    }
+    return { ...DEFAULT_CONFIG, ...parsed, defaultPassword: password };
   } catch {
     return { ...DEFAULT_CONFIG };
   }
@@ -52,7 +78,18 @@ export function loadSyncConfig(): SyncConfig {
 
 export function saveSyncConfig(cfg: SyncConfig): void {
   try {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+    // 密码单独存入 sessionStorage，不随其它配置持久化到 localStorage
+    const { defaultPassword, ...rest } = cfg;
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(rest));
+    try {
+      if (defaultPassword) {
+        sessionStorage.setItem(PASSWORD_KEY, defaultPassword);
+      } else {
+        sessionStorage.removeItem(PASSWORD_KEY);
+      }
+    } catch {
+      /* sessionStorage 不可用，忽略 */
+    }
   } catch (err) {
     console.error("[sync] 保存配置失败", err);
   }

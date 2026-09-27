@@ -44,7 +44,8 @@ export const routePreloaders = {
   "/wiki": wikiLoader.preload,
 };
 
-// 初始化调试 API（生产/开发均暴露 window.peep，供 RTC Agent Function 调用）
+// 初始化调试 API：内部通道始终可用（供 RTC Agent Function 调用），
+// window.peep 全局对象仅在 DEV 环境暴露，缩小生产环境攻击面。
 initDebugApi();
 
 // 清理旧版持久化

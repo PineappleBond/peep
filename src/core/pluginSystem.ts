@@ -483,7 +483,8 @@ export const __pluginDebug = {
   },
 };
 
-// 把调试对象挂到 window，方便在控制台排查
-if (typeof window !== "undefined") {
+// 仅开发环境把插件调试对象挂到 window，方便在控制台排查；
+// 生产环境不暴露，避免攻击者借 dumpStorage/emitGlobal 操纵插件数据或触发全局事件。
+if (typeof window !== "undefined" && import.meta.env.DEV) {
   (window as unknown as { __zwdsPlugins: unknown }).__zwdsPlugins = __pluginDebug;
 }

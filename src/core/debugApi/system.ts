@@ -14,7 +14,7 @@ import { getAllCacheStats, clearAllCaches, type CacheStats } from "../cache";
 import { getChartDataForScope } from "../analysis";
 import { log } from "./logger";
 import { getCallbacksReady, resetCallbacks } from "./callbacks";
-import { resetLogLevel, getLogLevel } from "./logger";
+import { resetLogLevel, getLogLevel, setLogLevel as setLogLevelImpl } from "./logger";
 import { dumpStateToConsole, getAllStateSnapshots } from "../stateDebug";
 import {
   enableRenderTracker,
@@ -203,7 +203,6 @@ export function renderStats(enable?: boolean): unknown {
 
     const slowRenders = records.filter(r => r.duration > 16);
     if (slowRenders.length > 0) {
-       
       console.warn(`%c慢渲染（>16ms）: ${slowRenders.length} 次`, "color:#ff9800;font-weight:bold");
       // eslint-disable-next-line no-console
       console.table(
@@ -218,7 +217,6 @@ export function renderStats(enable?: boolean): unknown {
 
     const highFreq = Object.entries(summary).filter(([, s]) => s.count > 10);
     if (highFreq.length > 0) {
-       
       console.warn(
         `%c高频渲染（>10次）: ${highFreq.length} 个组件`,
         "color:#ff9800;font-weight:bold",
@@ -804,10 +802,7 @@ export function initDebugApi() {
     help,
     getApiMetadata,
     setLogLevel: (level: LogLevel) => {
-      // 延迟导入 logger
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { setLogLevel: setLevel } = require("./logger");
-      setLevel(level);
+      setLogLevelImpl(level);
     },
     getCacheStats,
     clearCaches,
@@ -823,8 +818,15 @@ export function initDebugApi() {
     dumpStateChanges,
   };
 
-  window.peep = peepApi;
+  // 内部通道始终可用——RTC Agent Function handler 通过 getInternalPeepApi() 调用，
+  // 不依赖 window 全局变量，确保生产环境也能正常工作。
   _internalPeepApi = peepApi;
+
+  // 仅开发环境暴露 window.peep 全局对象，缩小生产环境攻击面。
+  // 生产环境中任何 XSS 都无法通过 window.peep 直接操纵业务数据。
+  if (import.meta.env.DEV) {
+    window.peep = peepApi;
+  }
 
   log("info", "init", "调试 API 已初始化");
 }
