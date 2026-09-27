@@ -68,11 +68,11 @@ export async function runMigrations(
   toVersion: number,
 ): Promise<void> {
   if (fromVersion >= toVersion) {
-    console.warn(`[migration] 无需迁移（当前版本 ${fromVersion}）`);
+    console.log(`[migration] 无需迁移（当前版本 ${fromVersion}）`);
     return;
   }
 
-  console.warn(`[migration] 开始迁移：v${fromVersion} → v${toVersion}`);
+  console.log(`[migration] 开始迁移：v${fromVersion} → v${toVersion}`);
 
   for (let v = fromVersion + 1; v <= toVersion; v++) {
     const fn = migrations.get(v);
@@ -82,13 +82,13 @@ export async function runMigrations(
     }
 
     const startTime = Date.now();
-    console.warn(`[migration] 执行版本 ${v} 迁移...`);
+    console.log(`[migration] 执行版本 ${v} 迁移...`);
 
     try {
       await fn(db);
       const duration = Date.now() - startTime;
 
-      console.warn(`[migration] 版本 ${v} 迁移成功（${duration}ms）`);
+      console.log(`[migration] 版本 ${v} 迁移成功（${duration}ms）`);
       saveMigrationLog({
         version: v,
         timestamp: Date.now(),
@@ -112,7 +112,7 @@ export async function runMigrations(
     }
   }
 
-  console.warn(`[migration] 迁移完成：v${toVersion}`);
+  console.log(`[migration] 迁移完成：v${toVersion}`);
 }
 
 /**

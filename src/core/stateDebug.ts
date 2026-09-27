@@ -63,15 +63,15 @@ export function dumpStateToConsole(): void {
   if (!import.meta.env.DEV) return;
   const snapshots = getAllStateSnapshots();
   if (snapshots.length === 0) {
-     
-    console.warn("[peep] 无已注册的状态检查器");
+    // eslint-disable-next-line no-console
+    console.log("[peep] 无已注册的状态检查器");
     return;
   }
-   
-  console.warn(`[peep] 状态快照（${snapshots.length} 项）`);
+  // eslint-disable-next-line no-console
+  console.log(`[peep] 状态快照（${snapshots.length} 项）`);
   for (const entry of snapshots) {
-     
-    console.warn(`${entry.name} (${entry.source})`, entry.value);
+    // eslint-disable-next-line no-console
+    console.log(`${entry.name} (${entry.source})`, entry.value);
   }
 }
 
