@@ -7,6 +7,7 @@
 import type { LiuyaoRecord } from "./types";
 import type { LiuyaoListFilters } from "../liuyaoDb";
 import { buildChart, locateYong, tossHexagram } from "../liuyao/core/chart";
+import { adjustDateForZiHour } from "../liuyao/core/calendar";
 import type { ChartJSON, SixLines, YongShen, YongTarget } from "../liuyao/core/types";
 import {
   listLiuyaoRecords,
@@ -53,6 +54,8 @@ import type {
 import {
   validateRecordId,
   validateNonEmptyString,
+  validateStringLength,
+  validateNotFutureDate,
   validateTags,
   validatePagination,
 } from "./validate";
@@ -165,7 +168,7 @@ export function LiuYao(
 ): LiuyaoComputedData {
   const result = computeLiuyaoData(lines, date, yongTarget, time);
 
-  // 构建 divinationTime
+  // 构建 divinationTime（子时跨日调整已在调用方处理，此处仅拼接）
   const divinationTime = time ? `${date}T${time}` : `${date}T00:00:00`;
 
   // 计算 hbarData（基于起卦时间，默认 pick 为起卦时间）
@@ -225,12 +228,22 @@ export async function LiuYaoCreate(
   try {
     // 参数验证
     validateNonEmptyString(params.question, "question", "LiuYaoCreate", LiuyaoError);
+    validateStringLength(params.question, "question", 200, "LiuYaoCreate", LiuyaoError);
+    if (params.background !== undefined) {
+      validateStringLength(params.background, "background", 2000, "LiuYaoCreate", LiuyaoError);
+    }
+    if (params.note !== undefined) {
+      validateStringLength(params.note, "note", 500, "LiuYaoCreate", LiuyaoError);
+    }
     validateTags(params.tags, "LiuYaoCreate", LiuyaoError);
     if (params.lines !== undefined) {
       validateSixLines(params.lines, "LiuYaoCreate");
     }
     if (params.yongTarget !== undefined) {
       validateYongTarget(params.yongTarget, "LiuYaoCreate");
+    }
+    if (params.divinationTime) {
+      validateNotFutureDate(params.divinationTime, "divinationTime", "LiuYaoCreate", LiuyaoError);
     }
 
     const personId = await resolvePersonId(params.personId);
@@ -262,10 +275,12 @@ export async function LiuYaoCreate(
         const parsed = parseDate(params.divinationTime);
         divinationTime =
           formatDate(parsed) + "T" + formatDateTime(parsed.getTime(), true).split(" ")[1];
-        dateStr = formatDate(parsed);
+        // 子时跨日调整：23:00-23:59 日柱取次日
+        dateStr = adjustDateForZiHour(parsed);
       } else {
         const now = new Date();
-        dateStr = formatDate(now);
+        // 子时跨日调整：23:00-23:59 日柱取次日
+        dateStr = adjustDateForZiHour(now);
         const timeStr = formatDateTime(now.getTime(), true).split(" ")[1];
         divinationTime = `${dateStr}T${timeStr}`;
       }
@@ -522,6 +537,17 @@ export async function LiuYaoView(
           suggestion:
             "请检查记录 ID 是否正确，该记录可能已被删除。可调用 LiuYaoList() 查看可用记录",
           errorCode: ApiErrorCode.NOT_FOUND,
+        });
+      }
+      // 校验 chart 数据完整性
+      if (!record.chart?.lines || record.chart.lines.length !== 6) {
+        throw new LiuyaoError(`记录 ${params.recordId} 卦象数据损坏`, "LiuYaoView", {
+          context: {
+            recordId: params.recordId,
+            linesLength: record.chart?.lines?.length ?? 0,
+          },
+          suggestion: "chart.lines 长度应为 6，数据可能已损坏。请检查数据库",
+          errorCode: ApiErrorCode.DATA_CORRUPTED,
         });
       }
       // 附带纯计算数据（hbar + 旺衰列）

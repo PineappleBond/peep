@@ -278,14 +278,24 @@ export function LiuyaoPage() {
   );
 
   // 事件处理
-  const handleSelect = useCallback(async (record: LiuyaoRecord) => {
-    try {
-      const full = await getLiuyaoRecord(record.id!);
-      if (full) setSelectedRecord(full);
-    } catch (err) {
-      console.error("[LiuyaoPage] 加载记录失败", err);
-    }
-  }, []);
+  const handleSelect = useCallback(
+    async (record: LiuyaoRecord) => {
+      try {
+        const full = await getLiuyaoRecord(record.id!);
+        if (full) {
+          // 校验 chart 数据完整性
+          if (!full.chart?.lines || full.chart.lines.length !== 6) {
+            toast.error(t("liuyao.chartCorrupted") || "卦象数据损坏，无法展示");
+            return;
+          }
+          setSelectedRecord(full);
+        }
+      } catch (err) {
+        console.error("[LiuyaoPage] 加载记录失败", err);
+      }
+    },
+    [t],
+  );
 
   const handleNewClick = useCallback(() => setCreateDialogOpen(true), []);
   const handleEditClick = useCallback((record: LiuyaoRecord) => {

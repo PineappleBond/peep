@@ -393,6 +393,7 @@
   "liuyao.hiddenGod": "伏神",
   "liuyao.hiddenUnder": "伏于第{n}爻下",
   "liuyao.chartFailed": "排盘失败，请检查输入",
+  "liuyao.chartCorrupted": "卦象数据损坏，无法展示",
   "liuyao.updateFailed": "更新失败，请重试",
   "liuyao.currentHexagram": "当前卦象",
   "liuyao.yearFlow": "流年",

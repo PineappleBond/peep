@@ -41,6 +41,8 @@ export const ApiErrorCode = {
   CALLBACK_TIMEOUT: "CALLBACK_TIMEOUT",
   /** 操作被安全确认机制拦截（需用户确认） */
   NEEDS_CONFIRMATION: "NEEDS_CONFIRMATION",
+  /** 数据损坏（如卦象字段不完整） */
+  DATA_CORRUPTED: "DATA_CORRUPTED",
 } as const;
 
 /** 错误代码类型 */

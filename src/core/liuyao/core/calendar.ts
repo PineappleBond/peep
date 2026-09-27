@@ -75,3 +75,19 @@ export function monthBranch(y: number, m: number, d: number): Branch {
 export function localDateISO(d = new Date()): string {
   return d.toLocaleDateString("sv-SE");
 }
+
+/**
+ * 子时跨日调整：23:00-23:59 属于次日子时（晚子时），日柱应取次日。
+ *
+ * 六爻以子时（23:00）为日界，与紫微斗数的"晚子时归次日"规则一致。
+ * 输入为完整的 ISO 日期时间字符串或 Date 对象，返回调整后的 YYYY-MM-DD。
+ */
+export function adjustDateForZiHour(dt: Date | string): string {
+  const d = typeof dt === "string" ? new Date(dt) : dt;
+  if (d.getHours() >= 23) {
+    const next = new Date(d);
+    next.setDate(next.getDate() + 1);
+    return next.toLocaleDateString("sv-SE");
+  }
+  return d.toLocaleDateString("sv-SE");
+}

@@ -175,23 +175,32 @@ export function validatePagination<T extends { page?: number; pageSize?: number 
 }
 
 /**
- * 验证标签数组——每个标签必须为非空字符串。
+ * 验证标签数组——每个标签必须为非空字符串，总数不超过 maxTags。
  *
  * @param tags 待验证的标签数组
  * @param source 来源标签
  * @param ErrorClass 用于抛出错误的错误类构造函数
+ * @param maxTags 标签数量上限（默认 20，与 TagInput 组件一致）
  */
 export function validateTags(
   tags: string[] | undefined,
   source: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ErrorClass: new (message: string, src: string, options?: any) => Error,
+  maxTags = 20,
 ): void {
   if (tags !== undefined) {
     if (!Array.isArray(tags)) {
       throw new ErrorClass(`tags 必须为字符串数组，实际类型为 ${typeof tags}`, source, {
         context: { tags: String(tags) },
         suggestion: "tags 应为字符串数组，如 ['格局', '紫微']",
+        errorCode: ApiErrorCode.INVALID_INPUT,
+      });
+    }
+    if (tags.length > maxTags) {
+      throw new ErrorClass(`tags 数量 ${tags.length} 超过上限 ${maxTags}`, source, {
+        context: { length: tags.length, maxTags },
+        suggestion: `最多允许 ${maxTags} 个标签`,
         errorCode: ApiErrorCode.INVALID_INPUT,
       });
     }
@@ -204,6 +213,59 @@ export function validateTags(
         });
       }
     }
+  }
+}
+
+/**
+ * 验证字符串长度不超过 maxLength（如果提供）。
+ *
+ * @param value 待验证的字符串
+ * @param fieldName 字段名（用于错误消息）
+ * @param maxLength 最大长度
+ * @param source 来源标签
+ * @param ErrorClass 用于抛出错误的错误类构造函数
+ */
+export function validateStringLength(
+  value: string,
+  fieldName: string,
+  maxLength: number,
+  source: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ErrorClass: new (message: string, src: string, options?: any) => Error,
+): void {
+  if (value.length > maxLength) {
+    throw new ErrorClass(`${fieldName} 长度 ${value.length} 超过上限 ${maxLength}`, source, {
+      context: { fieldName, length: value.length, maxLength },
+      suggestion: `${fieldName} 最多 ${maxLength} 个字符`,
+      errorCode: ApiErrorCode.INVALID_INPUT,
+    });
+  }
+}
+
+/**
+ * 验证日期时间不能是未来时间（允许 1 分钟容差）。
+ *
+ * @param dateStr ISO 日期时间字符串
+ * @param fieldName 字段名（用于错误消息）
+ * @param source 来源标签
+ * @param ErrorClass 用于抛出错误的错误类构造函数
+ */
+export function validateNotFutureDate(
+  dateStr: string,
+  fieldName: string,
+  source: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ErrorClass: new (message: string, src: string, options?: any) => Error,
+): void {
+  const parsed = new Date(dateStr);
+  if (isNaN(parsed.getTime())) return; // 非有效日期，交给其他验证处理
+  const toleranceMs = 60 * 1000; // 1 分钟容差
+  if (parsed.getTime() > Date.now() + toleranceMs) {
+    throw new ErrorClass(`${fieldName} 不能是未来时间：${dateStr}`, source, {
+      context: { fieldName, value: dateStr, now: new Date().toISOString() },
+      suggestion: "起卦时间不能晚于当前时间",
+      errorCode: ApiErrorCode.INVALID_INPUT,
+    });
   }
 }
 

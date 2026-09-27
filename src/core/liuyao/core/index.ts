@@ -43,7 +43,14 @@ export {
 } from "./constants";
 
 // 日历工具
-export { julianDayNumber, dayGanzhi, xunKong, monthBranch, localDateISO } from "./calendar";
+export {
+  julianDayNumber,
+  dayGanzhi,
+  xunKong,
+  monthBranch,
+  localDateISO,
+  adjustDateForZiHour,
+} from "./calendar";
 
 // 八宫逻辑
 export {

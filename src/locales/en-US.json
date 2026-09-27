@@ -393,6 +393,7 @@
   "liuyao.hiddenGod": "Fu Shen",
   "liuyao.hiddenUnder": "Hidden under line {n}",
   "liuyao.chartFailed": "Hexagram computation failed, please check input",
+  "liuyao.chartCorrupted": "Hexagram data corrupted, unable to display",
   "liuyao.updateFailed": "Update failed, please retry",
   "liuyao.currentHexagram": "Current Hexagram",
   "liuyao.yearFlow": "Liu Nian",
