@@ -16,7 +16,7 @@ import {
 } from "../wikiDb";
 import { getPerson } from "../personDb";
 import { log, timer } from "./logger";
-import { WikiError, wrapError } from "./errors";
+import { WikiError, wrapError, ApiErrorCode } from "./errors";
 import {
   getSelectPerson,
   getGetWikiList,
@@ -35,7 +35,20 @@ import {
   waitForWikiCallbacks,
   waitForDocSaved,
 } from "./helpers";
-import type { WikiOptions, WikiViewResult } from "./types";
+import type {
+  WikiOptions,
+  WikiViewResult,
+  WikiCreateParams,
+  WikiListParams,
+  WikiViewParams,
+} from "./types";
+import {
+  validateDocId,
+  validateNonEmptyString,
+  validateTags,
+  validatePagination,
+  validateIdArray,
+} from "./validate";
 
 /**
  * Wiki 文档列表调试接口——查询文档列表。
@@ -43,21 +56,33 @@ import type { WikiOptions, WikiViewResult } from "./types";
  * skipUI=true 时：跳过所有 UI 操控，直接查询数据库。
  * skipUI=false 时（默认）：执行完整 UI 流程。
  *
- * @param params 查询参数
+ * @param params 查询参数（使用统一的 WikiListParams 类型）
  * @param options 可选配置项（目前支持 skipUI）
+ * @returns Wiki 文档列表，包含 docs 数组和 total 总数
+ * @throws WikiError 分页参数无效时（errorCode: INVALID_INPUT）
+ *
+ * @example
+ * ```typescript
+ * // 基本查询
+ * const { docs, total } = await window.peep.WikiList({});
+ *
+ * // 搜索 + 标签过滤
+ * const { docs, total } = await window.peep.WikiList({
+ *   searchText: '紫微',
+ *   tags: ['格局']
+ * });
+ * ```
  */
 export async function WikiList(
-  params: {
-    personId?: number;
-    searchText?: string;
-    tags?: string[];
-    page?: number;
-    pageSize?: number;
-  },
+  params: WikiListParams,
   options?: WikiOptions,
 ): Promise<{ docs: WikiDocument[]; total: number }> {
   const stop = timer("WikiList");
   try {
+    // 参数验证
+    validateTags(params.tags, "WikiList", WikiError);
+    validatePagination(params, "WikiList", WikiError);
+
     const personId = await resolvePersonId(params.personId);
     log("info", "WikiList", "查询文档列表", {
       personId,
@@ -100,6 +125,7 @@ export async function WikiList(
           getWikiListReady: !!getWikiList,
         },
         suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
       });
     }
 
@@ -144,21 +170,33 @@ export async function WikiList(
  * skipUI=true 时：跳过所有 UI 操控，直接写入数据库。
  * skipUI=false 时（默认）：执行完整 UI 流程。
  *
- * @param params 文档参数
+ * @param params 文档参数（使用统一的 WikiCreateParams 类型）
  * @param options 可选配置项（目前支持 skipUI）
+ * @returns 创建的文档对象，包含分配的 id
+ * @throws WikiError title/content 为空时（errorCode: INVALID_INPUT）
+ * @throws WikiError 人物不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * const doc = await window.peep.WikiCreate({
+ *   title: '紫府同宫格',
+ *   content: '# 紫府同宫格\\n\\n紫府同宫是...',
+ *   tags: ['格局', '紫微']
+ * });
+ * ```
  */
 export async function WikiCreate(
-  params: {
-    personId?: number;
-    title: string;
-    content: string;
-    tags?: string[];
-    linkTargetIds?: number[];
-  },
+  params: WikiCreateParams,
   options?: WikiOptions,
 ): Promise<WikiDocument> {
   const stop = timer("WikiCreate");
   try {
+    // 参数验证
+    validateNonEmptyString(params.title, "title", "WikiCreate", WikiError);
+    validateNonEmptyString(params.content, "content", "WikiCreate", WikiError);
+    validateTags(params.tags, "WikiCreate", WikiError);
+    validateIdArray(params.linkTargetIds, "linkTargetIds", "WikiCreate", WikiError);
+
     const personId = await resolvePersonId(params.personId);
     log("info", "WikiCreate", "创建文档", {
       personId,
@@ -173,7 +211,8 @@ export async function WikiCreate(
       if (!personCheck) {
         throw new WikiError(`人物 ${personId} 不存在`, "WikiCreate", {
           context: { personId },
-          suggestion: "请检查人物 ID 是否正确",
+          suggestion: "请检查人物 ID 是否正确。可调用 PersonList() 查看可用的人物列表",
+          errorCode: ApiErrorCode.NOT_FOUND,
         });
       }
 
@@ -220,6 +259,7 @@ export async function WikiCreate(
           saveWikiDocReady: !!saveWikiDoc,
         },
         suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
       });
     }
 
@@ -271,20 +311,33 @@ export async function WikiCreate(
  * skipUI=true 时：直接查询数据库获取文档，并查询链接关系。
  * skipUI=false 时（默认）：执行完整 UI 流程。
  *
- * @param params 查看参数（personId 可选，docId 必填）
+ * @param params 查看参数（使用统一的 WikiViewParams 类型）
  * @param options 可选配置项（目前支持 skipUI）
+ * @returns 文档详情，包含正文、正向链接和可选的反向链接
+ * @throws WikiError docId 无效时（errorCode: INVALID_INPUT）
+ * @throws WikiError 文档不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * // 基本查看
+ * const doc = await window.peep.WikiView({ docId: 456 });
+ * console.log("标题:", doc.title);
+ * console.log("正文:", doc.content);
+ *
+ * // 含反向链接
+ * const doc = await window.peep.WikiView({ docId: 456, includeBacklinks: true });
+ * console.log("反向链接:", doc.backlinkSourceIds);
+ * ```
  */
 export async function WikiView(
-  params: {
-    personId?: number;
-    docId: number;
-    /** 是否查询反向链接（谁链接到了本文档） */
-    includeBacklinks?: boolean;
-  },
+  params: WikiViewParams,
   options?: WikiOptions,
 ): Promise<WikiViewResult> {
   const stop = timer("WikiView");
   try {
+    // 参数验证
+    validateDocId(params.docId, "WikiView");
+
     const personId = await resolvePersonId(params.personId);
     log("info", "WikiView", "查看文档", {
       personId,
@@ -299,7 +352,8 @@ export async function WikiView(
       if (!doc) {
         throw new WikiError(`文档 ${params.docId} 不存在`, "WikiView", {
           context: { docId: params.docId },
-          suggestion: "请检查文档 ID 是否正确，该文档可能已被删除",
+          suggestion: "请检查文档 ID 是否正确，该文档可能已被删除。可调用 WikiList() 查看可用文档",
+          errorCode: ApiErrorCode.NOT_FOUND,
         });
       }
 
@@ -338,6 +392,7 @@ export async function WikiView(
           getSelectedWikiDocReady: !!getSelectedWikiDoc,
         },
         suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
       });
     }
 
@@ -354,6 +409,7 @@ export async function WikiView(
       throw new WikiError(`文档 ${params.docId} 未找到或加载失败`, "WikiView", {
         context: { docId: params.docId, selectWikiDocReturned: !!doc },
         suggestion: "请检查文档 ID 是否正确，或尝试刷新页面后重试",
+        errorCode: ApiErrorCode.NOT_FOUND,
       });
     }
 

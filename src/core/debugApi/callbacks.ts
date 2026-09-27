@@ -10,7 +10,7 @@ import type { Person, LiurenRecord, WikiDocument } from "../personDb";
 import type { LiurenListFilters, LiurenListResult } from "../daliurenDb";
 import type { WikiListFilters, WikiListResult } from "../wikiDb";
 import { log } from "./logger";
-import { ZiWeiError, DaLiuRenError, WikiError } from "./errors";
+import { ZiWeiError, DaLiuRenError, WikiError, ApiErrorCode } from "./errors";
 
 /* ============================================================
  * React 回调注册——从 App.tsx / 各页面注入
@@ -192,6 +192,7 @@ export async function waitForCallbacks(
         {
           context: { page, timeout, callbacksReady: _callbacksReady },
           suggestion: `请先访问 ${page} 页面使其挂载，或检查页面组件是否正确注册了回调`,
+          errorCode: ApiErrorCode.CALLBACK_TIMEOUT,
         },
       );
       log("error", page, "回调注册超时", { timeout, callbacksReady: _callbacksReady });

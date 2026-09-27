@@ -12,6 +12,30 @@ import type { LiurenListFilters, LiurenListResult } from "../daliurenDb";
 import type { WikiListFilters, WikiListResult } from "../wikiDb";
 import type { ScopeChartData } from "../analysis";
 
+/* ── API 版本与元数据 ── */
+
+/**
+ * 调试 API 版本号——遵循语义化版本（Semantic Versioning）。
+ * 主版本号.次版本号.修订号：
+ * - 主版本号：不兼容的 API 变更
+ * - 次版本号：向后兼容的功能新增
+ * - 修订号：向后兼容的缺陷修复
+ */
+export const API_VERSION = "1.0.0" as const;
+
+/**
+ * API 元数据——提供版本和能力信息。
+ * 用于 AI 判断 API 兼容性，以及前端根据版本做条件逻辑。
+ */
+export interface ApiMetadata {
+  /** API 版本号 */
+  version: typeof API_VERSION;
+  /** 支持的 Function 名称列表 */
+  availableFunctions: string[];
+  /** 支持的运限级别 */
+  supportedScopes: Scope[];
+}
+
 /**
  * computeZiWeiData 返回数据：hbar 运限拨盘 + chart 运限盘面
  */
@@ -106,3 +130,95 @@ export type {
   WikiListResult,
   ScopeChartData,
 };
+
+/* ── 统一列表查询参数类型 ── */
+
+/**
+ * 大六壬列表查询参数——统一 DaLiuRenList 的输入类型。
+ * 所有字段可选，不传则使用默认值。
+ */
+export interface DaLiuRenListParams {
+  /** 命主 ID（可选，不传则使用默认人物） */
+  personId?: number;
+  /** 搜索关键字——匹配问题、备注、背景 */
+  searchText?: string;
+  /** 按标签过滤 */
+  tags?: string[];
+  /** 页码（从 1 开始，默认 1） */
+  page?: number;
+  /** 每页条数（1-100，默认 20） */
+  pageSize?: number;
+}
+
+/**
+ * Wiki 列表查询参数——统一 WikiList 的输入类型。
+ * 所有字段可选，不传则使用默认值。
+ */
+export interface WikiListParams {
+  /** 命主 ID（可选，不传则使用默认人物） */
+  personId?: number;
+  /** 搜索关键字——匹配标题或正文 */
+  searchText?: string;
+  /** 按标签过滤 */
+  tags?: string[];
+  /** 页码（从 1 开始，默认 1） */
+  page?: number;
+  /** 每页条数（1-100，默认 20） */
+  pageSize?: number;
+}
+
+/**
+ * 大六壬起课参数——统一 DaLiuRenCreate 的输入类型。
+ */
+export interface DaLiuRenCreateParams {
+  /** 命主 ID（可选，不传则使用默认人物） */
+  personId?: number;
+  /** 所占问题——要占卜的核心问题，要具体明确 */
+  question: string;
+  /** 备注——补充说明 */
+  note?: string;
+  /** 背景信息——问题的上下文 */
+  background?: string;
+  /** 标签——用于分类检索 */
+  tags?: string[];
+  /** 可选：自定义起课时间（YYYY-MM-DD HH:mm:ss），不传则使用当前时间 */
+  calculationTime?: string;
+}
+
+/**
+ * Wiki 创建参数——统一 WikiCreate 的输入类型。
+ */
+export interface WikiCreateParams {
+  /** 命主 ID（可选，不传则使用默认人物） */
+  personId?: number;
+  /** 文档标题 */
+  title: string;
+  /** Markdown 正文 */
+  content: string;
+  /** 标签——用于分类检索 */
+  tags?: string[];
+  /** 关联文档 ID 列表——建立文档间的链接关系 */
+  linkTargetIds?: number[];
+}
+
+/**
+ * 大六壬查看详情参数——统一 DaLiuRenView 的输入类型。
+ */
+export interface DaLiuRenViewParams {
+  /** 命主 ID（可选，不传则使用默认人物） */
+  personId?: number;
+  /** 起课记录 ID——从 DaLiuRenList 返回的 records 中获取 */
+  recordId: number;
+}
+
+/**
+ * Wiki 查看详情参数——统一 WikiView 的输入类型。
+ */
+export interface WikiViewParams {
+  /** 命主 ID（可选，不传则使用默认人物） */
+  personId?: number;
+  /** 文档 ID——从 WikiList 返回的 docs 中获取 */
+  docId: number;
+  /** 是否查询反向链接（谁链接到了本文档） */
+  includeBacklinks?: boolean;
+}

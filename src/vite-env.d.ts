@@ -24,6 +24,7 @@ import type {
   WikiView,
   getChartDataForScope,
   resetDebugApi,
+  getApiMetadata,
 } from "./core/debugApi";
 
 declare global {
@@ -78,6 +79,8 @@ declare global {
       }>;
       /** 控制台快速帮助：显示常用命令和示例 */
       help: () => void;
+      /** 获取 API 元数据（版本、可用函数列表、支持的运限级别） */
+      getApiMetadata: typeof getApiMetadata;
       /** 打印当前所有已注册的状态快照到控制台（仅 DEV） */
       dumpState: () => void;
       /** 获取当前所有已注册的状态快照数组（仅 DEV） */

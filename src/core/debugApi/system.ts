@@ -5,6 +5,9 @@
  */
 
 import type { Person } from "./types";
+import type { ApiMetadata } from "./types";
+import { API_VERSION } from "./types";
+import { VALID_SCOPES } from "./validate";
 import { listPersons, getDefaultPerson } from "../personDb";
 import { clearHbarCaches } from "../hbar";
 import { getAllCacheStats, clearAllCaches, type CacheStats } from "../cache";
@@ -86,6 +89,10 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
     方法: "getChartDataForScope(opts)",
     说明: "获取指定 scope 的运限盘面数据",
   },
+  getApiMetadata: {
+    方法: "getApiMetadata()",
+    说明: "获取 API 元数据（版本、可用函数、支持的运限级别）",
+  },
   dumpState: {
     方法: "dumpState()",
     说明: "打印当前所有已注册的状态快照到控制台（仅 DEV）",
@@ -107,6 +114,27 @@ const INTERNAL_METHODS = new Set([
   "health",
   "help",
 ]);
+
+/**
+ * 获取 API 元数据——版本、可用函数列表、支持的运限级别。
+ * 供 AI 判断 API 兼容性和能力边界。
+ *
+ * @returns API 元数据对象
+ *
+ * @example
+ * ```typescript
+ * const meta = window.peep.getApiMetadata();
+ * console.log("API 版本:", meta.version);
+ * console.log("可用函数:", meta.availableFunctions);
+ * ```
+ */
+export function getApiMetadata(): ApiMetadata {
+  return {
+    version: API_VERSION,
+    availableFunctions: Object.keys(API_DESCRIPTIONS),
+    supportedScopes: [...VALID_SCOPES],
+  };
+}
 
 /**
  * 版本信息打印——在控制台快速查看当前部署版本/构建时间/可用 API。
@@ -497,6 +525,7 @@ export function initDebugApi() {
     env,
     health,
     help,
+    getApiMetadata,
     setLogLevel: (level: LogLevel) => {
       // 延迟导入 logger
       // eslint-disable-next-line @typescript-eslint/no-require-imports

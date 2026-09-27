@@ -3,6 +3,8 @@
  *
  * 将分散在子模块中的 API 统一导出，保持向后兼容。
  * 外部代码可直接从 debugApi 导入所有公开接口。
+ *
+ * @version 1.0.0
  */
 
 // 类型导出
@@ -27,7 +29,19 @@ export type {
   LiurenListResult,
   WikiListFilters,
   WikiListResult,
+  // 统一参数类型（新增）
+  DaLiuRenListParams,
+  DaLiuRenCreateParams,
+  DaLiuRenViewParams,
+  WikiListParams,
+  WikiCreateParams,
+  WikiViewParams,
+  // API 元数据类型
+  ApiMetadata,
 } from "./types";
+
+// API 版本常量
+export { API_VERSION } from "./types";
 
 // 错误类导出
 export {
@@ -38,7 +52,23 @@ export {
   DaLiuRenError,
   WikiError,
   wrapError,
+  // 错误代码（新增）
+  ApiErrorCode,
 } from "./errors";
+export type { ApiErrorCodeType } from "./errors";
+
+// 参数验证工具导出（新增）
+export {
+  validatePersonId,
+  validateScope,
+  validateRecordId,
+  validateDocId,
+  validateNonEmptyString,
+  validatePagination,
+  validateTags,
+  validateIdArray,
+  VALID_SCOPES,
+} from "./validate";
 
 // 日志工具导出
 export { log, timer, setLogLevel, getLogLevel, resetLogLevel } from "./logger";
@@ -140,6 +170,7 @@ export {
   resetDebugApi,
   getInternalPeepApi,
   initDebugApi,
+  getApiMetadata,
 } from "./system";
 
 // 从 analysis.ts 重新导出 getChartDataForScope（供 window.peep 使用）

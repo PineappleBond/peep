@@ -1,12 +1,50 @@
 /**
  * 调试 API 错误类定义
  *
- * 结构化错误：带上下文信息、错误链、恢复建议。
+ * 结构化错误：带上下文信息、错误链、恢复建议、错误代码。
  * 生产环境通过 import.meta.env.DEV 控制是否输出敏感细节。
  *
  * 基类 BaseDebugError 封装 fullMessage 拼接、captureStackTrace 等共享逻辑；
  * ZiWeiError / DaLiuRenError / WikiError 只需指定 name，不再重复构造函数样板。
+ *
+ * 错误代码（ApiErrorCode）用于前端/AI 快速识别错误类型并给出对应处理：
+ * - INVALID_INPUT：参数校验失败，提示用户修正输入
+ * - NOT_FOUND：资源不存在（人物/记录/文档）
+ * - TIMEOUT：操作超时（UI 等待/渲染同步），可重试
+ * - INTERNAL：内部计算/引擎错误，需排查数据或引擎版本
+ * - NOT_INITIALIZED：API 未初始化，需等待页面挂载
+ * - PERMISSION_DENIED：权限不足（如删除默认人物）
  */
+
+/**
+ * API 错误代码枚举——供前端和 AI 根据代码做差异化处理。
+ *
+ * 使用场景：
+ * - AI 收到 INVALID_INPUT 时自动提示用户修正参数
+ * - AI 收到 TIMEOUT 时自动重试
+ * - 前端收到 NOT_INITIALIZED 时自动等待初始化
+ */
+export const ApiErrorCode = {
+  /** 参数校验失败 */
+  INVALID_INPUT: "INVALID_INPUT",
+  /** 资源不存在（人物/记录/文档） */
+  NOT_FOUND: "NOT_FOUND",
+  /** 操作超时 */
+  TIMEOUT: "TIMEOUT",
+  /** 内部计算/引擎错误 */
+  INTERNAL: "INTERNAL",
+  /** API 未初始化 */
+  NOT_INITIALIZED: "NOT_INITIALIZED",
+  /** 权限不足（如删除默认人物） */
+  PERMISSION_DENIED: "PERMISSION_DENIED",
+  /** 回调注册超时 */
+  CALLBACK_TIMEOUT: "CALLBACK_TIMEOUT",
+  /** 操作被安全确认机制拦截（需用户确认） */
+  NEEDS_CONFIRMATION: "NEEDS_CONFIRMATION",
+} as const;
+
+/** 错误代码类型 */
+export type ApiErrorCodeType = (typeof ApiErrorCode)[keyof typeof ApiErrorCode];
 
 /**
  * 调试 API 错误的私有基类：封装 fullMessage 拼接 + captureStackTrace 等共享逻辑。
@@ -24,6 +62,11 @@ export class BaseDebugError extends Error {
   public readonly suggestion?: string;
   /** 原始错误（错误链） */
   public readonly cause?: unknown;
+  /**
+   * 错误代码——供前端/AI 快速识别错误类型。
+   * 可选字段，向后兼容：未指定时无此属性。
+   */
+  public readonly errorCode?: ApiErrorCodeType;
 
   constructor(
     message: string,
@@ -32,12 +75,14 @@ export class BaseDebugError extends Error {
       context?: Record<string, unknown>;
       suggestion?: string;
       cause?: unknown;
+      /** 错误代码（可选），用于前端/AI 差异化处理 */
+      errorCode?: ApiErrorCodeType;
     },
   ) {
     // 开发环境：消息包含完整上下文；生产环境：仅包含概要消息
     const fullMessage =
       import.meta.env.DEV && options?.context
-        ? `${message}\n  来源: ${source}\n  上下文: ${JSON.stringify(options.context, null, 2)}${options?.suggestion ? `\n  建议: ${options.suggestion}` : ""}`
+        ? `${message}\n  来源: ${source}\n  上下文: ${JSON.stringify(options.context, null, 2)}${options?.suggestion ? `\n  建议: ${options.suggestion}` : ""}${options?.errorCode ? `\n  错误代码: ${options.errorCode}` : ""}`
         : message;
     super(fullMessage);
     this.source = source;
@@ -45,6 +90,7 @@ export class BaseDebugError extends Error {
     this.context = import.meta.env.DEV ? (options?.context ?? {}) : {};
     this.suggestion = import.meta.env.DEV ? options?.suggestion : undefined;
     this.cause = import.meta.env.DEV ? options?.cause : undefined;
+    this.errorCode = options?.errorCode;
     // 确保堆栈追踪可用（V8 引擎）
     // captureStackTrace 是 Node.js/V8 特有的 API，标准 TypeScript 类型定义中未包含
     // 使用 never 类型避免严格的构造函数签名检查
@@ -54,6 +100,20 @@ export class BaseDebugError extends Error {
     if (typeof ErrCtor.captureStackTrace === "function") {
       ErrCtor.captureStackTrace(this, new.target as never);
     }
+  }
+
+  /**
+   * 序列化为 JSON 对象——供 AI 读取时提供结构化错误信息。
+   * 生产环境仅包含 message、source、errorCode；开发环境包含完整上下文。
+   */
+  toJSON(): Record<string, unknown> {
+    return {
+      name: this.name,
+      message: this.message.split("\n")[0],
+      source: this.source,
+      errorCode: this.errorCode,
+      ...(import.meta.env.DEV ? { context: this.context, suggestion: this.suggestion } : {}),
+    };
   }
 }
 
@@ -83,6 +143,7 @@ export class ZiWeiError extends BaseDebugError {
       context?: Record<string, unknown>;
       suggestion?: string;
       cause?: unknown;
+      errorCode?: ApiErrorCodeType;
     },
   ) {
     super(message, source, options);
@@ -115,6 +176,7 @@ export class ParseDateError extends ZiWeiError {
         suggestion:
           "支持的格式: ISO 8601 (2024-06-15T12:00:00)、YYYY-MM-DD HH:mm、YYYY-MM-DD、时间戳 (毫秒)",
         cause,
+        errorCode: ApiErrorCode.INVALID_INPUT,
       },
     );
     this.name = "ParseDateError";
@@ -136,6 +198,7 @@ export class ComputeScopeError extends ZiWeiError {
       context?: Record<string, unknown>;
       suggestion?: string;
       cause?: unknown;
+      errorCode?: ApiErrorCodeType;
     },
   ) {
     super(message, "computeScopeData", {
@@ -147,6 +210,7 @@ export class ComputeScopeError extends ZiWeiError {
       },
       suggestion: options?.suggestion ?? "请检查人物数据是否完整（出生年月日时、性别、历法）",
       cause: options?.cause,
+      errorCode: options?.errorCode ?? ApiErrorCode.INTERNAL,
     });
     this.name = "ComputeScopeError";
   }
@@ -164,6 +228,7 @@ export class DaLiuRenError extends BaseDebugError {
       context?: Record<string, unknown>;
       suggestion?: string;
       cause?: unknown;
+      errorCode?: ApiErrorCodeType;
     },
   ) {
     super(message, source, options);
@@ -183,6 +248,7 @@ export class WikiError extends BaseDebugError {
       context?: Record<string, unknown>;
       suggestion?: string;
       cause?: unknown;
+      errorCode?: ApiErrorCodeType;
     },
   ) {
     super(message, source, options);
@@ -197,12 +263,14 @@ export class WikiError extends BaseDebugError {
  * @param label 来源标签（如 "ZiWei"、"DaLiuRenCreate"）
  * @param err 原始错误
  * @param ErrorClass 用于包装非 Error 值的错误类构造函数
+ * @param defaultErrorCode 默认错误代码（仅在包装非 BaseDebugError 时使用）
  */
 export function wrapError<T extends BaseDebugError>(
   label: string,
   err: unknown,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ErrorClass: new (message: string, source: string, options?: any) => T,
+  defaultErrorCode: ApiErrorCodeType = ApiErrorCode.INTERNAL,
 ): Error {
   // 已经是 BaseDebugError 子类（ZiWeiError / DaLiuRenError / WikiError 等），直接返回
   if (err instanceof BaseDebugError) {
@@ -233,5 +301,6 @@ export function wrapError<T extends BaseDebugError>(
     context: { rawError: rawErrorStr },
     suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
     cause: err,
+    errorCode: defaultErrorCode,
   });
 }

@@ -15,7 +15,7 @@ import {
 } from "../daliurenDb";
 import { getPerson } from "../personDb";
 import { log, timer } from "./logger";
-import { DaLiuRenError, wrapError } from "./errors";
+import { DaLiuRenError, wrapError, ApiErrorCode } from "./errors";
 import {
   getSelectPerson,
   getGetDaLiuRenList,
@@ -38,7 +38,20 @@ import {
   waitForRecordSaved,
 } from "./helpers";
 import { parseDate } from "./ziwei";
-import type { DaLiuRenComputedData, DaLiuRenOptions, DaLiuRenViewResult } from "./types";
+import type {
+  DaLiuRenComputedData,
+  DaLiuRenOptions,
+  DaLiuRenViewResult,
+  DaLiuRenCreateParams,
+  DaLiuRenListParams,
+  DaLiuRenViewParams,
+} from "./types";
+import {
+  validateRecordId,
+  validateNonEmptyString,
+  validateTags,
+  validatePagination,
+} from "./validate";
 
 /**
  * 纯计算函数：大六壬排盘（不操控 UI，不依赖 React 状态）。
@@ -99,24 +112,35 @@ export function DaLiuRen(
  * skipUI=true 时：跳过所有 UI 操控，直接计算排盘结果并写入数据库。
  * skipUI=false 时（默认）：执行完整 UI 流程。
  *
- * @param params 起课参数
+ * @param params 起课参数（使用统一的 DaLiuRenCreateParams 类型）
  * @param options 可选配置项（目前支持 skipUI）
  * @returns 创建后的起课记录，包含 id 和完整排盘结果
+ * @throws DaLiuRenError question 为空时（errorCode: INVALID_INPUT）
+ * @throws DaLiuRenError 人物不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * // 默认人物起课
+ * const record = await window.peep.DaLiuRenCreate({ question: '这笔生意能不能做？' });
+ *
+ * // 指定人物 + 标签
+ * const record = await window.peep.DaLiuRenCreate({
+ *   personId: 1,
+ *   question: '考试能否通过？',
+ *   tags: ['考试', '学业']
+ * });
+ * ```
  */
 export async function DaLiuRenCreate(
-  params: {
-    personId?: number;
-    question: string;
-    note?: string;
-    background?: string;
-    tags?: string[];
-    /** 可选：自定义起课时间（YYYY-MM-DD HH:mm:ss），不传则使用当前时间 */
-    calculationTime?: string;
-  },
+  params: DaLiuRenCreateParams,
   options?: DaLiuRenOptions,
 ): Promise<LiurenRecord> {
   const stop = timer("DaLiuRenCreate");
   try {
+    // 参数验证
+    validateNonEmptyString(params.question, "question", "DaLiuRenCreate", DaLiuRenError);
+    validateTags(params.tags, "DaLiuRenCreate", DaLiuRenError);
+
     const personId = await resolvePersonId(params.personId);
     log("info", "DaLiuRenCreate", "开始创建起课", {
       personId,
@@ -131,7 +155,8 @@ export async function DaLiuRenCreate(
       if (!personCheck) {
         throw new DaLiuRenError(`人物 ${personId} 不存在`, "DaLiuRenCreate", {
           context: { personId },
-          suggestion: "请检查人物 ID 是否正确",
+          suggestion: "请检查人物 ID 是否正确。可调用 PersonList() 查看可用的人物列表",
+          errorCode: ApiErrorCode.NOT_FOUND,
         });
       }
 
@@ -193,6 +218,7 @@ export async function DaLiuRenCreate(
           submitCreateFormReady: !!submitCreateForm,
         },
         suggestion: "请确认 DaLiuRenPage 组件已正确挂载并注册回调",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
       });
     }
 
@@ -245,21 +271,34 @@ export async function DaLiuRenCreate(
  * skipUI=true 时：直接查询数据库，不导航页面、不切换人物。
  * skipUI=false 时（默认）：导航页面 + 切换人物 + 设置 UI 过滤条件 + 查询。
  *
- * @param params 查询参数
+ * @param params 查询参数（使用统一的 DaLiuRenListParams 类型）
  * @param options 可选配置项（目前支持 skipUI）
+ * @returns 起课记录列表，包含 records 数组和 total 总数
+ * @throws DaLiuRenError 分页参数无效时（errorCode: INVALID_INPUT）
+ *
+ * @example
+ * ```typescript
+ * // 基本查询
+ * const { records, total } = await window.peep.DaLiuRenList({});
+ *
+ * // 搜索 + 分页
+ * const { records, total } = await window.peep.DaLiuRenList({
+ *   searchText: '合作',
+ *   page: 1,
+ *   pageSize: 10
+ * });
+ * ```
  */
 export async function DaLiuRenList(
-  params: {
-    personId?: number;
-    searchText?: string;
-    tags?: string[];
-    page?: number;
-    pageSize?: number;
-  },
+  params: DaLiuRenListParams,
   options?: DaLiuRenOptions,
 ): Promise<{ records: LiurenRecord[]; total: number }> {
   const stop = timer("DaLiuRenList");
   try {
+    // 参数验证
+    validateTags(params.tags, "DaLiuRenList", DaLiuRenError);
+    validatePagination(params, "DaLiuRenList", DaLiuRenError);
+
     const personId = await resolvePersonId(params.personId);
     log("info", "DaLiuRenList", "查询列表", {
       personId,
@@ -302,6 +341,7 @@ export async function DaLiuRenList(
           getDaLiuRenListReady: !!getDaLiuRenList,
         },
         suggestion: "请确认 DaLiuRenPage 组件已正确挂载并注册回调",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
       });
     }
 
@@ -345,18 +385,28 @@ export async function DaLiuRenList(
  * skipUI=true 时：直接查询数据库获取记录，并附带纯计算数据。
  * skipUI=false 时（默认）：导航页面 + 切换人物 + 选择记录 + 返回详情。
  *
- * @param params 查看参数（personId 可选，recordId 必填）
+ * @param params 查看参数（使用统一的 DaLiuRenViewParams 类型）
  * @param options 可选配置项（目前支持 skipUI）
+ * @returns 起课记录详情，包含完整排盘结果
+ * @throws DaLiuRenError recordId 无效时（errorCode: INVALID_INPUT）
+ * @throws DaLiuRenError 记录不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * const detail = await window.peep.DaLiuRenView({ recordId: 123 });
+ * console.log("问题:", detail.question);
+ * console.log("四课:", detail.result.siKe);
+ * ```
  */
 export async function DaLiuRenView(
-  params: {
-    personId?: number;
-    recordId: number;
-  },
+  params: DaLiuRenViewParams,
   options?: DaLiuRenOptions,
 ): Promise<DaLiuRenViewResult> {
   const stop = timer("DaLiuRenView");
   try {
+    // 参数验证
+    validateRecordId(params.recordId, "DaLiuRenView");
+
     const personId = await resolvePersonId(params.personId);
     log("info", "DaLiuRenView", "查看详情", {
       personId,
@@ -370,7 +420,9 @@ export async function DaLiuRenView(
       if (!record) {
         throw new DaLiuRenError(`记录 ${params.recordId} 不存在`, "DaLiuRenView", {
           context: { recordId: params.recordId },
-          suggestion: "请检查记录 ID 是否正确，该记录可能已被删除",
+          suggestion:
+            "请检查记录 ID 是否正确，该记录可能已被删除。可调用 DaLiuRenList() 查看可用记录",
+          errorCode: ApiErrorCode.NOT_FOUND,
         });
       }
       // 附带纯计算数据（验证 result 结构完整性）
@@ -402,6 +454,7 @@ export async function DaLiuRenView(
           getSelectedRecordReady: !!getSelectedRecord,
         },
         suggestion: "请确认 DaLiuRenPage 组件已正确挂载并注册回调",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
       });
     }
 
@@ -418,6 +471,7 @@ export async function DaLiuRenView(
       throw new DaLiuRenError(`记录 ${params.recordId} 未找到或加载失败`, "DaLiuRenView", {
         context: { recordId: params.recordId, selectRecordReturned: !!record },
         suggestion: "请检查记录 ID 是否正确，或尝试刷新页面后重试",
+        errorCode: ApiErrorCode.NOT_FOUND,
       });
     }
 

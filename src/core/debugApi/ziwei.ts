@@ -16,9 +16,10 @@ import { getChartDataForScope, type ScopeChartData } from "../analysis";
 import { buildChartIndex } from "../chartIndex";
 import { LRUCache, registerCache, clearAllCaches } from "../cache";
 import { log, timer } from "./logger";
-import { ZiWeiError, ParseDateError, ComputeScopeError, wrapError } from "./errors";
+import { ZiWeiError, ParseDateError, ComputeScopeError, wrapError, ApiErrorCode } from "./errors";
 import { getGetZwds, getGetPerson, getSelectPerson } from "./callbacks";
 import { resolvePersonId } from "./person";
+import { validateScope } from "./validate";
 import {
   nextFrame,
   waitForPersonMatch,
@@ -333,6 +334,7 @@ export async function setHoroscopeTimeWithRetry(
     {
       context: { maxRetries, expectedPick: date.toISOString(), actualPick: z.pick },
       suggestion: "pick 值持续被其他操作覆盖，可能是 React 状态更新冲突。请尝试刷新页面后重试",
+      errorCode: ApiErrorCode.TIMEOUT,
     },
   );
 }
@@ -419,23 +421,16 @@ export async function ZiWei(
     try {
       // 解析人物 ID（不传则用默认）
       const resolvedId = await resolvePersonId(personId);
-      // 输入校验
+      // 输入校验——使用统一的验证工具
       if (!Number.isFinite(resolvedId) || resolvedId <= 0) {
         throw new ZiWeiError(`personId 无效：${resolvedId}，需为正整数`, "ZiWei", {
           context: { personId, resolvedId },
           suggestion: "请传入有效的人物 ID（正整数），或不传以使用默认人物",
+          errorCode: ApiErrorCode.INVALID_INPUT,
         });
       }
-      if (scope && !["decadal", "yearly", "monthly", "daily", "hourly"].includes(scope)) {
-        throw new ZiWeiError(
-          `scope 无效：${scope}，需为 decadal/yearly/monthly/daily/hourly 之一`,
-          "ZiWei",
-          {
-            context: { scope },
-            suggestion: "请使用有效的运限级别：decadal/yearly/monthly/daily/hourly",
-          },
-        );
-      }
+      // 使用统一的 scope 验证
+      validateScope(scope, "ZiWei");
 
       log("info", "ZiWei", "开始执行", {
         personId,
@@ -453,12 +448,14 @@ export async function ZiWei(
           throw new ZiWeiError("调试 API 未初始化，请确认 App 已加载", "ZiWei", {
             context: { getZwdsReady: !!getZwds, getPersonReady: !!getPerson },
             suggestion: "请确认 App.tsx 已完成挂载，或等待页面加载完成后重试",
+            errorCode: ApiErrorCode.NOT_INITIALIZED,
           });
         }
         const z = getZwds();
         if (!z) {
           throw new ZiWeiError("排盘数据未就绪", "ZiWei", {
             suggestion: "排盘引擎尚未初始化，请确认人物已选择后再调用",
+            errorCode: ApiErrorCode.NOT_INITIALIZED,
           });
         }
         const { hbar, chart } = computeZiWeiData(z, scope);
@@ -487,6 +484,7 @@ export async function ZiWei(
             getPersonReady: !!getPerson,
           },
           suggestion: "请确认 App.tsx 已完成挂载，或等待页面加载完成后重试",
+          errorCode: ApiErrorCode.NOT_INITIALIZED,
         });
       }
 
@@ -498,6 +496,7 @@ export async function ZiWei(
         throw new ZiWeiError("排盘数据未就绪", "ZiWei", {
           context: { personId: resolvedId },
           suggestion: "排盘引擎尚未初始化，请稍后重试。如持续出现请检查人物出生数据是否完整",
+          errorCode: ApiErrorCode.NOT_INITIALIZED,
         });
       }
 
@@ -569,6 +568,7 @@ export async function ZiWei(
     context: { personId, scope, time, attempts: maxRetries + 1 },
     suggestion: "连续多次超时，请检查设备性能或刷新页面后重试",
     cause: lastError,
+    errorCode: ApiErrorCode.TIMEOUT,
   });
 }
 
@@ -659,7 +659,11 @@ export async function GetScopeData(
 
     const person = await getPerson(resolvedId);
     if (!person) {
-      throw new Error(`人物 ${resolvedId} 不存在`);
+      throw new ZiWeiError(`人物 ${resolvedId} 不存在`, "GetScopeData", {
+        context: { personId: resolvedId },
+        suggestion: "请检查人物 ID 是否正确。可调用 PersonList() 查看可用的人物列表",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
     }
 
     const result = computeScopeData(person, solarDate);
