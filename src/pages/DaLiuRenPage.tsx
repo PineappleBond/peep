@@ -248,7 +248,7 @@ export function DaLiuRenPage() {
             <div className="liuren-left" data-guide="liuren-list">
               <LiurenList
                 ref={liurenListRef}
-                personId={person!.id!}
+                personId={person?.id ?? 0}
                 selectedId={selectedRecord?.id ?? null}
                 onSelect={handleSelect}
                 onNewClick={handleNewClick}

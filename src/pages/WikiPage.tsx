@@ -281,7 +281,7 @@ export function WikiPage() {
             <div className="wiki-left" data-guide="wiki-list">
               <WikiList
                 ref={wikiListRef}
-                personId={person!.id!}
+                personId={person?.id ?? 0}
                 selectedId={selectedDoc?.id ?? null}
                 onSelect={handleSelect}
                 onNewClick={handleNewClick}
@@ -305,7 +305,7 @@ export function WikiPage() {
                 <div data-guide="wiki-editor">
                   <WikiEditor
                     doc={editingDoc}
-                    personId={person!.id!}
+                    personId={person?.id ?? 0}
                     existingTags={existingTags}
                     onSave={handleSave}
                     onCancel={handleCancel}

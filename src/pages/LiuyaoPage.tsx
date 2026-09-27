@@ -337,7 +337,7 @@ export function LiuyaoPage() {
           <div className="liuyao-left">
             <LiuyaoList
               ref={liuyaoListRef}
-              personId={person.id!}
+              personId={person?.id ?? 0}
               selectedId={selectedRecord?.id ?? null}
               onSelect={handleSelect}
               onNewClick={handleNewClick}
