@@ -34,6 +34,7 @@ import {
   type GuideStep,
 } from "../core/guide";
 import { usePluginExtensions } from "../core/pluginSystem";
+import { AppProvider, dialogReducer } from "../core/appContext";
 
 // ── 重型对话框懒加载：仅在用户触发时才下载对应 chunk，降低首屏 bundle 体积
 const CommandPalette = lazy(() =>
@@ -45,53 +46,6 @@ const ThemeEditor = lazy(() => import("./ThemeEditor").then(m => ({ default: m.T
 const GuideOverlay = lazy(() => import("./GuideOverlay").then(m => ({ default: m.GuideOverlay })));
 
 const STORAGE_KEY = "zwds-current-person-id";
-
-/**
- * 对话框状态聚合类型：将四个独立的对话框开关状态合并管理
- * 使用 useReducer 避免多个 useState 导致的重复渲染
- */
-interface DialogState {
-  importOpen: boolean;
-  syncOpen: boolean;
-  paletteOpen: boolean;
-  themeEditorOpen: boolean;
-}
-
-type DialogAction =
-  | { type: "OPEN_IMPORT" }
-  | { type: "CLOSE_IMPORT" }
-  | { type: "OPEN_SYNC" }
-  | { type: "CLOSE_SYNC" }
-  | { type: "OPEN_PALETTE" }
-  | { type: "CLOSE_PALETTE" }
-  | { type: "TOGGLE_PALETTE" }
-  | { type: "OPEN_THEME_EDITOR" }
-  | { type: "CLOSE_THEME_EDITOR" };
-
-function dialogReducer(state: DialogState, action: DialogAction): DialogState {
-  switch (action.type) {
-    case "OPEN_IMPORT":
-      return { ...state, importOpen: true };
-    case "CLOSE_IMPORT":
-      return { ...state, importOpen: false };
-    case "OPEN_SYNC":
-      return { ...state, syncOpen: true };
-    case "CLOSE_SYNC":
-      return { ...state, syncOpen: false };
-    case "OPEN_PALETTE":
-      return { ...state, paletteOpen: true };
-    case "CLOSE_PALETTE":
-      return { ...state, paletteOpen: false };
-    case "TOGGLE_PALETTE":
-      return { ...state, paletteOpen: !state.paletteOpen };
-    case "OPEN_THEME_EDITOR":
-      return { ...state, themeEditorOpen: true };
-    case "CLOSE_THEME_EDITOR":
-      return { ...state, themeEditorOpen: false };
-    default:
-      return state;
-  }
-}
 
 /**
  * 引导系统状态聚合类型：将引导步骤和当前步骤索引合并管理
@@ -225,6 +179,11 @@ export function Layout({ children }: LayoutProps) {
   // ── 命令面板开关 ────────────────────────────
   const closePalette = useCallback(() => dialogDispatch({ type: "CLOSE_PALETTE" }), []);
 
+  // ── 对话框触发器（稳定引用，供 AppProvider 与子组件使用） ────────────────────────────
+  const onOpenImport = useCallback(() => dialogDispatch({ type: "OPEN_IMPORT" }), []);
+  const onOpenSync = useCallback(() => dialogDispatch({ type: "OPEN_SYNC" }), []);
+  const onOpenThemeEditor = useCallback(() => dialogDispatch({ type: "OPEN_THEME_EDITOR" }), []);
+
   // ── 引导系统 ────────────────────────────
   /** 启动指定引导流程 */
   const startGuide = useCallback((guideId: string) => {
@@ -285,18 +244,27 @@ export function Layout({ children }: LayoutProps) {
   };
 
   // 搜索上下文（供 CommandPalette 使用）
+  // 使用已 useMemo/useCallback 的稳定引用，避免每次 Layout 渲染重建
   const searchContext = useMemo<SearchContext>(
     () => ({
       navigate,
       currentPersonId,
       onSelectPerson: handleSelectPerson,
       onClose: closePalette,
-      onOpenImport: () => dialogDispatch({ type: "OPEN_IMPORT" }),
+      onOpenImport,
       onCycleTheme: cycleTheme,
       onToggleLocale: toggleLocale,
       onToggleHelp: () => toggleHelp(),
     }),
-    [navigate, currentPersonId, handleSelectPerson, closePalette, cycleTheme, toggleLocale],
+    [
+      navigate,
+      currentPersonId,
+      handleSelectPerson,
+      closePalette,
+      onOpenImport,
+      cycleTheme,
+      toggleLocale,
+    ],
   );
 
   // 注册调试 API 回调
@@ -354,89 +322,93 @@ export function Layout({ children }: LayoutProps) {
   }, [navigate, t]);
 
   return (
-    <div className="app">
-      {/* 可访问性：跳过导航链接，键盘用户可直达主内容 */}
-      <a href="#main-content" className="skip-link">
-        {t("nav.skipNav")}
-      </a>
-      <div className="bg-fx" aria-hidden="true" />
-      <Header
-        currentPersonId={currentPersonId}
-        onSelectPerson={handleSelectPerson}
-        onOpenImport={() => dialogDispatch({ type: "OPEN_IMPORT" })}
-        onOpenSync={() => dialogDispatch({ type: "OPEN_SYNC" })}
-        theme={theme}
-        onCycleTheme={cycleTheme}
-        onOpenThemeEditor={() => dialogDispatch({ type: "OPEN_THEME_EDITOR" })}
-        locale={locale}
-        onToggleLocale={toggleLocale}
-        pluginMenus={pluginExtensions.menus}
-      />
-      <main id="main-content">{children}</main>
-      <footer className="foot">
-        {t("layout.engine")}{" "}
-        <a
-          href="https://github.com/SylarLong/iztro"
-          target="_blank"
-          rel="noreferrer"
-          aria-label={t("layout.engineLabel")}
-        >
-          iztro
-        </a>{" "}
-        · {t("layout.chartNote")}
-        {/* 重新播放当前页面引导 */}
-        {getGuideIdForPath(location.pathname) && (
-          <button
-            className="guide-replay-btn"
-            onClick={() => {
-              const guideId = getGuideIdForPath(location.pathname);
-              if (guideId) startGuide(guideId);
-            }}
-            title={t("guide.replay")}
-            aria-label={t("guide.replay")}
+    /* AppProvider：将主题/人物/对话框/插件等全局状态广播给 Header、PersonSelector、CommandPalette 等深层子组件，
+       消除 Layout → Header → PersonSelector 的逐层 prop drilling */
+    <AppProvider
+      theme={theme}
+      onCycleTheme={cycleTheme}
+      onOpenThemeEditor={onOpenThemeEditor}
+      currentPersonId={currentPersonId}
+      onSelectPerson={handleSelectPerson}
+      onOpenImport={onOpenImport}
+      onOpenSync={onOpenSync}
+      dialogState={dialogState}
+      dialogDispatch={dialogDispatch}
+      pluginMenus={pluginExtensions.menus}
+    >
+      <div className="app">
+        {/* 可访问性：跳过导航链接，键盘用户可直达主内容 */}
+        <a href="#main-content" className="skip-link">
+          {t("nav.skipNav")}
+        </a>
+        <div className="bg-fx" aria-hidden="true" />
+        <Header locale={locale} onToggleLocale={toggleLocale} />
+        <main id="main-content">{children}</main>
+        <footer className="foot">
+          {t("layout.engine")}{" "}
+          <a
+            href="https://github.com/SylarLong/iztro"
+            target="_blank"
+            rel="noreferrer"
+            aria-label={t("layout.engineLabel")}
           >
-            ?
-          </button>
-        )}
-        {/* 插件注入的 footer 扩展 */}
-        {pluginExtensions.slotComponents["layout.footer"].map((item, idx) => {
-          const Comp = item.component;
-          return <Comp key={`plugin-footer:${item.pluginId}:${idx}`} />;
-        })}
-      </footer>
-      {/* Toast 通知宿主：全局浮动层，渲染在 app 内以便继承主题 */}
-      <ToastHost />
-      {/* 快捷键帮助弹窗（体积较小，保持 eager 加载） */}
-      <ShortcutHelp />
-      {/* 重型对话框：懒加载 + 共享 Suspense 占位 + 错误边界兜底 */}
-      <ErrorBoundary name="Layout.Dialogs">
-        <Suspense>
-          <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
-          <ImportDialog
-            open={importOpen}
-            onClose={() => dialogDispatch({ type: "CLOSE_IMPORT" })}
-            onImportSuccess={handleImportSuccess}
-          />
-          <SyncDialog
-            open={syncOpen}
-            onClose={() => dialogDispatch({ type: "CLOSE_SYNC" })}
-            onRestored={handleImportSuccess}
-          />
-          <ThemeEditor
-            open={themeEditorOpen}
-            onClose={() => dialogDispatch({ type: "CLOSE_THEME_EDITOR" })}
-          />
-          {guideSteps && (
-            <GuideOverlay
-              steps={guideSteps}
-              currentStep={guideCurrentStep}
-              onGoTo={(step: number) => guideDispatch({ type: "GO_TO_STEP", payload: step })}
-              onComplete={handleGuideComplete}
-              onSkip={handleGuideSkip}
-            />
+            iztro
+          </a>{" "}
+          · {t("layout.chartNote")}
+          {/* 重新播放当前页面引导 */}
+          {getGuideIdForPath(location.pathname) && (
+            <button
+              className="guide-replay-btn"
+              onClick={() => {
+                const guideId = getGuideIdForPath(location.pathname);
+                if (guideId) startGuide(guideId);
+              }}
+              title={t("guide.replay")}
+              aria-label={t("guide.replay")}
+            >
+              ?
+            </button>
           )}
-        </Suspense>
-      </ErrorBoundary>
-    </div>
+          {/* 插件注入的 footer 扩展 */}
+          {pluginExtensions.slotComponents["layout.footer"].map((item, idx) => {
+            const Comp = item.component;
+            return <Comp key={`plugin-footer:${item.pluginId}:${idx}`} />;
+          })}
+        </footer>
+        {/* Toast 通知宿主：全局浮动层，渲染在 app 内以便继承主题 */}
+        <ToastHost />
+        {/* 快捷键帮助弹窗（体积较小，保持 eager 加载） */}
+        <ShortcutHelp />
+        {/* 重型对话框：懒加载 + 共享 Suspense 占位 + 错误边界兜底 */}
+        <ErrorBoundary name="Layout.Dialogs">
+          <Suspense>
+            <CommandPalette open={paletteOpen} onClose={closePalette} context={searchContext} />
+            <ImportDialog
+              open={importOpen}
+              onClose={() => dialogDispatch({ type: "CLOSE_IMPORT" })}
+              onImportSuccess={handleImportSuccess}
+            />
+            <SyncDialog
+              open={syncOpen}
+              onClose={() => dialogDispatch({ type: "CLOSE_SYNC" })}
+              onRestored={handleImportSuccess}
+            />
+            <ThemeEditor
+              open={themeEditorOpen}
+              onClose={() => dialogDispatch({ type: "CLOSE_THEME_EDITOR" })}
+            />
+            {guideSteps && (
+              <GuideOverlay
+                steps={guideSteps}
+                currentStep={guideCurrentStep}
+                onGoTo={(step: number) => guideDispatch({ type: "GO_TO_STEP", payload: step })}
+                onComplete={handleGuideComplete}
+                onSkip={handleGuideSkip}
+              />
+            )}
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    </AppProvider>
   );
 }

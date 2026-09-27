@@ -15,49 +15,62 @@ import type { Theme } from "../core/theme";
 import { registerShortcut } from "../core/shortcuts";
 import type { PluginExtensionsView } from "../core/pluginTypes";
 import { routePreloaders } from "../App";
+import { useAppContextOptional } from "../core/appContext";
 
 type HeaderProps = {
-  /** 当前选中人物 ID */
-  currentPersonId: number | null;
-  /** 选择人物回调 */
-  onSelectPerson: (person: Person) => void;
-  /** 打开导入对话框 */
+  /** 当前选中人物 ID（可选，未传时从 AppContext 读取） */
+  currentPersonId?: number | null;
+  /** 选择人物回调（可选，未传时从 AppContext 读取） */
+  onSelectPerson?: (person: Person) => void;
+  /** 打开导入对话框（可选，未传时从 AppContext 读取） */
   onOpenImport?: () => void;
-  /** 打开同步对话框 */
+  /** 打开同步对话框（可选，未传时从 AppContext 读取） */
   onOpenSync?: () => void;
-  /** 当前主题 */
-  theme: Theme;
-  /** 循环切换主题 */
-  onCycleTheme: () => void;
-  /** 打开主题编辑器 */
+  /** 当前主题（可选，未传时从 AppContext 读取） */
+  theme?: Theme;
+  /** 循环切换主题（可选，未传时从 AppContext 读取） */
+  onCycleTheme?: () => void;
+  /** 打开主题编辑器（可选，未传时从 AppContext 读取） */
   onOpenThemeEditor?: () => void;
-  /** 当前语言 */
+  /** 当前语言（i18n 上下文管理，通常作为 prop 传入） */
   locale: Locale;
-  /** 切换语言 */
+  /** 切换语言（i18n 上下文管理，通常作为 prop 传入） */
   onToggleLocale: () => void;
-  /** 插件注册的菜单扩展 */
+  /** 插件注册的菜单扩展（可选，未传时从 AppContext 读取） */
   pluginMenus?: PluginExtensionsView["menus"];
 };
 
 /**
  * Header 组件 - 全局共用
  * 包含标题、SVG Icon 导航、PersonSelector
+ * 使用 AppContext 读取全局状态，消除 Layout → Header 的 prop drilling
  * 使用 memo 优化避免父组件重渲染时的不必要更新
  */
 export const Header = memo(function Header({
-  currentPersonId,
-  onSelectPerson,
-  onOpenImport,
-  onOpenSync,
-  theme,
-  onCycleTheme,
-  onOpenThemeEditor,
+  currentPersonId: currentPersonIdProp,
+  onSelectPerson: onSelectPersonProp,
+  onOpenImport: onOpenImportProp,
+  onOpenSync: onOpenSyncProp,
+  theme: themeProp,
+  onCycleTheme: onCycleThemeProp,
+  onOpenThemeEditor: onOpenThemeEditorProp,
   locale,
   onToggleLocale,
-  pluginMenus,
+  pluginMenus: pluginMenusProp,
 }: HeaderProps) {
   const { t } = useI18n();
   const networkOnline = useNetworkStatus();
+
+  // AppContext 回退：prop 优先，context 回退——兼容测试中显式传 prop 与生产环境通过 Provider 注入
+  const appCtx = useAppContextOptional();
+  const currentPersonId = currentPersonIdProp ?? appCtx?.currentPersonId ?? null;
+  const onSelectPerson = onSelectPersonProp ?? appCtx?.onSelectPerson;
+  const onOpenImport = onOpenImportProp ?? appCtx?.onOpenImport;
+  const onOpenSync = onOpenSyncProp ?? appCtx?.onOpenSync;
+  const theme = themeProp ?? appCtx?.theme ?? "system";
+  const onCycleTheme = onCycleThemeProp ?? appCtx?.onCycleTheme;
+  const onOpenThemeEditor = onOpenThemeEditorProp ?? appCtx?.onOpenThemeEditor;
+  const pluginMenus = pluginMenusProp ?? appCtx?.pluginMenus;
 
   /** 主题按钮显示文本（使用 useMemo 避免每次渲染重新计算） */
   const themeLabel = useMemo(
@@ -76,6 +89,7 @@ export const Header = memo(function Header({
 
   // ── 主题切换快捷键 T ────────────────────────────
   useEffect(() => {
+    if (!onCycleTheme) return;
     return registerShortcut({
       key: "T",
       description: t("shortcut.toggleTheme"),

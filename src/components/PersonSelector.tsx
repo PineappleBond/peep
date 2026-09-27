@@ -10,16 +10,25 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { useI18n } from "../core/i18n";
 import { globalEvents } from "../core/events";
 import { toast } from "../core/toast";
+import { useAppContextOptional } from "../core/appContext";
 
 type PersonSelectorProps = {
-  /** 当前选中人物 ID */
-  currentId: number | null;
-  /** 选择人物回调 */
-  onSelect: (person: Person) => void;
+  /** 当前选中人物 ID（可选，未传时从 AppContext 读取） */
+  currentId?: number | null;
+  /** 选择人物回调（可选，未传时从 AppContext 读取） */
+  onSelect?: (person: Person) => void;
 };
 
-export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
+export function PersonSelector({
+  currentId: currentIdProp,
+  onSelect: onSelectProp,
+}: PersonSelectorProps = {}) {
   const { t } = useI18n();
+  // AppContext 回退：prop 优先，context 回退
+  const appCtx = useAppContextOptional();
+  const currentId = currentIdProp ?? appCtx?.currentPersonId ?? null;
+  const onSelect = onSelectProp ?? appCtx?.onSelectPerson;
+
   const [persons, setPersons] = useState<Person[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | undefined>();
@@ -55,7 +64,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
   const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = Number(e.target.value);
     const person = persons.find(p => p.id === id);
-    if (person) onSelect(person);
+    if (person) onSelect?.(person);
   };
 
   const handleAdd = () => {
@@ -74,7 +83,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
   const handleSave = async (input: BirthInput, isDefault: boolean) => {
     try {
       const saved = await savePerson(editingPerson?.id, input, isDefault);
-      onSelect(saved);
+      onSelect?.(saved);
       await loadPersons();
       toast.success(t("common.saveSuccess"));
     } catch (err) {
@@ -95,7 +104,7 @@ export function PersonSelector({ currentId, onSelect }: PersonSelectorProps) {
     try {
       await deletePerson(confirmDelete.id);
       const defaultPerson = await getDefaultPerson();
-      onSelect(defaultPerson);
+      onSelect?.(defaultPerson);
       setConfirmDelete(null);
       await loadPersons();
       toast.success(t("common.deleteSuccess"));

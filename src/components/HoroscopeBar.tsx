@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useRef, memo, useMemo, useCallback } from "react";
 import type { Scope } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
+import { useZwdsContextOptional } from "../core/zwdsContext";
 import { useI18n } from "../core/i18n";
 
 /**
@@ -96,8 +97,14 @@ const Cell = memo(function Cell({
   );
 });
 
-export const HoroscopeBar = memo(function HoroscopeBar({ z }: { z: Zwds }) {
+export const HoroscopeBar = memo(function HoroscopeBar({ z: zProp }: { z?: Zwds } = {}) {
   const { t } = useI18n();
+  // prop 优先，context 回退——兼容测试中显式传 prop 与生产环境通过 Provider 注入
+  const zCtx = useZwdsContextOptional();
+  const z = zProp ?? zCtx;
+  if (!z) {
+    throw new Error("HoroscopeBar 必须通过 z prop 或 <ZwdsProvider> 提供排盘数据");
+  }
   const {
     decades,
     childhood,

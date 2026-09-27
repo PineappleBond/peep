@@ -3,6 +3,7 @@ import type { MUTAGEN_CHARS } from "../core/utils";
 import { fixIndex, type Scope, type MutagenChar } from "../core/utils";
 import { getChartDataForScope } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
+import { useZwdsContextOptional } from "../core/zwdsContext";
 import { PalaceCard } from "./Palace";
 import { CenterPanel } from "./CenterPanel";
 import { PalaceDetail } from "./PalaceDetail";
@@ -59,9 +60,18 @@ type FlyLine = {
  * - 飞宫模式：点任一宫画出该宫宫干四化飞线
  * - 点击宫位打开宫位详情弹层
  */
-export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: number }) {
-  const a = z.astrolabe;
+export const Chart = memo(function Chart({
+  z: zProp,
+  genId = 0,
+}: { z?: Zwds; genId?: number } = {}) {
   const { t } = useI18n();
+  // prop 优先，context 回退——兼容测试中显式传 prop 与生产环境通过 Provider 注入
+  const zCtx = useZwdsContextOptional();
+  const z = zProp ?? zCtx;
+  if (!z) {
+    throw new Error("Chart 必须通过 z prop 或 <ZwdsProvider> 提供排盘数据");
+  }
+  const a = z.astrolabe;
 
   /* 默认自动选中命宫：流时>流日>流月>流年>大限的命宫，全关则本命命宫 */
   const autoFocus = useMemo(() => {
@@ -211,14 +221,13 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
             <PalaceCard
               key={p.index}
               palace={p}
-              z={z}
               focus={focus}
               onFocus={handleFocus}
               onDetail={setDetailIdx}
               scopeData={perPalaceScopeData[p.index] ?? []}
             />
           ))}
-          <CenterPanel z={z} flyMode={flyMode} onToggleFly={handleToggleFly} />
+          <CenterPanel flyMode={flyMode} onToggleFly={handleToggleFly} />
           <svg
             className="chart-lines"
             viewBox="0 0 400 400"
@@ -289,7 +298,7 @@ export const Chart = memo(function Chart({ z, genId = 0 }: { z: Zwds; genId?: nu
           </svg>
         </div>
       </div>
-      {detailIdx != null && <PalaceDetail z={z} index={detailIdx} onClose={handleCloseDetail} />}
+      {detailIdx != null && <PalaceDetail index={detailIdx} onClose={handleCloseDetail} />}
     </div>
   );
 });

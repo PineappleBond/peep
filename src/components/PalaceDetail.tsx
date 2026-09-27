@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback, memo } from "react";
 import { SCOPES, SCOPE_META } from "../core/utils";
 import { getSelfMarksForScope, buildChartIndex } from "../core/analysis";
 import type { Zwds } from "../core/useZwds";
+import { useZwdsContextOptional } from "../core/zwdsContext";
 import { useI18n } from "../core/i18n";
 import { useFocusTrap } from "../core/useFocusTrap";
 
@@ -10,15 +11,21 @@ const CLOSE_DURATION = 250;
 
 /** 宫位详情弹层：三方四正快照 + 飞宫四化/自化 + 相关格局 + 夹宫 + 借星 */
 export const PalaceDetail = memo(function PalaceDetail({
-  z,
+  z: zProp,
   index,
   onClose,
 }: {
-  z: Zwds;
+  z?: Zwds;
   index: number;
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  // prop 优先，context 回退——兼容测试中显式传 prop 与生产环境通过 Provider 注入
+  const zCtx = useZwdsContextOptional();
+  const z = zProp ?? zCtx;
+  if (!z) {
+    throw new Error("PalaceDetail 必须通过 z prop 或 <ZwdsProvider> 提供排盘数据");
+  }
   const a = z.astrolabe;
   const an = z.analysis;
 

@@ -6,6 +6,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useI18n } from "../core/i18n";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { DEFAULT_BIRTH_INPUT, useZwds, type BirthInput } from "../core/useZwds";
+import { ZwdsProvider } from "../core/zwdsContext";
 import { Chart } from "../components/Chart";
 import { HoroscopeBar } from "../components/HoroscopeBar";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -58,14 +59,18 @@ export function ZiweiPage() {
   return (
     <div className="ziwei-page">
       {z.astrolabe ? (
-        <ErrorBoundary name="ZiweiPage.Chart" maxAutoRetries={1}>
-          <div data-guide="ziwei-dial">
-            <HoroscopeBar z={z} />
-          </div>
-          <div data-guide="ziwei-chart">
-            <Chart z={z} genId={genId} />
-          </div>
-        </ErrorBoundary>
+        /* ZwdsProvider：为 Chart / HoroscopeBar / PalaceDetail 等子组件提供排盘上下文，
+           消除显式 z prop 的逐层传递 */
+        <ZwdsProvider z={z}>
+          <ErrorBoundary name="ZiweiPage.Chart" maxAutoRetries={1}>
+            <div data-guide="ziwei-dial">
+              <HoroscopeBar />
+            </div>
+            <div data-guide="ziwei-chart">
+              <Chart genId={genId} />
+            </div>
+          </ErrorBoundary>
+        </ZwdsProvider>
       ) : (
         <div className="err-box" role="alert">
           {t("ziwei.errorMessage")}

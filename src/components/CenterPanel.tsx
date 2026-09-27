@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { BRANCHES, SCOPES, SCOPE_META, bodyPalaceBranchOf, isYangStem } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
+import { useZwdsContextOptional } from "../core/zwdsContext";
 import { useI18n } from "../core/i18n";
 
 const PILLAR_LABEL_KEYS = [
@@ -15,15 +16,21 @@ const PILLAR_LABEL_KEYS = [
  * 位于 4×4 盘面正中央。
  */
 export const CenterPanel = memo(function CenterPanel({
-  z,
+  z: zProp,
   flyMode = false,
   onToggleFly,
 }: {
-  z: Zwds;
+  z?: Zwds;
   flyMode?: boolean;
   onToggleFly?: () => void;
-}) {
+} = {}) {
   const { t } = useI18n();
+  // prop 优先，context 回退——兼容测试中显式传 prop 与生产环境通过 Provider 注入
+  const zCtx = useZwdsContextOptional();
+  const z = zProp ?? zCtx;
+  if (!z) {
+    throw new Error("CenterPanel 必须通过 z prop 或 <ZwdsProvider> 提供排盘数据");
+  }
   const a = z.astrolabe;
   if (!a) return <div className="center" style={{ gridArea: "c" }} />;
 

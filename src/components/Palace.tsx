@@ -8,6 +8,7 @@ import {
   type ScopeSelfMark,
 } from "../core/utils";
 import type { PalaceData, Zwds } from "../core/useZwds";
+import { useZwdsContextOptional } from "../core/zwdsContext";
 import { StarCell } from "./StarCell";
 import { useI18n } from "../core/i18n";
 
@@ -25,19 +26,25 @@ type ScopeDataItem = {
  */
 export const PalaceCard = memo(function PalaceCard({
   palace,
-  z,
+  z: zProp,
   focus,
   onFocus,
   onDetail,
   scopeData = [],
 }: {
   palace: PalaceData;
-  z: Zwds;
+  z?: Zwds;
   focus: number;
   onFocus: (i: number) => void;
   onDetail?: (i: number) => void;
   scopeData?: ScopeDataItem[];
 }) {
+  // prop 优先，context 回退——兼容测试中显式传 prop 与生产环境通过 Provider 注入
+  const zCtx = useZwdsContextOptional();
+  const z = zProp ?? zCtx;
+  if (!z) {
+    throw new Error("PalaceCard 必须通过 z prop 或 <ZwdsProvider> 提供排盘数据");
+  }
   const { horoscope, visible } = z;
   const { t } = useI18n();
   const i = palace.index;

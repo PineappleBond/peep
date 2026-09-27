@@ -12,6 +12,7 @@ import { getChartDataForScope } from "../analysis";
 import { log } from "./logger";
 import { getCallbacksReady, resetCallbacks } from "./callbacks";
 import { resetLogLevel, getLogLevel } from "./logger";
+import { dumpStateToConsole, getAllStateSnapshots } from "../stateDebug";
 import {
   clearAstrolabeCache,
   computeAstrolabe,
@@ -84,6 +85,14 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
   getChartDataForScope: {
     方法: "getChartDataForScope(opts)",
     说明: "获取指定 scope 的运限盘面数据",
+  },
+  dumpState: {
+    方法: "dumpState()",
+    说明: "打印当前所有已注册的状态快照到控制台（仅 DEV）",
+  },
+  getStateSnapshots: {
+    方法: "getStateSnapshots()",
+    说明: "获取当前所有已注册的状态快照数组（仅 DEV）",
   },
 };
 
@@ -497,6 +506,9 @@ export function initDebugApi() {
     getCacheStats,
     clearCaches,
     resetDebugApi,
+    // 状态调试工具（仅 DEV）
+    dumpState: dumpStateToConsole,
+    getStateSnapshots: getAllStateSnapshots,
   };
 
   window.peep = peepApi;
