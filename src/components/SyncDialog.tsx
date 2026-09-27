@@ -18,6 +18,7 @@ import { toast } from "../core/toast";
 import {
   generateSyncLink,
   restoreFromLink,
+  restoreFromLinkWithLog,
   previewFromLink,
   clearSyncLinkFromUrl,
   parseSyncLink,
@@ -27,11 +28,21 @@ import {
   saveSyncConfig,
   loadSyncHistory,
   clearSyncHistory,
+  getLastSyncTimestamp,
+  collectIncrementalSnapshot,
+  shouldAutoSync,
   type SyncRecord,
   type SyncConfig,
   type RestoreMode,
   LINK_KEY,
 } from "../core/sync";
+import {
+  loadConflictHistory,
+  clearConflictHistory,
+  type ConflictRecord,
+} from "../core/conflictLog";
+import { estimateStorageUsage, warmupCache, type StorageEstimate } from "../core/cacheManager";
+import { useNetworkState } from "../hooks/useNetworkStatus";
 import type { BackupData } from "../core/importData";
 
 type SyncDialogProps = {
@@ -41,7 +52,7 @@ type SyncDialogProps = {
   onRestored?: () => void;
 };
 
-type Tab = "upload" | "download" | "history" | "settings";
+type Tab = "upload" | "download" | "history" | "conflicts" | "settings";
 
 /** 上传阶段状态 */
 type UploadState = "idle" | "generating" | "done" | "error";
@@ -90,6 +101,20 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
 
   // 历史
   const [history, setHistory] = useState<SyncRecord[]>(() => loadSyncHistory());
+
+  // 网络状态（订阅式，自动响应变化）
+  const networkState = useNetworkState();
+
+  // 缓存/存储估算
+  const [storageEstimate, setStorageEstimate] = useState<StorageEstimate | null>(null);
+
+  // 冲突历史
+  const [conflictHistory, setConflictHistory] = useState<ConflictRecord[]>(() =>
+    loadConflictHistory(),
+  );
+
+  // 自上次同步以来是否有新数据（用于增量同步提示）
+  const [hasUnsyncedChanges, setHasUnsyncedChanges] = useState(false);
 
   // 对话框打开时检测 URL 中的同步载荷
   useEffect(() => {
@@ -190,10 +215,12 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
     setDownloadError("");
     setDownloadProgress({ percent: 30, text: t("sync.restoring") });
     try {
-      await restoreFromLink(inputLink, inputPassword, restoreMode, t);
+      // 使用带冲突日志的还原函数，自动记录冲突与解决结果
+      await restoreFromLinkWithLog(inputLink, inputPassword, restoreMode, t);
       setDownloadProgress({ percent: 100, text: t("sync.restoreComplete") });
       setDownloadState("done");
       setHistory(loadSyncHistory());
+      setConflictHistory(loadConflictHistory());
       // 移除 URL 中的同步载荷，避免重复触发
       clearSyncLinkFromUrl();
       toast.success(t("sync.restoreSuccess"));
@@ -223,6 +250,13 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
     toast.success(t("sync.historyCleared"));
   }, [t]);
 
+  /* ── 清空冲突历史 ── */
+  const handleClearConflictHistory = useCallback(() => {
+    clearConflictHistory();
+    setConflictHistory([]);
+    toast.success(t("sync.conflictsCleared"));
+  }, [t]);
+
   /* ── 预览摘要 ── */
   const previewSummary = useMemo(() => {
     if (!previewData) return null;
@@ -244,12 +278,41 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
       .catch(() => {
         /* 估算失败不影响功能，snapshotSize 保持 undefined */
       });
+    // 预热缓存 + 估算存储使用（并行，互不影响）
+    warmupCache().catch(() => {
+      /* 预热失败不阻塞 */
+    });
+    estimateStorageUsage()
+      .then(setStorageEstimate)
+      .catch(() => {
+        /* 估算失败不影响 */
+      });
+    // 检测是否有未同步的变更
+    shouldAutoSync(true)
+      .then(setHasUnsyncedChanges)
+      .catch(() => setHasUnsyncedChanges(false));
   }, [open]);
+
+  // 网络恢复时：如果开启了自动同步且有未同步变更，自动触发生成链接
+  useEffect(() => {
+    if (!networkState.online) return;
+    if (!config.autoUpload) return;
+    if (!open) return; // 仅在对话框打开时自动触发，避免打扰用户
+    shouldAutoSync(true).then(needSync => {
+      if (needSync && uploadState === "idle") {
+        toast.info(t("sync.autoSyncTriggered"));
+        handleGenerate();
+      }
+    });
+    // 仅依赖在线状态切换触发
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [networkState.online]);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "upload", label: t("sync.tab.upload") },
     { id: "download", label: t("sync.tab.download") },
     { id: "history", label: t("sync.tab.history") },
+    { id: "conflicts", label: t("sync.tab.conflicts") },
     { id: "settings", label: t("sync.tab.settings") },
   ];
 
@@ -287,6 +350,23 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
               {tb.label}
             </button>
           ))}
+        </div>
+
+        {/* 在线/离线状态条 + 未同步提示 */}
+        <div className="sync-status-bar" role="status" aria-live="polite">
+          <span
+            className={`sync-status-indicator ${networkState.online ? "online" : "offline"}`}
+            aria-label={networkState.online ? t("sync.statusOnline") : t("sync.statusOffline")}
+          >
+            <span className="sync-status-dot" aria-hidden="true" />
+            {networkState.online ? t("sync.statusOnline") : t("sync.statusOffline")}
+          </span>
+          {hasUnsyncedChanges && networkState.online && config.autoUpload && (
+            <span className="sync-status-unsynced">{t("sync.unsyncedChanges")}</span>
+          )}
+          {!networkState.online && (
+            <span className="sync-status-unsynced">{t("sync.offlineHint")}</span>
+          )}
         </div>
 
         {/* ────── 上传面板 ────── */}
@@ -504,6 +584,16 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
                       />
                       <span>{t("sync.mergeMode")}</span>
                     </label>
+                    <label className="sync-radio">
+                      <input
+                        type="radio"
+                        name="restoreMode"
+                        value="smart"
+                        checked={restoreMode === "smart"}
+                        onChange={() => setRestoreMode("smart")}
+                      />
+                      <span>{t("sync.smartMode")}</span>
+                    </label>
                   </div>
                 </div>
 
@@ -616,6 +706,63 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
           </div>
         )}
 
+        {/* ────── 冲突历史面板 ────── */}
+        {tab === "conflicts" && (
+          <div
+            className="sync-panel"
+            role="tabpanel"
+            id="sync-panel-conflicts"
+            aria-labelledby="sync-tab-conflicts"
+          >
+            {conflictHistory.length === 0 ? (
+              <p className="sync-empty">{t("sync.noConflicts")}</p>
+            ) : (
+              <>
+                <div className="sync-history-list">
+                  {conflictHistory.map((rec, i) => (
+                    <div
+                      key={`${rec.at}-${i}`}
+                      className={`sync-history-item sync-history-conflict${
+                        rec.success === false ? " sync-history-fail" : ""
+                      }`}
+                    >
+                      <div className="sync-history-icon" aria-hidden="true">
+                        ⚠
+                      </div>
+                      <div className="sync-history-main">
+                        <div className="sync-history-time">{formatTime(rec.at)}</div>
+                        <div className="sync-history-meta">
+                          {t("sync.conflictsSummary", {
+                            persons: rec.counts.persons,
+                            liuren: rec.counts.liuren,
+                            wiki: rec.counts.wiki,
+                          })}
+                          {rec.resolution && ` · ${t(`sync.resolution.${rec.resolution}`)}`}
+                          {rec.success === false && rec.error && (
+                            <span className="sync-history-error-detail">
+                              {" · "}
+                              {rec.error}
+                            </span>
+                          )}
+                        </div>
+                        {rec.remoteExportedAt && (
+                          <div className="sync-history-meta sync-history-meta-sub">
+                            {t("sync.remoteExportedAt")}：
+                            {formatTime(new Date(rec.remoteExportedAt).getTime())}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="btn-cancel" onClick={handleClearConflictHistory}>
+                  {t("sync.clearConflicts")}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         {/* ────── 设置面板 ────── */}
         {tab === "settings" && (
           <div
@@ -659,6 +806,31 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
               <div className="sync-about-title">{t("sync.about")}</div>
               <p className="sync-hint">{t("sync.aboutText")}</p>
             </div>
+
+            {/* 存储使用信息 */}
+            {storageEstimate && (
+              <div className="sync-about">
+                <div className="sync-about-title">{t("sync.storageTitle")}</div>
+                <p className="sync-hint">
+                  {t("sync.storageUsage", {
+                    usage: formatBytes(storageEstimate.usage),
+                    quota: formatBytes(storageEstimate.quota),
+                  })}
+                  {storageEstimate.source === "estimated" && ` (${t("sync.storageEstimated")})`}
+                  {storageEstimate.usageRatio > 0.8 && (
+                    <span className="sync-conflict-warning"> {t("sync.storageHighUsage")}</span>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {/* 最近同步信息 */}
+            {getLastSyncTimestamp() > 0 && (
+              <div className="sync-about">
+                <div className="sync-about-title">{t("sync.lastSyncTitle")}</div>
+                <p className="sync-hint">{formatTime(getLastSyncTimestamp())}</p>
+              </div>
+            )}
           </div>
         )}
       </div>

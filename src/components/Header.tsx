@@ -10,6 +10,7 @@ import { LiurenIcon } from "./icons/LiurenIcon";
 import { WikiIcon } from "./icons/WikiIcon";
 import type { Person } from "../core/personDb";
 import { useI18n, type Locale } from "../core/i18n";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import type { Theme } from "../core/theme";
 import { registerShortcut } from "../core/shortcuts";
 import type { PluginExtensionsView } from "../core/pluginTypes";
@@ -55,6 +56,7 @@ export const Header = memo(function Header({
   pluginMenus,
 }: HeaderProps) {
   const { t } = useI18n();
+  const networkOnline = useNetworkStatus();
 
   /** 主题按钮显示文本（使用 useMemo 避免每次渲染重新计算） */
   const themeLabel = useMemo(
@@ -167,12 +169,13 @@ export const Header = memo(function Header({
         )}
         {onOpenSync && (
           <button
-            className="sync-toggle"
+            className={`sync-toggle${!networkOnline ? " offline" : ""}`}
             onClick={onOpenSync}
-            title={t("sync.title")}
-            aria-label={t("sync.title")}
+            title={networkOnline ? t("sync.title") : t("sync.statusOffline")}
+            aria-label={networkOnline ? t("sync.title") : t("sync.statusOffline")}
           >
             🔗
+            {!networkOnline && <span className="sync-offline-dot" aria-hidden="true" />}
           </button>
         )}
         <PersonSelector currentId={currentPersonId} onSelect={onSelectPerson} />

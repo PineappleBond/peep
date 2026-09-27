@@ -86,10 +86,23 @@ export default defineConfig({
               expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
+          // 离线优化：对 HTML 导航使用 NetworkFirst，离线时回退到 index.html
+          // 保证 SPA 路由在离线时仍能工作
+          {
+            urlPattern: /\.html$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-cache",
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 7 },
+            },
+          },
         ],
         // 导航回退：离线时显示 index.html（SPA 单页应用必备）
         // vite-plugin-pwa 在 build 时会自动加上 base 前缀，无需手工写 /peep/index.html
         navigateFallback: "/index.html",
+        // 离线 Google Analytics（如果应用接入 GA，可自动缓存分析请求并在恢复网络后重发）
+        // 当前未接入 GA，保留默认配置
+        offlineGoogleAnalytics: false,
       },
     }),
     // Bundle 分析器——仅 ANALYZE=1 时启用，生成 stats.html 便于定位大模块

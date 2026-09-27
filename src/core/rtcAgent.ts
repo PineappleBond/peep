@@ -41,7 +41,8 @@ const PERSONA_ZH = `你是陈窥微，"窥见人生"应用的驻场命理师，�
 
 ## 工作节奏
 - 先确认命主（通过人物列表 Function）、运限层级（大限/流年/流月/流日/流时）与参考时间。
-- 若只涉及运限拨盘（"我现在走什么大运""今年流年如何"），优先用 GetScopeData（纯计算，快速稳定）；需要完整盘面（十二宫星曜、四化飞星）时再用 ZiWei（会同步 UI，耗时较长）。
+- 你像人类一样操作 UI：导航页面、切换人物、等待渲染完成、再读取数据。用户看到什么，你就看到什么——保证数据一致。
+- 若只涉及运限拨盘（"我现在走什么大运""今年流年如何"），优先用 GetScopeData（纯计算，响应快）；需要完整盘面（十二宫星曜、四化飞星）时用 ZiWei（会操控 UI，约 1-3 秒）。
 - 从整体格局切入，逐层深入重点宫位、四化联动与运限触发。
 - 论断标明依据——"据 X 宫 Y 星 Z 化…"。术语是否解释、如何解释，依上下文灵活处理：可用括号（"三方四正（命/财/官/迁四宫会照）"）、破折号、同位语，或在语境已明时不加解释。
 - 信息不足主动追问，有数据才下结论。
@@ -57,7 +58,8 @@ You hold the classics with warmth but not superstition: you care about textual l
 
 ## How You Work
 - Start by confirming the person (via the person list Function), the scope layer (decadal / yearly / monthly / daily / hourly), and the reference time.
-- For scope-only questions ("What decade am I in?", "How does this year look?"), prefer GetScopeData (pure computation, fast and stable). Reach for ZiWei only when you need the full chart (twelve palaces, star placements, Si Hua flying)—it syncs the UI and takes longer.
+- You operate the UI like a human: navigate pages, switch persons, wait for rendering to complete, then read data. What the user sees is what you see—data consistency is guaranteed.
+- For scope-only questions ("What decade am I in?", "How does this year look?"), prefer GetScopeData (pure computation, fast). Reach for ZiWei only when you need the full chart (twelve palaces, star placements, Si Hua flying)—it drives the UI and takes about 1-3 seconds.
 - Move from the overall pattern inward—key palaces, transformation interactions, scope triggers.
 - Ground each conclusion in the data—"per Palace X, Star Y, Transformation Z…". Whether and how to gloss a term depends on context: parenthetical ("San Fang Si Zheng (Life/Wealth/Career/Travel palaces)"), a dash, an appositive, or no gloss at all when the surrounding meaning is already clear.
 - Ask when information is incomplete; conclude only when the data supports it.
@@ -295,10 +297,11 @@ const ziweiFunction = {
     "为指定命主排出紫微斗数完整盘面，按运限级别（大限/流年/流月/流日/流时）返回分析数据。" +
     "返回数据包含：(1) hbar 运限拨盘（大运/流年/流月/流日/流时列表及可见性），(2) chart 运限盘面（十二宫星曜、四化飞星等完整盘面数据）。" +
     "\n\n" +
-    "⚠️ 重要提示：此接口会同步 UI 状态（导航到紫微页面、切换人物、等待渲染），耗时较长（约 1-3 秒）且有超时风险。" +
-    "如果你的问题只涉及运限拨盘数据（如'我现在走什么大运''今年流年如何'），请优先使用 GetScopeData 纯计算接口——响应快且无超时风险。" +
+    "⚠️ 重要提示：此接口会像人类一样操控 UI（导航到紫微页面、切换人物、等待渲染完成），耗时约 1-3 秒。" +
+    "内部通过轮询等待 UI 状态稳定（pick/astrolabe 校验），不会超时。" +
+    "用户看到的数据与 Agent 返回的数据完全一致——这是保证数据一致性的核心原则。" +
     "\n\n" +
-    "本接口适用于需要完整盘面数据的场景：查看十二宫星曜分布、分析四化飞星、查看具体宫位的吉凶星曜组合等。" +
+    "适用于需要完整盘面数据的场景：查看十二宫星曜分布、分析四化飞星、查看具体宫位的吉凶星曜组合等。" +
     "\n\n" +
     "使用示例：" +
     "(1) ZiWei({ scope: 'yearly' }) — 查看默认人物的流年盘面；" +
@@ -320,10 +323,9 @@ const ziweiFunction = {
   }),
   handler: async (args: Record<string, unknown>) => {
     const parsedArgs = ziweiFunction.zodSchema.parse(args);
-    // RTC Agent 场景不需要操控 UI，直接走纯计算路径
-    return peepApi().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time, {
-      skipUI: true,
-    });
+    // Agent 必须像人类一样操作 UI：导航页面、切换人物、等待渲染完成、再读取数据。
+    // 不允许用 skipUI 绕过 UI——用户看到什么，Agent 就读到什么，保证数据一致。
+    return peepApi().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time);
   },
   returns: {
     schema: {
@@ -337,9 +339,9 @@ const ziweiFunction = {
 const getScopeDataFunction = {
   name: "GetScopeData",
   description:
-    "根据公历日期获取指定命主的运限数据（大运/流年/流月/流日/流时列表），纯计算接口，不操控 UI，响应快且无超时风险。" +
+    "根据公历日期获取指定命主的运限数据（大运/流年/流月/流日/流时列表），纯计算接口，不操控 UI，响应快。" +
     "\n\n" +
-    "✅ 推荐使用场景：" +
+    "✅ 适用场景：" +
     "(1) 只查看当前运限状态——'我现在走什么大运？''今年流年如何？''这个月运势怎样？' " +
     "(2) 比较不同运限级别的关系——查看大限→流年→流月的层级关系 " +
     "(3) 快速获取运限列表数据，无需完整盘面星曜信息。" +
@@ -421,7 +423,8 @@ const daliurenCreateFunction = {
     // 去掉 confirmed 字段后传给 debugApi
     const { confirmed: _c, ...params } = parsedArgs;
     void _c;
-    return peepApi().DaLiuRenCreate(params, { skipUI: true });
+    // Agent 必须像人类一样操作 UI：导航到大六壬页面、切换人物、填写表单、提交
+    return peepApi().DaLiuRenCreate(params);
   },
   returns: {
     schema: {
@@ -457,7 +460,8 @@ const daliurenListFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = daliurenListFunction.zodSchema.parse(args);
-    return peepApi().DaLiuRenList(parsedArgs, { skipUI: true });
+    // Agent 像人类一样操作 UI：导航到大六壬页面、切换人物、设置过滤条件、查询列表
+    return peepApi().DaLiuRenList(parsedArgs);
   },
   returns: {
     schema: {
@@ -490,7 +494,8 @@ const daliurenViewFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = daliurenViewFunction.zodSchema.parse(args);
-    return peepApi().DaLiuRenView(parsedArgs, { skipUI: true });
+    // Agent 像人类一样操作 UI：导航到大六壬页面、切换人物、选择记录、读取详情
+    return peepApi().DaLiuRenView(parsedArgs);
   },
   returns: {
     schema: {
@@ -526,7 +531,8 @@ const wikiListFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = wikiListFunction.zodSchema.parse(args);
-    return peepApi().WikiList(parsedArgs, { skipUI: true });
+    // Agent 像人类一样操作 UI：导航到 Wiki 页面、切换人物、设置过滤条件、查询列表
+    return peepApi().WikiList(parsedArgs);
   },
   returns: {
     schema: {
@@ -582,7 +588,8 @@ const wikiCreateFunction = {
     // 去掉 confirmed 字段后传给 debugApi
     const { confirmed: _c, ...params } = parsedArgs;
     void _c;
-    return peepApi().WikiCreate(params, { skipUI: true });
+    // Agent 像人类一样操作 UI：导航到 Wiki 页面、切换人物、打开编辑器、保存文档
+    return peepApi().WikiCreate(params);
   },
   returns: {
     schema: { type: "object" as const, description: "保存后的文档对象，包含分配的 id" },
@@ -609,7 +616,8 @@ const wikiViewFunction = {
   }),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = wikiViewFunction.zodSchema.parse(args);
-    return peepApi().WikiView(parsedArgs, { skipUI: true });
+    // Agent 像人类一样操作 UI：导航到 Wiki 页面、切换人物、选择文档、读取详情
+    return peepApi().WikiView(parsedArgs);
   },
   returns: {
     schema: {
@@ -647,8 +655,8 @@ const FUNCTION_GROUPS = [
     name: "ziwei",
     description:
       "紫微斗数排盘与运限分析。" +
-      "⚡ 重要：优先使用 GetScopeData（纯计算，响应快）查看运限拨盘数据；" +
-      "只在需要完整盘面（十二宫星曜、四化飞星）时才用 ZiWei（会同步 UI，耗时 1-3 秒）。",
+      "ZiWei 会像人类一样操控 UI（导航、切换人物、等待渲染），返回完整盘面数据；" +
+      "GetScopeData 为纯计算接口，响应快，适合仅查看运限拨盘的场景。",
     functions: [getScopeDataFunction, ziweiFunction],
   },
   {

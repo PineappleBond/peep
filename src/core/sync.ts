@@ -18,6 +18,8 @@
 import { db } from "./personDb";
 import type { Person, LiurenRecord, WikiDocument, WikiLink } from "./personDb";
 import type { BackupData } from "./importData";
+import { appendConflictRecord, resolveLastConflict, type ConflictResolution } from "./conflictLog";
+import { isOnline } from "./networkStatus";
 
 /* ─────────────── 同步配置（持久化在 localStorage） ─────────────── */
 
@@ -137,12 +139,13 @@ export async function collectSnapshot(): Promise<BackupData> {
 
 /* ─────────────── 数据恢复 ─────────────── */
 
-export type RestoreMode = "overwrite" | "merge";
+export type RestoreMode = "overwrite" | "merge" | "smart";
 
 /**
  * 还原备份数据到本地数据库。
  * - overwrite：清空所有表后写入（保留原始 ID）
  * - merge：逐条合并，同 ID 跳过，保留本地原有
+ * - smart：智能合并，同 ID 时按 savedAt 比较，较新者胜出（last-write-wins）
  *
  * 注意：本函数通过 unknown 中转类型，以保留快照中的 id 字段
  */
@@ -164,6 +167,55 @@ export async function restoreBackup(data: BackupData, mode: RestoreMode): Promis
       if (liuren.length) await db.liurenRecords.bulkAdd(liuren);
       if (wiki.length) await db.wikiDocs.bulkAdd(wiki);
       if (links.length) await db.wikiLinks.bulkAdd(links);
+    } else if (mode === "smart") {
+      // 智能合并：同 ID 比较 savedAt，较新者胜出；新增记录直接写入
+      for (const p of persons) {
+        if (p.id == null) {
+          await db.persons.add(p);
+          continue;
+        }
+        const local = await db.persons.get(p.id);
+        if (!local) {
+          await db.persons.add(p);
+        } else if ((p.savedAt ?? 0) > (local.savedAt ?? 0)) {
+          await db.persons.put(p);
+        }
+        // 否则本地更新，跳过
+      }
+      for (const l of liuren) {
+        if (l.id == null) {
+          await db.liurenRecords.add(l);
+          continue;
+        }
+        const local = await db.liurenRecords.get(l.id);
+        if (!local) {
+          await db.liurenRecords.add(l);
+        } else if ((l.savedAt ?? 0) > (local.savedAt ?? 0)) {
+          await db.liurenRecords.put(l);
+        }
+      }
+      for (const w of wiki) {
+        if (w.id == null) {
+          await db.wikiDocs.add(w);
+          continue;
+        }
+        const local = await db.wikiDocs.get(w.id);
+        if (!local) {
+          await db.wikiDocs.add(w);
+        } else {
+          // Wiki 用 updatedAt 比较；缺省回退 savedAt
+          const remoteTime = w.updatedAt ?? w.savedAt ?? 0;
+          const localTime = local.updatedAt ?? local.savedAt ?? 0;
+          if (remoteTime > localTime) {
+            await db.wikiDocs.put(w);
+          }
+        }
+      }
+      for (const link of links) {
+        if (link.id == null || !(await db.wikiLinks.get(link.id))) {
+          await db.wikiLinks.add(link);
+        }
+      }
     } else {
       // merge：按 ID 去重，同 id 已存在则跳过
       for (const p of persons) {
@@ -467,4 +519,159 @@ export function clearSyncLinkFromUrl(): void {
 export async function estimateSnapshotSize(): Promise<number> {
   const snapshot = await collectSnapshot();
   return JSON.stringify(snapshot).length;
+}
+
+/* ─────────────── 增量同步 ─────────────── */
+
+const LAST_SYNC_KEY = "peep-last-sync-ts";
+
+/**
+ * 获取上次成功同步的时间戳（ms）；从未同步过则返回 0
+ */
+export function getLastSyncTimestamp(): number {
+  try {
+    const raw = localStorage.getItem(LAST_SYNC_KEY);
+    if (!raw) return 0;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * 设置上次成功同步的时间戳
+ */
+export function setLastSyncTimestamp(ts: number): void {
+  try {
+    localStorage.setItem(LAST_SYNC_KEY, String(ts));
+  } catch {
+    /* 忽略 */
+  }
+}
+
+/**
+ * 收集自指定时间戳以来的变更数据（增量快照）
+ * - persons / liuren：按 savedAt 过滤
+ * - wiki：按 updatedAt 过滤
+ * - wikiLinks：无时间戳字段，全量导出（数量极少）
+ *
+ * 用途：
+ * - autoUpload 场景下仅推送新增/变更，减少链接体积
+ * - 配合 smart 合并模式，形成双向增量同步
+ */
+export async function collectIncrementalSnapshot(since: number): Promise<BackupData> {
+  const allPersons = await db.persons.toArray();
+  const allLiuren = await db.liurenRecords.toArray();
+  const allWiki = await db.wikiDocs.toArray();
+  const wikiLinks = await db.wikiLinks.toArray();
+
+  const persons = since <= 0 ? allPersons : allPersons.filter(p => (p.savedAt ?? 0) > since);
+  const liuren = since <= 0 ? allLiuren : allLiuren.filter(l => (l.savedAt ?? 0) > since);
+  const wiki =
+    since <= 0 ? allWiki : allWiki.filter(w => Math.max(w.updatedAt ?? 0, w.savedAt ?? 0) > since);
+
+  return {
+    meta: {
+      version: "1.1",
+      exportedAt: new Date().toISOString(),
+      scope: since > 0 ? "incremental" : "all",
+    },
+    persons: persons as unknown as BackupData["persons"],
+    liuren: liuren as unknown as BackupData["liuren"],
+    wiki: wiki as unknown as BackupData["wiki"],
+    wikiLinks: wikiLinks as unknown as BackupData["wikiLinks"],
+  };
+}
+
+/**
+ * 带冲突日志的还原包装
+ * - 在 detectConflicts 发现冲突时写入冲突历史
+ * - 在还原完成后更新 last-sync 时间戳并标记冲突结果
+ * - 调用方可直接用此函数代替 restoreFromLink，获得可追溯的冲突记录
+ */
+export async function restoreFromLinkWithLog(
+  url: string,
+  password: string,
+  mode: RestoreMode,
+  t?: (key: string, params?: Record<string, string | number>) => string,
+): Promise<BackupData> {
+  const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
+  const parsed = parseSyncLink(url);
+  if (!parsed) throw new Error(tr("sync.linkBad", "无效同步链接"));
+
+  let json: string;
+  if (password) {
+    try {
+      json = await decryptPayload(parsed.payload, password, t);
+    } catch {
+      throw new Error(tr("sync.wrongPassword", "密码错误"));
+    }
+  } else {
+    json = new TextDecoder().decode(fromBase64Url(parsed.payload));
+  }
+
+  const data: BackupData = JSON.parse(json);
+
+  // 冲突预检：写入冲突历史（如有）
+  const conflicts = await detectConflicts(data);
+  const hasConflict = conflicts.persons + conflicts.liuren + conflicts.wiki > 0;
+  if (hasConflict) {
+    appendConflictRecord(conflicts, { remoteExportedAt: data.meta?.exportedAt });
+  }
+
+  try {
+    await restoreBackup(data, mode);
+    setLastSyncTimestamp(Date.now());
+    if (hasConflict) {
+      resolveLastConflict(mode as ConflictResolution, { success: true });
+    }
+    appendSyncHistory({
+      event: "download",
+      at: Date.now(),
+      size: json.length,
+      encrypted: !!password,
+      success: true,
+    });
+    return data;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (hasConflict) {
+      resolveLastConflict("cancelled", { success: false, error: msg });
+    }
+    appendSyncHistory({
+      event: "download",
+      at: Date.now(),
+      size: json.length,
+      encrypted: !!password,
+      success: false,
+      error: msg,
+    });
+    throw err;
+  }
+}
+
+/**
+ * 检查当前是否允许自动同步
+ * - 在线
+ * - SyncConfig.autoUpload 开启
+ * - 自上次同步后有数据变化
+ */
+export async function shouldAutoSync(autoUpload: boolean): Promise<boolean> {
+  if (!autoUpload) return false;
+  if (!isOnline()) return false;
+  const lastSync = getLastSyncTimestamp();
+  if (lastSync <= 0) return true; // 从未同步过，允许首次
+  // 查询最近一条记录的 savedAt 是否晚于 lastSync
+  const [latestPerson, latestLiuren, latestWiki] = await Promise.all([
+    db.persons.orderBy("savedAt").reverse().first(),
+    db.liurenRecords.orderBy("savedAt").reverse().first(),
+    db.wikiDocs.orderBy("updatedAt").reverse().first(),
+  ]);
+  const latestTs = Math.max(
+    latestPerson?.savedAt ?? 0,
+    latestLiuren?.savedAt ?? 0,
+    latestWiki?.updatedAt ?? latestWiki?.savedAt ?? 0,
+  );
+  return latestTs > lastSync;
 }

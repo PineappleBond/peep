@@ -33,6 +33,9 @@ export type ZiWeiOptions = {
    * 为 true 时跳过 UI 操控（导航、切换人物、设置时间、设置运限级别），
    * 仅根据当前 Zwds 状态计算并返回 hbar/chart 数据。
    * 等价于纯计算路径，可在任意上下文调用。
+   *
+   * ⚠️ 仅供调试 / 测试使用。RTC Agent handler 不应使用此选项——
+   * Agent 必须像人类一样操控 UI，保证用户看到的数据与 Agent 返回的数据一致。
    */
   skipUI?: boolean;
 };
@@ -52,7 +55,10 @@ export type DaLiuRenOptions = {
   /**
    * 为 true 时跳过 UI 操控（导航、切换人物、打开 Dialog 等），
    * 仅执行纯计算或直接查询数据库。
-   * 等价于纯计算路径，可在任意上下文调用（RTC Agent、自动化测试）。
+   * 等价于纯计算路径，可在任意上下文调用（自动化测试、控制台调试）。
+   *
+   * ⚠️ 仅供调试 / 测试使用。RTC Agent handler 不应使用此选项——
+   * Agent 必须像人类一样操控 UI，保证用户看到的数据与 Agent 返回的数据一致。
    */
   skipUI?: boolean;
 };
@@ -68,7 +74,10 @@ export type WikiOptions = {
   /**
    * 为 true 时跳过 UI 操控（导航、切换人物、打开编辑器等），
    * 仅执行纯数据库操作。
-   * 等价于纯 DB 路径，可在任意上下文调用（RTC Agent、自动化测试）。
+   * 等价于纯 DB 路径，可在任意上下文调用（自动化测试、控制台调试）。
+   *
+   * ⚠️ 仅供调试 / 测试使用。RTC Agent handler 不应使用此选项——
+   * Agent 必须像人类一样操控 UI，保证用户看到的数据与 Agent 返回的数据一致。
    */
   skipUI?: boolean;
 };
