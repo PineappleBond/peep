@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { palaceInfo, type Bits } from "../palace";
+import { palaceInfo, bitsOfName, ALL_HEX_NAMES, type Bits } from "../palace";
 
 describe("palaceInfo", () => {
   it("乾宫：乾为天（本宫）", () => {
@@ -115,5 +115,101 @@ describe("palaceInfo", () => {
     // 这里只测试 palaceInfo 函数能正确处理有效卦象
     const validBits: Bits = [1, 1, 1, 1, 1, 1];
     expect(() => palaceInfo(validBits)).not.toThrow();
+  });
+
+  it("二世卦：天山遁（乾宫二世）", () => {
+    const bits: Bits = [0, 0, 1, 1, 1, 1]; // 初、二爻变阴
+    const info = palaceInfo(bits);
+
+    expect(info.palace).toBe("乾");
+    expect(info.type).toBe("二世");
+    expect(info.shi).toBe(2);
+    expect(info.ying).toBe(5);
+    expect(info.name).toBe("天山遁");
+  });
+
+  it("三世卦：天地否（乾宫三世）", () => {
+    const bits: Bits = [0, 0, 0, 1, 1, 1]; // 初、二、三爻变阴
+    const info = palaceInfo(bits);
+
+    expect(info.palace).toBe("乾");
+    expect(info.type).toBe("三世");
+    expect(info.shi).toBe(3);
+    expect(info.ying).toBe(6);
+    expect(info.name).toBe("天地否");
+  });
+
+  it("四世卦：风地观（乾宫四世）", () => {
+    const bits: Bits = [0, 0, 0, 0, 1, 1]; // 初~四爻变阴
+    const info = palaceInfo(bits);
+
+    expect(info.palace).toBe("乾");
+    expect(info.type).toBe("四世");
+    expect(info.shi).toBe(4);
+    expect(info.ying).toBe(1);
+    expect(info.name).toBe("风地观");
+  });
+
+  it("五世卦：山地剥（乾宫五世）", () => {
+    const bits: Bits = [0, 0, 0, 0, 0, 1]; // 初~五爻变阴
+    const info = palaceInfo(bits);
+
+    expect(info.palace).toBe("乾");
+    expect(info.type).toBe("五世");
+    expect(info.shi).toBe(5);
+    expect(info.ying).toBe(2);
+    expect(info.name).toBe("山地剥");
+  });
+});
+
+describe("bitsOfName", () => {
+  it("由卦名反查爻象", () => {
+    const bits = bitsOfName("乾为天");
+    expect(bits).not.toBeNull();
+    expect(bits).toEqual([1, 1, 1, 1, 1, 1]);
+  });
+
+  it("反查坤为地", () => {
+    const bits = bitsOfName("坤为地");
+    expect(bits).not.toBeNull();
+    expect(bits).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
+  it("反查天风姤", () => {
+    const bits = bitsOfName("天风姤");
+    expect(bits).not.toBeNull();
+    expect(bits).toEqual([0, 1, 1, 1, 1, 1]);
+  });
+
+  it("不存在的卦名返回 null", () => {
+    const bits = bitsOfName("不存在的卦");
+    expect(bits).toBeNull();
+  });
+});
+
+describe("ALL_HEX_NAMES", () => {
+  it("包含 64 个卦名", () => {
+    expect(ALL_HEX_NAMES).toHaveLength(64);
+  });
+
+  it("卦名不重复", () => {
+    const unique = new Set(ALL_HEX_NAMES);
+    expect(unique.size).toBe(64);
+  });
+
+  it("包含八纯卦", () => {
+    const pureHexagrams = [
+      "乾为天",
+      "坤为地",
+      "震为雷",
+      "巽为风",
+      "坎为水",
+      "离为火",
+      "艮为山",
+      "兑为泽",
+    ];
+    pureHexagrams.forEach(name => {
+      expect(ALL_HEX_NAMES).toContain(name);
+    });
   });
 });
