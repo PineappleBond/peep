@@ -42,6 +42,29 @@ export interface ErrorReport {
   timestamp: number;
   /** 发生次数（去重后累计） */
   count: number;
+  /** 错误上下文（开发环境下提供额外调试信息） */
+  context?: ErrorContext;
+  /** 修复建议（开发环境下根据错误类型给出） */
+  suggestion?: string;
+}
+
+/**
+ * 错误上下文信息——开发环境下帮助快速定位问题来源。
+ * 生产环境不记录这些字段（减少体积与隐私风险）。
+ */
+export interface ErrorContext {
+  /** 错误发生时所在的页面路由 */
+  route?: string;
+  /** 错误发生时的网络状态 */
+  online?: boolean;
+  /** 最近的用户操作（如 "点击了排盘按钮"） */
+  lastAction?: string;
+  /** 关联的组件名（如 "ZiweiPage"、"DaLiuRenEditor"） */
+  component?: string;
+  /** 关联的人物 ID（便于复现） */
+  personId?: number;
+  /** 自定义扩展字段 */
+  extra?: Record<string, string | number | boolean>;
 }
 
 /* ===================== 配置 ===================== */
@@ -71,6 +94,113 @@ const DEFAULT_ERROR_CONFIG: ErrorTrackingConfig = {
   },
   sensitiveKeys: ["token", "key", "secret", "password", "auth", "api_key", "apikey"],
 };
+
+/* ===================== 错误修复建议生成 ===================== */
+
+/**
+ * 根据错误消息和类型生成修复建议（仅开发环境使用）。
+ * 生产环境不会调用此函数（被 tree-shaken）。
+ */
+function generateSuggestion(report: {
+  message: string;
+  type: "js" | "promise" | "resource";
+  tagName?: string;
+}): string | undefined {
+  if (!import.meta.env.DEV) return undefined;
+
+  const msg = report.message.toLowerCase();
+
+  // 资源加载错误
+  if (report.type === "resource") {
+    if (report.tagName === "script" || report.tagName === "link") {
+      return `检查 ${report.tagName} 资源路径是否正确；可能是 CDN 不可达或文件未部署。运行 \`npm run dev\` 重启 dev server 试试。`;
+    }
+    if (report.tagName === "img") {
+      return "图片资源加载失败：检查图片路径、网络状况或 CSP 策略。";
+    }
+    return `${report.tagName ?? "资源"} 加载失败：检查资源路径与网络状况。`;
+  }
+
+  // Promise 未处理拒绝
+  if (report.type === "promise") {
+    if (msg.includes("fetch") || msg.includes("network")) {
+      return "网络请求失败：检查后端服务是否可用、CORS 配置、以及网络连接。";
+    }
+    if (msg.includes("timeout")) {
+      return "异步操作超时：考虑增加超时阈值或检查上游服务响应速度。";
+    }
+    if (msg.includes("indexeddb") || msg.includes("idb")) {
+      return "IndexedDB 操作失败：可能是隐私模式、存储已满或数据库版本冲突。尝试清除站点数据。";
+    }
+    return "未处理的 Promise 拒绝：在 async 函数中添加 try/catch，或在 .then() 链末尾加 .catch()。";
+  }
+
+  // JS 运行时错误
+  if (msg.includes("cannot read propert") || msg.includes("undefined") || msg.includes("null")) {
+    return "空指针/undefined 访问：检查数据是否已加载，条件渲染是否完整，可选链操作符（?.）是否遗漏。";
+  }
+  if (msg.includes("is not a function")) {
+    return "函数调用错误：检查导入/导出是否正确、函数名拼写、以及依赖是否已初始化。";
+  }
+  if (msg.includes("minified react") || msg.includes("react #")) {
+    return "React 内部错误：通常是 Hook 规则违反（条件调用 Hook）或 React 版本冲突。检查组件是否在条件语句中调用了 Hook。";
+  }
+  if (msg.includes("hydra") || msg.includes("hydration")) {
+    return "SSR Hydration 不匹配：服务端与客户端渲染的 HTML 不一致。检查是否使用了浏览器独有 API（如 Date、Math.random）而未加条件判断。";
+  }
+  if (msg.includes("chunk") || msg.includes("loading chunk") || msg.includes("dynamic import")) {
+    return "代码分块加载失败：可能是部署后旧版 HTML 引用了已删除的 chunk。强制刷新页面（Ctrl+Shift+R）。";
+  }
+  if (msg.includes("quota") || msg.includes("storage")) {
+    return "存储空间不足：浏览器存储达到上限。清理 IndexedDB/localStorage 数据，或增加浏览器配额。";
+  }
+  if (msg.includes("permission") || msg.includes("denied")) {
+    return "权限被拒绝：检查浏览器权限（地理位置、通知等）或 CSP 策略限制。";
+  }
+
+  return undefined;
+}
+
+/* ===================== 上下文收集 ===================== */
+
+/**
+ * 收集错误发生时的上下文信息（仅开发环境）。
+ * 帮助快速定位问题发生的环境与场景。
+ */
+function collectErrorContext(): ErrorContext | undefined {
+  if (!import.meta.env.DEV) return undefined;
+
+  const ctx: ErrorContext = {
+    route: window.location.pathname,
+    online: navigator.onLine,
+  };
+
+  // 从 window 读取最近用户操作（如果 setLastAction 被调用过）
+  const lastAction = (window as unknown as { __peepLastAction?: string }).__peepLastAction;
+  if (lastAction) ctx.lastAction = lastAction;
+
+  return ctx;
+}
+
+/**
+ * 设置最近用户操作（供错误上下文使用）。
+ * 在关键用户操作（点击、导航、提交等）时调用。
+ *
+ * @example
+ * ```ts
+ * setLastAction("点击排盘按钮");
+ * ```
+ */
+export function setLastAction(action: string): void {
+  if (!import.meta.env.DEV) return;
+  (window as unknown as { __peepLastAction?: string }).__peepLastAction = action;
+  // 5 秒后自动清除，避免污染后续错误
+  setTimeout(() => {
+    if ((window as unknown as { __peepLastAction?: string }).__peepLastAction === action) {
+      (window as unknown as { __peepLastAction?: string }).__peepLastAction = undefined;
+    }
+  }, 5000);
+}
 
 /* ===================== 模块状态 ===================== */
 
@@ -151,6 +281,13 @@ function processError(
     userAgent: navigator.userAgent,
     timestamp: Date.now(),
     count: 1,
+    // 开发环境：附加上下文与修复建议
+    context: collectErrorContext(),
+    suggestion: generateSuggestion({
+      message: report.message,
+      type: report.type,
+      tagName: report.tagName,
+    }),
   };
 
   // 自定义过滤
@@ -163,7 +300,16 @@ function processError(
 
   // 开发环境实时打印
   if (!import.meta.env.PROD) {
+     
     console.warn("[错误捕获]", fullReport.type, fullReport.message);
+    if (fullReport.suggestion) {
+      // eslint-disable-next-line no-console
+      console.log("%c[修复建议]%c " + fullReport.suggestion, "color:#4caf50;font-weight:bold", "");
+    }
+    if (fullReport.context) {
+      // eslint-disable-next-line no-console
+      console.log("%c[上下文]%c", "color:#ff9800;font-weight:bold", "", fullReport.context);
+    }
   }
 
   // 满足批量大小立即刷新

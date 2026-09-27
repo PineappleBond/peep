@@ -65,7 +65,8 @@ if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log(
         `%c[peep] 页面加载完成，耗时 ${elapsed.toFixed(0)}ms%c\n` +
-          `提示: 输入 peep.version() 查看调试 API | peep.setLogLevel("debug") 开启详细日志`,
+          `提示: 输入 peep.version() 查看调试 API | peep.help() 查看快速帮助\n` +
+          `新增: peep.profile(true) 启用渲染+状态追踪 | Ctrl+Shift+D 打开性能仪表板`,
         "color:#4caf50;font-weight:bold",
         "color:#888",
       );

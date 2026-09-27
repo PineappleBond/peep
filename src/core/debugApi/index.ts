@@ -171,7 +171,40 @@ export {
   getInternalPeepApi,
   initDebugApi,
   getApiMetadata,
+  // 开发者体验改进 API
+  renderStats,
+  stateChanges,
+  profile,
 } from "./system";
+
+// 渲染追踪工具导出
+export {
+  enableRenderTracker,
+  setSlowRenderThreshold,
+  useRenderTracker,
+  getRenderRecords,
+  getRenderSummary,
+  clearRenderRecords,
+  isRenderTrackerEnabled,
+} from "../renderTracker";
+export type { RenderRecord } from "../renderTracker";
+
+// 状态变更追踪工具导出
+export {
+  enableStateWatch,
+  recordStateChange,
+  subscribeStateChange,
+  getStateChanges,
+  getStateChangesByName,
+  getStateChangeSummary,
+  clearStateChanges,
+  isStateWatchEnabled,
+  dumpStateChanges,
+} from "../stateWatch";
+export type { StateChangeRecord } from "../stateWatch";
+
+// 用户操作记录（来自 errorTracking）
+export { setLastAction } from "../errorTracking";
 
 // 从 analysis.ts 重新导出 getChartDataForScope（供 window.peep 使用）
 export { getChartDataForScope, type ScopeChartData } from "../analysis";

@@ -151,6 +151,104 @@ await peep.DaLiuRenCreate({
 | `peep.env()`    | 查看环境信息（版本/模式/回调/内存等） | 排查"代码没生效"问题 |
 | `peep.health()` | 健康检查（回调/IndexedDB/引擎/缓存）  | 排查"排盘失败"问题   |
 
+### 性能分析工具（v0.1.0+ 新增）
+
+#### 渲染追踪
+
+排查组件重渲染问题：
+
+```js
+// 启用渲染追踪
+peep.renderStats(true);
+
+// 操作应用，触发各种交互...
+
+// 查看渲染统计
+peep.renderStats();
+// 输出：表格展示每个组件的渲染次数、平均耗时、最大耗时
+
+// 关闭追踪
+peep.renderStats(false);
+```
+
+**慢渲染警告**：超过 16ms（一帧）的渲染会在控制台自动打印警告。
+
+**在代码中使用**：在组件中导入 `useRenderTracker` Hook，可以追踪指定组件：
+
+```tsx
+import { useRenderTracker } from "../core/renderTracker";
+
+function MyComponent(props) {
+  useRenderTracker("MyComponent", props);
+  // 自动记录渲染次数、耗时、props 变更
+  // ...
+}
+```
+
+#### 状态变更追踪
+
+排查"谁改了这个状态"：
+
+```js
+// 启用状态追踪
+peep.stateChanges(true);
+
+// 操作应用...
+
+// 查看全部变更
+peep.stateChanges();
+
+// 按状态名过滤
+peep.stateChanges("pick");
+
+// 关闭追踪
+peep.stateChanges(false);
+```
+
+#### 综合性能分析
+
+一键启用/禁用所有追踪：
+
+```js
+// 启用全面性能分析（渲染追踪 + 状态追踪）
+peep.profile(true);
+
+// 查看当前状态
+peep.profile();
+
+// 关闭
+peep.profile(false);
+```
+
+#### DevDashboard 仪表板
+
+按 `Ctrl+Shift+D` 打开开发者性能仪表板，新增两个面板：
+
+- **渲染追踪面板**：实时展示组件渲染次数、耗时、慢渲染警告
+- **状态追踪面板**：展示状态变更摘要与最近变更详情
+- **性能瓶颈提示**：自动识别慢组件和高频渲染，给出优化建议
+
+#### 错误修复建议
+
+错误捕获时，开发环境会自动：
+
+1. 附加错误上下文（当前路由、网络状态、最近用户操作）
+2. 根据错误类型生成修复建议（空指针、网络失败、资源加载等）
+3. 在控制台以绿色文字显示修复建议
+
+```js
+// 记录最近用户操作（5 秒后自动清除）
+peep.setLastAction("点击排盘按钮");
+```
+
+### npm scripts 新增
+
+| 命令                  | 作用                                | 何时使用            |
+| --------------------- | ----------------------------------- | ------------------- |
+| `npm run dev:profile` | 启动 dev server（启用性能分析模式） | 需要默认开启追踪时  |
+| `npm run dev:host`    | 启动 dev server（允许外部访问）     | 多设备/移动端调试   |
+| `npm run test:single` | 单次运行测试（verbose 输出）        | CI 或需要详细输出时 |
+
 ### 结构化日志
 
 调试 API 已接入分级日志（带分类标签和时间戳），浏览器控制台可按分类过滤：

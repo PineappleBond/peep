@@ -11,17 +11,17 @@ import {
   getCurrentVitals,
   getCustomMeasures,
   rateVitals,
-  getDomainMetrics,
   getDomainMetricSummary,
   checkPerformanceBudgets,
   getCacheSnapshots,
   type WebVitals,
-  type DomainMetric,
   type CacheSnapshot,
 } from "../core/performance";
 import { getRecordedErrors, type ErrorReport } from "../core/errorTracking";
 import { registerShortcut } from "../core/shortcuts";
 import { useI18n } from "../core/i18n";
+import { getRenderSummary, getRenderRecords, isRenderTrackerEnabled } from "../core/renderTracker";
+import { getStateChanges, getStateChangeSummary, isStateWatchEnabled } from "../core/stateWatch";
 
 /** 仪表板可见性变更的监听器（供外部模块在快捷键触发时响应） */
 type VisibilityListener = (visible: boolean) => void;
@@ -113,6 +113,13 @@ function fmtBytes(bytes: number | undefined): string {
 function formatTime(ts: number): string {
   const d = new Date(ts);
   return d.toLocaleTimeString();
+}
+
+/** 截断字符串并添加省略号 */
+function truncate(s: string | undefined, len: number): string {
+  if (!s) return "-";
+  if (s.length <= len) return s;
+  return s.slice(0, len) + "...";
 }
 
 /* ===================== 数据 Hook ===================== */
@@ -264,6 +271,12 @@ export function DevDashboard() {
   const domainSummary = useMemo(() => getDomainMetricSummary(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const cacheSnapshots = useMemo(() => getCacheSnapshots(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const budgetViolations = useMemo(() => checkPerformanceBudgets(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const renderSummary = useMemo(() => getRenderSummary(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const renderRecords = useMemo(() => getRenderRecords(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const renderTrackerEnabled = useMemo(() => isRenderTrackerEnabled(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const stateChanges = useMemo(() => getStateChanges(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const stateSummary = useMemo(() => getStateChangeSummary(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const stateWatchEnabled = useMemo(() => isStateWatchEnabled(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setErrors(getRecordedErrors().slice(-MAX_ERRORS).reverse());
@@ -289,6 +302,12 @@ export function DevDashboard() {
       domainSummary,
       cacheSnapshots,
       budgetViolations,
+      renderSummary,
+      renderRecords: renderRecords.slice(-20),
+      renderTrackerEnabled,
+      stateChanges: stateChanges.slice(-50),
+      stateSummary,
+      stateWatchEnabled,
       history: historyRef.current,
     };
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
@@ -298,7 +317,22 @@ export function DevDashboard() {
     a.download = `perf-report-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [vitals, rating, sysInfo, measures, errors, domainSummary, cacheSnapshots, budgetViolations]);
+  }, [
+    vitals,
+    rating,
+    sysInfo,
+    measures,
+    errors,
+    domainSummary,
+    cacheSnapshots,
+    budgetViolations,
+    renderSummary,
+    renderRecords,
+    renderTrackerEnabled,
+    stateChanges,
+    stateSummary,
+    stateWatchEnabled,
+  ]);
 
   const handleClose = useCallback(() => {
     setDashVisible(false);
@@ -598,6 +632,219 @@ export function DevDashboard() {
             </table>
           )}
         </section>
+
+        {/* 渲染追踪（仅当启用时显示） */}
+        <section className="dev-dash-section">
+          <h3>
+            {t("devDashboard.renderTracking")}
+            <span
+              className="dev-dash-env"
+              style={{
+                marginLeft: "8px",
+                background: renderTrackerEnabled ? "#16a34a" : "#6b7280",
+              }}
+            >
+              {renderTrackerEnabled ? "ON" : "OFF"}
+            </span>
+          </h3>
+          {Object.keys(renderSummary).length === 0 ? (
+            <div className="dev-dash-empty">
+              {renderTrackerEnabled
+                ? t("devDashboard.noRenderData")
+                : t("devDashboard.enableHint", { cmd: "peep.renderStats(true)" })}
+            </div>
+          ) : (
+            <>
+              <table className="dev-dash-table">
+                <thead>
+                  <tr>
+                    <th>{t("devDashboard.component")}</th>
+                    <th>{t("devDashboard.renderCount")}</th>
+                    <th>{t("devDashboard.avgDuration")}</th>
+                    <th>{t("devDashboard.maxDuration")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(renderSummary)
+                    .sort((a, b) => b[1].maxDuration - a[1].maxDuration)
+                    .map(([name, s]) => (
+                      <tr
+                        key={name}
+                        style={{
+                          background:
+                            s.maxDuration > 50
+                              ? "rgba(220, 38, 38, 0.1)"
+                              : s.maxDuration > 16
+                                ? "rgba(217, 119, 6, 0.1)"
+                                : "transparent",
+                        }}
+                      >
+                        <td>{name}</td>
+                        <td
+                          style={{
+                            color:
+                              s.count > 10
+                                ? "var(--dev-rate-bad, #dc2626)"
+                                : s.count > 5
+                                  ? "var(--dev-rate-warn, #d97706)"
+                                  : "inherit",
+                          }}
+                        >
+                          {s.count}
+                        </td>
+                        <td>{s.avgDuration.toFixed(2)} ms</td>
+                        <td
+                          style={{
+                            color:
+                              s.maxDuration > 50
+                                ? "var(--dev-rate-bad, #dc2626)"
+                                : s.maxDuration > 16
+                                  ? "var(--dev-rate-warn, #d97706)"
+                                  : "inherit",
+                          }}
+                        >
+                          {s.maxDuration.toFixed(2)} ms
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+              {renderRecords.filter(r => r.duration > 16).length > 0 && (
+                <div
+                  className="dev-dash-empty"
+                  style={{
+                    color: "var(--dev-rate-warn, #d97706)",
+                    marginTop: "8px",
+                    fontSize: "12px",
+                  }}
+                >
+                  {t("devDashboard.slowRenderHint", {
+                    count: renderRecords.filter(r => r.duration > 16).length,
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+
+        {/* 状态变更追踪（仅当启用时显示） */}
+        <section className="dev-dash-section">
+          <h3>
+            {t("devDashboard.stateTracking")}
+            <span
+              className="dev-dash-env"
+              style={{ marginLeft: "8px", background: stateWatchEnabled ? "#16a34a" : "#6b7280" }}
+            >
+              {stateWatchEnabled ? "ON" : "OFF"}
+            </span>
+          </h3>
+          {Object.keys(stateSummary).length === 0 ? (
+            <div className="dev-dash-empty">
+              {stateWatchEnabled
+                ? t("devDashboard.noStateData")
+                : t("devDashboard.enableHint", { cmd: "peep.stateChanges(true)" })}
+            </div>
+          ) : (
+            <>
+              <table className="dev-dash-table">
+                <thead>
+                  <tr>
+                    <th>{t("devDashboard.stateName")}</th>
+                    <th>{t("devDashboard.changeCount")}</th>
+                    <th>{t("devDashboard.lastSource")}</th>
+                    <th>{t("devDashboard.lastTime")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(stateSummary)
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .map(([name, s]) => (
+                      <tr key={name}>
+                        <td>{name}</td>
+                        <td
+                          style={{
+                            color:
+                              s.count > 20
+                                ? "var(--dev-rate-bad, #dc2626)"
+                                : s.count > 10
+                                  ? "var(--dev-rate-warn, #d97706)"
+                                  : "inherit",
+                          }}
+                        >
+                          {s.count}
+                        </td>
+                        <td>{s.lastSource}</td>
+                        <td>{new Date(s.lastChange).toLocaleTimeString()}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+              <details style={{ marginTop: "8px" }}>
+                <summary style={{ cursor: "pointer", fontSize: "12px", color: "#888" }}>
+                  {t("devDashboard.recentChanges", {
+                    count: Math.min(stateChanges.length, 10),
+                  })}
+                </summary>
+                <table className="dev-dash-table" style={{ marginTop: "4px" }}>
+                  <thead>
+                    <tr>
+                      <th>{t("devDashboard.stateName")}</th>
+                      <th>{t("devDashboard.source")}</th>
+                      <th>{t("devDashboard.prevValue")}</th>
+                      <th>{t("devDashboard.nextValue")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stateChanges.slice(-10).map((c, i) => (
+                      <tr key={i}>
+                        <td>{c.name}</td>
+                        <td>{c.source}</td>
+                        <td title={JSON.stringify(c.prevValue)}>
+                          {truncate(JSON.stringify(c.prevValue), 30)}
+                        </td>
+                        <td title={JSON.stringify(c.nextValue)}>
+                          {truncate(JSON.stringify(c.nextValue), 30)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            </>
+          )}
+        </section>
+
+        {/* 性能瓶颈提示 */}
+        {renderTrackerEnabled &&
+          Object.entries(renderSummary).some(([, s]) => s.maxDuration > 50) && (
+            <section className="dev-dash-section">
+              <h3>{t("devDashboard.bottleneckHints")}</h3>
+              <ul className="dev-dash-kv">
+                {Object.entries(renderSummary)
+                  .filter(([, s]) => s.maxDuration > 50)
+                  .map(([name, s]) => (
+                    <li key={name} className="dev-dash-budget-violation">
+                      <span>{name}</span>
+                      <strong>
+                        {s.maxDuration > 100
+                          ? t("devDashboard.severeBottleneck")
+                          : t("devDashboard.mildBottleneck")}
+                      </strong>
+                    </li>
+                  ))}
+                {Object.entries(renderSummary)
+                  .filter(([, s]) => s.count > 10)
+                  .map(([name, s]) => (
+                    <li key={`freq-${name}`} className="dev-dash-budget-violation">
+                      <span>
+                        {name} ({t("devDashboard.renderCount")}: {s.count})
+                      </span>
+                      <strong>{t("devDashboard.highFreqHint")}</strong>
+                    </li>
+                  ))}
+              </ul>
+            </section>
+          )}
 
         <footer className="dev-dash-footer">{t("devDashboard.footer")}</footer>
       </div>

@@ -17,6 +17,23 @@ import { getCallbacksReady, resetCallbacks } from "./callbacks";
 import { resetLogLevel, getLogLevel } from "./logger";
 import { dumpStateToConsole, getAllStateSnapshots } from "../stateDebug";
 import {
+  enableRenderTracker,
+  getRenderRecords,
+  getRenderSummary,
+  clearRenderRecords,
+  isRenderTrackerEnabled,
+} from "../renderTracker";
+import {
+  enableStateWatch,
+  getStateChanges,
+  getStateChangesByName,
+  getStateChangeSummary,
+  clearStateChanges,
+  isStateWatchEnabled,
+  dumpStateChanges,
+} from "../stateWatch";
+import { setLastAction } from "../errorTracking";
+import {
   clearAstrolabeCache,
   computeAstrolabe,
   ZiWei,
@@ -101,6 +118,26 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
     方法: "getStateSnapshots()",
     说明: "获取当前所有已注册的状态快照数组（仅 DEV）",
   },
+  renderStats: {
+    方法: "renderStats(enable?)",
+    说明: "组件渲染追踪：传入 true/false 控制开关，不传查看统计（仅 DEV）",
+  },
+  stateChanges: {
+    方法: "stateChanges(arg?)",
+    说明: "状态变更追踪：true/false 控制开关，字符串按状态名过滤，不传查看全部（仅 DEV）",
+  },
+  profile: {
+    方法: "profile(enable?)",
+    说明: "综合性能分析开关（渲染追踪 + 状态追踪），不传查看当前状态（仅 DEV）",
+  },
+  setLastAction: {
+    方法: "setLastAction(action)",
+    说明: "记录最近用户操作（供错误上下文使用，5 秒后自动清除）",
+  },
+  dumpStateChanges: {
+    方法: "dumpStateChanges(limit?)",
+    说明: "打印最近状态变更到控制台（默认 20 条）",
+  },
 };
 
 /** 内部方法：version() 自动枚举时过滤掉，不展示给普通用户 */
@@ -114,6 +151,232 @@ const INTERNAL_METHODS = new Set([
   "health",
   "help",
 ]);
+
+/* ── 开发者体验改进 API ── */
+
+/**
+ * 渲染追踪控制：启用/禁用组件渲染追踪，或查看渲染统计。
+ *
+ * @example
+ * ```js
+ * peep.renderStats(true);   // 启用追踪
+ * peep.renderStats();       // 查看统计
+ * peep.renderStats(false);  // 关闭
+ * ```
+ */
+export function renderStats(enable?: boolean): unknown {
+  if (!import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log("%c[peep]%c 生产环境，renderStats() 不可用", "color:#f44336", "");
+    return undefined;
+  }
+
+  if (typeof enable === "boolean") {
+    enableRenderTracker(enable);
+    return undefined;
+  }
+
+  const summary = getRenderSummary();
+  const records = getRenderRecords();
+  const isEnabled = isRenderTrackerEnabled();
+
+  // eslint-disable-next-line no-console
+  console.group(
+    `%c[peep] 渲染统计%c（${isEnabled ? "已启用" : "已禁用"}）`,
+    "color:#2196f3;font-weight:bold",
+    "",
+  );
+
+  if (Object.keys(summary).length === 0) {
+    // eslint-disable-next-line no-console
+    console.log("暂无渲染记录。" + (isEnabled ? "" : "调用 renderStats(true) 启用追踪。"));
+  } else {
+    // eslint-disable-next-line no-console
+    console.table(
+      Object.entries(summary).map(([name, s]) => ({
+        组件: name,
+        渲染次数: s.count,
+        平均耗时: `${s.avgDuration.toFixed(2)}ms`,
+        最大耗时: `${s.maxDuration.toFixed(2)}ms`,
+      })),
+    );
+
+    const slowRenders = records.filter(r => r.duration > 16);
+    if (slowRenders.length > 0) {
+       
+      console.warn(`%c慢渲染（>16ms）: ${slowRenders.length} 次`, "color:#ff9800;font-weight:bold");
+      // eslint-disable-next-line no-console
+      console.table(
+        slowRenders.slice(-10).map(r => ({
+          组件: r.component,
+          耗时: `${r.duration.toFixed(2)}ms`,
+          props变更: r.propsChanged ? r.propsDiff : "-",
+          时间: new Date(r.timestamp).toLocaleTimeString(),
+        })),
+      );
+    }
+
+    const highFreq = Object.entries(summary).filter(([, s]) => s.count > 10);
+    if (highFreq.length > 0) {
+       
+      console.warn(
+        `%c高频渲染（>10次）: ${highFreq.length} 个组件`,
+        "color:#ff9800;font-weight:bold",
+      );
+    }
+  }
+
+  // eslint-disable-next-line no-console
+  console.groupEnd();
+
+  return { summary, enabled: isEnabled, totalRecords: records.length };
+}
+
+/**
+ * 状态变更追踪：查看状态变更记录或控制追踪开关。
+ *
+ * @example
+ * ```js
+ * peep.stateChanges(true);       // 启用追踪
+ * peep.stateChanges();           // 查看全部变更
+ * peep.stateChanges("pick");     // 按状态名过滤
+ * peep.stateChanges(false);      // 关闭
+ * ```
+ */
+export function stateChanges(arg?: boolean | string): unknown {
+  if (!import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log("%c[peep]%c 生产环境，stateChanges() 不可用", "color:#f44336", "");
+    return undefined;
+  }
+
+  if (typeof arg === "boolean") {
+    enableStateWatch(arg);
+    return undefined;
+  }
+
+  const isEnabled = isStateWatchEnabled();
+
+  // eslint-disable-next-line no-console
+  console.group(
+    `%c[peep] 状态变更追踪%c（${isEnabled ? "已启用" : "已禁用"}）`,
+    "color:#2196f3;font-weight:bold",
+    "",
+  );
+
+  if (typeof arg === "string") {
+    const changes = getStateChangesByName(arg);
+    if (changes.length === 0) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `无 "${arg}" 相关的变更记录。` + (isEnabled ? "" : "调用 stateChanges(true) 启用。"),
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`"${arg}" 共 ${changes.length} 次变更：`);
+      // eslint-disable-next-line no-console
+      console.table(
+        changes.map(c => ({
+          来源: c.source,
+          时间: new Date(c.timestamp).toLocaleTimeString(),
+          前值: c.prevValue,
+          后值: c.nextValue,
+          原因: c.reason ?? "-",
+        })),
+      );
+    }
+  } else {
+    const summary = getStateChangeSummary();
+    const changes = getStateChanges();
+
+    if (Object.keys(summary).length === 0) {
+      // eslint-disable-next-line no-console
+      console.log("暂无状态变更记录。" + (isEnabled ? "" : "调用 stateChanges(true) 启用。"));
+    } else {
+      // eslint-disable-next-line no-console
+      console.log("变更摘要：");
+      // eslint-disable-next-line no-console
+      console.table(
+        Object.entries(summary).map(([name, s]) => ({
+          状态: name,
+          变更次数: s.count,
+          最近来源: s.lastSource,
+          最近时间: new Date(s.lastChange).toLocaleTimeString(),
+        })),
+      );
+
+      // eslint-disable-next-line no-console
+      console.log(`最近 ${Math.min(changes.length, 10)} 条详情：`);
+      // eslint-disable-next-line no-console
+      console.table(
+        changes.slice(-10).map(c => ({
+          状态: c.name,
+          来源: c.source,
+          时间: new Date(c.timestamp).toLocaleTimeString(),
+          前值: c.prevValue,
+          后值: c.nextValue,
+        })),
+      );
+    }
+  }
+
+  // eslint-disable-next-line no-console
+  console.groupEnd();
+
+  return {
+    summary: getStateChangeSummary(),
+    enabled: isEnabled,
+    totalChanges: getStateChanges().length,
+  };
+}
+
+/**
+ * 综合性能分析开关——同时启用渲染追踪 + 状态追踪。
+ *
+ * @example
+ * ```js
+ * peep.profile(true);   // 启用全面性能分析
+ * peep.profile(false);  // 关闭
+ * peep.profile();       // 查看当前状态与统计
+ * ```
+ */
+export function profile(enable?: boolean): unknown {
+  if (!import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log("%c[peep]%c 生产环境，profile() 不可用", "color:#f44336", "");
+    return undefined;
+  }
+
+  if (typeof enable === "boolean") {
+    enableRenderTracker(enable);
+    enableStateWatch(enable);
+    // eslint-disable-next-line no-console
+    console.log(
+      `%c[peep]%c 性能分析${enable ? "已全部启用（渲染追踪 + 状态追踪）" : "已关闭"}`,
+      "color:#4caf50;font-weight:bold",
+      "",
+    );
+    return undefined;
+  }
+
+  // eslint-disable-next-line no-console
+  console.group("%c[peep] 性能分析状态", "color:#2196f3;font-weight:bold");
+  // eslint-disable-next-line no-console
+  console.log("渲染追踪:", isRenderTrackerEnabled() ? "✓ 启用" : "✗ 禁用");
+  // eslint-disable-next-line no-console
+  console.log("状态追踪:", isStateWatchEnabled() ? "✓ 启用" : "✗ 禁用");
+  // eslint-disable-next-line no-console
+  console.log(
+    "提示: 调用 profile(true) 启用全部追踪，或分别使用 renderStats(true) / stateChanges(true)",
+  );
+  // eslint-disable-next-line no-console
+  console.groupEnd();
+
+  return {
+    renderTracker: isRenderTrackerEnabled(),
+    stateWatch: isStateWatchEnabled(),
+  };
+}
 
 /**
  * 获取 API 元数据——版本、可用函数列表、支持的运限级别。
@@ -415,6 +678,14 @@ export function help(): void {
       `  peep.getCacheStats()    查看缓存命中率\n` +
       `  peep.clearCaches()      清空全部缓存\n` +
       `\n` +
+      `开发者体验（v0.1.0+ 新增）:\n` +
+      `  peep.profile(true)      启用全面性能分析（渲染+状态追踪）\n` +
+      `  peep.renderStats()      查看组件渲染统计\n` +
+      `  peep.stateChanges()     查看状态变更记录\n` +
+      `  peep.stateChanges("pick")  查看指定状态变更历史\n` +
+      `  peep.dumpState()        打印所有状态快照\n` +
+      `  peep.dumpStateChanges() 打印最近状态变更\n` +
+      `\n` +
       `更多: 查看 docs/debug-api.md 和 docs/dev-guide.md`,
     "color:#2196f3;font-weight:bold",
     "color:#888",
@@ -448,6 +719,8 @@ export function clearCaches(): void {
  * - 当前日志级别（恢复为默认 "info"）
  * - 本命盘缓存
  * - hbar / chartIndex 等外部缓存
+ * - 渲染追踪记录
+ * - 状态变更记录
  */
 export function resetDebugApi(): void {
   // 1. 重置回调状态
@@ -462,6 +735,10 @@ export function resetDebugApi(): void {
   // 4. 清空外部缓存（hbar / chartIndex 等注册到 cache.ts 的缓存）
   clearAllCaches();
   clearHbarCaches();
+
+  // 5. 清空渲染追踪与状态变更记录（保留开关状态）
+  clearRenderRecords();
+  clearStateChanges();
 
   log("info", "init", "调试 API 全部状态已重置");
 }
@@ -538,6 +815,12 @@ export function initDebugApi() {
     // 状态调试工具（仅 DEV）
     dumpState: dumpStateToConsole,
     getStateSnapshots: getAllStateSnapshots,
+    // 开发者体验改进 API（仅 DEV）
+    renderStats,
+    stateChanges,
+    profile,
+    setLastAction,
+    dumpStateChanges,
   };
 
   window.peep = peepApi;

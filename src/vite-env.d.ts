@@ -90,6 +90,16 @@ declare global {
         source: string;
         updatedAt?: number;
       }>;
+      /** 组件渲染追踪：true/false 控制开关，不传查看统计（仅 DEV） */
+      renderStats: (enable?: boolean) => unknown;
+      /** 状态变更追踪：true/false 控制开关，字符串按名过滤，不传查看全部（仅 DEV） */
+      stateChanges: (arg?: boolean | string) => unknown;
+      /** 综合性能分析开关（渲染追踪 + 状态追踪）（仅 DEV） */
+      profile: (enable?: boolean) => unknown;
+      /** 记录最近用户操作（供错误上下文使用） */
+      setLastAction: (action: string) => void;
+      /** 打印最近状态变更到控制台（仅 DEV） */
+      dumpStateChanges: (limit?: number) => void;
     };
   }
 
