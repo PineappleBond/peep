@@ -190,13 +190,13 @@ export const LiuyaoChart = memo(function LiuyaoChart({ record, vigorColumns }: L
                   <td className="liuyao-detail-col">{changedLine.rel}</td>
                   <td className="liuyao-detail-col">{getChangedGod(changedLine, line.god)}</td>
 
-                  {/* 右侧动态旺衰列（镜像） */}
+                  {/* 右侧动态旺衰列（镜像）- 使用变卦的旺衰数据 */}
                   {rightColIndices.map(colIdx => (
                     <td key={`right-${colIdx}-${lineIdx}`} className="liuyao-time-col">
                       <span
-                        className={`liuyao-vigor-${getVigorClass(vigorColumns.columns[colIdx][lineIdx])}`}
+                        className={`liuyao-vigor-${getVigorClass(vigorColumns.changedColumns[colIdx][lineIdx])}`}
                       >
-                        {vigorColumns.columns[colIdx][lineIdx]}
+                        {vigorColumns.changedColumns[colIdx][lineIdx]}
                       </span>
                     </td>
                   ))}

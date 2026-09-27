@@ -21,8 +21,10 @@ import { monthBranch, dayGanzhi } from "./core/calendar";
 
 /** 旺衰列数据 */
 export type VigorColumnData = {
-  /** 8 列的旺衰数据，索引 0-7 */
+  /** 本卦 8 列的旺衰数据，索引 0-7 */
   columns: VigorState[][];
+  /** 变卦 8 列的旺衰数据，索引 0-7 */
+  changedColumns: VigorState[][];
   /** 每列的地支标签（用于表头） */
   columnBranches: Branch[];
   /** 每列的角色标签（太岁/月建/日辰/时辰） */
@@ -35,13 +37,16 @@ export type VigorColumnData = {
 
 /**
  * 计算单个时间层级对 6 爻的旺衰
- * @param chart 完整卦象（从中提取每爻的五行）
+ * @param lines 6 个爻位数据（本卦或变卦）
  * @param timeBranch 时间地支（月建/日辰/流年支/流月支/流日支/流时支）
  * @returns 6 个 VigorState，索引 0-5 对应爻位 1-6
  */
-function computeLineVigors(chart: ChartJSON, timeBranch: Branch): VigorState[] {
+function computeLineVigors(
+  lines: { branch: Branch; elem: Element }[],
+  timeBranch: Branch,
+): VigorState[] {
   const timeElem: Element = BRANCH_ELEM[timeBranch];
-  return chart.lines.map(line => {
+  return lines.map(line => {
     const lineElem: Element = BRANCH_ELEM[line.branch];
     return vigorOf(timeElem, lineElem);
   });
@@ -94,12 +99,12 @@ function getHourBranch(hour: number): Branch {
 }
 
 /**
- * 计算完整旺衰列数据
+ * 计算完整旺衰列数据（本卦 + 变卦）
  *
  * @param chart 完整卦象
  * @param visible 4 级可见性状态
  * @param pick 当前选择的时间点（用于推算各级时间地支）
- * @returns 8 列，每列 6 个 VigorState；不可见列仍计算但 UI 隐藏
+ * @returns 本卦和变卦各 8 列，每列 6 个 VigorState；不可见列仍计算但 UI 隐藏
  */
 export function computeVigorColumns(
   chart: ChartJSON,
@@ -119,14 +124,35 @@ export function computeVigorColumns(
   // 4. 时支
   const hourBranch = getHourBranch(pick.hour);
 
-  // 计算 4 列旺衰（左侧）
-  const col0 = computeLineVigors(chart, yearBranch); // 太岁
-  const col1 = computeLineVigors(chart, monthBr); // 月建
-  const col2 = computeLineVigors(chart, dayBranch); // 日辰
-  const col3 = computeLineVigors(chart, hourBranch); // 时辰
+  // 如果没有变卦，使用本卦的 lines
+  const changedLines = chart.changed?.lines || chart.lines;
 
-  // 右侧 4 列（镜像）
+  // 计算本卦 4 列旺衰（左侧）
+  const col0 = computeLineVigors(chart.lines, yearBranch); // 太岁
+  const col1 = computeLineVigors(chart.lines, monthBr); // 月建
+  const col2 = computeLineVigors(chart.lines, dayBranch); // 日辰
+  const col3 = computeLineVigors(chart.lines, hourBranch); // 时辰
+
+  // 计算变卦 4 列旺衰（右侧镜像）
+  const changedCol0 = computeLineVigors(changedLines, yearBranch); // 太岁
+  const changedCol1 = computeLineVigors(changedLines, monthBr); // 月建
+  const changedCol2 = computeLineVigors(changedLines, dayBranch); // 日辰
+  const changedCol3 = computeLineVigors(changedLines, hourBranch); // 时辰
+
+  // 本卦 8 列：[太岁, 月建, 日辰, 时辰, 时辰, 日辰, 月建, 太岁]
   const columns = [col0, col1, col2, col3, col3, col2, col1, col0];
+  // 变卦 8 列：镜像布局
+  const changedColumns = [
+    changedCol0,
+    changedCol1,
+    changedCol2,
+    changedCol3,
+    changedCol3,
+    changedCol2,
+    changedCol1,
+    changedCol0,
+  ];
+
   const columnBranches = [
     yearBranch,
     monthBr,
@@ -141,6 +167,7 @@ export function computeVigorColumns(
 
   return {
     columns,
+    changedColumns,
     columnBranches,
     columnRoles,
     visible,
