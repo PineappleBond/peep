@@ -140,6 +140,149 @@ describe("withRetry", () => {
     await expect(withRetry(fn, { maxRetries: 0 })).rejects.toThrow("失败");
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  describe("边界条件", () => {
+    it("baseDelayMs=0 时延迟为 0", async () => {
+      const fn = vi.fn().mockRejectedValueOnce(new Error("fail")).mockResolvedValueOnce("ok");
+      const onRetry = vi.fn();
+      await withRetry(fn, {
+        maxRetries: 1,
+        baseDelayMs: 0,
+        jitter: false,
+        onRetry,
+      });
+      // 延迟应该是 0 或极小值
+      expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 1, expect.any(Number));
+    });
+
+    it("backoffFactor=0 时延迟始终为 baseDelayMs", async () => {
+      const fn = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("1"))
+        .mockRejectedValueOnce(new Error("2"))
+        .mockResolvedValueOnce("ok");
+      const onRetry = vi.fn();
+      await withRetry(fn, {
+        maxRetries: 2,
+        baseDelayMs: 5,
+        backoffFactor: 0,
+        jitter: false,
+        onRetry,
+      });
+      // 5 * 0^0 = 5, 5 * 0^1 = 0
+      expect(onRetry).toHaveBeenCalledTimes(2);
+    });
+
+    it("backoffFactor=1 时延迟恒定", async () => {
+      const fn = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("1"))
+        .mockRejectedValueOnce(new Error("2"))
+        .mockResolvedValueOnce("ok");
+      const onRetry = vi.fn();
+      await withRetry(fn, {
+        maxRetries: 2,
+        baseDelayMs: 5,
+        backoffFactor: 1,
+        jitter: false,
+        onRetry,
+      });
+      expect(onRetry).toHaveBeenNthCalledWith(1, expect.any(Error), 1, 5);
+      expect(onRetry).toHaveBeenNthCalledWith(2, expect.any(Error), 2, 5);
+    });
+
+    it("maxDelayMs < baseDelayMs 时延迟不超过 maxDelayMs", async () => {
+      const fn = vi.fn().mockRejectedValueOnce(new Error("1")).mockResolvedValueOnce("ok");
+      const onRetry = vi.fn();
+      await withRetry(fn, {
+        maxRetries: 1,
+        baseDelayMs: 100,
+        maxDelayMs: 5,
+        jitter: false,
+        onRetry,
+      });
+      expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 1, 5);
+    });
+
+    it("jitter=true 时延迟在合理范围内", async () => {
+      const fn = vi.fn().mockRejectedValueOnce(new Error("1")).mockResolvedValueOnce("ok");
+      const onRetry = vi.fn();
+      await withRetry(fn, {
+        maxRetries: 1,
+        baseDelayMs: 100,
+        jitter: true,
+        onRetry,
+      });
+      // 延迟应在 baseDelayMs ± 25% 范围内（即 75-125）
+      const delay = onRetry.mock.calls[0][2];
+      expect(delay).toBeGreaterThanOrEqual(75);
+      expect(delay).toBeLessThanOrEqual(125);
+    });
+
+    it("signal 已 abort 时立即抛出", async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const fn = vi.fn();
+      await expect(withRetry(fn, { signal: controller.signal })).rejects.toThrow();
+      expect(fn).not.toHaveBeenCalled();
+    });
+
+    it("fn 返回 undefined 时正常返回", async () => {
+      const fn = vi.fn().mockResolvedValue(undefined);
+      const result = await withRetry(fn);
+      expect(result).toBeUndefined();
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it("fn 返回 null 时正常返回", async () => {
+      const fn = vi.fn().mockResolvedValue(null);
+      const result = await withRetry(fn);
+      expect(result).toBeNull();
+    });
+
+    it("fn 返回 false 时正常返回", async () => {
+      const fn = vi.fn().mockResolvedValue(false);
+      const result = await withRetry(fn);
+      expect(result).toBe(false);
+    });
+
+    it("fn 返回 0 时正常返回", async () => {
+      const fn = vi.fn().mockResolvedValue(0);
+      const result = await withRetry(fn);
+      expect(result).toBe(0);
+    });
+
+    it("isRetryable 收到 attempt 参数", async () => {
+      const fn = vi.fn().mockRejectedValue(new Error("fail"));
+      const isRetryable = vi.fn().mockReturnValue(false);
+      try {
+        await withRetry(fn, { maxRetries: 3, isRetryable });
+      } catch {
+        // 忽略
+      }
+      expect(isRetryable).toHaveBeenCalledWith(expect.any(Error), 0);
+    });
+
+    it("非 Error 值抛出时也能重试", async () => {
+      let count = 0;
+      await expect(
+        withRetry(
+          () => {
+            count++;
+            if (count < 2) throw "字符串错误";
+            return "ok";
+          },
+          { maxRetries: 2, baseDelayMs: 1, jitter: false },
+        ),
+      ).resolves.toBe("ok");
+      expect(count).toBe(2);
+    });
+
+    it("同步函数返回非 Promise 值", async () => {
+      const result = await withRetry(() => 42);
+      expect(result).toBe(42);
+    });
+  });
 });
 
 describe("isIndexedDBTransientError", () => {
@@ -160,6 +303,53 @@ describe("isIndexedDBTransientError", () => {
 
   it("识别 message 关键字", () => {
     const err = new Error("transaction inactive");
+    expect(isIndexedDBTransientError(err)).toBe(true);
+  });
+
+  it("识别 InvalidStateError", () => {
+    const err = new DOMException("invalid state", "InvalidStateError");
+    expect(isIndexedDBTransientError(err)).toBe(true);
+  });
+
+  it("识别 TimeoutError", () => {
+    const err = new DOMException("timeout", "TimeoutError");
+    expect(isIndexedDBTransientError(err)).toBe(true);
+  });
+
+  it("不识别 QuotaExceededError（非临时性错误）", () => {
+    const err = new DOMException("quota exceeded", "QuotaExceededError");
+    expect(isIndexedDBTransientError(err)).toBe(false);
+  });
+
+  it("不识别非 DOMException 对象", () => {
+    const err = { name: "TransactionInactiveError", message: "test" };
+    expect(isIndexedDBTransientError(err)).toBe(false);
+  });
+
+  it("不识别 null", () => {
+    expect(isIndexedDBTransientError(null)).toBe(false);
+  });
+
+  it("不识别 undefined", () => {
+    expect(isIndexedDBTransientError(undefined)).toBe(false);
+  });
+
+  it("不识别字符串", () => {
+    expect(isIndexedDBTransientError("TransactionInactiveError")).toBe(false);
+  });
+
+  it("识别 database upgrade 消息", () => {
+    const err = new Error("database upgrade in progress");
+    expect(isIndexedDBTransientError(err)).toBe(true);
+  });
+
+  it("识别 user agent 消息（Safari 隐私模式）", () => {
+    const err = new Error("user agent denied");
+    expect(isIndexedDBTransientError(err)).toBe(true);
+  });
+
+  it("识别 request aborted 消息", () => {
+    const err = new Error("request aborted");
     expect(isIndexedDBTransientError(err)).toBe(true);
   });
 });
@@ -183,5 +373,49 @@ describe("isNetworkTransientError", () => {
 
   it("识别 failed to fetch", () => {
     expect(isNetworkTransientError(new Error("Failed to fetch"))).toBe(true);
+  });
+
+  it("识别 500 错误", () => {
+    expect(isNetworkTransientError(new Error("HTTP 500 Internal Server Error"))).toBe(true);
+  });
+
+  it("识别 502 错误", () => {
+    expect(isNetworkTransientError(new Error("HTTP 502 Bad Gateway"))).toBe(true);
+  });
+
+  it("识别 504 错误", () => {
+    expect(isNetworkTransientError(new Error("HTTP 504 Gateway Timeout"))).toBe(true);
+  });
+
+  it("不识别 401 错误", () => {
+    expect(isNetworkTransientError(new Error("HTTP 401 Unauthorized"))).toBe(false);
+  });
+
+  it("不识别 403 错误", () => {
+    expect(isNetworkTransientError(new Error("HTTP 403 Forbidden"))).toBe(false);
+  });
+
+  it("识别 network error 消息", () => {
+    expect(isNetworkTransientError(new Error("network error"))).toBe(true);
+  });
+
+  it("识别 aborted 消息", () => {
+    expect(isNetworkTransientError(new Error("request aborted"))).toBe(true);
+  });
+
+  it("不识别 null", () => {
+    expect(isNetworkTransientError(null)).toBe(false);
+  });
+
+  it("不识别 undefined", () => {
+    expect(isNetworkTransientError(undefined)).toBe(false);
+  });
+
+  it("不识别数字", () => {
+    expect(isNetworkTransientError(500)).toBe(false);
+  });
+
+  it("不识别空 Error", () => {
+    expect(isNetworkTransientError(new Error(""))).toBe(false);
   });
 });

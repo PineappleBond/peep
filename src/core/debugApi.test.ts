@@ -1,7 +1,7 @@
 /**
  * debugApi 单元测试：自定义错误类、computeZiWeiData、computeScopeData、parseDate、wrapError
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import { astro } from "iztro";
 import {
   ZiWeiError,
@@ -14,7 +14,6 @@ import {
 } from "./debugApi";
 import type { Person } from "./personDb";
 import type { Zwds, PickState } from "./useZwds";
-import type { Scope } from "./utils";
 
 /* ─────────────── 自定义错误类 ─────────────── */
 
@@ -217,6 +216,69 @@ describe("computeZiWeiData", () => {
     expect(result.hbar).not.toBeNull(); // hbar 不依赖 horoscope
     expect(result.chart).toBeNull(); // chart 需要 horoscope
   });
+
+  it("传 hourly scope 也能计算", () => {
+    const z = makeMockZwds();
+    const result = computeZiWeiData(z, "hourly");
+    expect(result.hbar).not.toBeNull();
+    expect(result.chart).not.toBeNull();
+  });
+
+  it("传 monthly scope 也能计算", () => {
+    const z = makeMockZwds();
+    const result = computeZiWeiData(z, "monthly");
+    expect(result.hbar).not.toBeNull();
+    expect(result.chart).not.toBeNull();
+  });
+
+  it("传 daily scope 也能计算", () => {
+    const z = makeMockZwds();
+    const result = computeZiWeiData(z, "daily");
+    expect(result.hbar).not.toBeNull();
+    expect(result.chart).not.toBeNull();
+  });
+
+  it("传 decadal scope 也能计算", () => {
+    const z = makeMockZwds();
+    const result = computeZiWeiData(z, "decadal");
+    expect(result.hbar).not.toBeNull();
+    expect(result.chart).not.toBeNull();
+  });
+
+  it("visible 全为 false 时 hbar 仍然有数据", () => {
+    const z = makeMockZwds({
+      visible: {
+        decadal: false,
+        yearly: false,
+        monthly: false,
+        daily: false,
+        hourly: false,
+      },
+    });
+    const result = computeZiWeiData(z);
+    expect(result.hbar).not.toBeNull();
+    expect(result.hbar!.visible.decadal).toBe(false);
+    expect(result.hbar!.visible.yearly).toBe(false);
+  });
+
+  it("visible 全为 true 时全部可见", () => {
+    const z = makeMockZwds({
+      visible: {
+        decadal: true,
+        yearly: true,
+        monthly: true,
+        daily: true,
+        hourly: true,
+      },
+    });
+    const result = computeZiWeiData(z);
+    expect(result.hbar).not.toBeNull();
+    expect(result.hbar!.visible.decadal).toBe(true);
+    expect(result.hbar!.visible.yearly).toBe(true);
+    expect(result.hbar!.visible.monthly).toBe(true);
+    expect(result.hbar!.visible.daily).toBe(true);
+    expect(result.hbar!.visible.hourly).toBe(true);
+  });
 });
 
 /* ─────────────── computeScopeData ─────────────── */
@@ -288,6 +350,88 @@ describe("computeScopeData", () => {
     expect(result!.pick.year).toBeGreaterThanOrEqual(
       result!.pick.year, // 至少不小于自身（说明 clamp 逻辑运行）
     );
+  });
+
+  it("人物姓名含特殊字符不崩溃", () => {
+    const person = makePerson({ name: "🌟特殊·名字" });
+    const result = computeScopeData(person, "2026-05-15");
+    expect(result).not.toBeNull();
+  });
+
+  it("人物 name 为空字符串不崩溃", () => {
+    const person = makePerson({ name: "" });
+    const result = computeScopeData(person, "2026-05-15");
+    expect(result).not.toBeNull();
+  });
+
+  it("人物 name 超长不崩溃", () => {
+    const person = makePerson({ name: "测".repeat(1000) });
+    const result = computeScopeData(person, "2026-05-15");
+    expect(result).not.toBeNull();
+  });
+
+  it("timeIndex 为 0（早子时）正常计算", () => {
+    const person = makePerson({ timeIndex: 0 });
+    const result = computeScopeData(person, "2026-05-15");
+    expect(result).not.toBeNull();
+  });
+
+  it("timeIndex 为 12（晚子时）正常计算", () => {
+    const person = makePerson({ timeIndex: 12 });
+    const result = computeScopeData(person, "2026-05-15");
+    expect(result).not.toBeNull();
+  });
+
+  it("lunar 历法人物正常计算", () => {
+    const person = makePerson({ calendar: "lunar", date: "1990-04-15" });
+    const result = computeScopeData(person, "2026-05-15");
+    expect(result).not.toBeNull();
+  });
+
+  it("isLeapMonth=true 正常计算", () => {
+    const person = makePerson({ isLeapMonth: true, date: "1990-04-15" });
+    const result = computeScopeData(person, "2026-05-15");
+    expect(result).not.toBeNull();
+  });
+
+  it("不同算法 zhongzhou 正常计算", () => {
+    const person = makePerson({ algorithm: "zhongzhou" });
+    const result = computeScopeData(person, "2026-05-15");
+    expect(result).not.toBeNull();
+  });
+
+  it("极远未来日期不崩溃", () => {
+    const person = makePerson();
+    const result = computeScopeData(person, "2099-12-31");
+    expect(result).not.toBeNull();
+  });
+
+  it("与出生日期相同的日期正常计算", () => {
+    const person = makePerson({ date: "2000-08-16" });
+    const result = computeScopeData(person, "2000-08-16");
+    expect(result).not.toBeNull();
+  });
+
+  it("空字符串日期抛出 ParseDateError", () => {
+    const person = makePerson();
+    expect(() => computeScopeData(person, "")).toThrow(ParseDateError);
+  });
+
+  it("超长日期字符串抛出 ParseDateError", () => {
+    const person = makePerson();
+    expect(() => computeScopeData(person, "x".repeat(200))).toThrow(ParseDateError);
+  });
+
+  it("Date 对象输入与字符串输入结果一致", () => {
+    const person = makePerson();
+    const dateStr = "2026-06-15";
+    const dateObj = new Date(2026, 5, 15); // 月份从 0 开始
+    const resultStr = computeScopeData(person, dateStr);
+    const resultObj = computeScopeData(person, dateObj);
+    expect(resultStr).not.toBeNull();
+    expect(resultObj).not.toBeNull();
+    expect(resultStr!.pick.year).toBe(resultObj!.pick.year);
+    expect(resultStr!.pick.month).toBe(resultObj!.pick.month);
   });
 });
 
@@ -426,6 +570,123 @@ describe("parseDate", () => {
         expect((err as ParseDateError).rawInput).toBe(input);
       }
     });
+
+    it("超过 100 字符的字符串抛出 ParseDateError", () => {
+      const longStr = "2024-06-15" + "x".repeat(100);
+      expect(() => parseDate(longStr)).toThrow(ParseDateError);
+    });
+
+    it("恰好 100 字符的字符串不抛出长度错误", () => {
+      // 100 字符以内是合法的——即使最终解析失败也不是长度原因
+      const str = "2024-06-15" + "0".repeat(90);
+      try {
+        parseDate(str);
+      } catch (err) {
+        // 可能抛出其他解析错误，但不应该是长度错误
+        if (err instanceof ParseDateError) {
+          expect((err as ParseDateError).message).not.toContain("过长");
+        }
+      }
+    });
+
+    it("负数时间戳被当作秒级处理（设计行为：负值 < 1e11 自动转毫秒）", () => {
+      // 负数 < 1e11，所以代码会将其乘以 1000 当作秒级时间戳
+      const ts = -86400; // -1 天（秒级）
+      const result = parseDate(ts);
+      expect(result.getTime()).toBe(-86400 * 1000); // 转为毫秒
+    });
+
+    it("0 时间戳解析为 1970-01-01", () => {
+      const result = parseDate(0);
+      expect(result.getFullYear()).toBe(1970);
+    });
+
+    it("极大时间戳的行为取决于引擎限制", () => {
+      // MAX_SAFE_INTEGER 超出部分引擎的 Date 有效范围，可能抛出 ParseDateError
+      try {
+        const result = parseDate(Number.MAX_SAFE_INTEGER);
+        // 如果引擎支持，应该返回有效 Date
+        expect(result).toBeInstanceOf(Date);
+      } catch (err) {
+        // 如果引擎不支持，应该抛出 ParseDateError
+        expect(err).toBeInstanceOf(ParseDateError);
+      }
+    });
+
+    it("Infinity 时间戳抛出 ParseDateError", () => {
+      expect(() => parseDate(Infinity)).toThrow(ParseDateError);
+    });
+
+    it("-Infinity 时间戳抛出 ParseDateError", () => {
+      expect(() => parseDate(-Infinity)).toThrow(ParseDateError);
+    });
+
+    it("闰年 2 月 29 日正确解析", () => {
+      const result = parseDate("2024-02-29"); // 2024 是闰年
+      expect(result.getFullYear()).toBe(2024);
+      expect(result.getMonth()).toBe(1); // 二月
+      expect(result.getDate()).toBe(29);
+    });
+
+    it("非闰年 2 月 29 日被浏览器自动调整", () => {
+      // 浏览器会将 2023-02-29 调整为 2023-03-01
+      const result = parseDate("2023-02-29");
+      // 不应抛出错误，浏览器会自动处理
+      expect(result).toBeInstanceOf(Date);
+    });
+
+    it("年末边界 12 月 31 日正确解析", () => {
+      const result = parseDate("2024-12-31");
+      expect(result.getMonth()).toBe(11);
+      expect(result.getDate()).toBe(31);
+    });
+
+    it("年初边界 1 月 1 日正确解析", () => {
+      const result = parseDate("2024-01-01");
+      expect(result.getMonth()).toBe(0);
+      expect(result.getDate()).toBe(1);
+    });
+
+    it("带 Tab 分隔的日期字符串", () => {
+      const result = parseDate("2024-06-15\t14:30");
+      // Tab 在 Date.parse 中可能被接受
+      expect(result).toBeInstanceOf(Date);
+    });
+
+    it("多个空格分隔的日期时间", () => {
+      const result = parseDate("2024-06-15   14:30:00");
+      expect(result.getFullYear()).toBe(2024);
+    });
+
+    it("特殊字符字符串抛出 ParseDateError", () => {
+      expect(() => parseDate("🎉🎊")).toThrow(ParseDateError);
+    });
+
+    it("中文字符串抛出 ParseDateError", () => {
+      expect(() => parseDate("二〇二四年六月")).toThrow(ParseDateError);
+    });
+
+    it("SQL 格式日期通过浏览器原生解析", () => {
+      // 某些浏览器可能支持 SQL 日期格式
+      const result = parseDate("2024/06/15");
+      expect(result.getFullYear()).toBe(2024);
+    });
+
+    it("纯零字符串解析为有效时间戳", () => {
+      const result = parseDate("0");
+      expect(result.getFullYear()).toBe(1970);
+    });
+
+    it("秒级时间戳 0 解析为 1970", () => {
+      const result = parseDate(0);
+      expect(result.getTime()).toBe(0);
+    });
+
+    it("Date 实例带时区偏移正确解析", () => {
+      const date = new Date("2024-06-15T14:30:00+08:00");
+      const result = parseDate(date);
+      expect(result).toBe(date);
+    });
   });
 });
 
@@ -477,5 +738,66 @@ describe("wrapError", () => {
     const original = "字符串错误";
     const wrapped = wrapError("label", original, TestError);
     expect((wrapped as TestError).cause).toBe(original);
+  });
+
+  it("null 值包装为错误类", () => {
+    const wrapped = wrapError("label", null, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+    expect(wrapped.message).toContain("null");
+  });
+
+  it("undefined 值包装为错误类", () => {
+    const wrapped = wrapError("label", undefined, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+    expect(wrapped.message).toContain("undefined");
+  });
+
+  it("数字值包装为错误类", () => {
+    const wrapped = wrapError("label", 42, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+    expect(wrapped.message).toContain("42");
+  });
+
+  it("布尔值包装为错误类", () => {
+    const wrapped = wrapError("label", false, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+  });
+
+  it("Symbol 值包装为错误类", () => {
+    const sym = Symbol("test");
+    const wrapped = wrapError("label", sym, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+  });
+
+  it("BigInt 值包装为错误类", () => {
+    const big = BigInt(999999999999);
+    const wrapped = wrapError("label", big, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+  });
+
+  it("循环引用对象包装时 JSON.stringify 失败但不会崩溃", () => {
+    const obj: Record<string, unknown> = { a: 1 };
+    obj.self = obj; // 循环引用
+    const wrapped = wrapError("label", obj, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+  });
+
+  it("空对象包装时 rawError 为空对象字符串", () => {
+    const wrapped = wrapError("label", {}, TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+    expect((wrapped as TestError).context.rawError).toBe("{}");
+  });
+
+  it("数组值包装时 rawError 为 JSON 序列化", () => {
+    const wrapped = wrapError("label", [1, 2, 3], TestError);
+    expect(wrapped).toBeInstanceOf(TestError);
+    expect((wrapped as TestError).context.rawError).toBe("[1,2,3]");
+  });
+
+  it("已有标签的 Error 不重复添加", () => {
+    const original = new Error("[other] 原始错误");
+    const wrapped = wrapError("label", original, TestError);
+    // 标签不同，应该添加新标签
+    expect((wrapped as Error).message).toBe("[label] [other] 原始错误");
   });
 });

@@ -2536,8 +2536,19 @@ export function wrapError<T extends BaseDebugError>(
   }
 
   // 非 Error 值（string、number、object 等）：包装为指定错误类
+  // 使用安全序列化：JSON.stringify 遇到循环引用会抛错，用 try-catch 兜底
+  let rawErrorStr: string;
+  if (typeof err === "object") {
+    try {
+      rawErrorStr = JSON.stringify(err);
+    } catch {
+      rawErrorStr = String(err);
+    }
+  } else {
+    rawErrorStr = String(err);
+  }
   return new ErrorClass(`${label} 执行失败：${String(err)}`, label, {
-    context: { rawError: typeof err === "object" ? JSON.stringify(err) : String(err) },
+    context: { rawError: rawErrorStr },
     suggestion: "此错误不是标准 Error 实例，请检查是否有地方 throw 了非 Error 值",
     cause: err,
   });

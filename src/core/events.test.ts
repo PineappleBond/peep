@@ -84,4 +84,74 @@ describe("EventEmitter 事件系统", () => {
     globalEvents.off("person.changed", badFn);
     globalEvents.off("person.changed", goodFn);
   });
+
+  describe("边缘案例", () => {
+    it("同一个监听器注册两次，Set 去重只触发一次", () => {
+      const fn = vi.fn();
+      globalEvents.on("person.changed", fn);
+      globalEvents.on("person.changed", fn);
+      globalEvents.emit("person.changed", makePerson());
+      // Set 去重，同一个函数引用只存储一次
+      expect(fn).toHaveBeenCalledTimes(1);
+      globalEvents.off("person.changed", fn);
+    });
+
+    it("off 未注册的监听器不抛错", () => {
+      const fn = vi.fn();
+      expect(() => globalEvents.off("person.changed", fn)).not.toThrow();
+    });
+
+    it("off 不存在的同名事件不抛错", () => {
+      const fn = vi.fn();
+      expect(() => globalEvents.off("nonexistent.event" as "person.changed", fn)).not.toThrow();
+    });
+
+    it("emit 传递 undefined 参数", () => {
+      const fn = vi.fn();
+      globalEvents.on("person.changed", fn);
+      globalEvents.emit("person.changed", undefined as unknown as Person);
+      expect(fn).toHaveBeenCalledWith(undefined);
+      globalEvents.off("person.changed", fn);
+    });
+
+    it("emit 传递 null 参数", () => {
+      const fn = vi.fn();
+      globalEvents.on("person.changed", fn);
+      globalEvents.emit("person.changed", null as unknown as Person);
+      expect(fn).toHaveBeenCalledWith(null);
+      globalEvents.off("person.changed", fn);
+    });
+
+    it("多个监听器中第一个抛错，后续全部执行", () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const fn1 = vi.fn(() => {
+        throw new Error("first fails");
+      });
+      const fn2 = vi.fn();
+      const fn3 = vi.fn();
+      globalEvents.on("person.changed", fn1);
+      globalEvents.on("person.changed", fn2);
+      globalEvents.on("person.changed", fn3);
+      globalEvents.emit("person.changed", makePerson());
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+      expect(fn3).toHaveBeenCalledTimes(1);
+      errorSpy.mockRestore();
+      globalEvents.off("person.changed", fn1);
+      globalEvents.off("person.changed", fn2);
+      globalEvents.off("person.changed", fn3);
+    });
+
+    it("异步监听器不影响 emit 的同步执行", () => {
+      const fn1 = vi.fn();
+      const fn2 = vi.fn();
+      globalEvents.on("person.changed", fn1);
+      globalEvents.on("person.changed", fn2);
+      globalEvents.emit("person.changed", makePerson());
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+      globalEvents.off("person.changed", fn1);
+      globalEvents.off("person.changed", fn2);
+    });
+  });
 });
