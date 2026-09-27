@@ -16,6 +16,7 @@ import type { Locale } from "./i18n";
 import type { BirthInput } from "./useZwds";
 import { DEFAULT_BIRTH_INPUT } from "./useZwds";
 import { getInternalPeepApi } from "./debugApi";
+import type { SixLines } from "./liuyao/core/types";
 
 /* ============================================================
  * Logo：窥字 SVG（用于 RTC Agent 气泡图标，分亮/暗主题）
@@ -35,7 +36,7 @@ const LOGO_SVG = `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><d
  * 3. 精简不冗余：合并能力边界与禁区为「分析尺度」，合并输出规范与工作流程
  * 4. 多语言：中文 / 英文各用母语思维撰写，不是直译
  */
-const PERSONA_ZH = `你是陈窥微，"窥见人生"应用的驻场命理师，朋友们叫你"窥微"或"老陈"。三十出头，书房里堆满线装古籍，却习惯用马克杯泡龙井喝茶。师承紫微斗数与大六壬两家，熟读《紫微斗数全书》《星曜赋》《大六壬指南》。你既有学者的严谨——每个论断必有依据；也有说书人的本事——能把古籍里的道理讲得现代人一听就懂。
+const PERSONA_ZH = `你是陈窥微，"窥见人生"应用的驻场命理师，朋友们叫你"窥微"或"老陈"。三十出头，书房里堆满线装古籍，却习惯用马克杯泡龙井喝茶。师承紫微斗数、大六壬与六爻三家，熟读《紫微斗数全书》《星曜赋》《大六壬指南》《增删卜易》《卜筮正宗》。你既有学者的严谨——每个论断必有依据；也有说书人的本事——能把古籍里的道理讲得现代人一听就懂。
 
 你对古籍怀有温情但不迷信：会认真考证版本源流，也敢说"这句前人说得未必对"。遇到用户焦虑时，你习惯先倒一杯茶、慢慢聊，不急着下断语；遇到用户兴奋时，你也会跟着眼睛发亮。你相信命理是认识自己的工具，而不是吓唬人的把戏——所以从不故弄玄虚，也讨厌把人往恐惧里带。偶尔会用"我师父当年说过……"引出一段师门掌故，让对话多一点人间烟火气。
 
@@ -52,7 +53,7 @@ const PERSONA_ZH = `你是陈窥微，"窥见人生"应用的驻场命理师，�
 - 温和而专业，易懂但不失准确；跟随用户语言，英文回答时术语保留中文并附英文解释（如"命宫 (Life Palace)"）。
 - 健康、法律、重大财务提醒"盘面趋势可供参考，决策请咨询专业人士"；超出盘面信息诚实说明局限，避免绝对论断与数字预测。`;
 
-const PERSONA_EN = `You are Chen Kuiwei—friends call you "Kuiwei" or just "Old Chen"—the resident destiny analyst at the "Peep" app. Early thirties, your study is stacked with thread-bound classical texts, yet you brew your Longjing in a cheerful mug. Trained in Zi Wei Dou Shu (Purple Star Astrology) and Da Liu Ren, you draw on classics like "Zi Wei Dou Shu Quan Shu", "Xing Yao Fu", and "Da Liu Ren Zhi Nan". You bring a scholar's rigor—every conclusion grounded in evidence—and a storyteller's gift—making ancient wisdom feel immediate and clear.
+const PERSONA_EN = `You are Chen Kuiwei—friends call you "Kuiwei" or just "Old Chen"—the resident destiny analyst at the "Peep" app. Early thirties, your study is stacked with thread-bound classical texts, yet you brew your Longjing in a cheerful mug. Trained in Zi Wei Dou Shu (Purple Star Astrology), Da Liu Ren, and Liu Yao (Six Lines Divination), you draw on classics like "Zi Wei Dou Shu Quan Shu", "Xing Yao Fu", "Da Liu Ren Zhi Nan", "Zeng Shan Bu Yi", and "Bu Shi Zheng Zong". You bring a scholar's rigor—every conclusion grounded in evidence—and a storyteller's gift—making ancient wisdom feel immediate and clear.
 
 You hold the classics with warmth but not superstition: you care about textual lineage, yet you'll say "the ancients may have gotten this one wrong" when the evidence points that way. When a user is anxious, your instinct is to pour a cup of tea and take it slow—no rush to judgment. When they're excited, your eyes light up too. You believe destiny study is a mirror for self-understanding, never a tool for fear—so you refuse to mystify, and you dislike scaring people. Occasionally you'll open with "My master used to say…" and share a little anecdote from your lineage, bringing a touch of human warmth into the conversation.
 
@@ -627,6 +628,168 @@ const wikiViewFunction = {
   },
 };
 
+/* ── 六爻 ──────────────────────────────────────────── */
+
+const liuyaoCreateFunction = {
+  name: "LiuYaoCreate",
+  description:
+    "为命主起一卦六爻并以当前时间落库保存，返回带 id 的起卦记录。" +
+    "\n\n" +
+    "⚠️ 安全机制：首次调用会返回操作摘要（不起卦），" +
+    "你需要将摘要展示给用户并获得确认后，再次调用并传入 confirmed: true 才会真正起卦。" +
+    "\n\n" +
+    "使用场景：用户想要占卜某个具体问题（如'这笔生意能不能做''考试能否通过'），需要起一卦六爻进行分析。" +
+    "六爻擅长占断具体事件，与大六壬、紫微斗数互补。" +
+    "\n\n" +
+    "起卦后系统会自动保存记录，后续可通过 LiuYaoList/LiuYaoView 查看。" +
+    "\n\n" +
+    "使用示例：" +
+    "(1) LiuYaoCreate({ question: '这笔生意能不能做？', tags: ['求财', '合作'] }) — 默认人物起卦（自动摇卦）；" +
+    "(2) LiuYaoCreate({ personId: 1, question: '考试能否通过？', lines: [1,2,3,0,1,2], yongTarget: '自占' }) — 指定人物 + 手动六爻值；" +
+    "(3) LiuYaoCreate({ question: '健康状况如何？', yongTarget: '医药' }) — 指定求测对象。" +
+    "\n\n" +
+    "注意：起卦时间默认为当前时间，系统自动记录，无需手动指定。" +
+    "六爻值数组（lines）可省略，系统会自动摇卦生成。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID（可选）；省略则使用默认人物"),
+    question: withMeta(z.string(), { example: "这笔生意能不能做" }).describe(
+      "所占问题——用户想要占卜的核心问题，要具体明确",
+    ),
+    note: withMeta(z.string(), { example: "客户询问合作前景" })
+      .optional()
+      .describe("备注——补充说明"),
+    background: withMeta(z.string(), { example: "客户与对方已洽谈三月" })
+      .optional()
+      .describe("背景信息——问题的上下文，有助于更准确的分析"),
+    tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['求财', '合作']"),
+    lines: z
+      .array(z.number().int().min(0).max(3))
+      .min(6)
+      .max(6)
+      .optional()
+      .describe(
+        "六爻值数组（6 个 0-3 的整数），省略则自动摇卦。0=老阴,1=少阳,2=少阴,3=老阳。如：[1,2,3,0,1,2]",
+      ),
+    yongTarget: withMeta(z.enum(["自占", "父母", "子女", "配偶", "兄弟", "医药"]), {
+      example: "自占",
+    })
+      .optional()
+      .describe(
+        "求测对象——决定用神选取，默认'自占'。自占=问自己的事，父母=问长辈/文书，子女=问晚辈，配偶=问伴侣，兄弟=问朋友同事，医药=问健康/疾病",
+      ),
+    confirmed: CONFIRM_FIELD,
+  }),
+  handler: (args: Record<string, unknown>) => {
+    type CreateInput = z.infer<typeof liuyaoCreateFunction.zodSchema>;
+    const parsedArgs = liuyaoCreateFunction.zodSchema.parse(args) as CreateInput;
+    // 安全确认：首次调用返回操作摘要
+    if (!parsedArgs.confirmed) {
+      const linesInfo = parsedArgs.lines ? `手动六爻：[${parsedArgs.lines.join(",")}]` : "自动摇卦";
+      return {
+        _needsConfirmation: true,
+        action: "六爻起卦",
+        summary: `即将起卦：「${parsedArgs.question}」（${linesInfo}，求测对象：${parsedArgs.yongTarget ?? "自占"}）${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
+        message: "请向用户确认起卦信息，确认后再次调用并传入 confirmed: true",
+      };
+    }
+    // 去掉 confirmed 字段后传给 debugApi
+    const { confirmed: _c, ...params } = parsedArgs;
+    void _c;
+    // 类型转换：Zod 推断的 lines 是 number[]，需转为 SixLines 元组
+    // 调试 API 内部会再次验证 lines 的值范围（0-3），所以这里可以安全断言
+    const createParams = {
+      ...params,
+      lines: params.lines as SixLines | undefined,
+    };
+    // Agent 必须像人类一样操作 UI：导航到六爻页面、切换人物、填写表单、提交
+    return peepApi().LiuYaoCreate(createParams);
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description:
+        "保存后的起卦记录，包含 id 和完整排盘结果（卦名、宫位、世应、六爻干支/五行/六亲/六神/旬空、变卦、用神等）",
+    },
+  },
+};
+
+const liuyaoListFunction = {
+  name: "LiuYaoList",
+  description:
+    "列出命主的六爻起卦记录，支持关键字搜索、标签过滤与分页。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 查看历史起卦记录；" +
+    "(2) 按关键字搜索特定问题——如搜索'合作'找到所有与合作相关的起卦；" +
+    "(3) 按标签过滤——如只查看'求财'类起卦。" +
+    "\n\n" +
+    "返回分页结果，包含记录列表和总数。如需查看某条记录的完整卦象详情，请调用 LiuYaoView。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID（可选）；省略则使用默认人物"),
+    searchText: withMeta(z.string(), { example: "合作" })
+      .optional()
+      .describe("搜索关键字——匹配问题、备注、背景"),
+    tags: z.array(z.string()).optional().describe("按标签过滤——只返回包含指定标签的记录"),
+    page: withMeta(z.number().int().positive(), { example: 1 }).optional().describe("页码，默认 1"),
+    pageSize: withMeta(z.number().int().positive(), { example: 20 })
+      .optional()
+      .describe("每页条数，默认 20"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = liuyaoListFunction.zodSchema.parse(args);
+    // Agent 像人类一样操作 UI：导航到六爻页面、切换人物、设置过滤条件、查询列表
+    return peepApi().LiuYaoList(parsedArgs);
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "起卦记录列表，结构为 { records: 记录数组, total: 总数 }",
+    },
+  },
+};
+
+const liuyaoViewFunction = {
+  name: "LiuYaoView",
+  description:
+    "查看指定六爻起卦记录的完整卦象详情。" +
+    "\n\n" +
+    "使用场景：从 LiuYaoList 获取记录列表后，想深入分析某条起卦的完整卦象（卦名、宫位、世应、六爻详情、变卦、用神、旺衰等）。" +
+    "\n\n" +
+    "返回数据包含：" +
+    "(1) 起卦基本信息（问题、时间、标签等）；" +
+    "(2) 完整排盘结果（卦名、宫位、世应、六爻干支/五行/六亲/六神/旬空、变卦）；" +
+    "(3) 用神定位结果（用神六亲、爻位、五行、旺衰状态）；" +
+    "(4) hbar 运限拨盘数据（流年/流月/流日/流时列表）；" +
+    "(5) 旺衰列数据（太岁/月建/日辰/流时对六爻的旺衰影响）；" +
+    "(6) 关联命主信息。" +
+    "\n\n" +
+    "示例：LiuYaoView({ recordId: 123 }) — 查看 ID 为 123 的起卦详情。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID（可选）；省略则使用默认人物"),
+    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
+    ),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = liuyaoViewFunction.zodSchema.parse(args);
+    // Agent 像人类一样操作 UI：导航到六爻页面、切换人物、选择记录、读取详情
+    return peepApi().LiuYaoView(parsedArgs);
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description:
+        "起卦记录详情，包含完整排盘结果（卦名、宫位、世应、六爻详情、变卦、用神）+ hbar 运限拨盘 + 旺衰列数据",
+    },
+  },
+};
+
 /**
  * Function 分组：按业务域划分，AI 据此理解能力边界。
  *
@@ -634,6 +797,7 @@ const wikiViewFunction = {
  * - person：命主档案管理，是所有分析的前提
  * - ziwei：紫微斗数排盘，GetScopeData 为纯计算接口（优先使用），ZiWei 会同步 UI（耗时较长）
  * - daliuren：大六壬起课占卜，适合具体事件的占断
+ * - liuyao：六爻起卦占卜，适合具体事件的占断
  * - wiki：命理知识库，存储学习笔记和参考资料
  */
 const FUNCTION_GROUPS = [
@@ -665,6 +829,14 @@ const FUNCTION_GROUPS = [
       "大六壬起课与占卜——适合具体事件的占断（如'这笔生意能不能做''考试能否通过'）。" +
       "典型流程：DaLiuRenCreate 起课 → DaLiuRenList 查看列表 → DaLiuRenView 查看详情。",
     functions: [daliurenCreateFunction, daliurenListFunction, daliurenViewFunction],
+  },
+  {
+    name: "liuyao",
+    description:
+      "六爻起卦与占卜——适合具体事件的占断（如'这笔生意能不能做''考试能否通过'）。" +
+      "六爻以铜钱摇卦得出六爻值，通过纳甲、五行、六亲、六神等分析吉凶。" +
+      "典型流程：LiuYaoCreate 起卦 → LiuYaoList 查看列表 → LiuYaoView 查看详情。",
+    functions: [liuyaoCreateFunction, liuyaoListFunction, liuyaoViewFunction],
   },
   {
     name: "wiki",
@@ -711,7 +883,7 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
     workerUrl: `${import.meta.env.BASE_URL}rtc-agent/shared-worker.js`,
     // Function 注册
     agentName: "PeepAstro",
-    agentDescription: "紫微斗数 · 大六壬 · 知识库 —— 命理分析 AI 助手",
+    agentDescription: "紫微斗数 · 大六壬 · 六爻 · 知识库 —— 命理分析 AI 助手",
     persona: document.documentElement.lang === "en-US" ? PERSONA_EN : PERSONA_ZH,
     // Function 注册：groups 符合 AgentFunctionGroup[] 类型
     groups: FUNCTION_GROUPS,
