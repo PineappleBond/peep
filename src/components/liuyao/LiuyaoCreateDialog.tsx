@@ -215,8 +215,17 @@ export function LiuyaoCreateDialog({
       const timeStr = formatDateTime(now.getTime(), true).split(" ")[1];
       const divinationTime = `${dateStr}T${timeStr}`;
 
+      // 如果是摇卦模式，在保存时自动摇卦（使用时间戳确保每次不同）
+      let finalLines = lines;
+      if (divinationMethod === "toss") {
+        const seedStr = `${values.question}-${values.background}-${values.note}-${Date.now()}`;
+        const seed = hashString(seedStr);
+        finalLines = tossHexagram(seed);
+        setLines(finalLines); // 更新状态以显示最终结果
+      }
+
       // 排盘
-      const chart = buildChart({ lines, date: dateStr });
+      const chart = buildChart({ lines: finalLines, date: dateStr });
       const yong = locateYong(chart, yongTarget);
 
       const record: LiuyaoRecord = {
@@ -226,7 +235,7 @@ export function LiuyaoCreateDialog({
         background: values.background.trim(),
         note: values.note.trim(),
         tags: values.tags,
-        lines,
+        lines: finalLines,
         chart,
         yongTarget,
         yong,
