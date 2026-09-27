@@ -522,3 +522,200 @@
   font-family: "Courier New", monospace;
   letter-spacing: 0.1em;
 }
+
+/* ── TagInput 样式（复用大六壬） ── */
+.tag-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tag-input-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 11px;
+  background: var(--glass-bg-input);
+  border: 1px solid color-mix(in srgb, var(--gold) 20%, transparent);
+  border-radius: var(--radius-md);
+  min-height: 38px;
+  transition: var(--t-slow);
+}
+
+.tag-input-container:focus-within {
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--gold) 10%, transparent),
+    0 0 10px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+.tag-input-field {
+  flex: 1;
+  min-width: 120px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+}
+
+.tag-input-field::placeholder {
+  color: var(--faint);
+}
+
+.tag-input-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-input-tags:focus-within {
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--gold) 10%, transparent),
+    0 0 10px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+.tag-input-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 2px 7px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  color: var(--gold);
+  letter-spacing: 0.03em;
+}
+
+.tag-input-tag-text {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-input-tag-remove {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.6;
+  transition: opacity var(--dur-micro);
+  line-height: 1;
+}
+
+.tag-input-tag-remove:hover {
+  opacity: 1;
+}
+
+/* ── 六爻 Hbar 时间轴样式 ── */
+.liuyao-hbar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 14px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-xl));
+  -webkit-backdrop-filter: blur(var(--blur-xl));
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  box-shadow:
+    0 8px 34px rgba(0, 0, 0, 0.55),
+    0 0 26px rgba(85, 215, 255, 0.09),
+    inset 0 0 18px rgba(10, 18, 40, 0.6);
+}
+
+.liuyao-hbar-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.9rem;
+}
+
+.liuyao-hbar-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: stretch;
+  min-width: 0;
+}
+
+.liuyao-hbar-label {
+  flex: none;
+  width: 48px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: rgba(217, 228, 255, 0.02);
+  color: var(--faint);
+  font-size: 12px;
+  font-family: inherit;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: var(--t-normal);
+}
+
+.liuyao-hbar-label[aria-pressed="true"] {
+  color: var(--gold);
+  border-color: rgba(243, 201, 107, 0.6);
+  box-shadow: 0 0 11px rgba(243, 201, 107, 0.3);
+  text-shadow: 0 0 7px rgba(243, 201, 107, 0.8);
+}
+
+.liuyao-hbar-label:focus-visible {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.3);
+  outline: none;
+}
+
+.liuyao-hbar-cells {
+  display: flex;
+  gap: var(--space-xs);
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.liuyao-hbar-cell {
+  flex: none;
+  min-width: 58px;
+  padding: 3px 6px;
+  border-radius: 7px;
+  border: 1px solid rgba(96, 165, 250, 0.14);
+  background: var(--glass-bg-card);
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.3;
+  transition: var(--t-fast);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.liuyao-hbar-cell:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 10px rgba(85, 215, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.liuyao-hbar-cell:focus-visible {
+  outline: none;
+  border-color: var(--line-strong);
+  box-shadow: 0 0 12px rgba(85, 215, 255, 0.4);
+}
+
+.liuyao-hbar-cell.active {
+  border-color: var(--gold);
+  background: rgba(243, 201, 107, 0.15);
+  box-shadow: 0 0 14px rgba(243, 201, 107, 0.4);
+  color: var(--gold);
+}
