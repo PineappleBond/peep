@@ -103,10 +103,18 @@
 }
 
 /* ── 对称式卦象表格 ── */
+.liuyao-symmetric-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
 .liuyao-symmetric-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
+  min-width: 1200px;
 }
 
 .liuyao-symmetric-table th,
@@ -114,18 +122,37 @@
   padding: 6px 8px;
   text-align: center;
   border: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 .liuyao-symmetric-table th {
   background: var(--bg-secondary);
   font-weight: 600;
   color: var(--text-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.liuyao-main-col {
+  background: var(--bg-tertiary) !important;
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
 }
 
 /* ── 时间列（旺衰列） ── */
 .liuyao-time-col {
-  min-width: 50px;
+  min-width: 60px;
   background: var(--bg-tertiary);
+  font-size: 0.8rem;
+}
+
+/* ── 详情列 ── */
+.liuyao-detail-col {
+  min-width: 50px;
+  font-size: 0.85rem;
 }
 
 /* ── 爻位行 ── */
@@ -135,6 +162,42 @@
 
 .liuyao-line-row:hover {
   background: var(--bg-hover);
+}
+
+/* ── 世应标记 ── */
+.liuyao-shi-ying-mark {
+  display: inline-block;
+  padding: 1px 4px;
+  background: var(--primary-light, rgba(59, 130, 246, 0.1));
+  border-radius: 3px;
+  font-size: 0.75rem;
+  color: var(--primary, #3b82f6);
+  font-weight: 600;
+}
+
+/* ── 伏神标记 ── */
+.liuyao-hidden-mark {
+  display: inline-block;
+  padding: 1px 4px;
+  background: rgba(168, 85, 247, 0.1);
+  border-radius: 3px;
+  font-size: 0.75rem;
+  color: #a855f7;
+  font-weight: 600;
+}
+
+/* ── 动爻标记 ── */
+.liuyao-moving-mark {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  background: var(--primary, #3b82f6);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: bold;
 }
 
 /* ── 旺相休囚死样式（5 种状态） ── */
