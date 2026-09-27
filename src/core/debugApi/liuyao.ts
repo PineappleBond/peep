@@ -316,13 +316,16 @@ export async function LiuYaoCreate(
       });
     }
 
+    // lines 未提供时先摇卦——避免 Dialog 使用默认值 [1,1,1,1,1,1]（永远是乾卦）
+    const finalLines = params.lines ?? tossHexagram();
+
     // 1. 填写表单（在打开 Dialog 之前设置初始数据）
     fillCreateForm({
       question: params.question,
       note: params.note ?? "",
       background: params.background ?? "",
       tags: params.tags ?? [],
-      lines: params.lines,
+      lines: finalLines,
       yongTarget,
     });
     // 等待表单状态更新完成（双 rAF 替代盲等）
