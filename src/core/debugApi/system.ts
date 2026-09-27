@@ -48,6 +48,7 @@ import {
   DaLiuRenList,
   DaLiuRenView,
 } from "./daliuren";
+import { computeLiuyaoData, LiuYao, LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
 import { WikiList, WikiCreate, WikiView } from "./wiki";
 import { PersonList, PersonGet, PersonCreate, PersonUpdate, PersonDelete } from "./person";
 import type { LogLevel } from "./logger";
@@ -89,6 +90,26 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
   DaLiuRenView: {
     方法: "DaLiuRenView(params, options?)",
     说明: "大六壬起课详情（options.skipUI 仅供调试）",
+  },
+  LiuYao: {
+    方法: "LiuYao(lines?, date, yongTarget?, time?)",
+    说明: "六爻纯计算排盘（向后兼容）",
+  },
+  computeLiuyaoData: {
+    方法: "computeLiuyaoData(lines?, date, yongTarget?, time?)",
+    说明: "六爻纯计算排盘（推荐）",
+  },
+  LiuYaoCreate: {
+    方法: "LiuYaoCreate(params, options?)",
+    说明: "六爻起卦（创建记录；lines 省略则自动摇卦；options.skipUI 仅供调试）",
+  },
+  LiuYaoList: {
+    方法: "LiuYaoList(params, options?)",
+    说明: "六爻起卦列表（options.skipUI 仅供调试）",
+  },
+  LiuYaoView: {
+    方法: "LiuYaoView(params, options?)",
+    说明: "六爻起卦详情（options.skipUI 仅供调试）",
   },
   WikiCreate: {
     方法: "WikiCreate(params, options?)",
@@ -523,7 +544,12 @@ export async function health(): Promise<{
 
   // 1. 检查回调注册
   const callbacksReady = getCallbacksReady();
-  if (callbacksReady.ziwei && callbacksReady.daliuren && callbacksReady.wiki) {
+  if (
+    callbacksReady.ziwei &&
+    callbacksReady.daliuren &&
+    callbacksReady.liuyao &&
+    callbacksReady.wiki
+  ) {
     checks["回调注册"] = { status: "ok", message: "全部页面回调已就绪" };
   } else {
     checks["回调注册"] = {
@@ -668,6 +694,12 @@ export function help(): void {
       `  peep.computeDaLiuRenData("2024-06-15", "14:30")  纯计算排盘\n` +
       `  await peep.DaLiuRenCreate({ question: "测试" })  创建起课记录\n` +
       `\n` +
+      `六爻:\n` +
+      `  peep.computeLiuyaoData(undefined, "2024-06-15")  纯计算排盘（自动摇卦）\n` +
+      `  peep.computeLiuyaoData([1,2,3,0,1,2], "2024-06-15", "自占")  指定六爻值\n` +
+      `  await peep.LiuYaoCreate({ question: "测试" })    创建起卦记录（自动摇卦）\n` +
+      `  await peep.LiuYaoCreate({ question: "测试", lines: [1,1,1,1,1,1] })  手动六爻值\n` +
+      `\n` +
       `人物管理:\n` +
       `  await peep.PersonList()                    列出所有人物\n` +
       `  await peep.PersonCreate({ name: "张三", ... })  创建人物\n` +
@@ -786,6 +818,13 @@ export function initDebugApi() {
     DaLiuRenCreate,
     DaLiuRenList,
     DaLiuRenView,
+
+    // 六爻
+    computeLiuyaoData,
+    LiuYao,
+    LiuYaoCreate,
+    LiuYaoList,
+    LiuYaoView,
 
     // Wiki
     WikiList,

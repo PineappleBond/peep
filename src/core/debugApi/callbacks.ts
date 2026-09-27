@@ -6,11 +6,14 @@
  */
 
 import type { Zwds } from "../useZwds";
-import type { Person, LiurenRecord, WikiDocument } from "../personDb";
+import type { Person, LiurenRecord, LiuyaoRecord, WikiDocument } from "../personDb";
 import type { LiurenListFilters, LiurenListResult } from "../daliurenDb";
+import type { LiuyaoListFilters, LiuyaoListResult } from "../liuyaoDb";
 import type { WikiListFilters, WikiListResult } from "../wikiDb";
+import type { SixLines, YongTarget } from "../liuyao/core/types";
+import type { LiuyaoHbarVisible, LiuyaoHbarPick, LiuyaoHbarState } from "../liuyao/hbar";
 import { log } from "./logger";
-import { ZiWeiError, DaLiuRenError, WikiError, ApiErrorCode } from "./errors";
+import { ZiWeiError, DaLiuRenError, LiuyaoError, WikiError, ApiErrorCode } from "./errors";
 
 /* ============================================================
  * React 回调注册——从 App.tsx / 各页面注入
@@ -34,6 +37,29 @@ let _submitCreateForm: (() => Promise<LiurenRecord>) | null = null;
 let _selectRecord: ((recordId: number) => Promise<LiurenRecord | null>) | null = null;
 let _getSelectedRecord: (() => LiurenRecord | null) | null = null;
 
+/** 六爻 React 回调注册：从 LiuyaoPage.tsx 注入 */
+let _getLiuyaoList: ((filters: LiuyaoListFilters) => Promise<LiuyaoListResult>) | null = null;
+let _setLiuyaoListFilters:
+  ((filters: { searchText?: string; tags?: string[]; page?: number }) => void) | null = null;
+let _openLiuyaoCreateDialog: (() => void) | null = null;
+let _fillLiuyaoCreateForm:
+  | ((data: {
+      question: string;
+      note?: string;
+      background?: string;
+      tags?: string[];
+      lines?: SixLines;
+      yongTarget?: YongTarget;
+    }) => void)
+  | null = null;
+let _submitLiuyaoCreateForm: (() => Promise<LiuyaoRecord>) | null = null;
+let _selectLiuyaoRecord: ((recordId: number) => Promise<LiuyaoRecord | null>) | null = null;
+let _getSelectedLiuyaoRecord: (() => LiuyaoRecord | null) | null = null;
+let _setLiuyaoHbarVisibility: ((level: keyof LiuyaoHbarVisible, visible: boolean) => void) | null =
+  null;
+let _pickLiuyaoTime: ((level: keyof LiuyaoHbarPick, value: number) => void) | null = null;
+let _getLiuyaoHbarState: (() => LiuyaoHbarState) | null = null;
+
 /** Wiki React 回调注册：从 WikiPage.tsx 注入 */
 let _getWikiList: ((filters: WikiListFilters) => Promise<WikiListResult>) | null = null;
 let _setWikiListFilters:
@@ -48,10 +74,12 @@ let _getSelectedWikiDoc: (() => WikiDocument | null) | null = null;
 const _callbacksReady: {
   ziwei: boolean;
   daliuren: boolean;
+  liuyao: boolean;
   wiki: boolean;
 } = {
   ziwei: false,
   daliuren: false,
+  liuyao: false,
   wiki: false,
 };
 
@@ -104,6 +132,40 @@ export function registerDaLiuRenCallbacks(opts: {
   log("debug", "init", "DaLiuRen 页面回调注册完成");
 }
 
+/** 注册六爻页面回调（LiuyaoPage.tsx 调用） */
+export function registerLiuyaoCallbacks(opts: {
+  getLiuyaoList: (filters: LiuyaoListFilters) => Promise<LiuyaoListResult>;
+  setListFilters?: (filters: { searchText?: string; tags?: string[]; page?: number }) => void;
+  openCreateDialog: () => void;
+  fillCreateForm: (data: {
+    question: string;
+    note?: string;
+    background?: string;
+    tags?: string[];
+    lines?: SixLines;
+    yongTarget?: YongTarget;
+  }) => void;
+  submitCreateForm: () => Promise<LiuyaoRecord>;
+  selectRecord: (recordId: number) => Promise<LiuyaoRecord | null>;
+  getSelectedRecord: () => LiuyaoRecord | null;
+  setHbarVisibility: (level: keyof LiuyaoHbarVisible, visible: boolean) => void;
+  pickTime: (level: keyof LiuyaoHbarPick, value: number) => void;
+  getHbarState: () => LiuyaoHbarState;
+}) {
+  _getLiuyaoList = opts.getLiuyaoList;
+  if (opts.setListFilters) _setLiuyaoListFilters = opts.setListFilters;
+  _openLiuyaoCreateDialog = opts.openCreateDialog;
+  _fillLiuyaoCreateForm = opts.fillCreateForm;
+  _submitLiuyaoCreateForm = opts.submitCreateForm;
+  _selectLiuyaoRecord = opts.selectRecord;
+  _getSelectedLiuyaoRecord = opts.getSelectedRecord;
+  _setLiuyaoHbarVisibility = opts.setHbarVisibility;
+  _pickLiuyaoTime = opts.pickTime;
+  _getLiuyaoHbarState = opts.getHbarState;
+  _callbacksReady.liuyao = true;
+  log("debug", "init", "Liuyao 页面回调注册完成");
+}
+
 /** 注册 Wiki 页面回调（WikiPage.tsx 调用） */
 export function registerWikiCallbacks(opts: {
   getWikiList: (filters: WikiListFilters) => Promise<WikiListResult>;
@@ -130,7 +192,7 @@ export function registerWikiCallbacks(opts: {
  * 注意：不清空回调函数本身（避免其他模块持有旧引用时报错），
  * 仅重置就绪标志——下次同页面重新挂载时会由 register* 重新覆盖。
  */
-export function unregisterPageCallbacks(page: "ziwei" | "daliuren" | "wiki") {
+export function unregisterPageCallbacks(page: "ziwei" | "daliuren" | "liuyao" | "wiki") {
   _callbacksReady[page] = false;
   log("debug", "init", `${page} 页面回调已注销`);
 }
@@ -158,6 +220,16 @@ export function resetCallbacks(): void {
   _submitCreateForm = null;
   _selectRecord = null;
   _getSelectedRecord = null;
+  _getLiuyaoList = null;
+  _setLiuyaoListFilters = null;
+  _openLiuyaoCreateDialog = null;
+  _fillLiuyaoCreateForm = null;
+  _submitLiuyaoCreateForm = null;
+  _selectLiuyaoRecord = null;
+  _getSelectedLiuyaoRecord = null;
+  _setLiuyaoHbarVisibility = null;
+  _pickLiuyaoTime = null;
+  _getLiuyaoHbarState = null;
   _getWikiList = null;
   _setWikiListFilters = null;
   _openWikiEditor = null;
@@ -168,6 +240,7 @@ export function resetCallbacks(): void {
   // 2. 重置回调就绪标志
   _callbacksReady.ziwei = false;
   _callbacksReady.daliuren = false;
+  _callbacksReady.liuyao = false;
   _callbacksReady.wiki = false;
 
   log("info", "init", "回调状态已重置");
@@ -175,7 +248,7 @@ export function resetCallbacks(): void {
 
 /** 等待页面回调注册完成 */
 export async function waitForCallbacks(
-  page: "ziwei" | "daliuren" | "wiki",
+  page: "ziwei" | "daliuren" | "liuyao" | "wiki",
   timeout = 1000,
 ): Promise<void> {
   const start = Date.now();
@@ -185,7 +258,13 @@ export async function waitForCallbacks(
   while (!_callbacksReady[page]) {
     if (++iterations > maxIterations || Date.now() - start > timeout) {
       const ErrorClass =
-        page === "ziwei" ? ZiWeiError : page === "daliuren" ? DaLiuRenError : WikiError;
+        page === "ziwei"
+          ? ZiWeiError
+          : page === "daliuren"
+            ? DaLiuRenError
+            : page === "liuyao"
+              ? LiuyaoError
+              : WikiError;
       const err = new ErrorClass(
         `${page} 页面的调试 API 回调注册超时（${timeout}ms）——页面可能未访问过或已卸载`,
         "waitForCallbacks",
@@ -215,6 +294,16 @@ export const getFillCreateForm = () => _fillCreateForm;
 export const getSubmitCreateForm = () => _submitCreateForm;
 export const getSelectRecord = () => _selectRecord;
 export const getGetSelectedRecord = () => _getSelectedRecord;
+export const getGetLiuyaoList = () => _getLiuyaoList;
+export const getSetLiuyaoListFilters = () => _setLiuyaoListFilters;
+export const getOpenLiuyaoCreateDialog = () => _openLiuyaoCreateDialog;
+export const getFillLiuyaoCreateForm = () => _fillLiuyaoCreateForm;
+export const getSubmitLiuyaoCreateForm = () => _submitLiuyaoCreateForm;
+export const getSelectLiuyaoRecord = () => _selectLiuyaoRecord;
+export const getGetSelectedLiuyaoRecord = () => _getSelectedLiuyaoRecord;
+export const getSetLiuyaoHbarVisibility = () => _setLiuyaoHbarVisibility;
+export const getPickLiuyaoTime = () => _pickLiuyaoTime;
+export const getGetLiuyaoHbarState = () => _getLiuyaoHbarState;
 export const getGetWikiList = () => _getWikiList;
 export const getSetWikiListFilters = () => _setWikiListFilters;
 export const getOpenWikiEditor = () => _openWikiEditor;

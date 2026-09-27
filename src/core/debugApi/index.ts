@@ -15,6 +15,9 @@ export type {
   DaLiuRenComputedData,
   DaLiuRenOptions,
   DaLiuRenViewResult,
+  LiuyaoComputedData,
+  LiuyaoOptions,
+  LiuyaoViewResult,
   WikiOptions,
   WikiViewResult,
   Scope,
@@ -22,22 +25,37 @@ export type {
   BirthInput,
   Person,
   LiurenRecord,
+  LiuyaoRecord,
   WikiDocument,
   HbarData,
   DaLiuRenResult,
   LiurenListFilters,
   LiurenListResult,
+  LiuyaoListFilters,
+  LiuyaoListResult,
   WikiListFilters,
   WikiListResult,
   // 统一参数类型（新增）
   DaLiuRenListParams,
   DaLiuRenCreateParams,
   DaLiuRenViewParams,
+  LiuyaoListParams,
+  LiuyaoCreateParams,
+  LiuyaoViewParams,
   WikiListParams,
   WikiCreateParams,
   WikiViewParams,
   // API 元数据类型
   ApiMetadata,
+  // 六爻核心类型
+  ChartJSON,
+  SixLines,
+  YongShen,
+  YongTarget,
+  LiuyaoHbarData,
+  LiuyaoHbarVisible,
+  LiuyaoHbarPick,
+  VigorColumnData,
 } from "./types";
 
 // API 版本常量
@@ -50,6 +68,7 @@ export {
   ParseDateError,
   ComputeScopeError,
   DaLiuRenError,
+  LiuyaoError,
   WikiError,
   wrapError,
   // 错误代码（新增）
@@ -79,6 +98,7 @@ export {
   registerDebugApi,
   registerZiWeiCallbacks,
   registerDaLiuRenCallbacks,
+  registerLiuyaoCallbacks,
   registerWikiCallbacks,
   unregisterPageCallbacks,
   resetCallbacks,
@@ -95,6 +115,16 @@ export {
   getSubmitCreateForm,
   getSelectRecord,
   getGetSelectedRecord,
+  getGetLiuyaoList,
+  getSetLiuyaoListFilters,
+  getOpenLiuyaoCreateDialog,
+  getFillLiuyaoCreateForm,
+  getSubmitLiuyaoCreateForm,
+  getSelectLiuyaoRecord,
+  getGetSelectedLiuyaoRecord,
+  getSetLiuyaoHbarVisibility,
+  getPickLiuyaoTime,
+  getGetLiuyaoHbarState,
   getGetWikiList,
   getSetWikiListFilters,
   getOpenWikiEditor,
@@ -137,6 +167,9 @@ export {
   DaLiuRenView,
 } from "./daliuren";
 
+// 六爻导出
+export { computeLiuyaoData, LiuYao, LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
+
 // Wiki 导出
 export { WikiList, WikiCreate, WikiView } from "./wiki";
 
@@ -153,6 +186,7 @@ export {
   selectPersonAndWait,
   waitForDialogReady,
   waitForDaLiuRenCallbacks,
+  waitForLiuyaoCallbacks,
   waitForRecordSaved,
   waitForWikiCallbacks,
   waitForDocSaved,

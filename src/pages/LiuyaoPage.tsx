@@ -24,8 +24,11 @@ import {
   buildLiuyaoHbarData,
   type LiuyaoHbarVisible,
   type LiuyaoHbarPick,
+  type LiuyaoHbarState,
 } from "../core/liuyao/hbar";
 import { computeVigorColumns } from "../core/liuyao/vigorColumns";
+import { registerLiuyaoCallbacks, unregisterPageCallbacks } from "../core/debugApi/callbacks";
+import type { SixLines, YongTarget } from "../core/liuyao/core/types";
 
 export function LiuyaoPage() {
   const { t } = useI18n();
@@ -71,13 +74,129 @@ export function LiuyaoPage() {
     note: string;
     background: string;
     tags: string[];
+    lines?: SixLines;
+    yongTarget?: YongTarget;
   } | null>(null);
   const [createSubmitTrigger, setCreateSubmitTrigger] = useState(0);
   const selectedRecordRef = useRef<LiuyaoRecord | null>(null);
+  const submitPollRef = useRef<{
+    interval: ReturnType<typeof setInterval>;
+    timeout: ReturnType<typeof setTimeout>;
+  } | null>(null);
+
+  // 清理 submitPollRef
+  useEffect(() => {
+    return () => {
+      if (submitPollRef.current) {
+        clearInterval(submitPollRef.current.interval);
+        clearTimeout(submitPollRef.current.timeout);
+        submitPollRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     selectedRecordRef.current = selectedRecord;
   }, [selectedRecord]);
+
+  // 注册六爻调试 API 回调
+  useEffect(() => {
+    registerLiuyaoCallbacks({
+      getLiuyaoList: async (filters: LiuyaoListFilters) => {
+        if (!person?.id) {
+          throw new Error(t("liuyao.personNotSelected") || "未选择人物");
+        }
+        return listLiuyaoRecords(person.id, filters);
+      },
+      setListFilters: (filters: { searchText?: string; tags?: string[]; page?: number }) => {
+        liuyaoListRef.current?.setFilters({
+          searchText: filters.searchText,
+          selectedTags: filters.tags,
+          page: filters.page,
+        });
+      },
+      openCreateDialog: () => {
+        setCreateDialogOpen(true);
+      },
+      fillCreateForm: data => {
+        createFormInitialDataRef.current = {
+          question: data.question,
+          note: data.note || "",
+          background: data.background || "",
+          tags: data.tags || [],
+          lines: data.lines,
+          yongTarget: data.yongTarget,
+        };
+      },
+      submitCreateForm: async () => {
+        // 触发 Dialog 的提交
+        return new Promise<LiuyaoRecord>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            if (submitPollRef.current) {
+              clearInterval(submitPollRef.current.interval);
+              submitPollRef.current = null;
+            }
+            reject(new Error(t("liuyao.submitTimeout") || "提交超时"));
+          }, 5000);
+
+          // 触发提交（通过递增 submitTrigger）
+          setCreateSubmitTrigger(tr => tr + 1);
+
+          // 监听 listRefreshKey 变化（表示保存成功）
+          const originalRefreshKey = listRefreshKeyRef.current;
+          const checkInterval = setInterval(() => {
+            if (listRefreshKeyRef.current > originalRefreshKey) {
+              clearInterval(checkInterval);
+              clearTimeout(timeout);
+              submitPollRef.current = null;
+              // 获取最新记录（刚刚创建的）
+              if (person?.id) {
+                listLiuyaoRecords(person.id, { page: 1, pageSize: 1 })
+                  .then(result => {
+                    if (result.records.length > 0) {
+                      resolve(result.records[0]);
+                    } else {
+                      reject(new Error(t("liuyao.recordNotFound") || "记录不存在"));
+                    }
+                  })
+                  .catch(err => reject(err));
+              } else {
+                reject(new Error(t("liuyao.personNotSelected") || "未选择人物"));
+              }
+            }
+          }, 100);
+
+          // 记录定时器引用，供组件卸载时清理
+          submitPollRef.current = { interval: checkInterval, timeout };
+        });
+      },
+      selectRecord: async (recordId: number) => {
+        const record = await getLiuyaoRecord(recordId);
+        if (record) {
+          setSelectedRecord(record);
+          return record;
+        }
+        return null;
+      },
+      getSelectedRecord: () => selectedRecordRef.current,
+      setHbarVisibility: (level: keyof LiuyaoHbarVisible, visible: boolean) => {
+        setHbarVisible(prev => {
+          if (prev[level] === visible) return prev; // 无变化不更新
+          return { ...prev, [level]: visible };
+        });
+      },
+      pickTime: (level: keyof LiuyaoHbarPick, value: number) => {
+        setHbarPick(prev => ({ ...prev, [level]: value }));
+      },
+      getHbarState: (): LiuyaoHbarState => ({
+        visible: hbarVisible,
+        pick: hbarPick,
+      }),
+    });
+    return () => {
+      unregisterPageCallbacks("liuyao");
+    };
+  }, [person, t, listRefreshKeyRef, hbarVisible, hbarPick]);
 
   // 选中记录变化时，重置 hbar pick
   useEffect(() => {

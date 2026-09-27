@@ -237,6 +237,26 @@ export class DaLiuRenError extends BaseDebugError {
 }
 
 /**
+ * 六爻错误类：LiuYao 系列调试接口的专用错误。
+ * 包含上下文信息（输入参数、回调状态）和恢复建议。
+ */
+export class LiuyaoError extends BaseDebugError {
+  constructor(
+    message: string,
+    source: string,
+    options?: {
+      context?: Record<string, unknown>;
+      suggestion?: string;
+      cause?: unknown;
+      errorCode?: ApiErrorCodeType;
+    },
+  ) {
+    super(message, source, options);
+    this.name = "LiuyaoError";
+  }
+}
+
+/**
  * Wiki 错误类：Wiki 系列调试接口的专用错误。
  * 包含上下文信息（输入参数、数据库操作状态）和恢复建议。
  */

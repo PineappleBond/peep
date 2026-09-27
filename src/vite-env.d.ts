@@ -19,6 +19,11 @@ import type {
   DaLiuRenCreate,
   DaLiuRenList,
   DaLiuRenView,
+  computeLiuyaoData,
+  LiuYao,
+  LiuYaoCreate,
+  LiuYaoList,
+  LiuYaoView,
   WikiCreate,
   WikiList,
   WikiView,
@@ -53,6 +58,13 @@ declare global {
       DaLiuRenCreate: typeof DaLiuRenCreate;
       DaLiuRenList: typeof DaLiuRenList;
       DaLiuRenView: typeof DaLiuRenView;
+      /** 六爻纯计算排盘（向后兼容） */
+      LiuYao: typeof LiuYao;
+      /** 六爻纯计算排盘（推荐） */
+      computeLiuyaoData: typeof computeLiuyaoData;
+      LiuYaoCreate: typeof LiuYaoCreate;
+      LiuYaoList: typeof LiuYaoList;
+      LiuYaoView: typeof LiuYaoView;
       WikiCreate: typeof WikiCreate;
       WikiList: typeof WikiList;
       WikiView: typeof WikiView;

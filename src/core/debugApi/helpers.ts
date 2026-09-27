@@ -13,6 +13,7 @@ import {
   getNavigate,
   getCallbacksReady,
   getOpenCreateDialog,
+  getOpenLiuyaoCreateDialog,
   getOpenWikiEditor,
 } from "./callbacks";
 
@@ -41,7 +42,12 @@ export async function waitForPageLoad(): Promise<void> {
   const callbacksReady = getCallbacksReady();
   while (Date.now() - start < maxWait) {
     // 只要有任一回调查询接口就绪，认为页面已加载
-    if (callbacksReady.ziwei || callbacksReady.daliuren || callbacksReady.wiki) {
+    if (
+      callbacksReady.ziwei ||
+      callbacksReady.daliuren ||
+      callbacksReady.liuyao ||
+      callbacksReady.wiki
+    ) {
       log("debug", "wait", "页面加载完成", { elapsed: Date.now() - start });
       return;
     }
@@ -231,7 +237,7 @@ export async function waitForPickMatch(
  */
 export async function navigateToPage(
   path: string,
-  page: "ziwei" | "daliuren" | "wiki",
+  page: "ziwei" | "daliuren" | "liuyao" | "wiki",
 ): Promise<void> {
   const navigate = getNavigate();
   if (navigate) {
@@ -293,6 +299,19 @@ export async function waitForDaLiuRenCallbacks(timeout = 1000): Promise<void> {
   }
 }
 
+/** 等待六爻回调注册完成 */
+export async function waitForLiuyaoCallbacks(timeout = 1000): Promise<void> {
+  const start = Date.now();
+  const callbacksReady = getCallbacksReady();
+  while (!callbacksReady.liuyao) {
+    if (Date.now() - start > timeout) {
+      log("warn", "wait", "六爻回调注册等待超时", { timeout });
+      break;
+    }
+    await new Promise(r => setTimeout(r, 50));
+  }
+}
+
 /** 等待记录保存完成（通过验证记录 ID 存在） */
 export async function waitForRecordSaved(
   recordId: number | undefined,
@@ -326,11 +345,14 @@ export async function waitForDocSaved(docId: number | undefined, timeout = 2000)
 }
 
 /**
- * 检查 Dialog 是否已打开（通过检查 openCreateDialog/openWikiEditor 回调）
+ * 检查 Dialog 是否已打开（通过检查 openCreateDialog/openLiuyaoCreateDialog/openWikiEditor 回调）
  */
-export function isDialogOpen(type: "daliuren" | "wiki"): boolean {
+export function isDialogOpen(type: "daliuren" | "liuyao" | "wiki"): boolean {
   if (type === "daliuren") {
     return !!getOpenCreateDialog();
+  }
+  if (type === "liuyao") {
+    return !!getOpenLiuyaoCreateDialog();
   }
   return !!getOpenWikiEditor();
 }
