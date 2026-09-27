@@ -382,3 +382,46 @@ export function clearHbarCaches(): void {
   buildDaysCache.clear();
   dayGanZhiCache.clear();
 }
+
+/* ─────────────── 缓存查询接口（供六爻模块共享） ─────────────── */
+
+/**
+ * 查询缓存的日干支（供六爻模块复用，避免重复计算）
+ * @param dateStr 阳历日期字符串，格式 "YYYY-MM-DD"
+ * @returns 缓存的干支字符串（如 "甲子"），未命中返回 undefined
+ */
+export function getCachedDayGanZhi(dateStr: string): string | undefined {
+  return dayGanZhiCache.get(dateStr);
+}
+
+/**
+ * 查询缓存的阳历转农历结果（供六爻模块复用）
+ * @param dateStr 阳历日期字符串，格式 "YYYY-MM-DD"
+ * @returns 缓存的农历信息，未命中返回 undefined
+ */
+export function getCachedSolar2Lunar(
+  dateStr: string,
+): { lunarMonth: number; lunarDay: number; isLeap: boolean } | undefined {
+  return solar2lunarCache.get(dateStr);
+}
+
+/**
+ * 写入日干支缓存（供六爻模块在计算后回填，实现跨模块缓存共享）
+ * @param dateStr 阳历日期字符串，格式 "YYYY-MM-DD"
+ * @param gz 干支字符串
+ */
+export function setCachedDayGanZhi(dateStr: string, gz: string): void {
+  dayGanZhiCache.set(dateStr, gz);
+}
+
+/**
+ * 写入阳历转农历缓存（供六爻模块在计算后回填）
+ * @param dateStr 阳历日期字符串，格式 "YYYY-MM-DD"
+ * @param lunar 农历信息
+ */
+export function setCachedSolar2Lunar(
+  dateStr: string,
+  lunar: { lunarMonth: number; lunarDay: number; isLeap: boolean },
+): void {
+  solar2lunarCache.set(dateStr, lunar);
+}

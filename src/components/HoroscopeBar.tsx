@@ -4,6 +4,7 @@ import type { Scope } from "../core/utils";
 import type { Zwds } from "../core/useZwds";
 import { useZwdsContextOptional } from "../core/zwdsContext";
 import { useI18n } from "../core/i18n";
+import { Row, Cell } from "./HoroscopeBarParts";
 
 /**
  * 底部运限拨盘（文墨天机式）：
@@ -11,91 +12,7 @@ import { useI18n } from "../core/i18n";
  * 点行首标签开/关该层级在盘面上的显示。
  */
 
-/** 行组件：使用 memo 避免父组件重渲染时不必要的更新 */
-const Row = memo(function Row({
-  label,
-  scope,
-  on,
-  onToggle,
-  activeKey,
-  wrap,
-  toggleTitle,
-  children,
-}: {
-  label: string;
-  scope: Scope;
-  on: boolean;
-  onToggle: () => void;
-  activeKey: string | number;
-  wrap?: boolean;
-  toggleTitle: string;
-  children: ReactNode;
-}) {
-  const box = useRef<HTMLDivElement>(null);
-  const { t } = useI18n();
-
-  useEffect(() => {
-    if (wrap) return;
-    const el = box.current?.querySelector<HTMLElement>(".hcell.on");
-    el?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
-  }, [activeKey, wrap]);
-
-  return (
-    <div className={`hrow hrow-${scope}`} role="group" aria-label={label}>
-      <button
-        className={`hlabel ${on ? "on" : ""}`}
-        onClick={onToggle}
-        title={toggleTitle}
-        aria-pressed={on}
-        type="button"
-      >
-        {label}
-      </button>
-      <div
-        ref={box}
-        className={`hcells ${wrap ? "hcells-grid" : ""}`}
-        role="listbox"
-        aria-label={t("hbar.listBox", { label })}
-      >
-        {children}
-      </div>
-    </div>
-  );
-});
-
-/** 单元格组件：使用 memo 避免父组件重渲染时不必要的更新 */
-const Cell = memo(function Cell({
-  main,
-  sub,
-  solar,
-  scope,
-  active,
-  onClick,
-  title,
-}: {
-  main: string;
-  sub?: string;
-  solar?: string;
-  scope: Scope;
-  active: boolean;
-  onClick: () => void;
-  title?: string;
-}) {
-  return (
-    <button
-      className={`hcell ${active ? `on on-${scope}` : ""}`}
-      onClick={onClick}
-      title={title}
-      aria-selected={active}
-      type="button"
-      role="option"
-    >
-      <b>{main}</b>
-      {solar ? <i>{solar}</i> : null}
-      {sub ? <i>{sub}</i> : null}
-    </button>
-  );
-});
+// Row 和 Cell 已提取到 HoroscopeBarParts.tsx 并导出，供 LiuyaoHbar 复用
 
 export const HoroscopeBar = memo(function HoroscopeBar({ z: zProp }: { z?: Zwds } = {}) {
   const { t } = useI18n();
