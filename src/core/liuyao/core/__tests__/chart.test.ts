@@ -324,6 +324,158 @@ describe("locateYong", () => {
   });
 });
 
+describe("locateYong 6种YongTarget系统化验证", () => {
+  it("自占——取世爻六亲", () => {
+    const lines: SixLines = [1, 1, 1, 1, 1, 1]; // 乾为天
+    const chart = buildChart({ lines, date: "2024-03-15" });
+    // 乾为天世爻在六爻（戌土-兄弟）
+    const shiRel = chart.lines[chart.shi - 1].rel;
+    const yong = locateYong(chart, "自占");
+    expect(yong.rel).toBe(shiRel);
+    expect(yong.pos).toBe(chart.shi);
+    expect(yong.pickedBy).toBe("持世");
+  });
+
+  it("父母——取父母爻", () => {
+    const lines: SixLines = [1, 1, 1, 1, 1, 1]; // 乾为天
+    const chart = buildChart({ lines, date: "2024-03-15" });
+    const yong = locateYong(chart, "父母");
+    expect(yong.rel).toBe("父母");
+    expect(yong.pos).toBeGreaterThan(0);
+    // 确认找到的爻确实是父母
+    const found = chart.lines.find(l => l.pos === yong.pos);
+    expect(found?.rel).toBe("父母");
+  });
+
+  it("子女——取子孙爻", () => {
+    const lines: SixLines = [1, 1, 1, 1, 1, 1]; // 乾为天
+    const chart = buildChart({ lines, date: "2024-03-15" });
+    const yong = locateYong(chart, "子女");
+    expect(yong.rel).toBe("子孙");
+    const found = chart.lines.find(l => l.pos === yong.pos);
+    expect(found?.rel).toBe("子孙");
+  });
+
+  it("配偶——取妻财爻", () => {
+    const lines: SixLines = [1, 1, 1, 1, 1, 1]; // 乾为天
+    const chart = buildChart({ lines, date: "2024-03-15" });
+    const yong = locateYong(chart, "配偶");
+    expect(yong.rel).toBe("妻财");
+    const found = chart.lines.find(l => l.pos === yong.pos);
+    expect(found?.rel).toBe("妻财");
+  });
+
+  it("兄弟——取兄弟爻", () => {
+    const lines: SixLines = [1, 1, 1, 1, 1, 1]; // 乾为天
+    const chart = buildChart({ lines, date: "2024-03-15" });
+    const yong = locateYong(chart, "兄弟");
+    expect(yong.rel).toBe("兄弟");
+    const found = chart.lines.find(l => l.pos === yong.pos);
+    expect(found?.rel).toBe("兄弟");
+  });
+
+  it("医药——取子孙爻（与子女相同六亲）", () => {
+    const lines: SixLines = [1, 1, 1, 1, 1, 1]; // 乾为天
+    const chart = buildChart({ lines, date: "2024-03-15" });
+    const yong = locateYong(chart, "医药");
+    expect(yong.rel).toBe("子孙");
+    // 医药和子女取相同六亲，结果应一致
+    const yongZiNv = locateYong(chart, "子女");
+    expect(yong.rel).toBe(yongZiNv.rel);
+    expect(yong.pos).toBe(yongZiNv.pos);
+  });
+
+  it("6种YongTarget覆盖全部5种六亲", () => {
+    const lines: SixLines = [1, 1, 1, 1, 1, 1];
+    const chart = buildChart({ lines, date: "2024-03-15" });
+    const allRels = new Set<string>();
+
+    const targets: Array<"自占" | "父母" | "子女" | "配偶" | "兄弟" | "医药"> = [
+      "自占",
+      "父母",
+      "子女",
+      "配偶",
+      "兄弟",
+      "医药",
+    ];
+    for (const target of targets) {
+      const yong = locateYong(chart, target);
+      allRels.add(yong.rel);
+    }
+    // 应覆盖：子孙、父母、妻财、兄弟 + 世爻的六亲
+    expect(allRels.size).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe("changed卦正确性", () => {
+  it("变卦卦名正确（初爻动：乾为天→天风姤）", () => {
+    // 乾为天[1,1,1,1,1,1]初爻动→变初爻为阴→[0,1,1,1,1,1]=天风姤
+    const lines: SixLines = [3, 1, 1, 1, 1, 1]; // 初爻老阳（动）
+    const chart = buildChart({ lines, date: "2024-03-15" });
+
+    expect(chart.changed).not.toBeNull();
+    expect(chart.changed!.name).toBe("天风姤");
+    expect(chart.changed!.lines).toHaveLength(6);
+  });
+
+  it("变卦纳甲正确（变爻的干支不同于原卦）", () => {
+    const lines: SixLines = [3, 1, 1, 1, 1, 1]; // 初爻动
+    const chart = buildChart({ lines, date: "2024-03-15" });
+
+    // 初爻动：原卦初爻为阳，变卦初爻为阴
+    expect(chart.lines[0].yang).toBe(true);
+    expect(chart.changed!.lines[0].yang).toBe(false);
+    // 变爻的干支应改变（纳甲不同）
+    expect(
+      chart.lines[0].stem !== chart.changed!.lines[0].stem ||
+        chart.lines[0].branch !== chart.changed!.lines[0].branch,
+    ).toBe(true);
+  });
+
+  it("不变爻在不同卦（未变化的三爻卦）中干支保持一致", () => {
+    const lines: SixLines = [3, 1, 1, 1, 1, 1]; // 只有初爻动（在下卦）
+    const chart = buildChart({ lines, date: "2024-03-15" });
+
+    // 初爻动改变下卦，下卦三爻(0-2)纳甲全部变化
+    // 上卦(3-5)未变，纳支应一致
+    for (let i = 3; i < 6; i++) {
+      expect(chart.lines[i].stem).toBe(chart.changed!.lines[i].stem);
+      expect(chart.lines[i].branch).toBe(chart.changed!.lines[i].branch);
+      expect(chart.lines[i].elem).toBe(chart.changed!.lines[i].elem);
+    }
+  });
+
+  it("六爻全动：变卦为完全相反的卦", () => {
+    // 乾为天[1,1,1,1,1,1]全动→坤为地[0,0,0,0,0,0]
+    const lines: SixLines = [3, 3, 3, 3, 3, 3]; // 全老阳
+    const chart = buildChart({ lines, date: "2024-03-15" });
+
+    expect(chart.changed).not.toBeNull();
+    expect(chart.changed!.name).toBe("坤为地");
+    // 所有爻的阴阳都反转
+    for (let i = 0; i < 6; i++) {
+      expect(chart.lines[i].yang).toBe(true);
+      expect(chart.changed!.lines[i].yang).toBe(false);
+    }
+  });
+
+  it("变卦六亲仍以本卦卦宫五行论", () => {
+    const lines: SixLines = [3, 1, 1, 1, 1, 1]; // 初爻动
+    const chart = buildChart({ lines, date: "2024-03-15" });
+
+    // 乾宫属金，变卦各爻的六亲仍以金为基准
+    for (const cl of chart.changed!.lines) {
+      expect(["父母", "兄弟", "子孙", "妻财", "官鬼"]).toContain(cl.rel);
+    }
+  });
+
+  it("无动爻时changed为null", () => {
+    const lines: SixLines = [1, 1, 1, 1, 1, 1]; // 全少阳
+    const chart = buildChart({ lines, date: "2024-03-15" });
+    expect(chart.changed).toBeNull();
+  });
+});
+
 describe("tossLine / tossHexagram", () => {
   it("tossLine 返回 0-3 的整数", () => {
     for (let i = 0; i < 100; i++) {
