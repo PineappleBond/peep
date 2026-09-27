@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console, no-undef, @typescript-eslint/no-unused-vars */
 /**
  * 代码质量报告生成脚本
  * 收集代码行数、文件分布、依赖关系、复杂度统计等信息，
@@ -8,7 +9,7 @@
  *   --json  仅输出 JSON 到 stdout（便于管道处理）
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from "node:fs";
 import { join, extname, relative } from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -119,7 +120,6 @@ function collectCodeStats() {
   const byExtension = {};
 
   for (const file of [...tsFiles, ...cssFiles]) {
-    const rel = relative(ROOT, file);
     const ext = extname(file);
     const lines = countLines(file);
     totalLines += lines.total;
@@ -363,7 +363,7 @@ function computeQualityScore(codeStats, covStats, lintStats, largeFiles) {
 
   // 3. Lint 质量（满分 25 分）
   if (lintStats.available) {
-    const totalIssues = lintStats.errors + lintStats.warnings;
+    const _totalIssues = lintStats.errors + lintStats.warnings;
     let lintScore = 25;
     lintScore -= Math.min(25, lintStats.errors * 2);
     lintScore -= Math.min(10, lintStats.warnings * 0.5);
