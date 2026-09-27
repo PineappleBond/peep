@@ -354,11 +354,14 @@ describe("大数据量测试", () => {
     expect(dt).toBeLessThan(T.largeTags50);
   });
 
-  it("超长文本（10000+ 字符）的处理性能", async () => {
-    const longText = "测".repeat(12000);
+  it("超长文本的处理性能（各字段按 maxLength 上限填充）", async () => {
+    // 适配新增的 maxLength 验证：question≤200, background≤2000, note≤500
+    const qText = "测".repeat(200);
+    const bgText = "景".repeat(2000);
+    const noteText = "注".repeat(500);
     const t0 = performance.now();
     const created = await LiuYaoCreate(
-      { question: longText, lines: FIXED_LINES, background: longText, note: longText },
+      { question: qText, lines: FIXED_LINES, background: bgText, note: noteText },
       { skipUI: true },
     );
     const dtCreate = performance.now() - t0;
@@ -368,7 +371,9 @@ describe("大数据量测试", () => {
     const detail = await LiuYaoView({ recordId: created.id! }, { skipUI: true });
     const dtView = performance.now() - t1;
     expect(dtView).toBeLessThan(T.longText);
-    expect(detail.question).toBe(longText);
+    expect(detail.question).toBe(qText);
+    expect(detail.background).toBe(bgText);
+    expect(detail.note).toBe(noteText);
   });
 });
 

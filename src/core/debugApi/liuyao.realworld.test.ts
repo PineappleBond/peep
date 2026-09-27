@@ -242,7 +242,7 @@ describe("批量数据导入场景", () => {
         {
           question: `待标签记录 #${i + 1}`,
           lines: fixedLines(i),
-          divinationTime: `2026-09-${20 + i}T10:00:00`,
+          divinationTime: `2025-09-${20 + i}T10:00:00`, // 改为 2025 年，避免 9-28 成为未来时间
         },
         { skipUI: true },
       );
@@ -257,7 +257,7 @@ describe("批量数据导入场景", () => {
           question: `已标记记录 #${i + 1}`,
           tags: ["已审核", "重要"],
           lines: fixedLines(i + 10),
-          divinationTime: `2026-09-${20 + i}T11:00:00`,
+          divinationTime: `2025-09-${20 + i}T11:00:00`,
         },
         { skipUI: true },
       );
@@ -543,7 +543,7 @@ describe("长期跟踪场景", () => {
         question: "今年事业运势",
         tags: ["年度跟踪"],
         lines: [1, 2, 3, 0, 1, 2], // 混合卦
-        divinationTime: "2026-12-15T09:00:00",
+        divinationTime: "2025-12-15T09:00:00", // 改为 2025 年，避免成为未来时间
       },
       { skipUI: true },
     );
@@ -573,7 +573,7 @@ describe("长期跟踪场景", () => {
           question: "本月健康状况",
           tags: ["健康跟踪", `${month}月`],
           lines: fixedLines(month),
-          divinationTime: `2026-${String(month).padStart(2, "0")}-15T08:00:00`,
+          divinationTime: `2025-${String(month).padStart(2, "0")}-15T08:00:00`, // 改为 2025 年，避免 10-12 月成为未来时间
         },
         { skipUI: true },
       );
@@ -775,7 +775,7 @@ describe("复杂查询场景", () => {
           question: `大数据测试 #${i + 1}`,
           tags: [`标签${(i % 10) + 1}`],
           lines: fixedLines(i),
-          divinationTime: `2026-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}T09:00:00`,
+          divinationTime: `2025-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}T09:00:00`, // 改为 2025 年，避免部分月份成为未来时间
         },
         { skipUI: true },
       );
@@ -1076,7 +1076,7 @@ describe("专业占卜师场景", () => {
           question: `客户A的问题 #${i + 1}`,
           tags: ["客户A", i % 2 === 0 ? "财运" : "事业"],
           lines: fixedLines(i),
-          divinationTime: `2026-09-${String(20 + (i % 7)).padStart(2, "0")}T${String(9 + (i % 8)).padStart(2, "0")}:00:00`,
+          divinationTime: `2026-09-${String(10 + (i % 7)).padStart(2, "0")}T${String(9 + (i % 8)).padStart(2, "0")}:00:00`, // 日期改为 10-16，避免 i≥7 时超出 9-27
         },
         { skipUI: true },
       );
@@ -1131,7 +1131,7 @@ describe("专业占卜师场景", () => {
           tags: [i % 3 === 0 ? "财运" : i % 3 === 1 ? "事业" : "感情"],
           lines: fixedLines(i),
           background: `背景信息 ${i + 1}`,
-          divinationTime: `2026-${String((i % 12) + 1).padStart(2, "0")}-15T10:00:00`,
+          divinationTime: `2025-${String((i % 12) + 1).padStart(2, "0")}-15T10:00:00`, // 改为 2025 年，避免 10-12 月成为未来时间
         },
         { skipUI: true },
       );
@@ -1171,7 +1171,7 @@ describe("专业占卜师场景", () => {
             question: `${month}月${type}占卜 #${i + 1}`,
             tags: [type, `${month}月`],
             lines: fixedLines(month * 10 + i),
-            divinationTime: `2026-${String(month).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}T09:00:00`,
+            divinationTime: `2025-${String(month).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}T09:00:00`, // 改为 2025 年，避免 10-12 月成为未来时间
           },
           { skipUI: true },
         );

@@ -270,38 +270,58 @@ describe("3. 资源限制测试", () => {
     expect(elapsed).toBeLessThan(5000);
   }, 15000);
 
-  it("大量标签（100+）的处理", async () => {
-    // 创建 100+ 标签
-    const manyTags: string[] = [];
-    for (let i = 0; i < 110; i++) {
-      manyTags.push(`标签${i + 1}`);
+  it("超过 20 个标签会被拒绝", async () => {
+    // 适配新增的 tags 上限验证（最多 20 个）
+    const tooManyTags: string[] = [];
+    for (let i = 0; i < 25; i++) {
+      tooManyTags.push(`标签${i + 1}`);
     }
 
+    await expect(
+      LiuYaoCreate(
+        { personId: testPersonId, question: "多标签测试", tags: tooManyTags },
+        { skipUI: true },
+      ),
+    ).rejects.toThrow();
+
+    // 验证未写入数据库
+    const count = await countRecords(testPersonId);
+    expect(count).toBe(0);
+
+    // 边界值：恰好 20 个标签应能成功
+    const maxTags: string[] = [];
+    for (let i = 0; i < 20; i++) {
+      maxTags.push(`标签${i + 1}`);
+    }
     const record = await LiuYaoCreate(
-      { personId: testPersonId, question: "多标签测试", tags: manyTags },
+      { personId: testPersonId, question: "边界标签测试", tags: maxTags },
       { skipUI: true },
     );
-
-    expect(record.tags).toHaveLength(110);
-
-    // 查询时应能正常匹配
-    const result = await LiuYaoList({ personId: testPersonId, tags: ["标签50"] }, { skipUI: true });
-    expect(result.records).toHaveLength(1);
+    expect(record.tags).toHaveLength(20);
   });
 
-  it("超长文本（10000+ 字符）的处理", async () => {
-    const longText = "测".repeat(10001);
+  it("各字段按 maxLength 上限填充的处理", async () => {
+    // 适配新增的 maxLength 验证：question≤200, background≤2000, note≤500
+    const qText = "问".repeat(200);
+    const bgText = "景".repeat(2000);
+    const noteText = "注".repeat(500);
     const record = await LiuYaoCreate(
-      { personId: testPersonId, question: longText },
+      { personId: testPersonId, question: qText, background: bgText, note: noteText },
       { skipUI: true },
     );
 
-    expect(record.question).toBe(longText);
-    expect(record.question.length).toBe(10001);
+    expect(record.question).toBe(qText);
+    expect(record.question.length).toBe(200);
+    expect(record.background).toBe(bgText);
+    expect(record.background.length).toBe(2000);
+    expect(record.note).toBe(noteText);
+    expect(record.note.length).toBe(500);
 
     // 查看时也能正常返回
     const view = await LiuYaoView({ recordId: record.id! }, { skipUI: true });
-    expect(view.question.length).toBe(10001);
+    expect(view.question.length).toBe(200);
+    expect(view.background.length).toBe(2000);
+    expect(view.note.length).toBe(500);
   });
 
   it("内存占用验证——多次创建不导致内存泄漏", async () => {
