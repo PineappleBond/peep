@@ -572,3 +572,122 @@
     padding-bottom: 4px;
   }
 }
+
+/* ── 路由切换过渡动画 ── */
+.route-transition {
+  animation: routeFadeIn var(--dur-slow) var(--ease) both;
+}
+
+@keyframes routeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── 404 未找到页面 ── */
+.not-found-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 24px;
+  text-align: center;
+}
+
+.not-found-content {
+  max-width: 480px;
+}
+
+.not-found-code {
+  font-size: clamp(5rem, 15vw, 9rem);
+  font-weight: var(--font-bold);
+  font-family: var(--font-display);
+  color: var(--cyan);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-shadow: 0 0 24px color-mix(in srgb, var(--cyan) 50%, transparent);
+  margin-bottom: 8px;
+  background: linear-gradient(180deg, var(--cyan), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.not-found-title {
+  font-size: 1.4rem;
+  font-weight: var(--font-bold);
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.not-found-desc {
+  font-size: 0.95rem;
+  color: var(--dim);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.not-found-countdown {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--faint);
+  margin-bottom: 24px;
+}
+
+.not-found-cancel {
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: var(--t-fast);
+}
+
+.not-found-cancel:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 8%, transparent);
+}
+
+.not-found-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.not-found-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--cyan) 12%, transparent);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: var(--font-bold);
+  transition: var(--t-slow);
+}
+
+.not-found-home-link:hover {
+  border-color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 20%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--cyan) 30%, transparent);
+  transform: translateY(-1px);
+}
+
+.not-found-home-link:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}

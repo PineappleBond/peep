@@ -50,6 +50,18 @@
   "nav.mainNav": "主导航",
   "nav.skipNav": "跳过导航",
 
+  "page.ziwei": "紫微斗数",
+  "page.daliuren": "大六壬",
+  "page.wiki": "知识库",
+  "page.notFound": "页面未找到",
+
+  "notFound.title": "页面未找到",
+  "notFound.description": "抱歉，您访问的页面不存在或已被移动。",
+  "notFound.backHome": "返回首页",
+  "notFound.autoRedirect": "{seconds} 秒后自动返回首页…",
+  "notFound.cancelRedirect": "取消",
+  "notFound.stayHere": "已取消自动跳转，您可以手动导航",
+
   "header.ziwei.subtitle": "玄机排盘 · iztro 引擎 · 自研盘面",
   "header.daliuren.subtitle": "古法占课 · 天地盘 · 四课三传",
   "header.wiki.subtitle": "LLM 知识底座 · Markdown · 实体关联",

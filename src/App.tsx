@@ -2,13 +2,21 @@
  * 应用入口 - 路由配置
  * 使用 react-router-dom 实现路由分离
  * 非首页路由使用 React.lazy 懒加载，减少主 bundle 体积
+ *
+ * 优化点：
+ * - 路由懒加载 chunk 支持 hover 预加载（preloadable）
+ * - 每个路由包裹独立 ErrorBoundary，故障隔离
+ * - 顶部进度条 RouteLoader 显示懒加载进度
+ * - 404 路由展示真实 404 页面（带倒计时跳转）
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Spinner } from "./components/Spinner";
 import { ZiweiPage } from "./pages/ZiweiPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { RouteLoader } from "./components/RouteLoader";
 import { DevDashboard } from "./components/DevDashboard";
 import { PerformanceMonitor } from "./components/PerformanceMonitor";
 import { initDebugApi } from "./core/debugApi";
@@ -16,12 +24,25 @@ import { useI18n } from "./core/i18n";
 import { initPlugins } from "./core/pluginLoader";
 import { usePluginExtensions } from "./core/pluginSystem";
 import { createPeepRtcAgent, startThemeSync, syncLocale, syncTheme } from "./core/rtcAgent";
+import { preloadable } from "./utils/preloadable";
 
-// 大六壬 / Wiki 页面仅在访问时按需加载，降低首屏 bundle 体积
-const DaLiuRenPage = lazy(() =>
+// ── 可预加载的懒加载路由包装：支持 hover 提前下载 chunk ─────────────
+const daLiuRenLoader = preloadable(() =>
   import("./pages/DaLiuRenPage").then(m => ({ default: m.DaLiuRenPage })),
 );
-const WikiPage = lazy(() => import("./pages/WikiPage").then(m => ({ default: m.WikiPage })));
+const wikiLoader = preloadable(() =>
+  import("./pages/WikiPage").then(m => ({ default: m.WikiPage })),
+);
+
+// React.lazy 包装（使用 preloadable 的 load 函数）
+const DaLiuRenPage = lazy(daLiuRenLoader.load);
+const WikiPage = lazy(wikiLoader.load);
+
+/** 暴露路由预加载方法到全局——供 Header/NavLink hover 触发 */
+export const routePreloaders = {
+  "/liuren": daLiuRenLoader.preload,
+  "/wiki": wikiLoader.preload,
+};
 
 // 初始化调试 API（生产/开发均暴露 window.peep，供 RTC Agent Function 调用）
 initDebugApi();
@@ -46,9 +67,17 @@ function LazyFallback() {
   );
 }
 
-/** 404 未找到路由：重定向到首页 */
-function NotFoundRedirect() {
-  return <Navigate to="/" replace />;
+/**
+ * RouteWithErrorBoundary - 路由级错误边界包装
+ * 每个路由组件包裹在独立的 ErrorBoundary 内，支持自动重试
+ * 路由切换时自动重置（ErrorBoundary 已内置 popstate 监听）
+ */
+function RouteWithErrorBoundary({ children, name }: { children: React.ReactNode; name: string }) {
+  return (
+    <ErrorBoundary name={name} maxAutoRetries={1}>
+      <div className="route-transition">{children}</div>
+    </ErrorBoundary>
+  );
 }
 
 function App() {
@@ -97,12 +126,35 @@ function App() {
       <div className="rtc-layout">
         <div className="rtc-layout-main">
           <BrowserRouter basename="/peep">
+            {/* 顶部路由加载进度条 */}
+            <RouteLoader />
             <Layout>
               <Suspense fallback={<LazyFallback />}>
                 <Routes>
-                  <Route path="/" element={<ZiweiPage />} />
-                  <Route path="/liuren" element={<DaLiuRenPage />} />
-                  <Route path="/wiki" element={<WikiPage />} />
+                  <Route
+                    path="/"
+                    element={
+                      <RouteWithErrorBoundary name="ZiweiPage">
+                        <ZiweiPage />
+                      </RouteWithErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/liuren"
+                    element={
+                      <RouteWithErrorBoundary name="DaLiuRenPage">
+                        <DaLiuRenPage />
+                      </RouteWithErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/wiki"
+                    element={
+                      <RouteWithErrorBoundary name="WikiPage">
+                        <WikiPage />
+                      </RouteWithErrorBoundary>
+                    }
+                  />
                   {/* 插件路由：插件启用后自动注入 */}
                   {pluginsReady &&
                     extensions.routes.map(r => {
@@ -111,12 +163,18 @@ function App() {
                         <Route
                           key={`plugin:${r.pluginId}:${r.path}`}
                           path={r.path}
-                          element={<Comp />}
+                          element={
+                            <ErrorBoundary name={`Plugin:${r.pluginId}`} maxAutoRetries={1}>
+                              <div className="route-transition">
+                                <Comp />
+                              </div>
+                            </ErrorBoundary>
+                          }
                         />
                       );
                     })}
-                  {/* 兜底：未知路径重定向到首页 */}
-                  <Route path="*" element={<NotFoundRedirect />} />
+                  {/* 兜底：404 未找到页面（带倒计时跳转） */}
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>
             </Layout>

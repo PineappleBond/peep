@@ -2,7 +2,7 @@
  * Header 组件 - 全局共用
  * 包含标题、SVG Icon 导航、PersonSelector
  */
-import { useEffect, useMemo, memo } from "react";
+import { useEffect, useMemo, memo, useCallback } from "react";
 import { NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
@@ -14,6 +14,7 @@ import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import type { Theme } from "../core/theme";
 import { registerShortcut } from "../core/shortcuts";
 import type { PluginExtensionsView } from "../core/pluginTypes";
+import { routePreloaders } from "../App";
 
 type HeaderProps = {
   /** 当前选中人物 ID */
@@ -83,6 +84,13 @@ export const Header = memo(function Header({
     });
   }, [onCycleTheme, t]);
 
+  // ── 导航链接 hover 预加载 ────────────────────────────
+  // 鼠标悬浮到导航图标时，提前下载对应路由的 chunk（降低点击后的白屏时间）
+  const handleNavPreload = useCallback((path: string) => {
+    const preloader = (routePreloaders as Record<string, (() => void) | undefined>)[path];
+    if (preloader) preloader();
+  }, []);
+
   return (
     <header className="top">
       <h1>窥见人生</h1>
@@ -92,6 +100,7 @@ export const Header = memo(function Header({
           end
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
           aria-label={t("nav.ziwei")}
+          onMouseEnter={() => handleNavPreload("/")}
         >
           <ZiweiIcon aria-hidden="true" />
         </NavLink>
@@ -99,6 +108,7 @@ export const Header = memo(function Header({
           to="/liuren"
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
           aria-label={t("nav.daliuren")}
+          onMouseEnter={() => handleNavPreload("/liuren")}
         >
           <LiurenIcon aria-hidden="true" />
         </NavLink>
@@ -106,6 +116,7 @@ export const Header = memo(function Header({
           to="/wiki"
           className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
           aria-label={t("nav.wiki")}
+          onMouseEnter={() => handleNavPreload("/wiki")}
         >
           <WikiIcon aria-hidden="true" />
         </NavLink>

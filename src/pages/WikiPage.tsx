@@ -5,6 +5,7 @@
 import "../styles/wiki.css";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useI18n } from "../core/i18n";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import type { WikiDocument } from "../core/personDb";
 import {
   saveWikiDoc,
@@ -29,6 +30,7 @@ import { registerShortcuts } from "../core/shortcuts";
 
 export function WikiPage() {
   const { t } = useI18n();
+  useDocumentTitle(t("page.wiki"));
   const { refreshKey: listRefreshKey, refresh: refreshList } = useRefreshKey();
   const [selectedDoc, setSelectedDoc] = useState<WikiDocument | null>(null);
   const [mode, setMode] = useState<"read" | "edit">("read");

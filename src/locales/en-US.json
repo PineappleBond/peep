@@ -50,6 +50,18 @@
   "nav.mainNav": "Main navigation",
   "nav.skipNav": "Skip navigation",
 
+  "page.ziwei": "Zi Wei Dou Shu",
+  "page.daliuren": "Da Liu Ren",
+  "page.wiki": "Wiki",
+  "page.notFound": "Page Not Found",
+
+  "notFound.title": "Page Not Found",
+  "notFound.description": "Sorry, the page you visited does not exist or has been moved.",
+  "notFound.backHome": "Back to Home",
+  "notFound.autoRedirect": "Auto redirecting in {seconds}s…",
+  "notFound.cancelRedirect": "Cancel",
+  "notFound.stayHere": "Auto redirect cancelled. You may navigate manually.",
+
   "header.ziwei.subtitle": "Astrologe Engine · iztro · Custom Chart",
   "header.daliuren.subtitle": "Ancient Divination · Heaven-Earth Board · Four Courses Three Transmissions",
   "header.wiki.subtitle": "LLM Knowledge Base · Markdown · Entity Relations",

@@ -6,6 +6,7 @@
 import "../styles/daliuren.css";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useI18n } from "../core/i18n";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { LiurenList, type LiurenListHandle } from "../components/daliuren/LiurenList";
 import { LiurenChart } from "../components/daliuren/LiurenChart";
 import { LiurenCreateDialog } from "../components/daliuren/LiurenCreateDialog";
@@ -23,6 +24,7 @@ import { registerShortcut } from "../core/shortcuts";
 
 export function DaLiuRenPage() {
   const { t } = useI18n();
+  useDocumentTitle(t("page.daliuren"));
   // 列表刷新计数器（用于在 Dialog 操作后触发刷新）
   const {
     refreshKey: listRefreshKey,

@@ -4,6 +4,7 @@
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useI18n } from "../core/i18n";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { DEFAULT_BIRTH_INPUT, useZwds, type BirthInput } from "../core/useZwds";
 import { Chart } from "../components/Chart";
 import { HoroscopeBar } from "../components/HoroscopeBar";
@@ -20,6 +21,7 @@ const ExportDialog = lazy(() =>
 
 export function ZiweiPage() {
   const { t } = useI18n();
+  useDocumentTitle(t("page.ziwei"));
   const [input, setInput] = useState<BirthInput>(DEFAULT_BIRTH_INPUT);
   const [genId, setGenId] = useState(0);
   const z = useZwds(input);
