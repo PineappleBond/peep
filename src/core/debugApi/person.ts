@@ -1,0 +1,174 @@
+/**
+ * 调试 API - Person CRUD 操作
+ *
+ * 人物列表、获取、创建、更新、删除
+ */
+
+import type { Person, BirthInput } from "./types";
+import { listPersons, getPerson, savePerson, deletePerson, getDefaultPerson } from "../personDb";
+import { globalEvents } from "../events";
+import { log, timer } from "./logger";
+import { ZiWeiError, wrapError } from "./errors";
+
+/**
+ * 解析人物 ID：未传或无效时返回默认人物 ID。
+ * 所有接受 personId 的调试接口共用此逻辑——AI 不传 ID 时自动使用默认人物。
+ */
+export async function resolvePersonId(personId?: number): Promise<number> {
+  if (personId != null && Number.isFinite(personId) && personId > 0) {
+    return personId;
+  }
+  const defaultPerson = await getDefaultPerson();
+  return defaultPerson.id!;
+}
+
+/**
+ * 人物列表：返回所有人物（按保存时间倒序）。
+ * 纯 DB 操作，无 UI 交互。
+ *
+ * @returns 人物数组，每人包含 id、name、date、timeIndex、gender 等完整出生信息
+ *
+ * @example
+ * ```typescript
+ * const persons = await window.peep.PersonList();
+ * persons.forEach(p => console.log(`${p.id}: ${p.name} (${p.date})`));
+ * ```
+ */
+export async function PersonList(): Promise<Person[]> {
+  const stop = timer("PersonList");
+  try {
+    log("info", "PersonList", "查询人物列表");
+    const persons = await listPersons();
+    log("info", "PersonList", "查询成功", { count: persons.length });
+    stop();
+    return persons;
+  } catch (err) {
+    log("error", "PersonList", "查询失败", err);
+    throw wrapError("PersonList", err, ZiWeiError);
+  }
+}
+
+/**
+ * 获取人物详情：按 ID 查询，不传则返回默认人物。
+ * 纯 DB 操作，无 UI 交互。
+ *
+ * @param personId 人物 ID（可选，不传则返回默认人物）
+ * @returns 人物详情，包含完整出生信息和设置
+ * @throws Error 人物不存在时抛出
+ *
+ * @example
+ * ```typescript
+ * // 获取默认人物
+ * const person = await window.peep.PersonGet();
+ * console.log("姓名:", person.name);
+ * console.log("出生日期:", person.date);
+ *
+ * // 获取指定人物
+ * const person = await window.peep.PersonGet(1);
+ * console.log("性别:", person.gender);
+ * console.log("历法:", person.calendar);
+ * ```
+ */
+export async function PersonGet(personId?: number): Promise<Person> {
+  const stop = timer("PersonGet");
+  try {
+    const id = await resolvePersonId(personId);
+    log("info", "PersonGet", "查询人物", { id });
+    const person = await getPerson(id);
+    if (!person) {
+      throw new Error(`人物 ${id} 不存在`);
+    }
+    log("info", "PersonGet", "查询成功", { id, name: person.name });
+    stop();
+    return person;
+  } catch (err) {
+    log("error", "PersonGet", "查询失败", err);
+    throw wrapError("PersonGet", err, ZiWeiError);
+  }
+}
+
+/**
+ * 创建人物：写入 DB 并触发 UI 同步（切换为新人物）。
+ *
+ * UI 同步流程：
+ * 1. savePerson() 写入 IndexedDB
+ * 2. globalEvents.emit("person.changed") 通知所有页面
+ * 3. ZiweiPage 收到事件后重新计算盘面
+ *
+ * @param input 出生信息
+ * @param isDefault 是否设为默认人物（可选，默认 false）
+ */
+export async function PersonCreate(input: BirthInput, isDefault?: boolean): Promise<Person> {
+  const stop = timer("PersonCreate");
+  try {
+    log("info", "PersonCreate", "创建人物", { name: input.name, isDefault });
+    const person = await savePerson(undefined, input, isDefault ?? false);
+    // UI 同步：通知所有页面切换到新人物
+    globalEvents.emit("person.changed", person);
+    log("info", "PersonCreate", "创建成功", { id: person.id });
+    stop();
+    return person;
+  } catch (err) {
+    log("error", "PersonCreate", "创建失败", err);
+    throw wrapError("PersonCreate", err, ZiWeiError);
+  }
+}
+
+/**
+ * 更新人物：按 ID 更新并触发 UI 同步。
+ * 如果更新的是当前选中人物，页面会自动重新计算盘面。
+ *
+ * @param personId 人物 ID
+ * @param input 出生信息
+ * @param isDefault 是否设为默认人物（可选，不传则保持原值）
+ */
+export async function PersonUpdate(
+  personId: number,
+  input: BirthInput,
+  isDefault?: boolean,
+): Promise<Person> {
+  const stop = timer("PersonUpdate");
+  try {
+    if (!Number.isFinite(personId) || personId <= 0) {
+      throw new Error(`personId 无效：${personId}，需为正整数`);
+    }
+    log("info", "PersonUpdate", "更新人物", { id: personId, name: input.name, isDefault });
+    // 如果未指定 isDefault，保持原值
+    const defaultFlag = isDefault ?? (await getPerson(personId))?.isDefault ?? false;
+    const person = await savePerson(personId, input, defaultFlag);
+    // UI 同步：通知所有页面人物数据已变化
+    globalEvents.emit("person.changed", person);
+    log("info", "PersonUpdate", "更新成功", { id: person.id });
+    stop();
+    return person;
+  } catch (err) {
+    log("error", "PersonUpdate", "更新失败", err);
+    throw wrapError("PersonUpdate", err, ZiWeiError);
+  }
+}
+
+/**
+ * 删除人物：从 DB 删除并触发 UI 同步（切换到默认人物）。
+ * 默认人物不可删除（personDb.ts 会抛错）。
+ */
+export async function PersonDelete(personId: number): Promise<void> {
+  const stop = timer("PersonDelete");
+  try {
+    if (!Number.isFinite(personId) || personId <= 0) {
+      throw new Error(`personId 无效：${personId}，需为正整数`);
+    }
+    log("info", "PersonDelete", "删除人物", { id: personId });
+    await deletePerson(personId);
+    // UI 同步：删除后切换到默认人物
+    const defaultPerson = await getDefaultPerson();
+    globalEvents.emit("person.changed", defaultPerson);
+    log("info", "PersonDelete", "删除成功", { id: personId });
+    stop();
+  } catch (err) {
+    log("error", "PersonDelete", "删除失败", err);
+    throw wrapError("PersonDelete", err, ZiWeiError);
+  }
+}
+
+// 重新导出 wrapError 供其他模块使用
+export { wrapError } from "./errors";
