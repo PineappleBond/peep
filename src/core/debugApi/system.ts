@@ -12,7 +12,23 @@ import { getChartDataForScope } from "../analysis";
 import { log } from "./logger";
 import { getCallbacksReady, resetCallbacks } from "./callbacks";
 import { resetLogLevel, getLogLevel } from "./logger";
-import { clearAstrolabeCache, computeAstrolabe } from "./ziwei";
+import {
+  clearAstrolabeCache,
+  computeAstrolabe,
+  ZiWei,
+  computeZiWeiData,
+  computeScopeData,
+  GetScopeData,
+} from "./ziwei";
+import {
+  DaLiuRen,
+  computeDaLiuRenData,
+  DaLiuRenCreate,
+  DaLiuRenList,
+  DaLiuRenView,
+} from "./daliuren";
+import { WikiList, WikiCreate, WikiView } from "./wiki";
+import { PersonList, PersonGet, PersonCreate, PersonUpdate, PersonDelete } from "./person";
 import type { LogLevel } from "./logger";
 
 /**
@@ -438,43 +454,31 @@ export function getInternalPeepApi(): NonNullable<Window["peep"]> {
 export function initDebugApi() {
   if (typeof window === "undefined") return;
 
-  // 延迟导入以避免循环依赖
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const ziwei = require("./ziwei");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const daliuren = require("./daliuren");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const wiki = require("./wiki");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const person = require("./person");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const callbacks = require("./callbacks");
-
   const peepApi: NonNullable<Window["peep"]> = {
     // Person CRUD
-    PersonList: person.PersonList,
-    PersonGet: person.PersonGet,
-    PersonCreate: person.PersonCreate,
-    PersonUpdate: person.PersonUpdate,
-    PersonDelete: person.PersonDelete,
+    PersonList,
+    PersonGet,
+    PersonCreate,
+    PersonUpdate,
+    PersonDelete,
 
     // 紫微斗数
-    ZiWei: ziwei.ZiWei,
-    computeZiWeiData: ziwei.computeZiWeiData,
-    computeScopeData: ziwei.computeScopeData,
-    GetScopeData: ziwei.GetScopeData,
+    ZiWei,
+    computeZiWeiData,
+    computeScopeData,
+    GetScopeData,
 
     // 大六壬
-    DaLiuRen: daliuren.DaLiuRen,
-    computeDaLiuRenData: daliuren.computeDaLiuRenData,
-    DaLiuRenCreate: daliuren.DaLiuRenCreate,
-    DaLiuRenList: daliuren.DaLiuRenList,
-    DaLiuRenView: daliuren.DaLiuRenView,
+    DaLiuRen,
+    computeDaLiuRenData,
+    DaLiuRenCreate,
+    DaLiuRenList,
+    DaLiuRenView,
 
     // Wiki
-    WikiList: wiki.WikiList,
-    WikiCreate: wiki.WikiCreate,
-    WikiView: wiki.WikiView,
+    WikiList,
+    WikiCreate,
+    WikiView,
 
     // 从 analysis.ts 导入
     getChartDataForScope,
