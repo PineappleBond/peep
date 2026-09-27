@@ -7,6 +7,7 @@ import { NavLink } from "react-router-dom";
 import { PersonSelector } from "./PersonSelector";
 import { ZiweiIcon } from "./icons/ZiweiIcon";
 import { LiurenIcon } from "./icons/LiurenIcon";
+import { LiuyaoIcon } from "./icons/LiuyaoIcon";
 import { WikiIcon } from "./icons/WikiIcon";
 import type { Person } from "../core/personDb";
 import { useI18n, type Locale } from "../core/i18n";
@@ -125,6 +126,14 @@ export const Header = memo(function Header({
           onMouseEnter={() => handleNavPreload("/liuren")}
         >
           <LiurenIcon aria-hidden="true" />
+        </NavLink>
+        <NavLink
+          to="/liuyao"
+          className={({ isActive }) => (isActive ? "nav-icon active" : "nav-icon")}
+          aria-label={t("nav.liuyao") || "六爻"}
+          onMouseEnter={() => handleNavPreload("/liuyao")}
+        >
+          <LiuyaoIcon aria-hidden="true" />
         </NavLink>
         <NavLink
           to="/wiki"

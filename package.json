@@ -30,7 +30,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@rtc-agent/component": "^0.2.7-rc.4",
+    "@rtc-agent/component": "file:///Users/leichujun/Workspaces/rtc-agent/web-components/packages/component",
     "dexie": "^4.4.5",
     "iztro": "^2.5.8",
     "lunar-lite": "^0.2.7",

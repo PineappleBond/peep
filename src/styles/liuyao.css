@@ -1,0 +1,237 @@
+/* ════════════════════════════════════════════════════
+   liuyao.css — 六爻页面
+   ════════════════════════════════════════════════════ */
+
+/* ── 六爻页面 ── */
+.liuyao-page {
+  padding: 20px 24px;
+  min-height: calc(100vh - 40px);
+  animation: liuyaoFadeIn var(--dur-enter) var(--ease-enter) both;
+}
+
+@keyframes liuyaoFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── 左右分区布局 ── */
+.liuyao-layout {
+  display: flex;
+  gap: 16px;
+  height: calc(100vh - 80px);
+}
+
+.liuyao-left {
+  width: 30%;
+  min-width: 280px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.liuyao-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* ── 六爻响应式：≤900px 左右堆叠 ── */
+@media (max-width: 900px) {
+  .liuyao-page {
+    padding: var(--space-md);
+  }
+
+  .liuyao-layout {
+    flex-direction: column;
+    gap: 12px;
+    height: auto;
+  }
+
+  .liuyao-left {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .liuyao-right {
+    width: 100%;
+  }
+}
+
+/* ── 六爻响应式：≤600px 紧凑 ── */
+@media (max-width: 600px) {
+  .liuyao-page {
+    padding: 12px 10px;
+  }
+
+  .record-list {
+    padding: var(--space-sm);
+    gap: 6px;
+  }
+
+  .liuyao-chart {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  /* 对称表格横向滚动 */
+  .liuyao-symmetric-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── 卦象展示区 ── */
+.liuyao-chart {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── 对称式卦象表格 ── */
+.liuyao-symmetric-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.liuyao-symmetric-table th,
+.liuyao-symmetric-table td {
+  padding: 6px 8px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.liuyao-symmetric-table th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ── 时间列（旺衰列） ── */
+.liuyao-time-col {
+  min-width: 50px;
+  background: var(--bg-tertiary);
+}
+
+/* ── 爻位行 ── */
+.liuyao-line-row {
+  transition: background var(--dur-fast) var(--ease-enter);
+}
+
+.liuyao-line-row:hover {
+  background: var(--bg-hover);
+}
+
+/* ── 旺相休囚死样式（5 种状态） ── */
+.liuyao-vigor-prosperous {
+  color: var(--gold, #d4af37);
+  font-weight: 600;
+}
+
+.liuyao-vigor-phase {
+  color: var(--cyan, #00bcd4);
+  font-weight: 500;
+}
+
+.liuyao-vigor-rest {
+  color: var(--text);
+}
+
+.liuyao-vigor-prison {
+  color: var(--dim, #888);
+}
+
+.liuyao-vigor-death {
+  color: var(--faint, #aaa);
+  opacity: 0.7;
+}
+
+/* ── 高对比度模式 ── */
+@media (prefers-contrast: more) {
+  .liuyao-vigor-prosperous {
+    color: #ffd700;
+    font-weight: 700;
+  }
+
+  .liuyao-vigor-phase {
+    color: #00e5ff;
+    font-weight: 600;
+  }
+
+  .liuyao-vigor-prison {
+    color: #666;
+  }
+
+  .liuyao-vigor-death {
+    color: #999;
+    opacity: 1;
+  }
+}
+
+/* ── 用神标记 ── */
+.liuyao-yong-marker {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--primary-light, rgba(59, 130, 246, 0.1));
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--primary, #3b82f6);
+  font-weight: 600;
+}
+
+/* ── 旬空状态指示器 ── */
+.liuyao-kong-state {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ── 动爻标记 ── */
+.liuyao-moving-line {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--primary, #3b82f6);
+  border-radius: 50%;
+  margin-left: 4px;
+}
+
+/* ── 元信息区（月建/日辰/旬空/卦宫/世应） ── */
+.liuyao-meta-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.liuyao-meta-item {
+  display: flex;
+  gap: 6px;
+}
+
+.liuyao-meta-label {
+  color: var(--text-secondary);
+}
+
+.liuyao-meta-value {
+  font-weight: 600;
+  color: var(--text);
+}

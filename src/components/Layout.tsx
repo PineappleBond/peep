@@ -239,6 +239,7 @@ export function Layout({ children }: LayoutProps) {
   const getGuideIdForPath = (pathname: string): string | null => {
     if (pathname.startsWith("/wiki")) return "wiki";
     if (pathname.startsWith("/liuren")) return "daliuren";
+    if (pathname.startsWith("/liuyao")) return "liuyao";
     if (pathname === "/" || pathname === "") return "ziwei";
     return null;
   };
@@ -301,6 +302,12 @@ export function Layout({ children }: LayoutProps) {
       },
       {
         key: "3",
+        description: t("nav.liuyao") || "六爻",
+        group: "shortcut.group.nav",
+        handler: () => navigate("/liuyao"),
+      },
+      {
+        key: "4",
         description: t("nav.wiki"),
         group: "shortcut.group.nav",
         handler: () => navigate("/wiki"),

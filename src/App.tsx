@@ -30,17 +30,22 @@ import { preloadable } from "./utils/preloadable";
 const daLiuRenLoader = preloadable(() =>
   import("./pages/DaLiuRenPage").then(m => ({ default: m.DaLiuRenPage })),
 );
+const liuyaoLoader = preloadable(() =>
+  import("./pages/LiuyaoPage").then(m => ({ default: m.LiuyaoPage })),
+);
 const wikiLoader = preloadable(() =>
   import("./pages/WikiPage").then(m => ({ default: m.WikiPage })),
 );
 
 // React.lazy 包装（使用 preloadable 的 load 函数）
 const DaLiuRenPage = lazy(daLiuRenLoader.load);
+const LiuyaoPage = lazy(liuyaoLoader.load);
 const WikiPage = lazy(wikiLoader.load);
 
 /** 暴露路由预加载方法到全局——供 Header/NavLink hover 触发 */
 export const routePreloaders = {
   "/liuren": daLiuRenLoader.preload,
+  "/liuyao": liuyaoLoader.preload,
   "/wiki": wikiLoader.preload,
 };
 
@@ -145,6 +150,14 @@ function App() {
                     element={
                       <RouteWithErrorBoundary name="DaLiuRenPage">
                         <DaLiuRenPage />
+                      </RouteWithErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/liuyao"
+                    element={
+                      <RouteWithErrorBoundary name="LiuyaoPage">
+                        <LiuyaoPage />
                       </RouteWithErrorBoundary>
                     }
                   />

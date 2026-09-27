@@ -178,6 +178,106 @@ export async function collectSnapshot(): Promise<BackupData> {
 
 export type RestoreMode = "overwrite" | "merge" | "smart";
 
+/** 字段长度上限——防止恶意备份通过超长字符串撑爆 IndexedDB（DoS） */
+const LIMITS = {
+  personName: 50,
+  residence: 100,
+  liurenQuestion: 500,
+  liurenNote: 2000,
+  wikiTitle: 300,
+  wikiContent: 512 * 1024, // 512 KB
+  tag: 50,
+  tagsPerRecord: 50,
+} as const;
+
+/** 截断字符串到指定长度 */
+function truncate(s: unknown, max: number): string {
+  if (typeof s !== "string") return "";
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+/** 过滤并限制标签数组 */
+function sanitizeTags(tags: unknown): string[] {
+  if (!Array.isArray(tags)) return [];
+  return tags.slice(0, LIMITS.tagsPerRecord).map(t => truncate(t, LIMITS.tag));
+}
+
+/**
+ * 清洗外部备份数据——防止恶意载荷注入或存储 DoS。
+ * - 确保 data 为对象，数组字段确实为数组
+ * - 截断超长字符串字段
+ * - 过滤缺少必需字段的记录
+ */
+function sanitizeBackupData(data: unknown): BackupData {
+  if (!data || typeof data !== "object") {
+    throw new Error("备份数据格式无效：期望对象");
+  }
+  const d = data as Record<string, unknown>;
+
+  const personsRaw = Array.isArray(d.persons)
+    ? d.persons
+        .filter(p => p && typeof p === "object")
+        .slice(0, 1000) // 单次还原人物数上限
+        .map(p => {
+          const rec = p as Record<string, unknown>;
+          return {
+            ...rec,
+            name: truncate(rec.name, LIMITS.personName),
+            residence: truncate(rec.residence, LIMITS.residence),
+            date: truncate(rec.date, 20),
+            gender: truncate(rec.gender, 10),
+          };
+        })
+    : [];
+  const persons = personsRaw as BackupData["persons"];
+
+  const liurenRaw = Array.isArray(d.liuren)
+    ? d.liuren
+        .filter(r => r && typeof r === "object")
+        .slice(0, 5000)
+        .map(r => {
+          const rec = r as Record<string, unknown>;
+          return {
+            ...rec,
+            question: truncate(rec.question, LIMITS.liurenQuestion),
+            note: truncate(rec.note, LIMITS.liurenNote),
+            calculationTime: truncate(rec.calculationTime, 30),
+            background: truncate(rec.background, 2000),
+            tags: sanitizeTags(rec.tags),
+          };
+        })
+    : [];
+  const liuren = liurenRaw as BackupData["liuren"];
+
+  const wikiRaw = Array.isArray(d.wiki)
+    ? d.wiki
+        .filter(w => w && typeof w === "object")
+        .slice(0, 5000)
+        .map(w => {
+          const rec = w as Record<string, unknown>;
+          return {
+            ...rec,
+            title: truncate(rec.title, LIMITS.wikiTitle),
+            content: truncate(rec.content, LIMITS.wikiContent),
+            tags: sanitizeTags(rec.tags),
+          };
+        })
+    : [];
+  const wiki = wikiRaw as BackupData["wiki"];
+
+  const wikiLinks = Array.isArray(d.wikiLinks)
+    ? d.wikiLinks.filter(l => l && typeof l === "object").slice(0, 10000)
+    : [];
+
+  return {
+    meta: d.meta && typeof d.meta === "object" ? (d.meta as BackupData["meta"]) : undefined,
+    persons: persons.length ? persons : undefined,
+    liuren: liuren.length ? liuren : undefined,
+    wiki: wiki.length ? wiki : undefined,
+    wikiLinks: wikiLinks.length ? wikiLinks : undefined,
+  };
+}
+
 /**
  * 还原备份数据到本地数据库。
  * - overwrite：清空所有表后写入（保留原始 ID）
@@ -186,7 +286,9 @@ export type RestoreMode = "overwrite" | "merge" | "smart";
  *
  * 注意：本函数通过 unknown 中转类型，以保留快照中的 id 字段
  */
-export async function restoreBackup(data: BackupData, mode: RestoreMode): Promise<void> {
+export async function restoreBackup(rawData: BackupData, mode: RestoreMode): Promise<void> {
+  // 先清洗外部数据——防御恶意载荷与存储 DoS
+  const data = sanitizeBackupData(rawData);
   // 通过 unknown 中转以获得含 id 的完整类型（保留跨表引用）
   const persons = (data.persons ?? []) as unknown as Person[];
   const liuren = (data.liuren ?? []) as unknown as LiurenRecord[];
