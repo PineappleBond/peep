@@ -13,7 +13,7 @@ import {
 } from "../core/exportData";
 import { toast } from "../core/toast";
 import type { Zwds } from "../core/useZwds";
-import type { Person, LiurenRecord, WikiDocument } from "../core/personDb";
+import type { Person, LiurenRecord, WikiDocument, LiuyaoRecord } from "../core/personDb";
 
 type ExportDialogProps = {
   /** 是否显示 */
@@ -26,6 +26,8 @@ type ExportDialogProps = {
   zwds?: Zwds | null;
   /** 大六壬记录（可选） */
   liurenRecords?: LiurenRecord[];
+  /** 六爻记录（可选） */
+  liuyaoRecords?: LiuyaoRecord[];
   /** Wiki 文档（可选） */
   wikiDocs?: WikiDocument[];
 };
@@ -46,6 +48,7 @@ export function ExportDialog({
   person,
   zwds,
   liurenRecords,
+  liuyaoRecords,
   wikiDocs,
 }: ExportDialogProps) {
   const { t } = useI18n();
@@ -63,8 +66,9 @@ export function ExportDialog({
   // 当前可用的数据源
   const hasZiwei = !!zwds?.astrolabe;
   const hasLiuren = !!liurenRecords && liurenRecords.length > 0;
+  const hasLiuyao = !!liuyaoRecords && liuyaoRecords.length > 0;
   const hasWiki = !!wikiDocs && wikiDocs.length > 0;
-  const hasData = hasZiwei || hasLiuren || hasWiki;
+  const hasData = hasZiwei || hasLiuren || hasLiuyao || hasWiki;
 
   /** 执行导出 */
   const handleExport = useCallback(async () => {
@@ -98,6 +102,7 @@ export function ExportDialog({
         currentPerson: person,
         zwds,
         liurenRecords,
+        liuyaoRecords,
         wikiDocs,
       };
 
@@ -136,6 +141,7 @@ export function ExportDialog({
     includeHourly,
     zwds,
     liurenRecords,
+    liuyaoRecords,
     wikiDocs,
     hasData,
     t,
@@ -309,6 +315,11 @@ export function ExportDialog({
             {hasLiuren && (
               <span className="export-data-tag">
                 {t("export.liuren", { count: liurenRecords!.length })}
+              </span>
+            )}
+            {hasLiuyao && (
+              <span className="export-data-tag">
+                {t("export.liuyao", { count: liuyaoRecords!.length })}
               </span>
             )}
             {hasWiki && (

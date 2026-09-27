@@ -250,7 +250,7 @@ export function LiuyaoCreateDialog({
       handleClose();
     } catch (err) {
       console.error("[LiuyaoCreateDialog] 排盘失败", err);
-      setServerError(err instanceof Error ? err.message : "排盘失败，请检查输入");
+      setServerError(err instanceof Error ? err.message : t("liuyao.chartFailed"));
     } finally {
       setSaving(false);
     }
@@ -312,7 +312,7 @@ export function LiuyaoCreateDialog({
           <div className="liuyao-lines-input">
             {[5, 4, 3, 2, 1, 0].map(idx => (
               <div key={idx} className="liuyao-line-input-group">
-                <label>第{idx + 1}爻</label>
+                <label>{t("liuyao.nthLine", { n: idx + 1 })}</label>
                 <select
                   value={lines[idx]}
                   onChange={e => {
@@ -341,11 +341,11 @@ export function LiuyaoCreateDialog({
             {t("liuyao.tossButton") || "🪙 摇卦（模拟铜钱）"}
           </button>
           <div className="liuyao-toss-result">
-            <div className="liuyao-toss-label">当前卦象：</div>
+            <div className="liuyao-toss-label">{t("liuyao.currentHexagram")}：</div>
             <div className="liuyao-lines-display">
               {[5, 4, 3, 2, 1, 0].map(idx => (
                 <div key={idx} className="liuyao-line-display">
-                  <span className="liuyao-line-pos">第{idx + 1}爻：</span>
+                  <span className="liuyao-line-pos">{t("liuyao.nthLine", { n: idx + 1 })}：</span>
                   <span className="liuyao-line-value">
                     {lines[idx] === 0 && "老阴 ⚋⚋"}
                     {lines[idx] === 1 && "少阳 ———"}

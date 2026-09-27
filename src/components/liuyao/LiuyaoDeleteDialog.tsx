@@ -32,7 +32,7 @@ export function LiuyaoDeleteDialog({ open, onClose, record, onDeleted }: LiuyaoD
       onClose();
     } catch (err) {
       console.error("[LiuyaoDeleteDialog] 删除失败", err);
-      setServerError(err instanceof Error ? err.message : "删除失败，请重试");
+      setServerError(err instanceof Error ? err.message : t("liuyao.deleteFailed"));
     } finally {
       setDeleting(false);
     }

@@ -47,6 +47,7 @@ const TYPE_ICON: Record<SearchResultType, string> = {
   action: "⚡",
   person: "👤",
   liuren: "☰",
+  liuyao: "☷",
   wiki: "📖",
 };
 

@@ -8,6 +8,7 @@ import type { LiuyaoRecord } from "../../core/personDb";
 import type { VigorColumnData } from "../../core/liuyao/vigorColumns";
 import type { ChartLine, ChangedLine } from "../../core/liuyao/core/types";
 import { LiuyaoEmpty } from "./LiuyaoEmpty";
+import { useI18n } from "../../core/i18n";
 
 interface LiuyaoChartProps {
   record: LiuyaoRecord | null;
@@ -15,6 +16,8 @@ interface LiuyaoChartProps {
 }
 
 export const LiuyaoChart = memo(function LiuyaoChart({ record, vigorColumns }: LiuyaoChartProps) {
+  const { t } = useI18n();
+
   if (!record) {
     return <LiuyaoEmpty />;
   }
@@ -43,7 +46,7 @@ export const LiuyaoChart = memo(function LiuyaoChart({ record, vigorColumns }: L
   if (!vigorColumns) {
     return (
       <div className="liuyao-chart">
-        <div className="liuyao-empty">请选择记录以查看卦象</div>
+        <div className="liuyao-empty">{t("liuyao.chartEmpty")}</div>
       </div>
     );
   }
@@ -57,37 +60,37 @@ export const LiuyaoChart = memo(function LiuyaoChart({ record, vigorColumns }: L
         </h3>
         <div className="liuyao-meta-info">
           <div className="liuyao-meta-item">
-            <span className="liuyao-meta-label">月建：</span>
+            <span className="liuyao-meta-label">{t("liuyao.monthBuild")}：</span>
             <span className="liuyao-meta-value">{chart.month.branch}</span>
           </div>
           <div className="liuyao-meta-item">
-            <span className="liuyao-meta-label">日辰：</span>
+            <span className="liuyao-meta-label">{t("liuyao.dayMaster")}：</span>
             <span className="liuyao-meta-value">
               {chart.day.stem}
               {chart.day.branch}
             </span>
           </div>
           <div className="liuyao-meta-item">
-            <span className="liuyao-meta-label">旬空：</span>
+            <span className="liuyao-meta-label">{t("liuyao.xunKong")}：</span>
             <span className="liuyao-meta-value">
               {chart.day.kong[0]}
               {chart.day.kong[1]}
             </span>
           </div>
           <div className="liuyao-meta-item">
-            <span className="liuyao-meta-label">世爻：</span>
-            <span className="liuyao-meta-value">第{shi}爻</span>
+            <span className="liuyao-meta-label">{t("liuyao.worldLine")}：</span>
+            <span className="liuyao-meta-value">{t("liuyao.nthLine", { n: shi })}</span>
           </div>
           <div className="liuyao-meta-item">
-            <span className="liuyao-meta-label">应爻：</span>
-            <span className="liuyao-meta-value">第{ying}爻</span>
+            <span className="liuyao-meta-label">{t("liuyao.responseLine")}：</span>
+            <span className="liuyao-meta-value">{t("liuyao.nthLine", { n: ying })}</span>
           </div>
           {yong.hidden && (
             <div className="liuyao-meta-item">
-              <span className="liuyao-meta-label">伏神：</span>
+              <span className="liuyao-meta-label">{t("liuyao.hiddenGod")}：</span>
               <span className="liuyao-meta-value">
                 {yong.hidden.stem}
-                {yong.hidden.branch}（伏于第{yong.hidden.under}爻下）
+                {yong.hidden.branch}（{t("liuyao.hiddenUnder", { n: yong.hidden.under })}）
               </span>
             </div>
           )}
@@ -111,11 +114,11 @@ export const LiuyaoChart = memo(function LiuyaoChart({ record, vigorColumns }: L
               ))}
               {/* 本卦表头 */}
               <th className="liuyao-main-col" colSpan={8}>
-                本卦
+                {t("liuyao.mainHexagram")}
               </th>
               {/* 变卦表头 */}
               <th className="liuyao-main-col" colSpan={5}>
-                变卦
+                {t("liuyao.changedHexagram")}
               </th>
               {/* 右侧动态旺衰列表头（镜像） */}
               {rightColIndices.map(idx => (

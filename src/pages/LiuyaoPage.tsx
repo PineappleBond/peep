@@ -15,11 +15,13 @@ import { LiuyaoViewDialog } from "../components/liuyao/LiuyaoViewDialog";
 import { LiuyaoEditDialog } from "../components/liuyao/LiuyaoEditDialog";
 import { LiuyaoDeleteDialog } from "../components/liuyao/LiuyaoDeleteDialog";
 import { PageState } from "../components/PageState";
+import { ExportDialog } from "../components/ExportDialog";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import type { LiuyaoRecord, Person } from "../core/personDb";
 import { getLiuyaoRecord, listLiuyaoRecords, type LiuyaoListFilters } from "../core/liuyaoDb";
 import { useCurrentPerson, useRefreshKey } from "../core/usePageInit";
 import { registerShortcut } from "../core/shortcuts";
+import { toast } from "../core/toast";
 import {
   buildLiuyaoHbarData,
   type LiuyaoHbarVisible,
@@ -53,6 +55,8 @@ export function LiuyaoPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dialogRecord, setDialogRecord] = useState<LiuyaoRecord | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportRecords, setExportRecords] = useState<LiuyaoRecord[]>([]);
 
   // hbar 状态
   const [hbarVisible, setHbarVisible] = useState<LiuyaoHbarVisible>({
@@ -302,6 +306,22 @@ export function LiuyaoPage() {
     setSelectedRecord(null);
   }, [refreshList]);
 
+  // 导出
+  const handleExport = useCallback(async () => {
+    if (!person?.id) return;
+    try {
+      const result = await listLiuyaoRecords(person.id, { page: 1, pageSize: 9999 });
+      setExportRecords(result.records);
+      if (result.records.length === 0) {
+        toast.warn(t("export.noData"));
+        return;
+      }
+      setExportOpen(true);
+    } catch (err) {
+      console.error("[LiuyaoPage] 加载导出数据失败", err);
+    }
+  }, [person, t]);
+
   // 快捷键
   useEffect(() => {
     return registerShortcut({
@@ -385,6 +405,12 @@ export function LiuyaoPage() {
         onClose={() => setDeleteDialogOpen(false)}
         record={dialogRecord}
         onDeleted={handleSaved}
+      />
+      <ExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        person={person}
+        liuyaoRecords={exportRecords}
       />
     </div>
   );

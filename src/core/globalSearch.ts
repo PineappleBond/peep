@@ -37,7 +37,7 @@ function loadPinyin(): Promise<PinyinFn> {
 }
 
 /** 搜索结果类型 */
-export type SearchResultType = "person" | "liuren" | "wiki" | "action";
+export type SearchResultType = "person" | "liuren" | "liuyao" | "wiki" | "action";
 
 /** 单条搜索结果 */
 export interface SearchResultItem {
@@ -346,6 +346,9 @@ export function parseQuery(input: string): ParsedQuery {
         liuren: "liuren",
         l: "liuren",
         record: "liuren",
+        liuyao: "liuyao",
+        y: "liuyao",
+        gua: "liuyao",
         wiki: "wiki",
         w: "wiki",
         doc: "wiki",
@@ -575,6 +578,38 @@ async function searchPersons(pq: ParsedQuery, ctx: SearchContext): Promise<Searc
   return result;
 }
 
+async function searchLiuyao(pq: ParsedQuery, ctx: SearchContext): Promise<SearchResultItem[]> {
+  if (pq.types.length > 0 && !pq.types.includes("liuyao")) return [];
+  if (!ctx.currentPersonId) return [];
+  const records = await db.liuyaoRecords.where("personId").equals(ctx.currentPersonId).toArray();
+  const recentIds = getRecentIds();
+  const result: SearchResultItem[] = [];
+  for (const r of records) {
+    if (!passTagFilter(r.tags, pq)) continue;
+    if (!passTimeFilter(r.savedAt, pq)) continue;
+    const title = r.question || t("common.unnamed");
+    const subtitle = `${r.divinationTime}${r.note ? ` · ${r.note}` : ""}`;
+    const tm = await matchText(title, pq);
+    const sm = await matchText(subtitle, pq);
+    if (!tm && !sm) continue;
+    const recentRank = recentIds.indexOf(`liuyao:${r.id}`);
+    result.push({
+      id: `liuyao:${r.id}`,
+      type: "liuyao",
+      title,
+      subtitle,
+      icon: "☷",
+      action: () => {
+        ctx.navigate(`/liuyao?record=${r.id}`);
+        markRecentUsed(`liuyao:${r.id}`);
+        ctx.onClose();
+      },
+      score: computeScore(tm, sm, recentRank),
+    });
+  }
+  return result;
+}
+
 async function searchLiuren(pq: ParsedQuery, ctx: SearchContext): Promise<SearchResultItem[]> {
   if (pq.types.length > 0 && !pq.types.includes("liuren")) return [];
   if (!ctx.currentPersonId) return [];
@@ -673,6 +708,16 @@ async function searchActions(pq: ParsedQuery, ctx: SearchContext): Promise<Searc
       },
     },
     {
+      id: "action:navigate:liuyao",
+      titleKey: "nav.liuyao",
+      icon: "☷",
+      action: () => {
+        ctx.navigate("/liuyao");
+        markRecentUsed("action:navigate:liuyao");
+        ctx.onClose();
+      },
+    },
+    {
       id: "action:navigate:wiki",
       titleKey: "nav.wiki",
       icon: "📖",
@@ -753,12 +798,13 @@ async function searchActions(pq: ParsedQuery, ctx: SearchContext): Promise<Searc
 export const CATEGORY_LABELS: Record<SearchResultType, string> = {
   person: "search.category.person",
   liuren: "search.category.liuren",
+  liuyao: "search.category.liuyao",
   wiki: "search.category.wiki",
   action: "search.category.action",
 };
 
 /** 分类显示顺序 */
-export const CATEGORY_ORDER: SearchResultType[] = ["action", "person", "liuren", "wiki"];
+export const CATEGORY_ORDER: SearchResultType[] = ["action", "person", "liuren", "liuyao", "wiki"];
 
 /**
  * 综合搜索：解析查询语法，查询所有数据源，按相关性排序
@@ -769,20 +815,22 @@ export async function searchAll(
   ctx: SearchContext,
 ): Promise<{ items: SearchResultItem[]; parsed: ParsedQuery }> {
   const parsed = parseQuery(query);
-  const [persons, liuren, wiki, actions] = await Promise.all([
+  const [persons, liuren, liuyao, wiki, actions] = await Promise.all([
     searchPersons(parsed, ctx),
     searchLiuren(parsed, ctx),
+    searchLiuyao(parsed, ctx),
     searchWiki(parsed, ctx),
     searchActions(parsed, ctx),
   ]);
 
-  const all = [...actions, ...persons, ...liuren, ...wiki];
+  const all = [...actions, ...persons, ...liuren, ...liuyao, ...wiki];
 
   const typeOrder: Record<SearchResultType, number> = {
     action: 0,
     person: 1,
     liuren: 2,
-    wiki: 3,
+    liuyao: 3,
+    wiki: 4,
   };
   all.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;

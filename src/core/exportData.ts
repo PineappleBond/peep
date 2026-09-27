@@ -12,7 +12,7 @@
  * - 小限保留导出但带口径备注（辅助年系统，勿与流年混同）
  * - 杂曜带 weight 权重档（中=可参与断事，低=仅叠加参考）
  */
-import type { Person, LiurenRecord, WikiDocument } from "./personDb";
+import type { Person, LiurenRecord, WikiDocument, LiuyaoRecord } from "./personDb";
 import type { Zwds } from "./useZwds";
 import type { ChartAnalysis } from "./analysis";
 import { BRANCHES } from "./utils";
@@ -98,6 +98,8 @@ export type ExportOptions = {
   zwds?: Zwds | null;
   /** 大六壬记录 */
   liurenRecords?: LiurenRecord[];
+  /** 六爻记录 */
+  liuyaoRecords?: LiuyaoRecord[];
   /** Wiki 文档 */
   wikiDocs?: WikiDocument[];
 };
@@ -486,6 +488,61 @@ export function wikiToMarkdown(docs: WikiDocument[], personName: string): string
   return md;
 }
 
+/**
+ * 六爻记录 → Markdown
+ */
+export function liuyaoToMarkdown(record: LiuyaoRecord): string {
+  const { chart, yong, yongTarget } = record;
+  const { lines, changed, shi, ying, month, day, palace, name, type } = chart;
+
+  const parts: string[] = [];
+  parts.push(`## 六爻占卦：${record.question || "（未命名）"}`);
+  parts.push("");
+  parts.push(`- **起卦时间**：${record.divinationTime}`);
+  parts.push(`- **求测对象**：${yongTarget}`);
+  if (record.background) parts.push(`- **背景**：${record.background}`);
+  if (record.note) parts.push(`- **备注**：${record.note}`);
+  if (record.tags.length > 0) parts.push(`- **标签**：${record.tags.join("、")}`);
+  parts.push("");
+
+  // 卦象概览
+  parts.push(`**卦象**：${name} · ${palace}宫 · ${type}`);
+  parts.push(
+    `**月建**：${month.branch} **日辰**：${day.stem}${day.branch} **旬空**：${day.kong.join("")}`,
+  );
+  parts.push(`**世爻**：第${shi}爻 **应爻**：第${ying}爻`);
+  parts.push("");
+
+  // 六爻详情表格
+  parts.push("| 爻位 | 六神 | 六亲 | 干支 | 五行 | 阴阳 | 动变 | 旬空 |");
+  parts.push("|------|------|------|------|------|------|------|------|");
+  for (let i = 5; i >= 0; i--) {
+    const line = lines[i];
+    const kong = day.kong.includes(line.branch) ? "空" : "";
+    const moving = line.moving ? "○" : "";
+    parts.push(
+      `| 第${line.pos}爻 | ${line.god} | ${line.rel} | ${line.stem}${line.branch} | ${line.elem} | ${line.yang ? "阳" : "阴"} | ${moving} | ${kong} |`,
+    );
+  }
+  parts.push("");
+
+  // 变卦
+  if (changed) {
+    parts.push(`**变卦**：${changed.name}`);
+    parts.push("");
+  }
+
+  // 用神
+  parts.push(`**用神**：${yong.rel}（第${yong.pos}爻）`);
+  if (yong.hidden) {
+    parts.push(
+      `**伏神**：${yong.hidden.stem}${yong.hidden.branch}（伏于第${yong.hidden.under}爻下）`,
+    );
+  }
+
+  return parts.join("\n");
+}
+
 /* ─────────────── JSON 导出 ─────────────── */
 
 /**
@@ -555,6 +612,22 @@ export function toJson(options: ExportOptions): string {
     }));
   }
 
+  // 六爻记录
+  if (options.liuyaoRecords && options.liuyaoRecords.length > 0) {
+    data.liuyao = options.liuyaoRecords.map(r => ({
+      id: r.id,
+      divinationTime: r.divinationTime,
+      question: r.question,
+      note: r.note,
+      background: r.background,
+      tags: r.tags,
+      lines: r.lines,
+      chart: r.chart,
+      yongTarget: r.yongTarget,
+      yong: r.yong,
+    }));
+  }
+
   // Wiki 文档
   if (options.wikiDocs && options.wikiDocs.length > 0) {
     data.wiki = options.wikiDocs.map(d => ({
@@ -601,6 +674,40 @@ export function liurenToCsv(records: LiurenRecord[]): string {
     BRANCHES[r.result.threeTransmissions.initial],
     BRANCHES[r.result.threeTransmissions.middle],
     BRANCHES[r.result.threeTransmissions.final],
+  ]);
+
+  return [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+}
+
+/**
+ * 六爻记录 → CSV
+ */
+export function liuyaoToCsv(records: LiuyaoRecord[]): string {
+  const headers = [
+    "ID",
+    "占事",
+    "起卦时间",
+    "求测对象",
+    "卦名",
+    "宫位",
+    "世爻",
+    "应爻",
+    "用神",
+    "备注",
+    "标签",
+  ];
+  const rows = records.map(r => [
+    r.id ?? "",
+    escapeCsvField(r.question),
+    escapeCsvField(r.divinationTime),
+    escapeCsvField(r.yongTarget),
+    r.chart.name,
+    r.chart.palace,
+    `第${r.chart.shi}爻`,
+    `第${r.chart.ying}爻`,
+    `${r.yong.rel}（第${r.yong.pos}爻）`,
+    escapeCsvField(r.note),
+    escapeCsvField(r.tags.join(";")),
   ]);
 
   return [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
@@ -659,6 +766,10 @@ export function performExport(options: ExportOptions): {
         if (content) content += "\n\n---\n\n";
         content += options.liurenRecords.map(liurenToMarkdown).join("\n\n---\n\n");
       }
+      if (options.liuyaoRecords && options.liuyaoRecords.length > 0) {
+        if (content) content += "\n\n---\n\n";
+        content += options.liuyaoRecords.map(liuyaoToMarkdown).join("\n\n---\n\n");
+      }
       if (options.wikiDocs && options.wikiDocs.length > 0) {
         if (content) content += "\n\n---\n\n";
         content += wikiToMarkdown(options.wikiDocs, personName);
@@ -686,6 +797,8 @@ export function performExport(options: ExportOptions): {
       let content = "";
       if (options.liurenRecords && options.liurenRecords.length > 0) {
         content = liurenToCsv(options.liurenRecords);
+      } else if (options.liuyaoRecords && options.liuyaoRecords.length > 0) {
+        content = liuyaoToCsv(options.liuyaoRecords);
       } else if (options.wikiDocs && options.wikiDocs.length > 0) {
         content = wikiToCsv(options.wikiDocs);
       } else {

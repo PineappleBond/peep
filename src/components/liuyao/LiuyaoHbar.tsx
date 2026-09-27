@@ -5,6 +5,7 @@
 import { memo, useCallback } from "react";
 import type { LiuyaoHbarData, LiuyaoHbarVisible, LiuyaoHbarPick } from "../../core/liuyao/hbar";
 import { Row, Cell } from "../HoroscopeBarParts";
+import { useI18n } from "../../core/i18n";
 
 interface LiuyaoHbarProps {
   hbarData: LiuyaoHbarData | null;
@@ -21,6 +22,8 @@ export const LiuyaoHbar = memo(function LiuyaoHbar({
   onToggleVisible,
   onPick,
 }: LiuyaoHbarProps) {
+  const { t } = useI18n();
+
   // 稳定化 toggle 回调
   const toggleYearly = useCallback(() => onToggleVisible("yearly"), [onToggleVisible]);
   const toggleMonthly = useCallback(() => onToggleVisible("monthly"), [onToggleVisible]);
@@ -28,19 +31,19 @@ export const LiuyaoHbar = memo(function LiuyaoHbar({
   const toggleHourly = useCallback(() => onToggleVisible("hourly"), [onToggleVisible]);
 
   if (!hbarData) {
-    return <div className="liuyao-hbar-empty">请选择记录以查看时间轴</div>;
+    return <div className="liuyao-hbar-empty">{t("liuyao.hbarEmpty")}</div>;
   }
 
   return (
     <div className="liuyao-hbar">
       {/* 流年行 */}
       <Row
-        label="流年"
+        label={t("liuyao.yearFlow")}
         scope="yearly"
         on={visible.yearly}
         onToggle={toggleYearly}
         activeKey={pick.year}
-        toggleTitle={visible.yearly ? "点击隐藏该层级" : "点击显示该层级"}
+        toggleTitle={visible.yearly ? t("liuyao.hbarToggleHide") : t("liuyao.hbarToggleShow")}
       >
         {hbarData.years.map((y, idx) => (
           <Cell
@@ -58,12 +61,12 @@ export const LiuyaoHbar = memo(function LiuyaoHbar({
       {/* 流月行 */}
       {visible.yearly && (
         <Row
-          label="流月"
+          label={t("liuyao.monthFlow")}
           scope="monthly"
           on={visible.monthly}
           onToggle={toggleMonthly}
           activeKey={`${pick.month}`}
-          toggleTitle={visible.monthly ? "点击隐藏该层级" : "点击显示该层级"}
+          toggleTitle={visible.monthly ? t("liuyao.hbarToggleHide") : t("liuyao.hbarToggleShow")}
         >
           {hbarData.months.map((m, idx) => {
             const tooltipParts = [];
@@ -77,7 +80,7 @@ export const LiuyaoHbar = memo(function LiuyaoHbar({
                 scope="monthly"
                 active={idx === hbarData.activeMonthIdx}
                 onClick={() => onPick("month", m.month)}
-                title={m.leap ? "闰月" : tooltipParts.join(" ")}
+                title={m.leap ? t("liuyao.leapMonth") : tooltipParts.join(" ")}
               />
             );
           })}
@@ -87,12 +90,12 @@ export const LiuyaoHbar = memo(function LiuyaoHbar({
       {/* 流日行 */}
       {visible.monthly && (
         <Row
-          label="流日"
+          label={t("liuyao.dayFlow")}
           scope="daily"
           on={visible.daily}
           onToggle={toggleDaily}
           activeKey={`${pick.year}-${pick.month}-${pick.day}`}
-          toggleTitle={visible.daily ? "点击隐藏该层级" : "点击显示该层级"}
+          toggleTitle={visible.daily ? t("liuyao.hbarToggleHide") : t("liuyao.hbarToggleShow")}
         >
           {hbarData.days.map((d, idx) => {
             const tooltipParts = [];
@@ -116,12 +119,12 @@ export const LiuyaoHbar = memo(function LiuyaoHbar({
       {/* 流时行 */}
       {visible.daily && (
         <Row
-          label="流时"
+          label={t("liuyao.hourFlow")}
           scope="hourly"
           on={visible.hourly}
           onToggle={toggleHourly}
           activeKey={`${pick.hour}`}
-          toggleTitle={visible.hourly ? "点击隐藏该层级" : "点击显示该层级"}
+          toggleTitle={visible.hourly ? t("liuyao.hbarToggleHide") : t("liuyao.hbarToggleShow")}
         >
           {hbarData.hours.map((h, idx) => (
             <Cell

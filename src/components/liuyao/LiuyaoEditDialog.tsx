@@ -103,7 +103,7 @@ export function LiuyaoEditDialog({ open, onClose, record, onSaved }: LiuyaoEditD
       handleClose();
     } catch (err) {
       console.error("[LiuyaoEditDialog] 更新失败", err);
-      setServerError(err instanceof Error ? err.message : "更新失败，请重试");
+      setServerError(err instanceof Error ? err.message : t("liuyao.updateFailed"));
     } finally {
       setSaving(false);
     }
