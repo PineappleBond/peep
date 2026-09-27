@@ -4,7 +4,7 @@
  */
 import { db, type WikiDocument, type WikiLink } from "./personDb";
 import { createTagCache } from "./tagCache";
-import { filterAndPaginate } from "./dbUtils";
+import { createDbOperation, filterAndPaginate } from "./dbUtils";
 import { t } from "./i18n";
 
 /** 标签缓存：避免每次打开列表都全表扫描提取 tags */
@@ -17,6 +17,9 @@ const tagCache = createTagCache(
 function invalidateTagCache() {
   tagCache.invalidate();
 }
+
+/** 本模块的数据库操作包装器（统一错误日志与错误包装） */
+const dbOp = createDbOperation("wikiDb");
 
 /** Wiki 列表查询过滤条件 */
 export interface WikiListFilters {
@@ -50,7 +53,7 @@ export async function listWikiDocs(
   personId: number,
   filters: WikiListFilters = {},
 ): Promise<WikiListResult> {
-  try {
+  return dbOp(t("db.readWikiListFailed"), async () => {
     const allDocs = await db.wikiDocs.where("personId").equals(personId).toArray();
 
     const result = filterAndPaginate<WikiDocument>({
@@ -66,22 +69,14 @@ export async function listWikiDocs(
       page: result.page,
       pageSize: result.pageSize,
     };
-  } catch (err) {
-    console.error("[wikiDb] 查询文档列表失败", err);
-    throw new Error(t("db.readWikiListFailed"));
-  }
+  });
 }
 
 /**
  * 获取单条 Wiki 文档
  */
 export async function getWikiDoc(id: number): Promise<WikiDocument | undefined> {
-  try {
-    return await db.wikiDocs.get(id);
-  } catch (err) {
-    console.error("[wikiDb] 获取文档详情失败", err);
-    throw new Error(t("db.readWikiFailed"));
-  }
+  return dbOp(t("db.readWikiFailed"), () => db.wikiDocs.get(id));
 }
 
 /**
@@ -90,29 +85,29 @@ export async function getWikiDoc(id: number): Promise<WikiDocument | undefined> 
  * @throws 标题为空时抛出错误
  */
 export async function saveWikiDoc(doc: WikiDocument): Promise<number> {
-  try {
-    // 输入验证
-    if (!doc.title || !doc.title.trim()) {
-      throw new Error(t("db.wikiTitleRequired"));
-    }
-    const now = Date.now();
-    if (doc.id != null) {
-      // 更新：保留原 savedAt，更新 updatedAt
-      await db.wikiDocs.update(doc.id, { ...doc, updatedAt: now });
+  const titleRequiredMsg = t("db.wikiTitleRequired");
+  return dbOp(
+    t("db.saveWikiFailed"),
+    async () => {
+      // 输入验证
+      if (!doc.title || !doc.title.trim()) {
+        throw new Error(titleRequiredMsg);
+      }
+      const now = Date.now();
+      if (doc.id != null) {
+        // 更新：保留原 savedAt，更新 updatedAt
+        await db.wikiDocs.update(doc.id, { ...doc, updatedAt: now });
+        invalidateTagCache();
+        return doc.id;
+      }
+      // 新增：设置 savedAt 和 updatedAt
+      const newDoc = { ...doc, savedAt: now, updatedAt: now };
+      const id = await db.wikiDocs.add(newDoc);
       invalidateTagCache();
-      return doc.id;
-    }
-    // 新增：设置 savedAt 和 updatedAt
-    const newDoc = { ...doc, savedAt: now, updatedAt: now };
-    const id = await db.wikiDocs.add(newDoc);
-    invalidateTagCache();
-    return id;
-  } catch (err) {
-    // 保留业务错误（标题必填），包装其他错误
-    if (err instanceof Error && err.message === t("db.wikiTitleRequired")) throw err;
-    console.error("[wikiDb] 保存文档失败", err);
-    throw new Error(t("db.saveWikiFailed"));
-  }
+      return id;
+    },
+    [titleRequiredMsg],
+  );
 }
 
 /**

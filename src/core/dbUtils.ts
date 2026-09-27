@@ -1,7 +1,9 @@
 /**
- * 数据库通用工具：分页过滤查询。
- * 用于 daliurenDb / wikiDb 的列表查询，消除重复的分页/搜索/标签过滤逻辑。
+ * 数据库通用工具：分页过滤查询、错误处理封装。
+ * 用于 daliurenDb / wikiDb / personDb 的列表查询与 CRUD，消除重复的分页/搜索/标签过滤/错误处理逻辑。
  */
+
+/* ─────────────── 分页过滤 ─────────────── */
 
 /** 分页 + 过滤选项 */
 export interface FilterPaginateOptions<T> {
@@ -73,4 +75,46 @@ export function filterAndPaginate<T>(opts: FilterPaginateOptions<T>): PaginatedR
   const items = filtered.slice(start, start + pageSize);
 
   return { items, total, page, pageSize };
+}
+
+/* ─────────────── DB 操作安全封装 ─────────────── */
+
+/**
+ * 创建数据库操作包装器：统一处理错误日志与错误包装。
+ * 消除 DB 层重复的 try/catch + console.error + throw 模式。
+ *
+ * 用法：
+ *   const dbOp = createDbOperation("daliurenDb");
+ *   return dbOp("查询记录列表失败", () => db.liurenRecords.where(...).toArray());
+ *
+ * 指标记录（metricName）保留在调用方自行处理（因为上下文数据各异），
+ * 此工具只解决最普遍的错误处理重复。
+ */
+export function createDbOperation(domain: string) {
+  /**
+   * 安全执行一次数据库操作；出错时记录日志并抛出包装后的错误。
+   * @param errorMessage 翻译后的错误消息（抛出时使用）
+   * @param operation 实际数据库操作
+   * @param preserveBusinessErrors 需原样抛出的业务错误消息列表（不被包装）
+   */
+  return async function run<T>(
+    errorMessage: string,
+    operation: () => Promise<T>,
+    preserveBusinessErrors?: string[],
+  ): Promise<T> {
+    try {
+      return await operation();
+    } catch (err) {
+      // 保留业务错误（如"默认人物不可删除"、"标题必填"）
+      if (
+        preserveBusinessErrors &&
+        err instanceof Error &&
+        preserveBusinessErrors.some(msg => err.message === msg)
+      ) {
+        throw err;
+      }
+      console.error(`[${domain}] ${errorMessage}`, err);
+      throw new Error(errorMessage);
+    }
+  };
 }

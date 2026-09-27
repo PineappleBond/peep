@@ -8,6 +8,7 @@ import type { DaLiuRenResult } from "./daliuren/types";
 import { t } from "./i18n";
 import { runMigrations, checkDataIntegrity } from "./migrations";
 import { recordDomainMetric } from "./performance";
+import { createDbOperation } from "./dbUtils";
 
 /**
  * 人物档案类型：扩展 BirthInput，附加主键 id、保存时间戳、默认标志。
@@ -146,41 +147,30 @@ async function ensureDefault(): Promise<Person> {
   return { ...DEFAULT_PERSON, id };
 }
 
+/** 本模块的数据库操作包装器（统一错误日志与错误包装） */
+const dbOp = createDbOperation("personDb");
+
 /** 获取全部人物列表 */
 export async function listPersons(): Promise<Person[]> {
   const start = performance.now();
-  try {
+  const result = await dbOp(t("db.readPersonListFailed"), async () => {
     await ensureDefault();
-    const result = await db.persons.orderBy("savedAt").reverse().toArray();
-    recordDomainMetric("db.listPersons", performance.now() - start, {
-      context: { count: result.length },
-    });
-    return result;
-  } catch (err) {
-    recordDomainMetric("db.listPersons", performance.now() - start, {
-      tags: ["error"],
-    });
-    console.error("[personDb] 获取人物列表失败", err);
-    throw new Error(t("db.readPersonListFailed"));
-  }
+    return await db.persons.orderBy("savedAt").reverse().toArray();
+  });
+  recordDomainMetric("db.listPersons", performance.now() - start, {
+    context: { count: result.length },
+  });
+  return result;
 }
 
 /** 获取单个人物 */
 export async function getPerson(id: number): Promise<Person | undefined> {
   const start = performance.now();
-  try {
-    const result = await db.persons.get(id);
-    recordDomainMetric("db.getPerson", performance.now() - start, {
-      context: { id, found: result !== undefined },
-    });
-    return result;
-  } catch (err) {
-    recordDomainMetric("db.getPerson", performance.now() - start, {
-      tags: ["error"],
-    });
-    console.error("[personDb] 获取人物详情失败", err);
-    throw new Error(t("db.readPersonFailed"));
-  }
+  const result = await dbOp(t("db.readPersonFailed"), () => db.persons.get(id));
+  recordDomainMetric("db.getPerson", performance.now() - start, {
+    context: { id, found: result !== undefined },
+  });
+  return result;
 }
 
 /**
@@ -193,8 +183,8 @@ export async function savePerson(
   isDefault: boolean,
 ): Promise<Person> {
   const start = performance.now();
-  try {
-    const result = await db.transaction("rw", db.persons, async () => {
+  const result = await dbOp(t("db.savePersonFailed"), async () => {
+    return await db.transaction("rw", db.persons, async () => {
       if (isDefault) {
         // 事务内清除所有现有默认标记
         const currentDefaults = await db.persons.filter(p => p.isDefault).toArray();
@@ -210,17 +200,11 @@ export async function savePerson(
       const newId = await db.persons.add({ ...input, savedAt: now, isDefault });
       return { ...input, id: newId, savedAt: now, isDefault };
     });
-    recordDomainMetric("db.savePerson", performance.now() - start, {
-      context: { id: result.id ?? 0, isNew: id == null },
-    });
-    return result;
-  } catch (err) {
-    recordDomainMetric("db.savePerson", performance.now() - start, {
-      tags: ["error"],
-    });
-    console.error("[personDb] 保存人物失败", err);
-    throw new Error(t("db.savePersonFailed"));
-  }
+  });
+  recordDomainMetric("db.savePerson", performance.now() - start, {
+    context: { id: result.id ?? 0, isNew: id == null },
+  });
+  return result;
 }
 
 /**
@@ -229,49 +213,49 @@ export async function savePerson(
  */
 export async function deletePerson(id: number): Promise<void> {
   const start = performance.now();
+  const cannotDeleteMsg = t("db.defaultCannotDelete");
   try {
-    await db.transaction(
-      "rw",
-      db.persons,
-      db.liurenRecords,
-      db.wikiDocs,
-      db.wikiLinks,
+    await dbOp(
+      t("db.deletePersonFailed"),
       async () => {
-        const person = await db.persons.get(id);
-        if (!person) return; // 不存在则幂等
-        if (person.isDefault) throw new Error(t("db.defaultCannotDelete"));
+        await db.transaction(
+          "rw",
+          db.persons,
+          db.liurenRecords,
+          db.wikiDocs,
+          db.wikiLinks,
+          async () => {
+            const person = await db.persons.get(id);
+            if (!person) return; // 不存在则幂等
+            if (person.isDefault) throw new Error(cannotDeleteMsg);
 
-        // 级联删除 Wiki 文档的链接关系
-        const wikiDocs = await db.wikiDocs.where("personId").equals(id).toArray();
-        const docIds = wikiDocs.map(d => d.id!);
-        if (docIds.length > 0) {
-          // 删除以这些文档为源或目标的链接
-          for (const docId of docIds) {
-            await db.wikiLinks.where("sourceDocId").equals(docId).delete();
-            await db.wikiLinks.where("targetDocId").equals(docId).delete();
-          }
-          // 删除文档本身
-          await db.wikiDocs.where("personId").equals(id).delete();
-        }
+            // 级联删除 Wiki 文档的链接关系
+            const wikiDocs = await db.wikiDocs.where("personId").equals(id).toArray();
+            const docIds = wikiDocs.map(d => d.id!);
+            if (docIds.length > 0) {
+              // 删除以这些文档为源或目标的链接
+              for (const docId of docIds) {
+                await db.wikiLinks.where("sourceDocId").equals(docId).delete();
+                await db.wikiLinks.where("targetDocId").equals(docId).delete();
+              }
+              // 删除文档本身
+              await db.wikiDocs.where("personId").equals(id).delete();
+            }
 
-        // 级联删除大六壬记录
-        await db.liurenRecords.where("personId").equals(id).delete();
+            // 级联删除大六壬记录
+            await db.liurenRecords.where("personId").equals(id).delete();
 
-        // 删除人物本身
-        await db.persons.delete(id);
+            // 删除人物本身
+            await db.persons.delete(id);
+          },
+        );
       },
+      [cannotDeleteMsg],
     );
-    recordDomainMetric("db.deletePerson", performance.now() - start, {
-      context: { id },
-    });
+    recordDomainMetric("db.deletePerson", performance.now() - start, { context: { id } });
   } catch (err) {
-    recordDomainMetric("db.deletePerson", performance.now() - start, {
-      tags: ["error"],
-    });
-    // 保留业务错误（默认人物不可删除），包装其他错误
-    if (err instanceof Error && err.message === t("db.defaultCannotDelete")) throw err;
-    console.error("[personDb] 删除人物失败", err);
-    throw new Error(t("db.deletePersonFailed"));
+    recordDomainMetric("db.deletePerson", performance.now() - start, { tags: ["error"] });
+    throw err;
   }
 }
 
@@ -297,7 +281,8 @@ export function initDatabase(): Promise<void> {
         if (!valid) {
           console.warn("[personDb] 数据完整性问题：", issues);
         } else {
-          console.warn("[personDb] 数据完整性检查通过");
+          // 信息级别日志：完整性检查通过
+          console.log("[personDb] 数据完整性检查通过");
         }
       } catch (err) {
         console.error("[personDb] 数据库初始化失败", err);
