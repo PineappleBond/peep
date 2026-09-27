@@ -235,3 +235,182 @@
   font-weight: 600;
   color: var(--text);
 }
+
+/* ── 弹窗表单样式 ── */
+.liuyao-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.liuyao-form-error {
+  padding: 10px 14px 10px 36px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--danger);
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  position: relative;
+}
+
+.liuyao-form-error::before {
+  content: "⚠";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  opacity: 0.85;
+}
+
+.liuyao-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.liuyao-form-field label {
+  font-size: 0.82rem;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+}
+
+.liuyao-form-field label .required {
+  color: var(--gold);
+}
+
+.liuyao-form-field input,
+.liuyao-form-field textarea,
+.liuyao-form-field select {
+  background: var(--glass-bg-input);
+  border: 1px solid color-mix(in srgb, var(--gold) 20%, transparent);
+  border-radius: var(--radius-md);
+  padding: 8px 11px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  transition: var(--t-slow);
+}
+
+.liuyao-form-field input:focus,
+.liuyao-form-field textarea:focus,
+.liuyao-form-field select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--gold) 10%, transparent),
+    0 0 10px color-mix(in srgb, var(--gold) 18%, transparent);
+  background: var(--glass-bg-input-deep);
+}
+
+.liuyao-form-field input::placeholder,
+.liuyao-form-field textarea::placeholder {
+  color: var(--faint);
+  transition: opacity var(--t-fast);
+}
+
+.liuyao-form-field input:focus::placeholder,
+.liuyao-form-field textarea:focus::placeholder {
+  opacity: 0.5;
+}
+
+.liuyao-form-field textarea {
+  resize: vertical;
+  min-height: 56px;
+}
+
+.liuyao-form-field.readonly {
+  opacity: 0.7;
+}
+
+/* 六爻表单字段级错误 */
+.liuyao-form-field .field-error {
+  margin-top: 3px;
+}
+
+.liuyao-form-field.field-has-error input,
+.liuyao-form-field.field-has-error textarea,
+.liuyao-form-field.field-has-error select {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 15%, transparent);
+}
+
+/* 六爻值输入组 */
+.liuyao-lines-input {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.liuyao-line-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.liuyao-line-input-group label {
+  font-size: 0.75rem;
+  color: var(--dim);
+  text-align: center;
+}
+
+.liuyao-line-input-group select {
+  background: var(--glass-bg-input);
+  border: 1px solid color-mix(in srgb, var(--gold) 20%, transparent);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.liuyao-line-input-group select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--gold) 10%, transparent),
+    0 0 10px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+/* 查看详情 Dialog */
+.liuyao-view-dialog-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--cyan) 20%, transparent) transparent;
+}
+
+.liuyao-view-dialog-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.liuyao-view-dialog-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.liuyao-view-dialog-content::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--cyan) 20%, transparent);
+  border-radius: 2px;
+}
+
+/* 删除记录预览 */
+.liuyao-delete-preview {
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.liuyao-delete-preview strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.liuyao-delete-preview .record-meta {
+  color: var(--dim);
+  font-size: 0.8rem;
+}
