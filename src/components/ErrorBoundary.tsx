@@ -315,10 +315,10 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
       .writeText(text)
       .then(() => {
         // eslint-disable-next-line no-console
-        console.log("%c[ErrorBoundary] 错误信息已复制到剪贴板", "color:#4caf50");
+        console.log(`%c[${this.boundaryName}] 错误信息已复制到剪贴板`, "color:#4caf50");
       })
       .catch(err => {
-        console.error("[ErrorBoundary] 复制失败", err);
+        console.error(`[${this.boundaryName}] 复制失败`, err);
       });
   };
 
