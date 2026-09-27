@@ -43,19 +43,28 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
   },
   DaLiuRenCreate: {
     方法: "DaLiuRenCreate(params, options?)",
-    说明: "大六壬起课（创建记录，支持 skipUI）",
+    说明: "大六壬起课（创建记录；options.skipUI 仅供调试）",
   },
   DaLiuRenList: {
     方法: "DaLiuRenList(params, options?)",
-    说明: "大六壬起课列表（支持 skipUI）",
+    说明: "大六壬起课列表（options.skipUI 仅供调试）",
   },
   DaLiuRenView: {
     方法: "DaLiuRenView(params, options?)",
-    说明: "大六壬起课详情（支持 skipUI）",
+    说明: "大六壬起课详情（options.skipUI 仅供调试）",
   },
-  WikiCreate: { 方法: "WikiCreate(params, options?)", 说明: "Wiki 文档创建（支持 skipUI）" },
-  WikiList: { 方法: "WikiList(params, options?)", 说明: "Wiki 文档列表（支持 skipUI）" },
-  WikiView: { 方法: "WikiView(params, options?)", 说明: "Wiki 文档详情（支持 skipUI）" },
+  WikiCreate: {
+    方法: "WikiCreate(params, options?)",
+    说明: "Wiki 文档创建（options.skipUI 仅供调试）",
+  },
+  WikiList: {
+    方法: "WikiList(params, options?)",
+    说明: "Wiki 文档列表（options.skipUI 仅供调试）",
+  },
+  WikiView: {
+    方法: "WikiView(params, options?)",
+    说明: "Wiki 文档详情（options.skipUI 仅供调试）",
+  },
   getChartDataForScope: {
     方法: "getChartDataForScope(opts)",
     说明: "获取指定 scope 的运限盘面数据",
