@@ -55,6 +55,8 @@ export async function waitForPageLoad(): Promise<void> {
  * 辅助函数：等待状态更新。
  * 改进：双 rAF 确保 React 渲染完成，再轮询验证 pick 稳定（最多 300ms）。
  * 要求 pick 连续 3 次采样相同才认为已稳定，避免振荡场景误判。
+ *
+ * 每次迭代重新调用 getZwds() 获取最新状态，避免使用过期快照。
  */
 export async function waitForStateUpdate(): Promise<void> {
   // 双 rAF 确保 React commit 阶段完成（使用 nextFrame 兼容非浏览器环境）
@@ -64,11 +66,11 @@ export async function waitForStateUpdate(): Promise<void> {
   // 轮询验证 pick 稳定（如果在 ZiWei 上下文中）
   const getZwds = getGetZwds();
   if (!getZwds) return;
-  const z = getZwds();
-  if (!z) return;
+  const initialZ = getZwds();
+  if (!initialZ) return;
 
   const start = Date.now();
-  let lastPick = JSON.stringify(z.pick);
+  let lastPick = JSON.stringify(initialZ.pick);
   let stableCount = 0;
   const requiredStable = 3; // 连续 3 次采样相同才认为已稳定（防止振荡误判）
   const maxWait = 300;
@@ -77,7 +79,10 @@ export async function waitForStateUpdate(): Promise<void> {
   let iterations = 0;
   while (++iterations <= maxIterations && Date.now() - start < maxWait) {
     await new Promise(r => setTimeout(r, 20));
-    const currentPick = JSON.stringify(z.pick);
+    // 每次迭代重新获取最新 Zwds 状态，避免快照过期
+    const freshZ = getZwds();
+    if (!freshZ) continue;
+    const currentPick = JSON.stringify(freshZ.pick);
     if (currentPick === lastPick) {
       stableCount++;
       if (stableCount >= requiredStable) {
@@ -123,10 +128,14 @@ export async function waitForPersonMatch(expectedId: number, timeout = 2000): Pr
 /**
  * 等待本命盘稳定：轮询验证 astrolabe 是否已完成更新。
  * 替代盲等 200ms，通过检测 astrolabe 的 rawDates 是否变化判断排盘是否完成。
+ *
+ * 每次迭代重新调用 getZwds() 获取最新状态，避免使用过期快照。
  */
-export async function waitForAstrolabeStable(z: Zwds, timeout = 2000): Promise<void> {
+export async function waitForAstrolabeStable(_z: Zwds, timeout = 2000): Promise<void> {
+  const getZwds = getGetZwds();
   const start = Date.now();
-  let lastAstrolabe = z.astrolabe ? JSON.stringify(z.astrolabe.rawDates) : null;
+  // 首次获取 astrolabe（优先使用最新快照，回退到 getZwds）
+  let lastAstrolabe = _z.astrolabe ? JSON.stringify(_z.astrolabe.rawDates) : null;
   let stableCount = 0;
   const requiredStable = 3;
   // 安全保护：最大迭代次数
@@ -134,7 +143,9 @@ export async function waitForAstrolabeStable(z: Zwds, timeout = 2000): Promise<v
   let iterations = 0;
   while (++iterations <= maxIterations && Date.now() - start < timeout) {
     await new Promise(r => setTimeout(r, 20));
-    const currentAstrolabe = z.astrolabe ? JSON.stringify(z.astrolabe.rawDates) : null;
+    // 每次迭代重新获取最新 Zwds 状态，避免快照过期
+    const freshZ = getZwds?.() ?? _z;
+    const currentAstrolabe = freshZ.astrolabe ? JSON.stringify(freshZ.astrolabe.rawDates) : null;
     if (currentAstrolabe === lastAstrolabe && currentAstrolabe !== null) {
       stableCount++;
       if (stableCount >= requiredStable) {
@@ -152,8 +163,11 @@ export async function waitForAstrolabeStable(z: Zwds, timeout = 2000): Promise<v
 /**
  * 等待 pick 重置：轮询验证 pick 是否已被 useEffect 重置为"今天"。
  * 替代盲等 100ms，通过检测 pick.year/month/day 是否匹配当前日期判断重置是否完成。
+ *
+ * 每次迭代重新调用 getZwds() 获取最新状态，避免使用过期快照。
  */
-export async function waitForPickReset(z: Zwds, timeout = 1000): Promise<void> {
+export async function waitForPickReset(_z: Zwds, timeout = 1000): Promise<void> {
+  const getZwds = getGetZwds();
   const start = Date.now();
   const now = new Date();
   const todayYear = now.getFullYear();
@@ -163,34 +177,46 @@ export async function waitForPickReset(z: Zwds, timeout = 1000): Promise<void> {
   const maxIterations = Math.ceil(timeout / 20) + 10;
   let iterations = 0;
   while (++iterations <= maxIterations && Date.now() - start < timeout) {
-    if (z.pick.year === todayYear && z.pick.month === todayMonth && z.pick.day === todayDay) {
+    // 每次迭代重新获取最新 Zwds 状态，避免快照过期
+    const freshZ = getZwds?.() ?? _z;
+    if (
+      freshZ.pick.year === todayYear &&
+      freshZ.pick.month === todayMonth &&
+      freshZ.pick.day === todayDay
+    ) {
       log("debug", "wait", "pick 已重置为今天", { elapsed: Date.now() - start });
       return;
     }
     await new Promise(r => setTimeout(r, 20));
   }
-  log("warn", "wait", "pick 重置等待超时", { timeout, currentPick: z.pick });
+  const freshZ = getZwds?.() ?? _z;
+  log("warn", "wait", "pick 重置等待超时", { timeout, currentPick: freshZ.pick });
 }
 
 /**
  * 等待 pick 匹配预期值（包含版本号校验）。
  * 用于 setHoroscopeTime 后验证 pick 是否成功设置。
+ *
+ * 每次迭代重新调用 getZwds() 获取最新状态，避免使用过期快照。
  */
 export async function waitForPickMatch(
-  z: Zwds,
-  expected: { year: number; month: number; day: number; hour: number; version: number },
+  _z: Zwds,
+  expected: { year: number; month: number; day: number; hour: number },
   timeout = 300,
 ): Promise<boolean> {
+  const getZwds = getGetZwds();
   const start = Date.now();
   // 安全保护：最大迭代次数
   const maxIterations = Math.ceil(timeout / 20) + 10;
   let iterations = 0;
   while (++iterations <= maxIterations && Date.now() - start < timeout) {
+    // 每次迭代重新获取最新 Zwds 状态，避免快照过期
+    const freshZ = getZwds?.() ?? _z;
     if (
-      z.pick.year === expected.year &&
-      z.pick.month === expected.month &&
-      z.pick.day === expected.day &&
-      z.pick.hour === expected.hour
+      freshZ.pick.year === expected.year &&
+      freshZ.pick.month === expected.month &&
+      freshZ.pick.day === expected.day &&
+      freshZ.pick.hour === expected.hour
     ) {
       return true;
     }

@@ -255,7 +255,7 @@ export function parseDate(time: Date | number | string): Date {
 export function _setHoroscopeTime(
   z: Zwds,
   date: Date,
-): { year: number; month: number; day: number; hour: number; version: number } {
+): { year: number; month: number; day: number; hour: number } {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -265,19 +265,18 @@ export function _setHoroscopeTime(
   const hourIdx = Math.floor(((hour + 1) % 24) / 2);
 
   // hbar 流月/流日按阳历排列，所以 pick 直接用阳历值
-  // 事务式更新：锁定 pick → 批量设置 → 记录版本号
+  // 事务式更新：锁定 pick → 批量设置（lockPick 防止 useEffect 在事务期间重置 pick）
   z.actions.lockPick();
   z.actions.setPickBatch({ year, month, day, hour: hourIdx, leap: false });
-  const versionAfterSet = z.actions.getPickVersion();
 
-  return { year, month, day, hour: hourIdx, version: versionAfterSet };
+  return { year, month, day, hour: hourIdx };
 }
 
 /**
  * 设置运限时间（带验证和重试）：
  * 1. 调用 _setHoroscopeTime 事务式设置 pick（锁定 + 批量更新）
  * 2. 等待 React 渲染
- * 3. 验证 pick 是否匹配预期值 且 版本号一致
+ * 3. 验证 pick 是否匹配预期（从 getZwds() 获取最新状态，避免快照过期）
  * 4. 如果不匹配（可能被其他操作覆盖），最多重试 2 次（指数退避）
  * 5. 无论成功失败，最终都解锁 pick
  */
@@ -286,6 +285,7 @@ export async function setHoroscopeTimeWithRetry(
   date: Date,
   maxRetries = 2,
 ): Promise<void> {
+  const getZwds = getGetZwds();
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const expected = _setHoroscopeTime(z, date);
 
@@ -293,11 +293,10 @@ export async function setHoroscopeTimeWithRetry(
     await nextFrame();
     await nextFrame();
 
-    // 验证 pick 是否匹配预期（包含版本号校验，确保未被其他操作覆盖）
+    // 验证 pick 是否匹配预期（waitForPickMatch 内部已从 getZwds 获取最新状态）
     const matched = await waitForPickMatch(z, expected, 300);
-    const versionMatch = z.actions.getPickVersion() === expected.version;
 
-    if (matched && versionMatch) {
+    if (matched) {
       // 成功：解锁 pick，恢复正常 useEffect 行为
       z.actions.unlockPick();
       if (attempt > 0) {
@@ -309,13 +308,14 @@ export async function setHoroscopeTimeWithRetry(
     }
 
     // pick 不匹配，可能被其他操作覆盖——记录并重试
+    // 使用最新的 z 读取实际状态（避免快照过期导致日志信息不准确）
+    const freshZ = getZwds?.();
+    const actualPick = freshZ?.pick ?? z.pick;
     log("warn", "ZiWei", `setHoroscopeTime 验证失败`, {
       attempt: attempt + 1,
       pickMatched: matched,
-      versionMatched: versionMatch,
       expected,
-      actual: z.pick,
-      actualVersion: z.actions.getPickVersion(),
+      actual: actualPick,
     });
 
     if (attempt < maxRetries) {
@@ -328,11 +328,14 @@ export async function setHoroscopeTimeWithRetry(
   // 所有重试均失败：解锁 pick 并抛出错误
   z.actions.unlockPick();
 
+  // 使用最新的 z 读取实际状态
+  const freshZ = getZwds?.();
+  const actualPick = freshZ?.pick ?? z.pick;
   throw new ZiWeiError(
-    `setHoroscopeTime 重试 ${maxRetries} 次后仍失败：pick=${JSON.stringify(z.pick)}，期望=${JSON.stringify(date)}`,
+    `setHoroscopeTime 重试 ${maxRetries} 次后仍失败：pick=${JSON.stringify(actualPick)}，期望=${JSON.stringify(date)}`,
     "setHoroscopeTime",
     {
-      context: { maxRetries, expectedPick: date.toISOString(), actualPick: z.pick },
+      context: { maxRetries, expectedPick: date.toISOString(), actualPick },
       suggestion: "pick 值持续被其他操作覆盖，可能是 React 状态更新冲突。请尝试刷新页面后重试",
       errorCode: ApiErrorCode.TIMEOUT,
     },
@@ -506,27 +509,31 @@ export async function ZiWei(
       // useEffect 的 commit 阶段需要一帧才能执行重置，确保 pick 已到达"今天"
       await nextFrame();
 
-      // 验证 pick 已被 useEffect 重置（轮询检测，非盲等）
+      // 验证 pick 已被 useEffect 重置（轮询检测，非盲等；内部从 getZwds 获取最新状态）
       await waitForPickReset(z, 1000);
-      log("debug", "ZiWei", "pick 已重置", { pick: z.pick });
+      // 重新获取最新 z（waitForPickReset 期间 React 可能已多次重渲染）
+      const freshZ = getZwds() ?? z;
+      log("debug", "ZiWei", "pick 已重置", { pick: freshZ.pick });
 
       // 2. 设置时间（在 useEffect 重置完成之后，带验证和重试）
       if (time) {
         const date = parseDate(time);
-        await setHoroscopeTimeWithRetry(z, date);
+        await setHoroscopeTimeWithRetry(freshZ, date);
       }
 
       // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
+      // dispatch 是稳定引用，通过 actions 调用不受快照过期影响
       if (scope) {
-        z.actions.showScope(scope);
+        freshZ.actions.showScope(scope);
       }
 
       // 4. 等待所有状态更新完成（轮询 + rAF 确保 React 状态和渲染完成）
       await waitForStateUpdate();
 
-      // 5. 获取数据（复用纯计算函数，与 GetScopeData 共享 hbar/chart 构建逻辑）
+      // 5. 获取数据（重新获取最新 z，确保 pick/astrolabe/horoscope 均为最新值）
+      const latestZ = getZwds() ?? freshZ;
       const person = getPerson();
-      const { hbar, chart } = computeZiWeiData(z, scope);
+      const { hbar, chart } = computeZiWeiData(latestZ, scope);
 
       log("info", "ZiWei", "执行成功", { personId: person?.id, scope, hasChart: !!chart });
       stop();
