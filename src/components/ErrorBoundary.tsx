@@ -112,12 +112,17 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
   /** 组件是否已卸载（防止 setState on unmounted component） */
   private _unmounted = false;
 
+  /** 边界名称（props.name 优先，默认 "ErrorBoundary"） */
+  private get boundaryName(): string {
+    return this.props.name || "ErrorBoundary";
+  }
+
   static getDerivedStateFromError(error: Error) {
     return { error, timestamp: Date.now() };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    const boundaryName = this.props.name || "ErrorBoundary";
+    const boundaryName = this.boundaryName;
 
     // 1. 控制台输出（结构化，便于搜索）
 
@@ -190,11 +195,7 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
       // 仅当处于错误状态时才重置（避免不必要的 setState）
       if (this.state.error && !this._unmounted) {
         if (import.meta.env.DEV) {
-          console.log(
-            `%c[${this.props.name || "ErrorBoundary"}]%c 路由切换，自动重置错误状态`,
-            "color:#2196f3",
-            "",
-          );
+          console.log(`%c[${this.boundaryName}]%c 路由切换，自动重置错误状态`, "color:#2196f3", "");
         }
         this.reset();
       }
@@ -224,7 +225,7 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
       if (import.meta.env.DEV) {
         // eslint-disable-next-line no-console
         console.log(
-          `%c[${this.props.name || "ErrorBoundary"}]%c 已达最大自动重试次数 (${maxRetries})，停止自动重试`,
+          `%c[${this.boundaryName}]%c 已达最大自动重试次数 (${maxRetries})，停止自动重试`,
           "color:#ff9800",
           "",
         );
@@ -237,7 +238,7 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log(
-        `%c[${this.props.name || "ErrorBoundary"}]%c ${delay}ms 后将自动重试（${currentRetryCount + 1}/${maxRetries}）`,
+        `%c[${this.boundaryName}]%c ${delay}ms 后将自动重试（${currentRetryCount + 1}/${maxRetries}）`,
         "color:#ff9800",
         "",
       );
@@ -275,7 +276,7 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
   /** 复制错误报告到剪贴板（生产/开发都可用） */
   copyErrorReport = () => {
     const { error, componentStack, timestamp, autoRetryCount } = this.state;
-    const boundaryName = this.props.name || "ErrorBoundary";
+    const boundaryName = this.boundaryName;
 
     const report = buildErrorReport(error, componentStack, boundaryName, timestamp, autoRetryCount);
 
@@ -299,7 +300,7 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
     if (!this.state.error) return;
     const { error, componentStack, timestamp } = this.state;
     const text = [
-      `边界: ${this.props.name || "ErrorBoundary"}`,
+      `边界: ${this.boundaryName}`,
       `错误: ${error.message}`,
       `类型: ${error.name}`,
       `时间: ${new Date(timestamp).toLocaleString()}`,
@@ -323,7 +324,7 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
 
   render() {
     if (this.state.error) {
-      const boundaryName = this.props.name || "ErrorBoundary";
+      const boundaryName = this.boundaryName;
       const errorInfo: ErrorReportInfo = {
         boundaryName,
         safeMessage: import.meta.env.DEV ? this.state.error.message : `${boundaryName} 渲染异常`,
