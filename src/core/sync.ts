@@ -26,9 +26,9 @@ import { isOnline } from "./networkStatus";
 export interface SyncConfig {
   /** 默认密码（留空=不加密） */
   defaultPassword: string;
-  /** 自动同步间隔（分钟），0 表示不自动；TODO: 自动同步定时器尚未实现 */
+  /** 自动同步间隔（分钟），0 表示不自动；当前仅作为配置占位，定时器尚未实现 */
   autoSyncInterval: number;
-  /** 自动上传开关；TODO: 自动上传逻辑尚未实现 */
+  /** 自动上传开关（UI 已实现，实际定时触发逻辑尚未接入） */
   autoUpload: boolean;
 }
 

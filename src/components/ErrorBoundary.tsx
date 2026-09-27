@@ -120,7 +120,7 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
     const boundaryName = this.props.name || "ErrorBoundary";
 
     // 1. 控制台输出（结构化，便于搜索）
-     
+
     console.error(`[${boundaryName}] 渲染异常`, error, info.componentStack);
 
     // 2. 集成错误监控：上报到 errorTracking 系统
@@ -171,14 +171,6 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
     this._setupRouteResetListener();
   }
 
-  componentDidUpdate(_prevProps: Props, prevState: ErrorState) {
-    // 错误刚被捕获时（prevState.error === null, this.state.error !== null），
-    // 不需要额外操作，scheduleAutoRetry 已在 componentDidCatch 调用
-    if (!prevState.error && this.state.error) {
-      // 错误首次发生
-    }
-  }
-
   componentWillUnmount() {
     this._unmounted = true;
     if (this._autoRetryTimer) {
@@ -197,7 +189,6 @@ export class ErrorBoundary extends Component<Props, ErrorState> {
     this._routeResetHandler = () => {
       // 仅当处于错误状态时才重置（避免不必要的 setState）
       if (this.state.error && !this._unmounted) {
-         
         if (import.meta.env.DEV) {
           console.log(
             `%c[${this.props.name || "ErrorBoundary"}]%c 路由切换，自动重置错误状态`,
