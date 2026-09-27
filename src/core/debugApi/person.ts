@@ -11,9 +11,35 @@ import { log, timer } from "./logger";
 import { ZiWeiError, wrapError, ApiErrorCode } from "./errors";
 import { validatePersonId } from "./validate";
 
+/** localStorage 中存储当前选中人物 ID 的 key（与 Layout.tsx 保持一致） */
+const CURRENT_PERSON_STORAGE_KEY = "zwds-current-person-id";
+
 /**
- * 解析人物 ID：未传或无效时返回默认人物 ID。
- * 所有接受 personId 的调试接口共用此逻辑——AI 不传 ID 时自动使用默认人物。
+ * 获取当前选中的人物 ID（从 localStorage 读取）。
+ * 如果未找到或解析失败，回退到默认人物 ID。
+ *
+ * @returns 当前选中的人物 ID
+ */
+async function getCurrentPersonId(): Promise<number> {
+  try {
+    const savedId = localStorage.getItem(CURRENT_PERSON_STORAGE_KEY);
+    if (savedId) {
+      const id = Number(savedId);
+      if (Number.isFinite(id) && id > 0) {
+        return id;
+      }
+    }
+  } catch (err) {
+    console.warn("[resolvePersonId] 读取 localStorage 失败", err);
+  }
+  // 回退到默认人物
+  const defaultPerson = await getDefaultPerson();
+  return defaultPerson.id!;
+}
+
+/**
+ * 解析人物 ID：未传或无效时返回当前选中的人物 ID（从 localStorage 读取）。
+ * 所有接受 personId 的调试接口共用此逻辑——AI 不传 ID 时自动使用 Header 中选中的那个人物。
  *
  * @param personId 人物 ID（可选，正整数）
  * @returns 解析后的人物 ID
@@ -21,7 +47,7 @@ import { validatePersonId } from "./validate";
  * @example
  * ```typescript
  * const id = await resolvePersonId(1);        // 返回 1
- * const id = await resolvePersonId(undefined); // 返回默认人物 ID
+ * const id = await resolvePersonId(undefined); // 返回当前选中的人物 ID
  * ```
  */
 export async function resolvePersonId(personId?: number): Promise<number> {
@@ -30,8 +56,7 @@ export async function resolvePersonId(personId?: number): Promise<number> {
   if (personId != null && Number.isFinite(personId) && personId > 0) {
     return personId;
   }
-  const defaultPerson = await getDefaultPerson();
-  return defaultPerson.id!;
+  return getCurrentPersonId();
 }
 
 /**
