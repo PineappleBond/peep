@@ -473,11 +473,12 @@ export async function ZiWei(
       }
 
       // 正常模式：执行 UI 操控（导航、切换人物、设置时间、设置运限级别）
+      await navigateToPage("/", "ziwei");
+
+      // 导航完成后再获取回调
       const selectPerson = getSelectPerson();
       const getZwds = getGetZwds();
       const getPerson = getGetPerson();
-
-      await navigateToPage("/", "ziwei");
 
       if (!selectPerson || !getZwds || !getPerson) {
         throw new ZiWeiError("调试 API 未初始化，请确认 App 已加载", "ZiWei", {

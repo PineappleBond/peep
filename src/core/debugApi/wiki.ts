@@ -110,13 +110,14 @@ export async function WikiList(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
-    const selectPerson = getSelectPerson();
-    const getWikiList = getGetWikiList();
-    const setWikiListFilters = getSetWikiListFilters();
-
     // 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
     await waitForWikiCallbacks();
+
+    // 导航完成后再获取回调
+    const selectPerson = getSelectPerson();
+    const getWikiList = getGetWikiList();
+    const setWikiListFilters = getSetWikiListFilters();
 
     if (!selectPerson || !getWikiList) {
       throw new WikiError("Wiki 调试 API 未初始化", "WikiList", {
@@ -243,13 +244,14 @@ export async function WikiCreate(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
-    const selectPerson = getSelectPerson();
-    const openWikiEditor = getOpenWikiEditor();
-    const saveWikiDoc = getSaveWikiDoc();
-
     // 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
     await waitForWikiCallbacks();
+
+    // 导航完成后再获取回调
+    const selectPerson = getSelectPerson();
+    const openWikiEditor = getOpenWikiEditor();
+    const saveWikiDoc = getSaveWikiDoc();
 
     if (!selectPerson || !openWikiEditor || !saveWikiDoc) {
       throw new WikiError("Wiki 调试 API 未初始化", "WikiCreate", {
@@ -376,13 +378,14 @@ export async function WikiView(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
-    const selectPerson = getSelectPerson();
-    const selectWikiDoc = getSelectWikiDoc();
-    const getSelectedWikiDoc = getGetSelectedWikiDoc();
-
     // 跳转到 /wiki 页面并等待回调注册
     await navigateToPage("/wiki", "wiki");
     await waitForWikiCallbacks();
+
+    // 导航完成后再获取回调
+    const selectPerson = getSelectPerson();
+    const selectWikiDoc = getSelectWikiDoc();
+    const getSelectedWikiDoc = getGetSelectedWikiDoc();
 
     if (!selectPerson || !selectWikiDoc || !getSelectedWikiDoc) {
       throw new WikiError("Wiki 调试 API 未初始化", "WikiView", {

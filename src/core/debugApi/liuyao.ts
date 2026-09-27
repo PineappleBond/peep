@@ -296,13 +296,14 @@ export async function LiuYaoCreate(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
-    const openCreateDialog = getOpenLiuyaoCreateDialog();
-    const fillCreateForm = getFillLiuyaoCreateForm();
-    const submitCreateForm = getSubmitLiuyaoCreateForm();
-
     // 跳转到 /liuyao 页面并等待回调注册
     await navigateToPage("/liuyao", "liuyao");
     await waitForLiuyaoCallbacks();
+
+    // 导航完成后再获取回调
+    const openCreateDialog = getOpenLiuyaoCreateDialog();
+    const fillCreateForm = getFillLiuyaoCreateForm();
+    const submitCreateForm = getSubmitLiuyaoCreateForm();
 
     if (!openCreateDialog || !fillCreateForm || !submitCreateForm) {
       throw new LiuyaoError("六爻调试 API 未初始化", "LiuYaoCreate", {
@@ -422,13 +423,14 @@ export async function LiuYaoList(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
-    const selectPerson = getSelectPerson();
-    const getLiuyaoList = getGetLiuyaoList();
-    const setListFilters = getSetLiuyaoListFilters();
-
     // 跳转到 /liuyao 页面并等待回调注册
     await navigateToPage("/liuyao", "liuyao");
     await waitForLiuyaoCallbacks();
+
+    // 导航完成后再获取回调
+    const selectPerson = getSelectPerson();
+    const getLiuyaoList = getGetLiuyaoList();
+    const setListFilters = getSetLiuyaoListFilters();
 
     if (!selectPerson || !getLiuyaoList) {
       throw new LiuyaoError("六爻调试 API 未初始化", "LiuYaoList", {
@@ -530,14 +532,15 @@ export async function LiuYaoView(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /liuyao 页面并等待回调注册
+    await navigateToPage("/liuyao", "liuyao");
+    await waitForLiuyaoCallbacks();
+
+    // 导航完成后再获取回调
     const selectPerson = getSelectPerson();
     const selectRecord = getSelectLiuyaoRecord();
     const getSelectedRecord = getGetSelectedLiuyaoRecord();
     const getPersonFn = getGetPerson();
-
-    // 跳转到 /liuyao 页面并等待回调注册
-    await navigateToPage("/liuyao", "liuyao");
-    await waitForLiuyaoCallbacks();
 
     if (!selectPerson || !selectRecord || !getSelectedRecord) {
       throw new LiuyaoError("六爻调试 API 未初始化", "LiuYaoView", {

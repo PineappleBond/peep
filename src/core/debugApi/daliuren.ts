@@ -200,14 +200,15 @@ export async function DaLiuRenCreate(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /liuren 页面并等待回调注册
+    await navigateToPage("/liuren", "daliuren");
+    await waitForDaLiuRenCallbacks();
+
+    // 导航完成后再获取回调
     const selectPerson = getSelectPerson();
     const openCreateDialog = getOpenCreateDialog();
     const fillCreateForm = getFillCreateForm();
     const submitCreateForm = getSubmitCreateForm();
-
-    // 跳转到 /liuren 页面并等待回调注册
-    await navigateToPage("/liuren", "daliuren");
-    await waitForDaLiuRenCallbacks();
 
     if (!selectPerson || !openCreateDialog || !fillCreateForm || !submitCreateForm) {
       throw new DaLiuRenError("大六壬调试 API 未初始化", "DaLiuRenCreate", {
@@ -326,13 +327,14 @@ export async function DaLiuRenList(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
-    const selectPerson = getSelectPerson();
-    const getDaLiuRenList = getGetDaLiuRenList();
-    const setListFilters = getSetListFilters();
-
     // 跳转到 /liuren 页面并等待回调注册
     await navigateToPage("/liuren", "daliuren");
     await waitForDaLiuRenCallbacks();
+
+    // 导航完成后再获取回调
+    const selectPerson = getSelectPerson();
+    const getDaLiuRenList = getGetDaLiuRenList();
+    const setListFilters = getSetListFilters();
 
     if (!selectPerson || !getDaLiuRenList) {
       throw new DaLiuRenError("大六壬调试 API 未初始化", "DaLiuRenList", {
@@ -437,14 +439,15 @@ export async function DaLiuRenView(
     }
 
     /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /liuren 页面并等待回调注册
+    await navigateToPage("/liuren", "daliuren");
+    await waitForDaLiuRenCallbacks();
+
+    // 导航完成后再获取回调
     const selectPerson = getSelectPerson();
     const selectRecord = getSelectRecord();
     const getSelectedRecord = getGetSelectedRecord();
     const getPersonFn = getGetPerson();
-
-    // 跳转到 /liuren 页面并等待回调注册
-    await navigateToPage("/liuren", "daliuren");
-    await waitForDaLiuRenCallbacks();
 
     if (!selectPerson || !selectRecord || !getSelectedRecord) {
       throw new DaLiuRenError("大六壬调试 API 未初始化", "DaLiuRenView", {
