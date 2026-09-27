@@ -120,6 +120,7 @@ export function LiuyaoCreateDialog({
   const [lines, setLines] = useState<SixLines>([1, 1, 1, 1, 1, 1]); // 默认少阳
   const [yongTarget, setYongTarget] = useState<YongTarget>("自占");
   const [divinationMethod, setDivinationMethod] = useState<DivinationMethod>("manual");
+  const [hasTossed, setHasTossed] = useState(false); // 追踪用户是否手动摇过卦
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -148,6 +149,7 @@ export function LiuyaoCreateDialog({
     const seed = hashString(seedStr);
     const newLines = tossHexagram(seed);
     setLines(newLines);
+    setHasTossed(true); // 标记用户已手动摇卦
     toast.success(t("liuyao.tossSuccess") || "摇卦完成");
   };
 
@@ -191,6 +193,7 @@ export function LiuyaoCreateDialog({
     setLines([1, 1, 1, 1, 1, 1]);
     setYongTarget("自占");
     setDivinationMethod("manual");
+    setHasTossed(false);
     setServerError(null);
     validation.reset();
   };
@@ -215,13 +218,12 @@ export function LiuyaoCreateDialog({
       const timeStr = formatDateTime(now.getTime(), true).split(" ")[1];
       const divinationTime = `${dateStr}T${timeStr}`;
 
-      // 如果是摇卦模式，在保存时自动摇卦（使用时间戳确保每次不同）
+      // 如果是摇卦模式且用户未手动摇卦，在保存时自动摇卦
       let finalLines = lines;
-      if (divinationMethod === "toss") {
+      if (divinationMethod === "toss" && !hasTossed) {
         const seedStr = `${values.question}-${values.background}-${values.note}-${Date.now()}`;
         const seed = hashString(seedStr);
         finalLines = tossHexagram(seed);
-        setLines(finalLines); // 更新状态以显示最终结果
       }
 
       // 排盘
