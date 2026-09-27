@@ -10,7 +10,20 @@
  * 不依赖 IndexedDB，纯 mock 测试。
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { registerLiuyaoCallbacks, registerDebugApi, resetCallbacks } from "./callbacks";
+import {
+  registerLiuyaoCallbacks,
+  registerDebugApi,
+  resetCallbacks,
+  getFillLiuyaoCreateForm,
+  getOpenLiuyaoCreateDialog,
+  getSubmitLiuyaoCreateForm,
+  getGetLiuyaoList,
+  getSetLiuyaoListFilters,
+  getSelectPerson,
+  getSelectLiuyaoRecord,
+  getGetSelectedLiuyaoRecord,
+  getGetPerson,
+} from "./callbacks";
 import { LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
 import { LiuyaoError } from "./errors";
 import type { LiuyaoRecord } from "../personDb";
@@ -74,26 +87,42 @@ function buildMockRecord(overrides: Partial<LiuyaoRecord> = {}): LiuyaoRecord {
   };
 }
 
+/**
+ * null 安全的取值辅助：
+ * `opts?.key ?? default` 中 `??` 会把显式传入的 null 也视为 nullish，
+ * 导致"故意传 null 来覆盖默认值"的场景失效。
+ * 用此函数可区分"未传 (undefined)"和"显式传 null"。
+ */
+function withDefault<T>(value: T | undefined | null, fallback: () => T): T {
+  return value === undefined ? fallback() : value;
+}
+
 /** 注册完整的全套回调（UI 模式所需） */
-function registerAllMocks(opts: {
-  /** submitCreateForm 返回的 record（LiuYaoCreate 用） */
-  submitRecord?: LiuyaoRecord;
-  /** getLiuyaoList 返回的结果（LiuYaoList 用） */
-  listResult?: LiuyaoListResult;
-  /** selectRecord 返回的 record（LiuYaoView 用） */
-  selectedRecord?: LiuyaoRecord | null;
-  /** getSelectedRecord 返回的 record（LiuYaoView 回退用） */
-  fallbackRecord?: LiuyaoRecord | null;
-  /** 自定义 navigate（默认空函数） */
-  navigate?: (path: string) => void;
-  /** 自定义 selectPerson（默认 resolve 空函数） */
-  selectPerson?: (personId: number) => Promise<void>;
-  /** getPerson 返回的人物（用于 waitForPersonMatch 验证） */
-  personObj?: { id: number; name: string } | null;
-}) {
+function registerAllMocks(
+  opts: {
+    /** submitCreateForm 返回的 record（LiuYaoCreate 用） */
+    submitRecord?: LiuyaoRecord;
+    /** getLiuyaoList 返回的结果（LiuYaoList 用） */
+    listResult?: LiuyaoListResult;
+    /** selectRecord 返回的 record（LiuYaoView 用）——显式传 null 表示"选择失败" */
+    selectedRecord?: LiuyaoRecord | null;
+    /** getSelectedRecord 返回的 record（LiuYaoView 回退用）——显式传 null 表示"回退也失败" */
+    fallbackRecord?: LiuyaoRecord | null;
+    /** 自定义 navigate（默认空函数） */
+    navigate?: (path: string) => void;
+    /** 自定义 selectPerson（默认 resolve 空函数） */
+    selectPerson?: (personId: number) => Promise<void>;
+    /** getPerson 返回的人物（用于 waitForPersonMatch 验证） */
+    personObj?: { id: number; name: string } | null;
+  } = {},
+) {
   const submitRecord = opts.submitRecord ?? buildMockRecord();
   const listResult = opts.listResult ?? { records: [], total: 0 };
   const personObj = opts.personObj ?? { id: TEST_PERSON_ID, name: "测试人物" };
+
+  // selectRecord / getSelectedRecord：使用 withDefault 区分"未传"和"显式 null"
+  const selectRecordReturn = withDefault(opts.selectedRecord, buildMockRecord);
+  const fallbackRecordReturn = withDefault(opts.fallbackRecord, buildMockRecord);
 
   // 六爻页面专属回调
   registerLiuyaoCallbacks({
@@ -102,8 +131,8 @@ function registerAllMocks(opts: {
     openCreateDialog: vi.fn(),
     fillCreateForm: vi.fn(),
     submitCreateForm: vi.fn().mockResolvedValue(submitRecord),
-    selectRecord: vi.fn().mockResolvedValue(opts.selectedRecord ?? buildMockRecord()),
-    getSelectedRecord: vi.fn().mockReturnValue(opts.fallbackRecord ?? buildMockRecord()),
+    selectRecord: vi.fn().mockResolvedValue(selectRecordReturn),
+    getSelectedRecord: vi.fn().mockReturnValue(fallbackRecordReturn),
     setHbarVisibility: vi.fn(),
     pickTime: vi.fn(),
     getHbarState: vi
@@ -132,12 +161,10 @@ afterEach(() => {
  * ============================================================ */
 describe("LiuYaoCreate UI 模式", () => {
   it("完整 UI 流程：fillCreateForm → openCreateDialog → submitCreateForm", async () => {
-    const submitRecord = buildMockRecord({ id: 100 });
+    // 构造与入参一致的 submitRecord，便于断言 result 字段
+    const submitRecord = buildMockRecord({ id: 100, question: "这笔生意能不能做？" });
     registerAllMocks({ submitRecord });
 
-    // 通过回调 getter 拿到 mock 函数引用，便于后续断言
-    const { getFillLiuyaoCreateForm, getOpenLiuyaoCreateDialog, getSubmitLiuyaoCreateForm } =
-      await import("./callbacks");
     const fillCreateForm = getFillLiuyaoCreateForm()!;
     const openCreateDialog = getOpenLiuyaoCreateDialog()!;
     const submitCreateForm = getSubmitLiuyaoCreateForm()!;
@@ -170,10 +197,8 @@ describe("LiuYaoCreate UI 模式", () => {
   });
 
   it("lines 未提供时自动摇卦——结果不是乾卦（tossHexagram mock 返回坤卦）", async () => {
-    const submitRecord = buildMockRecord({ id: 200 });
-    registerAllMocks({ submitRecord });
+    registerAllMocks({ submitRecord: buildMockRecord({ id: 200 }) });
 
-    const { getFillLiuyaoCreateForm } = await import("./callbacks");
     const fillCreateForm = getFillLiuyaoCreateForm()!;
 
     await LiuYaoCreate({ personId: TEST_PERSON_ID, question: "自动摇卦测试" }, { skipUI: false });
@@ -187,7 +212,6 @@ describe("LiuYaoCreate UI 模式", () => {
   it("fillCreateForm 被调用时 lines 已生成（非 undefined）", async () => {
     registerAllMocks({ submitRecord: buildMockRecord() });
 
-    const { getFillLiuyaoCreateForm } = await import("./callbacks");
     const fillCreateForm = getFillLiuyaoCreateForm()!;
 
     await LiuYaoCreate({ personId: TEST_PERSON_ID, question: "测试 lines 非空" });
@@ -199,29 +223,22 @@ describe("LiuYaoCreate UI 模式", () => {
   });
 
   it("回调未注册时抛出 LiuyaoError（NOT_INITIALIZED）", async () => {
-    // 不注册任何回调——resetCallbacks 已在 beforeEach 调用
-    // 但需要等 waitForLiuyaoCallbacks 超时，该函数默认 1000ms 超时后继续执行，
-    // 接着因 openCreateDialog / fillCreateForm / submitCreateForm 为 null 抛出 NOT_INITIALIZED
-    await expect(
-      LiuYaoCreate({ personId: TEST_PERSON_ID, question: "未初始化测试" }),
-    ).rejects.toThrow(LiuyaoError);
-
+    // 不注册任何回调——resetCallbacks 已在 beforeEach 调用。
+    // navigateToPage 等待 1000ms + waitForLiuyaoCallbacks 等待 1000ms，
+    // 总耗时 ~2000ms，最后因 openCreateDialog / fillCreateForm / submitCreateForm 为 null 抛出 NOT_INITIALIZED。
+    // 使用较长超时避免误判。
+    let caught: unknown;
     try {
       await LiuYaoCreate({ personId: TEST_PERSON_ID, question: "未初始化测试" });
     } catch (err) {
-      expect(err).toBeInstanceOf(LiuyaoError);
-      expect((err as LiuyaoError).errorCode).toBe("NOT_INITIALIZED");
+      caught = err;
     }
-  });
+    expect(caught).toBeInstanceOf(LiuyaoError);
+    expect((caught as LiuyaoError).errorCode).toBe("NOT_INITIALIZED");
+  }, 10000);
 
-  it("submitCreateForm 超时/拒绝时抛出错误", async () => {
-    const failingRecord = buildMockRecord();
-    registerAllMocks({ submitRecord: failingRecord });
-
-    // 覆盖 submitCreateForm 为一个永远 pending 的 promise（模拟挂起）
-    const { getSubmitLiuyaoCreateForm } = await import("./callbacks");
-    // 由于 submitCreateForm 在 LiuYaoCreate 内部读取，这里改用注册新的回调
-    // 但 registerLiuyaoCallbacks 会覆盖，所以直接重新注册
+  it("submitCreateForm 拒绝时抛出错误", async () => {
+    // 重新注册，让 submitCreateForm 抛出错误
     registerLiuyaoCallbacks({
       getLiuyaoList: vi.fn().mockResolvedValue({ records: [], total: 0 }),
       openCreateDialog: vi.fn(),
@@ -235,9 +252,14 @@ describe("LiuYaoCreate UI 模式", () => {
         .fn()
         .mockReturnValue({ yearly: true, monthly: true, daily: true, hourly: true }),
     });
+    registerDebugApi({
+      navigate: vi.fn(),
+      selectPerson: vi.fn().mockResolvedValue(undefined),
+      getPerson: () => ({ id: TEST_PERSON_ID, name: "测试" }),
+    });
 
     await expect(
-      LiuYaoCreate({ personId: TEST_PERSON_ID, question: "超时测试" }),
+      LiuYaoCreate({ personId: TEST_PERSON_ID, question: "拒绝测试" }),
     ).rejects.toThrow();
   });
 
@@ -280,8 +302,6 @@ describe("LiuYaoList UI 模式", () => {
     const listResult: LiuyaoListResult = { records: mockRecords, total: 2 };
     registerAllMocks({ listResult });
 
-    const { getGetLiuyaoList, getSetLiuyaoListFilters, getSelectPerson } =
-      await import("./callbacks");
     const getLiuyaoList = getGetLiuyaoList()!;
     const setListFilters = getSetLiuyaoListFilters()!;
     const selectPerson = getSelectPerson()!;
@@ -320,7 +340,6 @@ describe("LiuYaoList UI 模式", () => {
   it("无搜索条件时不调用 setListFilters", async () => {
     registerAllMocks({ listResult: { records: [], total: 0 } });
 
-    const { getSetLiuyaoListFilters } = await import("./callbacks");
     const setListFilters = getSetLiuyaoListFilters()!;
 
     await LiuYaoList({ personId: TEST_PERSON_ID });
@@ -331,7 +350,6 @@ describe("LiuYaoList UI 模式", () => {
   it("参数正确传递：分页 + 搜索 + 标签", async () => {
     registerAllMocks({ listResult: { records: [buildMockRecord()], total: 1 } });
 
-    const { getGetLiuyaoList } = await import("./callbacks");
     const getLiuyaoList = getGetLiuyaoList()!;
 
     const result = await LiuYaoList(
@@ -354,16 +372,16 @@ describe("LiuYaoList UI 模式", () => {
   });
 
   it("回调未注册时抛出 LiuyaoError（NOT_INITIALIZED）", async () => {
-    // 不注册任何回调
-    await expect(LiuYaoList({ personId: TEST_PERSON_ID })).rejects.toThrow(LiuyaoError);
-
+    // 不注册任何回调。navigateToPage + waitForLiuyaoCallbacks 共约 2000ms。
+    let caught: unknown;
     try {
       await LiuYaoList({ personId: TEST_PERSON_ID });
     } catch (err) {
-      expect(err).toBeInstanceOf(LiuyaoError);
-      expect((err as LiuyaoError).errorCode).toBe("NOT_INITIALIZED");
+      caught = err;
     }
-  });
+    expect(caught).toBeInstanceOf(LiuyaoError);
+    expect((caught as LiuyaoError).errorCode).toBe("NOT_INITIALIZED");
+  }, 10000);
 
   it("selectPerson 回调未注册时抛出错误", async () => {
     // 注册六爻回调但不注册全局 selectPerson
@@ -394,8 +412,6 @@ describe("LiuYaoView UI 模式", () => {
     const mockRecord = buildMockRecord({ id: TEST_RECORD_ID });
     registerAllMocks({ selectedRecord: mockRecord });
 
-    const { getSelectLiuyaoRecord, getGetSelectedLiuyaoRecord, getSelectPerson } =
-      await import("./callbacks");
     const selectRecord = getSelectLiuyaoRecord()!;
     const selectPerson = getSelectPerson()!;
 
@@ -420,9 +436,9 @@ describe("LiuYaoView UI 模式", () => {
 
   it("selectRecord 返回 null 时回退到 getSelectedRecord", async () => {
     const fallbackRecord = buildMockRecord({ id: 99 });
+    // 显式传 null 让 selectRecord 返回 null，触发回退逻辑
     registerAllMocks({ selectedRecord: null, fallbackRecord });
 
-    const { getSelectLiuyaoRecord, getGetSelectedLiuyaoRecord } = await import("./callbacks");
     const selectRecord = getSelectLiuyaoRecord()!;
     const getSelectedRecord = getGetSelectedLiuyaoRecord()!;
 
@@ -435,18 +451,17 @@ describe("LiuYaoView UI 模式", () => {
   });
 
   it("selectRecord 和 getSelectedRecord 都返回 null 时抛出 NOT_FOUND", async () => {
+    // 显式传 null 让两者都返回 null
     registerAllMocks({ selectedRecord: null, fallbackRecord: null });
 
-    await expect(LiuYaoView({ recordId: 999, personId: TEST_PERSON_ID })).rejects.toThrow(
-      LiuyaoError,
-    );
-
+    let caught: unknown;
     try {
       await LiuYaoView({ recordId: 999, personId: TEST_PERSON_ID });
     } catch (err) {
-      expect(err).toBeInstanceOf(LiuyaoError);
-      expect((err as LiuyaoError).errorCode).toBe("NOT_FOUND");
+      caught = err;
     }
+    expect(caught).toBeInstanceOf(LiuyaoError);
+    expect((caught as LiuyaoError).errorCode).toBe("NOT_FOUND");
   });
 
   it("computed 字段正确构建：包含 divinationTime/chart/yong/hbarData/vigorColumns", async () => {
@@ -472,7 +487,7 @@ describe("LiuYaoView UI 模式", () => {
       expect(result.computed.hbarData.days).toBeDefined();
       expect(result.computed.hbarData.hours).toBeDefined();
     }
-    // vigorColumns 包含 8 列
+    // vigorColumns 包含列数据
     expect(result.computed.vigorColumns).toBeDefined();
     if (result.computed.vigorColumns) {
       expect(result.computed.vigorColumns.columns).toBeDefined();
@@ -482,17 +497,16 @@ describe("LiuYaoView UI 模式", () => {
   });
 
   it("回调未注册时抛出 LiuyaoError（NOT_INITIALIZED）", async () => {
-    await expect(
-      LiuYaoView({ recordId: TEST_RECORD_ID, personId: TEST_PERSON_ID }),
-    ).rejects.toThrow(LiuyaoError);
-
+    // 不注册任何回调。navigateToPage + waitForLiuyaoCallbacks 共约 2000ms。
+    let caught: unknown;
     try {
       await LiuYaoView({ recordId: TEST_RECORD_ID, personId: TEST_PERSON_ID });
     } catch (err) {
-      expect(err).toBeInstanceOf(LiuyaoError);
-      expect((err as LiuyaoError).errorCode).toBe("NOT_INITIALIZED");
+      caught = err;
     }
-  });
+    expect(caught).toBeInstanceOf(LiuyaoError);
+    expect((caught as LiuyaoError).errorCode).toBe("NOT_INITIALIZED");
+  }, 10000);
 
   it("recordId 无效时抛出错误（不进入 UI 流程）", async () => {
     registerAllMocks();
@@ -500,9 +514,7 @@ describe("LiuYaoView UI 模式", () => {
     await expect(LiuYaoView({ recordId: -1, personId: TEST_PERSON_ID })).rejects.toThrow();
 
     // selectRecord 不应被调用（验证在早期被拦截）
-    const { getSelectLiuyaoRecord } = await import("./callbacks");
     const selectRecord = getSelectLiuyaoRecord();
-    // 如果回调注册了，验证没被调用；若为 null 说明已被拦截
     if (selectRecord) {
       expect(selectRecord).not.toHaveBeenCalled();
     }

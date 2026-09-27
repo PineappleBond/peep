@@ -16,65 +16,34 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import "fake-indexeddb/auto";
 
-import { computeLiuyaoData, LiuYao, LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
-import { LiuyaoError, ApiErrorCode } from "./errors";
-import { PersonCreate, PersonDelete } from "./person";
+import { computeLiuyaoData, LiuYao, LiuYaoCreate } from "./liuyao";
+import { LiuyaoError } from "./errors";
 import type { SixLines } from "../liuyao/core/types";
 import { validateNonEmptyString, validatePagination, validateTags } from "./validate";
-import { clearAllCaches } from "../cache";
-import { openDB, deleteDB } from "idb";
+import { db } from "../personDb";
 
 /* ── 数据库清理辅助 ── */
-async function wipeDatabase() {
-  // fake-indexeddb 通过全局 indexedDB 暴露；直接删除全部 store 数据
-  try {
-    const dbNames = await indexedDB.databases();
-    for (const meta of dbNames) {
-      if (meta.name) {
-        await deleteDB(meta.name);
-      }
-    }
-  } catch {
-    /* 忽略 */
-  }
+async function clearDatabase() {
+  await db.liuyaoRecords.clear();
+  await db.persons.clear();
 }
 
-/** 在 fake-indexeddb 上初始化 peep 所需的对象存储 */
-async function initPeepStores() {
-  await openDB("peep-db", 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains("persons")) {
-        db.createObjectStore("persons", { keyPath: "id", autoIncrement: true });
-      }
-      if (!db.objectStoreNames.contains("liuyao")) {
-        const s = db.createObjectStore("liuyao", { keyPath: "id", autoIncrement: true });
-        s.createIndex("personId", "personId", { unique: false });
-        s.createIndex("savedAt", "savedAt", { unique: false });
-      }
-      if (!db.objectStoreNames.contains("liuren")) {
-        const s = db.createObjectStore("liuren", { keyPath: "id", autoIncrement: true });
-        s.createIndex("personId", "personId", { unique: false });
-      }
-      if (!db.objectStoreNames.contains("wiki")) {
-        db.createObjectStore("wiki", { keyPath: "id", autoIncrement: true });
-      }
-    },
-  });
-}
-
-/* ── 辅助：确保默认人物存在 ── */
-async function ensureDefaultPerson() {
-  // 直接通过 PersonCreate 创建一个默认人物，作为测试的基准
-  return await PersonCreate(
-    {
+/** 创建测试人物（默认人物） */
+async function createTestPerson() {
+  const id = await db.persons.add({
+    name: "测试人物",
+    savedAt: Date.now(),
+    isDefault: true,
+    ...{
       name: "测试人物",
       date: "1990-01-01",
       timeIndex: 0,
       gender: "男",
       calendar: "公历",
+      leapMonth: false,
     },
-    true,
-  );
+  });
+  return id;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -139,11 +108,14 @@ describe("2. 无效日期格式", () => {
   });
 
   it("无效时间格式（25:61:61）——由 parseDate 处理", async () => {
-    await initPeepStores();
-    await ensureDefaultPerson();
+    await clearDatabase();
+    const pid = await createTestPerson();
     // LiuYaoCreate 解析 divinationTime 时会调用 parseDate；无效时间应被拦截。
     await expect(
-      LiuYaoCreate({ question: "测试", divinationTime: "2026-09-27 25:61:61" }, { skipUI: true }),
+      LiuYaoCreate(
+        { personId: pid, question: "测试", divinationTime: "2026-09-27 25:61:61" },
+        { skipUI: true },
+      ),
     ).rejects.toThrow();
   });
 });
@@ -176,28 +148,48 @@ describe("3. 边界值 lines", () => {
     expect(r.chart.name).toBeTruthy();
   });
 
-  it("长度不足 6（[1,1,1,1,1]）抛出错误", () => {
-    expect(() =>
-      computeLiuyaoData([1, 1, 1, 1, 1] as unknown as SixLines, "2026-09-27", "自占"),
-    ).toThrow();
+  it("长度不足 6（[1,1,1,1,1]）通过 LiuYaoCreate 抛出错误", async () => {
+    await clearDatabase();
+    const pid = await createTestPerson();
+    await expect(
+      LiuYaoCreate(
+        { personId: pid, question: "测试", lines: [1, 1, 1, 1, 1] as unknown as SixLines },
+        { skipUI: true },
+      ),
+    ).rejects.toThrow();
   });
 
-  it("值超出 0-3 范围（[4,1,1,1,1,1]）抛出错误", () => {
-    expect(() =>
-      computeLiuyaoData([4, 1, 1, 1, 1, 1] as unknown as SixLines, "2026-09-27", "自占"),
-    ).toThrow();
+  it("值超出 0-3 范围（[4,1,1,1,1,1]）通过 LiuYaoCreate 抛出错误", async () => {
+    await clearDatabase();
+    const pid = await createTestPerson();
+    await expect(
+      LiuYaoCreate(
+        { personId: pid, question: "测试", lines: [4, 1, 1, 1, 1, 1] as unknown as SixLines },
+        { skipUI: true },
+      ),
+    ).rejects.toThrow();
   });
 
-  it("负数（[-1,1,1,1,1,1]）抛出错误", () => {
-    expect(() =>
-      computeLiuyaoData([-1, 1, 1, 1, 1, 1] as unknown as SixLines, "2026-09-27", "自占"),
-    ).toThrow();
+  it("负数（[-1,1,1,1,1,1]）通过 LiuYaoCreate 抛出错误", async () => {
+    await clearDatabase();
+    const pid = await createTestPerson();
+    await expect(
+      LiuYaoCreate(
+        { personId: pid, question: "测试", lines: [-1, 1, 1, 1, 1, 1] as unknown as SixLines },
+        { skipUI: true },
+      ),
+    ).rejects.toThrow();
   });
 
-  it("小数（[1.5,1,1,1,1,1]）抛出错误", () => {
-    expect(() =>
-      computeLiuyaoData([1.5, 1, 1, 1, 1, 1] as unknown as SixLines, "2026-09-27", "自占"),
-    ).toThrow();
+  it("小数（[1.5,1,1,1,1,1]）通过 LiuYaoCreate 抛出错误", async () => {
+    await clearDatabase();
+    const pid = await createTestPerson();
+    await expect(
+      LiuYaoCreate(
+        { personId: pid, question: "测试", lines: [1.5, 1, 1, 1, 1, 1] as unknown as SixLines },
+        { skipUI: true },
+      ),
+    ).rejects.toThrow();
   });
 });
 
@@ -205,14 +197,14 @@ describe("3. 边界值 lines", () => {
  *  4. 无效 personId 测试
  * ══════════════════════════════════════════════════════════════ */
 describe("4. 无效 personId", () => {
+  let testPersonId: number;
+
   beforeEach(async () => {
-    await wipeDatabase();
-    await initPeepStores();
-    await ensureDefaultPerson();
+    await clearDatabase();
+    testPersonId = await createTestPerson();
   });
   afterEach(async () => {
-    clearAllCaches();
-    await wipeDatabase();
+    await clearDatabase();
   });
 
   it("负数 personId（-1）抛出 INVALID_INPUT", async () => {
@@ -237,6 +229,15 @@ describe("4. 无效 personId", () => {
     await expect(
       LiuYaoCreate({ personId: 999999, question: "测试" }, { skipUI: true }),
     ).rejects.toThrow();
+  });
+
+  it("有效 personId 能正常创建记录", async () => {
+    const record = await LiuYaoCreate(
+      { personId: testPersonId, question: "正常测试" },
+      { skipUI: true },
+    );
+    expect(record.id).toBeDefined();
+    expect(record.personId).toBe(testPersonId);
   });
 });
 
