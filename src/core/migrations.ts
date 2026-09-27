@@ -128,7 +128,7 @@ export async function checkDataIntegrity(db: Dexie): Promise<{
   try {
     // 检查表是否存在
     const tables = db.tables.map(t => t.name);
-    const requiredTables = ["persons", "liurenRecords", "wikiDocs", "wikiLinks"];
+    const requiredTables = ["persons", "liurenRecords", "wikiDocs", "wikiLinks", "liuyaoRecords"];
 
     for (const table of requiredTables) {
       if (!tables.includes(table)) {

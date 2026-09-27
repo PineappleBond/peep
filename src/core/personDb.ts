@@ -5,6 +5,7 @@
 import Dexie, { type Table } from "dexie";
 import { DEFAULT_BIRTH_INPUT, type BirthInput } from "./useZwds";
 import type { DaLiuRenResult } from "./daliuren/types";
+import type { SixLines, ChartJSON, YongShen, YongTarget } from "./liuyao/core/types";
 import { t } from "./i18n";
 import { runMigrations, checkDataIntegrity } from "./migrations";
 import { recordDomainMetric } from "./performance";
@@ -73,8 +74,39 @@ export interface WikiLink {
 }
 
 /**
+ * 六爻起卦记录：关联人物、起卦时间、占事问题、标签、完整卦象数据。
+ * 存储在 IndexedDB 的 liuyaoRecords 表中。
+ * lines 与 chart.lines 存在一定冗余——保留 lines 用于调试 API 重新排盘验证。
+ */
+export interface LiuyaoRecord {
+  id?: number;
+  /** 关联人物 ID */
+  personId: number;
+  /** 起卦时间 ISO 格式（YYYY-MM-DDTHH:mm:ss） */
+  divinationTime: string;
+  /** 占事问题 */
+  question: string;
+  /** 背景信息 */
+  background: string;
+  /** 备注 */
+  note: string;
+  /** 标签数组 */
+  tags: string[];
+  /** 六爻原始值（用于验证和重排） */
+  lines: SixLines;
+  /** 完整卦象（含纳甲、六亲、六神、旬空等） */
+  chart: ChartJSON;
+  /** 求测对象（自占/父母/子女/配偶/兄弟/医药） */
+  yongTarget: YongTarget;
+  /** 用神定位结果（含伏藏信息） */
+  yong: YongShen;
+  /** 保存时间戳 */
+  savedAt: number;
+}
+
+/**
  * 紫微斗数应用数据库（Dexie 封装 IndexedDB）。
- * 三版本迁移：v1 人物 → v2 + 大六壬记录 → v3 + Wiki 文档与链接。
+ * 四版本迁移：v1 人物 → v2 + 大六壬记录 → v3 + Wiki 文档与链接 → v4 + 六爻记录。
  * 数据迁移逻辑在 migrations.ts 注册，通过 upgrade() 钩子执行。
  */
 class PeepDatabase extends Dexie {
@@ -82,6 +114,7 @@ class PeepDatabase extends Dexie {
   liurenRecords!: Table<LiurenRecord, number>;
   wikiDocs!: Table<WikiDocument, number>;
   wikiLinks!: Table<WikiLink, number>;
+  liuyaoRecords!: Table<LiuyaoRecord, number>;
 
   constructor() {
     super("peep");
@@ -102,11 +135,20 @@ class PeepDatabase extends Dexie {
         wikiLinks: "++id, sourceDocId, targetDocId",
       })
       .upgrade(() => runMigrations(this, 2, 3));
+    this.version(4)
+      .stores({
+        persons: "++id, savedAt, isDefault",
+        liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
+        wikiDocs: "++id, personId, updatedAt, savedAt, *tags",
+        wikiLinks: "++id, sourceDocId, targetDocId",
+        liuyaoRecords: "++id, personId, savedAt, divinationTime, *tags",
+      })
+      .upgrade(() => runMigrations(this, 3, 4));
   }
 }
 
 /** 当前数据库版本号（新增版本时同步更新） */
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 /** Dexie 数据库实例：管理人物/大六壬记录/Wiki 文档/链接关系四张表 */
 export const db = new PeepDatabase();
@@ -209,7 +251,7 @@ export async function savePerson(
 
 /**
  * 删除人物（默认人物不可删除）。
- * 级联删除该人物下的全部关联数据（大六壬记录、Wiki 文档及链接），避免孤立数据。
+ * 级联删除该人物下的全部关联数据（大六壬记录、Wiki 文档及链接、六爻记录），避免孤立数据。
  */
 export async function deletePerson(id: number): Promise<void> {
   const start = performance.now();
@@ -224,6 +266,7 @@ export async function deletePerson(id: number): Promise<void> {
           db.liurenRecords,
           db.wikiDocs,
           db.wikiLinks,
+          db.liuyaoRecords,
           async () => {
             const person = await db.persons.get(id);
             if (!person) return; // 不存在则幂等
@@ -244,6 +287,9 @@ export async function deletePerson(id: number): Promise<void> {
 
             // 级联删除大六壬记录
             await db.liurenRecords.where("personId").equals(id).delete();
+
+            // 级联删除六爻记录
+            await db.liuyaoRecords.where("personId").equals(id).delete();
 
             // 删除人物本身
             await db.persons.delete(id);
