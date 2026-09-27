@@ -13,7 +13,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import { globalEvents } from "../core/events";
 import { registerZiWeiCallbacks, unregisterPageCallbacks } from "../core/debugApi";
 import type { Person } from "../core/personDb";
-import { useDefaultPerson } from "../core/usePageInit";
+import { useCurrentPerson } from "../core/usePageInit";
 
 // 导出对话框懒加载：仅用户点击导出时下载
 const ExportDialog = lazy(() =>
@@ -30,8 +30,8 @@ export function ZiweiPage() {
   zRef.current = z;
   const [exportOpen, setExportOpen] = useState(false);
 
-  // 默认人物加载
-  const { person } = useDefaultPerson();
+  // 从 AppContext 获取当前选中人物
+  const { person } = useCurrentPerson();
 
   // 监听人物变更事件
   useEffect(() => {

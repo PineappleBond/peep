@@ -18,7 +18,7 @@ import { PageState } from "../components/PageState";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import type { LiuyaoRecord, Person } from "../core/personDb";
 import { getLiuyaoRecord, listLiuyaoRecords, type LiuyaoListFilters } from "../core/liuyaoDb";
-import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
+import { useCurrentPerson, useRefreshKey } from "../core/usePageInit";
 import { registerShortcut } from "../core/shortcuts";
 import {
   buildLiuyaoHbarData,
@@ -40,7 +40,7 @@ export function LiuyaoPage() {
     refreshRef: listRefreshKeyRef,
   } = useRefreshKey();
 
-  const { person, initError } = useDefaultPerson((_newPerson: Person) => {
+  const { person, initError } = useCurrentPerson((_newPerson: Person) => {
     setSelectedRecord(null);
     refreshList();
   });

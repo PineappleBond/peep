@@ -1,23 +1,82 @@
 /**
  * 页面级共享 hooks
- * - useDefaultPerson：加载默认人物并监听人物切换事件
- *   消除 DaLiuRenPage / WikiPage 的重复初始化逻辑
+ * - useCurrentPerson：从 AppContext 获取当前选中人物（Header 管理的状态）
+ * - useDefaultPerson：（已废弃）加载默认人物并监听人物切换事件
  * - useDebouncedValue：搜索输入防抖
  * - useListData：统一列表数据获取（分页 + 搜索 + 标签 + 加载状态）
  *   消除 LiurenList / WikiList 的重复数据获取逻辑
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { Person } from "./personDb";
-import { getDefaultPerson } from "./personDb";
+import { getDefaultPerson, getPerson } from "./personDb";
 import { globalEvents } from "./events";
+import { useAppSelector } from "./appContext";
 
 /**
- * 加载默认人物，监听 person.changed 事件。
+ * 从 AppContext 获取当前选中的人物，监听 person.changed 事件。
+ * 这是推荐的获取当前人物的方式——人物选择由 Header 管理，通过 AppContext 共享。
+ *
  * @param onPersonChanged 切换人物时的额外处理（清空选中、刷新列表等）
- * @returns { person, initError, refresh }
- *   - person：当前人物，null 表示尚未加载
+ * @returns { person, initError }
+ *   - person：当前人物，null 表示尚未加载或未选择
  *   - initError：初始化失败时的错误信息
- *   - refresh：手动刷新人物（目前仅用于调试 API）
+ */
+export function useCurrentPerson(onPersonChanged?: (newPerson: Person) => void) {
+  // 从 AppContext 读取当前人物 ID（由 Header 管理）
+  const currentPersonId = useAppSelector(ctx => ctx.currentPersonId);
+
+  const [person, setPerson] = useState<Person | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
+
+  // 用 ref 保持 onPersonChanged 最新引用，避免 useEffect 依赖变化
+  const onPersonChangedRef = useRef(onPersonChanged);
+  useEffect(() => {
+    onPersonChangedRef.current = onPersonChanged;
+  }, [onPersonChanged]);
+
+  // 当 currentPersonId 变化时，加载完整的人物对象
+  useEffect(() => {
+    if (currentPersonId == null) {
+      setPerson(null);
+      return;
+    }
+
+    getPerson(currentPersonId)
+      .then(p => {
+        if (p) {
+          setPerson(p);
+          setInitError(null);
+        } else {
+          setPerson(null);
+          setInitError(`人物 #${currentPersonId} 不存在，可能已被删除`);
+        }
+      })
+      .catch(err => {
+        console.error("[useCurrentPerson] 加载人物失败", err);
+        setInitError("加载人物信息失败，请检查浏览器存储设置后刷新页面");
+      });
+  }, [currentPersonId]);
+
+  // 监听全局人物切换事件（保持向后兼容，某些场景可能直接触发事件）
+  useEffect(() => {
+    const handlePersonChanged = (newPerson: Person) => {
+      if (newPerson.id == null) return;
+      setPerson(newPerson);
+      onPersonChangedRef.current?.(newPerson);
+    };
+    globalEvents.on("person.changed", handlePersonChanged);
+    return () => {
+      globalEvents.off("person.changed", handlePersonChanged);
+    };
+  }, []);
+
+  return { person, initError };
+}
+
+/**
+ * @deprecated 使用 useCurrentPerson 代替。
+ * 加载默认人物，监听 person.changed 事件。
+ * 仅在无法访问 AppContext 的场景下使用。
  */
 export function useDefaultPerson(onPersonChanged?: (newPerson: Person) => void) {
   const [person, setPerson] = useState<Person | null>(null);
@@ -265,7 +324,6 @@ export function useListData<T>(options: UseListDataOptions<T>): UseListDataResul
         console.error("[useListData] 加载标签失败", err);
       });
     // items.length 变化时刷新标签（新增/删除记录后标签可能变化）
-     
   }, [personId, items.length, refreshKey]);
 
   // ── 操作函数 ──

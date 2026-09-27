@@ -24,7 +24,7 @@ import { Dialog } from "../components/Dialog";
 import { PageState } from "../components/PageState";
 import { ExportDialog } from "../components/ExportDialog";
 import { ErrorBoundary } from "../components/ErrorBoundary";
-import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
+import { useCurrentPerson, useRefreshKey } from "../core/usePageInit";
 import { toast } from "../core/toast";
 import { registerShortcuts } from "../core/shortcuts";
 
@@ -43,8 +43,8 @@ export function WikiPage() {
   const wikiListRef = useRef<WikiListHandle>(null);
   const selectedDocRef = useRef<WikiDocument | null>(null);
 
-  // 默认人物加载 + 切换监听（切换后清空选中、刷新列表、切回阅读模式）
-  const { person, initError } = useDefaultPerson(() => {
+  // 从 AppContext 获取当前选中人物 + 切换监听（切换后清空选中、刷新列表、切回阅读模式）
+  const { person, initError } = useCurrentPerson(() => {
     setSelectedDoc(null);
     setMode("read");
     refreshList();
@@ -288,7 +288,7 @@ export function WikiPage() {
                 onEditClick={handleEditClick}
                 onDeleteClick={handleDeleteClick}
                 refreshKey={listRefreshKey}
-                personName={person!.name || ""}
+                personName={person?.name || ""}
               />
             </div>
             <div className="wiki-right">
@@ -296,7 +296,7 @@ export function WikiPage() {
                 <div data-guide="wiki-related">
                   <WikiReader
                     doc={selectedDoc}
-                    personName={person!.name || ""}
+                    personName={person?.name || ""}
                     onEditClick={() => selectedDoc && handleEditClick(selectedDoc)}
                     onDocClick={handleDocClick}
                   />

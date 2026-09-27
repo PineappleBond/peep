@@ -19,7 +19,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import type { LiurenRecord, Person } from "../core/personDb";
 import { getLiurenRecord, listLiurenRecords, type LiurenListFilters } from "../core/daliurenDb";
 import { registerDaLiuRenCallbacks, unregisterPageCallbacks } from "../core/debugApi";
-import { useDefaultPerson, useRefreshKey } from "../core/usePageInit";
+import { useCurrentPerson, useRefreshKey } from "../core/usePageInit";
 import { registerShortcut } from "../core/shortcuts";
 
 export function DaLiuRenPage() {
@@ -32,8 +32,8 @@ export function DaLiuRenPage() {
     refreshRef: listRefreshKeyRef,
   } = useRefreshKey();
 
-  // 默认人物加载 + 切换监听（切换后清空选中、刷新列表）
-  const { person, initError } = useDefaultPerson((_newPerson: Person) => {
+  // 从 AppContext 获取当前选中人物 + 切换监听（切换后清空选中、刷新列表）
+  const { person, initError } = useCurrentPerson((_newPerson: Person) => {
     setSelectedRecord(null);
     refreshList();
   });
