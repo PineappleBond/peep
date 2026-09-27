@@ -72,15 +72,32 @@ export default [
       eqeqeq: ["error", "always", { null: "ignore" }],
       "no-var": "error",
       "prefer-const": "warn",
+
+      // 代码复杂度控制——圈复杂度超过 15 时告警，鼓励拆分大函数
+      // 渐进式改进：初始阈值宽松，随重构逐步收紧到 10
+      complexity: ["warn", { max: 15 }],
+      // 函数最大行数——超过 200 行提示拆分
+      "max-lines-per-function": [
+        "warn",
+        { max: 200, skipBlankLines: true, skipComments: true },
+      ],
+      // 嵌套深度——超过 4 层提示提取子函数
+      "max-depth": ["warn", { max: 4 }],
+      // 函数参数数量——超过 5 个建议用对象参数
+      "max-params": ["warn", { max: 5 }],
     },
   },
 
   // 测试文件放宽 no-console / no-explicit-any——测试需要灵活的断言与日志
+  // 同时放宽复杂度规则——测试文件天然包含大量相似断言
   {
     files: ["**/*.test.{ts,tsx}", "**/testFixtures.ts"],
     rules: {
       "no-console": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      "max-lines-per-function": "off",
+      complexity: "off",
+      "max-depth": "off",
     },
   },
 

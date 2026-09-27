@@ -274,6 +274,43 @@ export default defineConfig({
     slowTestThreshold: process.env.CI ? 10000 : 5000,
     // 测试失败时自动打印相关代码上下文（开发体验提升）
     printConsoleTrace: false,
+    // 代码覆盖率配置——使用 v8 原生覆盖率，零性能损耗
+    coverage: {
+      // 使用 v8 原生覆盖率（比 istanbul 更快、更准确）
+      provider: "v8",
+      // 覆盖率报告输出目录
+      reportsDirectory: "./coverage",
+      // 报告格式：text（终端摘要）、json（机器可读）、html（可视化浏览）、lcov（CI 集成）
+      reporter: ["text", "text-summary", "json", "html", "lcov"],
+      // 排除不需要统计覆盖率的文件的文件
+      exclude: [
+        "node_modules/**",
+        "dist/**",
+        "e2e/**",
+        "coverage/**",
+        // 入口文件——纯引导，无可测试逻辑
+        "src/main.tsx",
+        "src/vite-env.d.ts",
+        // 类型声明文件
+        "**/*.d.ts",
+        // 测试辅助 fixtures
+        "**/testFixtures.ts",
+        // Playwright 配置
+        "playwright.config.ts",
+      ],
+      // 覆盖率阈值——基于当前水平（64%/61%/61%/64%）设置略低于当前值的基线
+      // 允许小幅回退，但防止大幅降低；后续随测试增加逐步提高
+      thresholds: {
+        // 语句覆盖率：当前 64.13%，阈值 60%
+        statements: 60,
+        // 分支覆盖率：当前 61.35%，阈值 55%
+        branches: 55,
+        // 函数覆盖率：当前 61.16%，阈值 55%
+        functions: 55,
+        // 行覆盖率：当前 64.75%，阈值 60%
+        lines: 60,
+      },
+    },
   },
   // 开发环境通过 define 暴露少量只读元信息，方便调试（如 window.__PEEP_DEBUG__）。
   // 生产构建会被 tree-shaken 掉，不增加产物体积。
