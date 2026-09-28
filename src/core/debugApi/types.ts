@@ -318,6 +318,25 @@ export interface WikiViewParams {
 }
 
 /**
+ * Wiki 更新参数——统一 WikiUpdate 的输入类型。
+ * 所有字段都是可选的，只更新提供的字段。
+ */
+export interface WikiUpdateParams {
+  /** 命主 ID（可选，不传则使用默认人物） */
+  personId?: number;
+  /** 文档 ID——要更新的文档 */
+  docId: number;
+  /** 新标题（可选） */
+  title?: string;
+  /** 新 Markdown 正文（可选） */
+  content?: string;
+  /** 新标签列表（可选，会替换原有标签） */
+  tags?: string[];
+  /** 新关联文档 ID 列表（可选，会替换原有关联） */
+  linkTargetIds?: number[];
+}
+
+/**
  * Wiki 关联管理参数——统一 WikiLink 的输入类型。
  */
 export interface WikiLinkParams {

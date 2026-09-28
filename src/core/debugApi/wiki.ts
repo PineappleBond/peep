@@ -42,6 +42,7 @@ import type {
   WikiOptions,
   WikiViewResult,
   WikiCreateParams,
+  WikiUpdateParams,
   WikiListParams,
   WikiViewParams,
   WikiLinkParams,
@@ -308,6 +309,188 @@ export async function WikiCreate(
     log("error", "WikiCreate", "执行失败", err);
     stop();
     throw wrapError("WikiCreate", err, WikiError);
+  }
+}
+
+/**
+ * Wiki 文档更新调试接口——更新已有文档。
+ *
+ * skipUI=true 时：直接更新数据库，不操控 UI。
+ * skipUI=false 时（默认）：执行完整 UI 流程（导航、选择、保存）。
+ *
+ * @param params 更新参数（使用 WikiUpdateParams 类型）
+ * @param options 可选配置项（目前支持 skipUI）
+ * @returns 更新后的文档对象
+ * @throws WikiError docId 无效时（errorCode: INVALID_INPUT）
+ * @throws WikiError 文档不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * // 更新标题和标签
+ * const doc = await window.peep.WikiUpdate({
+ *   docId: 123,
+ *   title: '新标题',
+ *   tags: ['格局', '紫微']
+ * });
+ *
+ * // 更新内容
+ * const doc = await window.peep.WikiUpdate({
+ *   docId: 123,
+ *   content: '# 更新后的内容\n\n...'
+ * });
+ * ```
+ */
+export async function WikiUpdate(
+  params: WikiUpdateParams,
+  options?: WikiOptions,
+): Promise<WikiDocument> {
+  const stop = timer("WikiUpdate");
+  try {
+    // 参数验证
+    validateDocId(params.docId, "WikiUpdate");
+
+    const personId = await resolvePersonId(params.personId);
+    log("info", "WikiUpdate", "更新文档", {
+      personId,
+      docId: params.docId,
+      skipUI: !!options?.skipUI,
+      updateFields: {
+        title: params.title !== undefined,
+        content: params.content !== undefined,
+        tags: params.tags !== undefined,
+        linkTargetIds: params.linkTargetIds !== undefined,
+      },
+    });
+
+    /* ── skipUI 模式：直接更新数据库，不操控 UI ── */
+    if (options?.skipUI) {
+      // 获取原文档
+      const existingDoc = await getWikiDoc(params.docId);
+      if (!existingDoc) {
+        throw new WikiError(`文档 ${params.docId} 不存在`, "WikiUpdate", {
+          context: { docId: params.docId },
+          suggestion: "请检查文档 ID 是否正确，该文档可能已被删除。可调用 WikiList() 查看可用文档",
+          errorCode: ApiErrorCode.NOT_FOUND,
+        });
+      }
+
+      // 合并更新字段
+      const now = Date.now();
+      const updatedDoc: WikiDocument = {
+        ...existingDoc,
+        title: params.title ?? existingDoc.title,
+        content: params.content ?? existingDoc.content,
+        tags: params.tags ?? existingDoc.tags,
+        updatedAt: now,
+      };
+
+      // 验证标题非空
+      if (!updatedDoc.title || !updatedDoc.title.trim()) {
+        throw new WikiError("title 不能为空", "WikiUpdate", {
+          context: { docId: params.docId },
+          suggestion: "请提供有效的文档标题",
+          errorCode: ApiErrorCode.INVALID_INPUT,
+        });
+      }
+
+      // 保存更新
+      await saveWikiDocToDb(updatedDoc);
+
+      // 更新链接关系（如果提供了）
+      if (params.linkTargetIds !== undefined) {
+        await saveWikiLinks(params.docId, params.linkTargetIds);
+      }
+
+      // 验证更新成功
+      await waitForDocSaved(params.docId, 2000);
+
+      log("info", "WikiUpdate", "skipUI 模式更新成功", { docId: params.docId });
+      stop();
+      return updatedDoc;
+    }
+
+    /* ── 正常模式：执行 UI 操控 ── */
+    // 跳转到 /wiki 页面并等待回调注册
+    await navigateToPage("/wiki", "wiki");
+    await waitForWikiCallbacks();
+
+    // 导航完成后再获取回调
+    const selectPerson = getSelectPerson();
+    const selectWikiDoc = getSelectWikiDoc();
+    const getSelectedWikiDoc = getGetSelectedWikiDoc();
+    const saveWikiDoc = getSaveWikiDoc();
+
+    if (!selectPerson || !selectWikiDoc || !getSelectedWikiDoc || !saveWikiDoc) {
+      throw new WikiError("Wiki 调试 API 未初始化", "WikiUpdate", {
+        context: {
+          selectPersonReady: !!selectPerson,
+          selectWikiDocReady: !!selectWikiDoc,
+          getSelectedWikiDocReady: !!getSelectedWikiDoc,
+          saveWikiDocReady: !!saveWikiDoc,
+        },
+        suggestion: "请确认 WikiPage 组件已正确挂载并注册回调",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
+      });
+    }
+
+    // 1. 选择人物（带状态验证）
+    await selectPersonAndWait(personId);
+
+    // 2. 选择要更新的文档
+    await selectWikiDoc(params.docId);
+    updateUiState({ wikiDocId: params.docId });
+    await waitForStateUpdate();
+
+    // 3. 获取当前文档内容
+    const currentDoc = getSelectedWikiDoc();
+    if (!currentDoc) {
+      throw new WikiError(`文档 ${params.docId} 未找到或加载失败`, "WikiUpdate", {
+        context: { docId: params.docId },
+        suggestion: "请检查文档 ID 是否正确，或尝试刷新页面后重试",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 4. 构造更新后的文档
+    const now = Date.now();
+    const updatedDoc: WikiDocument = {
+      ...currentDoc,
+      title: params.title ?? currentDoc.title,
+      content: params.content ?? currentDoc.content,
+      tags: params.tags ?? currentDoc.tags,
+      updatedAt: now,
+    };
+
+    // 验证标题非空
+    if (!updatedDoc.title || !updatedDoc.title.trim()) {
+      throw new WikiError("title 不能为空", "WikiUpdate", {
+        context: { docId: params.docId },
+        suggestion: "请提供有效的文档标题",
+        errorCode: ApiErrorCode.INVALID_INPUT,
+      });
+    }
+
+    // 5. 保存更新
+    const saved = await saveWikiDoc(updatedDoc, params.linkTargetIds ?? []);
+
+    // 6. 等待保存完成
+    await waitForDocSaved(params.docId, 2000);
+
+    log("info", "WikiUpdate", "更新成功", { docId: saved.id });
+    stop();
+    return saved;
+  } catch (err) {
+    if (err instanceof WikiError) {
+      log("error", "WikiUpdate", "执行失败（不重试）", {
+        errorType: err.name,
+        message: err.message.split("\n")[0],
+      });
+      stop();
+      throw err;
+    }
+    log("error", "WikiUpdate", "执行失败", err);
+    stop();
+    throw wrapError("WikiUpdate", err, WikiError);
   }
 }
 

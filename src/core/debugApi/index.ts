@@ -44,6 +44,7 @@ export type {
   LiuyaoViewParams,
   WikiListParams,
   WikiCreateParams,
+  WikiUpdateParams,
   WikiViewParams,
   WikiLinkParams,
   // API 元数据类型
@@ -180,7 +181,7 @@ export {
 } from "./liuyao";
 
 // Wiki 导出
-export { WikiList, WikiCreate, WikiView, WikiLink, WikiDelete } from "./wiki";
+export { WikiList, WikiCreate, WikiUpdate, WikiView, WikiLink, WikiDelete } from "./wiki";
 
 // 辅助函数导出
 export {

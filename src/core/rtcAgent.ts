@@ -643,6 +643,66 @@ const wikiCreateFunction = {
   },
 };
 
+const wikiUpdateFunction = {
+  name: "WikiUpdate",
+  description:
+    "更新已有 Wiki 文档的标题、内容、标签或关联。" +
+    "\n\n" +
+    "⚠️ 安全机制：首次调用会返回操作摘要（不执行更新），" +
+    "你需要将摘要展示给用户并获得确认后，再次调用并传入 confirmed: true 才会真正更新。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 修改文档标题或内容；" +
+    "(2) 更新文档标签；" +
+    "(3) 调整文档关联关系。" +
+    "\n\n" +
+    "所有字段都是可选的，只更新提供的字段。" +
+    "\n\n" +
+    "示例：WikiUpdate({ docId: 123, title: '新标题', tags: ['格局'] })。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID（可选）；省略则使用默认人物"),
+    docId: withMeta(z.number().int().positive(), { example: 123 }).describe("要更新的文档 ID"),
+    title: withMeta(z.string(), { example: "新标题" }).optional().describe("新标题（可选）"),
+    content: withMeta(z.string(), { example: "# 更新后的内容\n\n..." })
+      .optional()
+      .describe("新 Markdown 正文（可选）"),
+    tags: z.array(z.string()).optional().describe("新标签列表（可选，会替换原有标签）"),
+    linkTargetIds: z
+      .array(z.number().int().positive())
+      .optional()
+      .describe("新关联文档 ID 列表（可选，会替换原有关联）"),
+    confirmed: CONFIRM_FIELD,
+  }),
+  handler: (args: Record<string, unknown>) => {
+    type UpdateInput = z.infer<typeof wikiUpdateFunction.zodSchema>;
+    const parsedArgs = wikiUpdateFunction.zodSchema.parse(args) as UpdateInput;
+    // 安全确认：首次调用返回操作摘要
+    if (!parsedArgs.confirmed) {
+      const updates = [];
+      if (parsedArgs.title) updates.push(`标题→"${parsedArgs.title}"`);
+      if (parsedArgs.content) updates.push("内容已修改");
+      if (parsedArgs.tags) updates.push(`标签→[${parsedArgs.tags.join(",")}]`);
+      if (parsedArgs.linkTargetIds) updates.push(`关联→[${parsedArgs.linkTargetIds.join(",")}]`);
+      return {
+        _needsConfirmation: true,
+        action: "更新 Wiki 文档",
+        summary: `即将更新文档 #${parsedArgs.docId}：${updates.join("，") || "无修改"}`,
+        message: "请向用户确认更新内容，确认后再次调用并传入 confirmed: true",
+      };
+    }
+    // 去掉 confirmed 字段后传给 debugApi
+    const { confirmed: _c, ...params } = parsedArgs;
+    void _c;
+    // Agent 像人类一样操作 UI：导航到 Wiki 页面、切换人物、选择文档、保存更新
+    return peepApi().WikiUpdate(params);
+  },
+  returns: {
+    schema: { type: "object" as const, description: "更新后的文档对象" },
+  },
+};
+
 const wikiViewFunction = {
   name: "WikiView",
   description:
@@ -1003,11 +1063,17 @@ const FUNCTION_GROUPS = [
     name: "wiki",
     description:
       "命理知识库管理——存储学习笔记、格局解析、案例分析等 Markdown 文档。" +
-      "典型流程：WikiList 搜索文档 → WikiView 查看详情 → WikiCreate 新建笔记。" +
-      "\n\n支持的操作：List（列表）、View（详情）、Create（创建）、BatchView（批量查看详情）。" +
-      "\n⚠️ 注意：不支持 Update（修改）和 Delete（删除）——文档一旦创建不可更改或删除。" +
+      "典型流程：WikiList 搜索文档 → WikiView 查看详情 → WikiCreate 新建笔记 → WikiUpdate 修改文档。" +
+      "\n\n支持的操作：List（列表）、View（详情）、Create（创建）、Update（更新）、BatchView（批量查看详情）。" +
+      "\n⚠️ 注意：不支持 Delete（删除）——文档一旦创建不可删除（可更新内容）。" +
       "\n💡 性能提示：查看多个文档时请使用 BatchView，比多次调用 View 更快（减少 UI 操作次数）。",
-    functions: [wikiListFunction, wikiViewFunction, wikiCreateFunction, wikiBatchViewFunction],
+    functions: [
+      wikiListFunction,
+      wikiViewFunction,
+      wikiCreateFunction,
+      wikiUpdateFunction,
+      wikiBatchViewFunction,
+    ],
   },
 ];
 

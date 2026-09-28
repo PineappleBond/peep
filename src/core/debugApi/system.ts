@@ -49,7 +49,7 @@ import {
   DaLiuRenView,
 } from "./daliuren";
 import { computeLiuyaoData, LiuYao, LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
-import { WikiList, WikiCreate, WikiView, WikiLink, WikiDelete } from "./wiki";
+import { WikiList, WikiCreate, WikiUpdate, WikiView, WikiLink, WikiDelete } from "./wiki";
 import { PersonList, PersonGet, PersonCreate, PersonUpdate, PersonDelete } from "./person";
 import type { LogLevel } from "./logger";
 
@@ -114,6 +114,10 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
   WikiCreate: {
     方法: "WikiCreate(params, options?)",
     说明: "Wiki 文档创建（options.skipUI 仅供调试）",
+  },
+  WikiUpdate: {
+    方法: "WikiUpdate(params, options?)",
+    说明: "Wiki 文档更新（options.skipUI 仅供调试）",
   },
   WikiList: {
     方法: "WikiList(params, options?)",
@@ -837,6 +841,7 @@ export function initDebugApi() {
     // Wiki
     WikiList,
     WikiCreate,
+    WikiUpdate,
     WikiView,
     WikiLink,
     WikiDelete,

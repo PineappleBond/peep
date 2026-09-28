@@ -25,6 +25,7 @@ import type {
   LiuYaoList,
   LiuYaoView,
   WikiCreate,
+  WikiUpdate,
   WikiList,
   WikiView,
   WikiLink,
@@ -68,6 +69,7 @@ declare global {
       LiuYaoList: typeof LiuYaoList;
       LiuYaoView: typeof LiuYaoView;
       WikiCreate: typeof WikiCreate;
+      WikiUpdate: typeof WikiUpdate;
       WikiList: typeof WikiList;
       WikiView: typeof WikiView;
       WikiLink: typeof WikiLink;
