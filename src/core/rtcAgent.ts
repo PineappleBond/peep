@@ -103,15 +103,32 @@ const personListFunction = {
   zodSchema: z.object({}),
   handler: () => peepApi().PersonList(),
   returns: {
-    schema: {
-      type: "array" as const,
-      description:
-        "人物列表数组，每人包含完整信息：id, name, gender, calendar(历法), date(出生日期), timeIndex(时辰索引), " +
-        "isLeapMonth(是否闰月), exactTime(精确时间), useTrueSolar(是否真太阳时), placeMode(地点模式), " +
-        "province/city/district(省市区), timezone(时区), algorithm(排盘算法), yearDivide(年分割), " +
-        "mutagenTable(四化表), dayDivide(日分割), astroType(星系), residence(居住地), " +
-        "isDefault(是否默认), savedAt(保存时间戳), id(人物ID)",
-    },
+    zodSchema: z.array(
+      z.object({
+        id: z.number().describe("人物ID"),
+        name: z.string().describe("姓名"),
+        gender: z.string().describe("性别"),
+        calendar: z.string().describe("历法类型：solar(公历) 或 lunar(农历)"),
+        date: z.string().describe("出生日期，格式 YYYY-MM-DD"),
+        timeIndex: z.number().describe("时辰索引 0-12，0=早子时(23-1点)，12=晚子时(23-24点)"),
+        isLeapMonth: z.boolean().describe("是否农历闰月"),
+        exactTime: z.string().describe("精确时间（时分）"),
+        useTrueSolar: z.boolean().describe("是否使用真太阳时"),
+        placeMode: z.string().describe("地点模式"),
+        province: z.string().describe("省份"),
+        city: z.string().describe("城市"),
+        district: z.string().describe("区县"),
+        timezone: z.string().describe("时区"),
+        algorithm: z.string().describe("排盘算法"),
+        yearDivide: z.string().describe("年分割方式"),
+        mutagenTable: z.string().describe("四化表"),
+        dayDivide: z.string().describe("日分割方式"),
+        astroType: z.string().describe("星系类型"),
+        residence: z.string().describe("居住地"),
+        isDefault: z.boolean().describe("是否为默认人物"),
+        savedAt: z.number().describe("保存时间戳（毫秒）"),
+      }),
+    ),
   },
 };
 
@@ -132,6 +149,30 @@ const personGetFunction = {
     return peepApi().PersonGet(input.personId);
   },
   returns: {
+    zodSchema: z.object({
+      id: z.number().describe("人物ID"),
+      name: z.string().describe("姓名"),
+      gender: z.string().describe("性别"),
+      calendar: z.string().describe("历法类型：solar(公历) 或 lunar(农历)"),
+      date: z.string().describe("出生日期，格式 YYYY-MM-DD"),
+      timeIndex: z.number().describe("时辰索引 0-12，0=早子时(23-1点)，12=晚子时(23-24点)"),
+      isLeapMonth: z.boolean().describe("是否农历闰月"),
+      exactTime: z.string().describe("精确时间（时分）"),
+      useTrueSolar: z.boolean().describe("是否使用真太阳时"),
+      placeMode: z.string().describe("地点模式"),
+      province: z.string().describe("省份"),
+      city: z.string().describe("城市"),
+      district: z.string().describe("区县"),
+      timezone: z.string().describe("时区"),
+      algorithm: z.string().describe("排盘算法"),
+      yearDivide: z.string().describe("年分割方式"),
+      mutagenTable: z.string().describe("四化表"),
+      dayDivide: z.string().describe("日分割方式"),
+      astroType: z.string().describe("星系类型"),
+      residence: z.string().describe("居住地"),
+      isDefault: z.boolean().describe("是否为默认人物"),
+      savedAt: z.number().describe("保存时间戳（毫秒）"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -221,6 +262,15 @@ const personCreateFunction = {
     return peepApi().PersonCreate(mergeBirthInput(input), input.isDefault);
   },
   returns: {
+    zodSchema: z.object({
+      id: z.number().describe("新创建的人物ID"),
+      name: z.string().describe("姓名"),
+      gender: z.string().describe("性别"),
+      date: z.string().describe("公历出生日期，格式 YYYY-MM-DD"),
+      timeIndex: z.number().describe("时辰索引 0-12"),
+      savedAt: z.number().describe("保存时间戳（毫秒）"),
+      isDefault: z.boolean().describe("是否为默认人物"),
+    }),
     schema: { type: "object" as const, description: "创建后的人物对象，包含分配的 id" },
   },
 };
@@ -263,6 +313,12 @@ const personUpdateFunction = {
     return peepApi().PersonUpdate(input.personId, mergeBirthInput(input), input.isDefault);
   },
   returns: {
+    zodSchema: z.object({
+      id: z.number().describe("人物ID"),
+      name: z.string().describe("姓名"),
+      savedAt: z.number().describe("保存时间戳（毫秒）"),
+      isDefault: z.boolean().describe("是否为默认人物"),
+    }),
     schema: { type: "object" as const, description: "更新后的人物" },
   },
 };
@@ -292,6 +348,7 @@ const personDeleteFunction = {
     return peepApi().PersonDelete(input.personId);
   },
   returns: {
+    zodSchema: z.void().describe("删除操作无返回数据，仅表示操作成功"),
     schema: {
       type: "object" as const,
       description: "删除结果：void（无返回数据），仅表示操作成功",
