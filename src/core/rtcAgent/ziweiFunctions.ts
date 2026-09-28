@@ -4,7 +4,7 @@
  * 排盘与运限分析：ZiWei（UI 操控，完整盘面）、GetScopeData（纯计算，运限拨盘）、SetHoroscopeTime（纯计算，设置时间）。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { peepApi } from "./shared";
+import { PERSON_ID_OPTIONAL, peepApi, createMetadataUpdateHandler } from "./shared";
 
 /* ---- 返回值 Zod Schema ---- */
 
@@ -238,9 +238,7 @@ export const ziweiFunction = {
     "(1) ZiWei({ scope: 'yearly' }) — 查看默认人物的流年盘面；" +
     "(2) ZiWei({ personId: 1, scope: 'monthly', time: '2024-06-15' }) — 查看指定人物 2024年6月的流月盘面。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物。可先调用 PersonList 获取 ID"),
+    personId: PERSON_ID_OPTIONAL,
     scope: withMeta(z.enum(["decadal", "yearly", "monthly", "daily", "hourly"]), {
       example: "yearly",
     }).describe(
@@ -282,9 +280,7 @@ export const getScopeDataFunction = {
     solarDate: withMeta(z.string(), { example: "2024-06-15 12:00" }).describe(
       "公历观测日期，如 '2024-06-15 12:00' 或 '2024-06-15'。用于确定分析的时间点",
     ),
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物。可先调用 PersonList 获取 ID"),
+    personId: PERSON_ID_OPTIONAL,
   }),
   handler: async (args: Record<string, unknown>) => {
     const parsedArgs = getScopeDataFunction.zodSchema.parse(args);
@@ -294,6 +290,19 @@ export const getScopeDataFunction = {
     zodSchema: hbarSchema,
   },
 };
+
+/** SetHoroscopeTime 参数 schema（独立定义，避免 handler 工厂循环引用） */
+const _setHoroscopeTimeSchema = z.object({
+  personId: withMeta(z.number().int().positive(), { example: 1 })
+    .optional()
+    .describe("命主 ID（可选）；省略则使用默认人物"),
+  year: withMeta(z.number().int().min(1900).max(2100), { example: 2024 }).describe("年份"),
+  month: withMeta(z.number().int().min(1).max(12), { example: 6 }).describe("月份（1-12）"),
+  day: withMeta(z.number().int().min(1).max(31), { example: 15 }).describe("日期（1-31）"),
+  hour: withMeta(z.number().int().min(0).max(23), { example: 14 })
+    .optional()
+    .describe("小时（0-23，可选，默认 0）"),
+});
 
 /** 设置运限时间——直接控制运限拨盘的年月日时 */
 export const setHoroscopeTimeFunction = {
@@ -305,27 +314,12 @@ export const setHoroscopeTimeFunction = {
     "使用场景：用户要求查看特定日期的运限时使用。" +
     "\n\n" +
     "示例：SetHoroscopeTime({ year: 2024, month: 6, day: 15, hour: 14 }) — 设置运限到 2024 年 6 月 15 日 14 时。",
-  zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
-    year: withMeta(z.number().int().min(1900).max(2100), { example: 2024 }).describe("年份"),
-    month: withMeta(z.number().int().min(1).max(12), { example: 6 }).describe("月份（1-12）"),
-    day: withMeta(z.number().int().min(1).max(31), { example: 15 }).describe("日期（1-31）"),
-    hour: withMeta(z.number().int().min(0).max(23), { example: 14 })
-      .optional()
-      .describe("小时（0-23，可选，默认 0）"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const params = setHoroscopeTimeFunction.zodSchema.parse(args) as {
-      personId?: number;
-      year: number;
-      month: number;
-      day: number;
-      hour?: number;
-    };
-    return peepApi().SetHoroscopeTime(params);
-  },
+  zodSchema: _setHoroscopeTimeSchema,
+  handler: createMetadataUpdateHandler(
+    _setHoroscopeTimeSchema,
+    (params: { personId?: number; year: number; month: number; day: number; hour?: number }) =>
+      peepApi().SetHoroscopeTime(params),
+  ),
   returns: {
     zodSchema: z
       .object({

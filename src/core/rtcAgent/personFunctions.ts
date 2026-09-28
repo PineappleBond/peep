@@ -4,7 +4,7 @@
  * 命主档案增删改查，是所有分析的前提。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, mergeBirthInput, peepApi, needsConfirm, extractConfirmed } from "./shared";
+import { CONFIRM_FIELD, mergeBirthInput, peepApi, needsConfirm } from "./shared";
 
 /* ---- 共享 Schema ---- */
 

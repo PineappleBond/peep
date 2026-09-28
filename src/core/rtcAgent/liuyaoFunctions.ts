@@ -4,7 +4,15 @@
  * 起卦与占卜——适合具体事件的占断。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, peepApi, needsConfirm, extractConfirmed } from "./shared";
+import {
+  CONFIRM_FIELD,
+  PERSON_ID_OPTIONAL,
+  peepApi,
+  needsConfirm,
+  extractConfirmed,
+  createBatchViewHandler,
+  createMetadataUpdateHandler,
+} from "./shared";
 import type { SixLines } from "../liuyao/core/types";
 
 /* ---- 共享 Schema ---- */
@@ -161,9 +169,7 @@ export const liuyaoCreateFunction = {
     "注意：起卦时间默认为当前时间，系统自动记录，无需手动指定。" +
     "六爻值数组（lines）可省略，系统会自动摇卦生成。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     question: withMeta(z.string(), { example: "这笔生意能不能做" }).describe(
       "所占问题——用户想要占卜的核心问题，要具体明确",
     ),
@@ -223,9 +229,7 @@ export const liuyaoListFunction = {
     "\n\n" +
     "返回分页结果，包含记录列表和总数。如需查看某条记录的完整卦象详情，请调用 LiuYaoView。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     searchText: withMeta(z.string(), { example: "合作" })
       .optional()
       .describe("搜索关键字——匹配问题、备注、背景"),
@@ -266,9 +270,7 @@ export const liuyaoViewFunction = {
     "\n\n" +
     "示例：LiuYaoView({ recordId: 123 }) — 查看 ID 为 123 的起卦详情。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
       "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
     ),
@@ -294,9 +296,7 @@ export const liuyaoDeleteFunction = {
     "\n\n" +
     "示例：LiuYaoDelete({ recordId: 123 }) — 删除 ID 为 123 的起卦记录。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
       "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
     ),
@@ -318,6 +318,16 @@ export const liuyaoDeleteFunction = {
   returns: { zodSchema: z.void().describe("删除结果：无返回数据") },
 };
 
+/** BatchView 参数 schema（独立定义，避免循环引用） */
+const _liuyaoBatchViewSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  recordIds: z
+    .array(z.number().int().positive())
+    .min(1)
+    .max(20)
+    .describe("起卦记录 ID 数组——要查看的记录 ID 列表，最多 20 个"),
+});
+
 export const liuyaoBatchViewFunction = {
   name: "LiuYaoBatchView",
   description:
@@ -329,28 +339,14 @@ export const liuyaoBatchViewFunction = {
     "(3) 避免因多次单独调用 LiuYaoView 导致超时。" +
     "\n\n" +
     "示例：LiuYaoBatchView({ recordIds: [1, 2, 3] }) — 批量查看 ID 为 1,2,3 的起卦记录。",
-  zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
-    recordIds: z
-      .array(z.number().int().positive())
-      .min(1)
-      .max(20)
-      .describe("起卦记录 ID 数组——要查看的记录 ID 列表，最多 20 个"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const parsedArgs = liuyaoBatchViewFunction.zodSchema.parse(args);
-    const results = [];
-    for (const recordId of parsedArgs.recordIds) {
-      const record = await peepApi().LiuYaoView({
-        personId: parsedArgs.personId,
-        recordId,
-      });
-      results.push(record);
-    }
-    return { records: results, count: results.length };
-  },
+  zodSchema: _liuyaoBatchViewSchema,
+  handler: createBatchViewHandler(
+    _liuyaoBatchViewSchema,
+    "recordIds",
+    "recordId",
+    (params: { personId?: number; recordId: number }) => peepApi().LiuYaoView(params),
+    "records",
+  ),
   returns: {
     zodSchema: z.object({
       records: z
@@ -361,6 +357,14 @@ export const liuyaoBatchViewFunction = {
   },
 };
 
+/** UpdateTags 参数 schema（独立定义，避免循环引用） */
+const _liuyaoUpdateTagsSchema = z.object({
+  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
+  ),
+  tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
+});
+
 /** 更新六爻起卦记录的标签 */
 export const liuyaoUpdateTagsFunction = {
   name: "LiuYaoUpdateTags",
@@ -370,21 +374,22 @@ export const liuyaoUpdateTagsFunction = {
     "使用场景：用户要求为起卦记录添加/修改/删除标签时使用。" +
     "\n\n" +
     "示例：LiuYaoUpdateTags({ recordId: 123, tags: ['财运', '合作'] }) — 更新记录标签。",
-  zodSchema: z.object({
-    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
-    ),
-    tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const params = liuyaoUpdateTagsFunction.zodSchema.parse(args) as {
-      recordId: number;
-      tags: string[];
-    };
-    return peepApi().LiuYaoUpdateTags(params);
-  },
+  zodSchema: _liuyaoUpdateTagsSchema,
+  handler: createMetadataUpdateHandler(
+    _liuyaoUpdateTagsSchema,
+    (params: { recordId: number; tags: string[] }) => peepApi().LiuYaoUpdateTags(params),
+  ),
   returns: { zodSchema: liuyaoRecordSchema.describe("更新后的起卦记录") },
 };
+
+/** UpdateNote 参数 schema（独立定义，避免循环引用） */
+const _liuyaoUpdateNoteSchema = z.object({
+  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
+  ),
+  note: z.string().optional().describe("新的备注（可选）"),
+  background: z.string().optional().describe("新的背景信息（可选）"),
+});
 
 /** 更新六爻起卦记录的备注和背景 */
 export const liuyaoUpdateNoteFunction = {
@@ -395,20 +400,11 @@ export const liuyaoUpdateNoteFunction = {
     "使用场景：用户要求为起卦记录添加/修改备注或背景信息时使用。" +
     "\n\n" +
     "示例：LiuYaoUpdateNote({ recordId: 123, note: '后续反馈：准确' }) — 更新备注。",
-  zodSchema: z.object({
-    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
-    ),
-    note: z.string().optional().describe("新的备注（可选）"),
-    background: z.string().optional().describe("新的背景信息（可选）"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const params = liuyaoUpdateNoteFunction.zodSchema.parse(args) as {
-      recordId: number;
-      note?: string;
-      background?: string;
-    };
-    return peepApi().LiuYaoUpdateNote(params);
-  },
+  zodSchema: _liuyaoUpdateNoteSchema,
+  handler: createMetadataUpdateHandler(
+    _liuyaoUpdateNoteSchema,
+    (params: { recordId: number; note?: string; background?: string }) =>
+      peepApi().LiuYaoUpdateNote(params),
+  ),
   returns: { zodSchema: liuyaoRecordSchema.describe("更新后的起卦记录") },
 };

@@ -4,7 +4,15 @@
  * 起课与占卜——适合具体事件的占断。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, peepApi, needsConfirm, extractConfirmed } from "./shared";
+import {
+  CONFIRM_FIELD,
+  PERSON_ID_OPTIONAL,
+  peepApi,
+  needsConfirm,
+  extractConfirmed,
+  createBatchViewHandler,
+  createMetadataUpdateHandler,
+} from "./shared";
 
 /* ---- 共享 Schema ---- */
 
@@ -205,9 +213,7 @@ export const daliurenCreateFunction = {
     "\n\n" +
     "注意：起课时间默认为当前时间，系统自动记录，无需手动指定。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     question: withMeta(z.string(), { example: "这笔生意能不能做" }).describe(
       "所占问题——用户想要占卜的核心问题，要具体明确",
     ),
@@ -247,9 +253,7 @@ export const daliurenListFunction = {
     "\n\n" +
     "返回分页结果，包含记录列表和总数。如需查看某条记录的完整课式详情，请调用 DaLiuRenView。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     searchText: withMeta(z.string(), { example: "合作" })
       .optional()
       .describe("搜索关键字——匹配问题、备注、背景"),
@@ -289,9 +293,7 @@ export const daliurenViewFunction = {
     "\n\n" +
     "示例：DaLiuRenView({ recordId: 123 }) — 查看 ID 为 123 的起课详情。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
       "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
     ),
@@ -319,9 +321,7 @@ export const daliurenDeleteFunction = {
     "\n\n" +
     "示例：DaLiuRenDelete({ recordId: 123 }) — 删除 ID 为 123 的起课记录。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
       "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
     ),
@@ -343,6 +343,16 @@ export const daliurenDeleteFunction = {
   returns: { zodSchema: z.void().describe("删除成功无返回数据") },
 };
 
+/** BatchView 参数 schema（独立定义，避免循环引用） */
+const _daliurenBatchViewSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  recordIds: z
+    .array(z.number().int().positive())
+    .min(1)
+    .max(20)
+    .describe("起课记录 ID 数组——要查看的记录 ID 列表，最多 20 个"),
+});
+
 export const daliurenBatchViewFunction = {
   name: "DaLiuRenBatchView",
   description:
@@ -354,28 +364,14 @@ export const daliurenBatchViewFunction = {
     "(3) 避免因多次单独调用 DaLiuRenView 导致超时。" +
     "\n\n" +
     "示例：DaLiuRenBatchView({ recordIds: [1, 2, 3] }) — 批量查看 ID 为 1,2,3 的起课记录。",
-  zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
-    recordIds: z
-      .array(z.number().int().positive())
-      .min(1)
-      .max(20)
-      .describe("起课记录 ID 数组——要查看的记录 ID 列表，最多 20 个"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const parsedArgs = daliurenBatchViewFunction.zodSchema.parse(args);
-    const results = [];
-    for (const recordId of parsedArgs.recordIds) {
-      const record = await peepApi().DaLiuRenView({
-        personId: parsedArgs.personId,
-        recordId,
-      });
-      results.push(record);
-    }
-    return { records: results, count: results.length };
-  },
+  zodSchema: _daliurenBatchViewSchema,
+  handler: createBatchViewHandler(
+    _daliurenBatchViewSchema,
+    "recordIds",
+    "recordId",
+    (params: { personId?: number; recordId: number }) => peepApi().DaLiuRenView(params),
+    "records",
+  ),
   returns: {
     zodSchema: z.object({
       records: z
@@ -386,6 +382,14 @@ export const daliurenBatchViewFunction = {
   },
 };
 
+/** UpdateTags 参数 schema（独立定义，避免循环引用） */
+const _daliurenUpdateTagsSchema = z.object({
+  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
+  ),
+  tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
+});
+
 /** 更新大六壬起课记录的标签 */
 export const daliurenUpdateTagsFunction = {
   name: "DaLiuRenUpdateTags",
@@ -395,21 +399,22 @@ export const daliurenUpdateTagsFunction = {
     "使用场景：用户要求为起课记录添加/修改/删除标签时使用。" +
     "\n\n" +
     "示例：DaLiuRenUpdateTags({ recordId: 123, tags: ['财运', '合作'] }) — 更新记录标签。",
-  zodSchema: z.object({
-    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
-    ),
-    tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const params = daliurenUpdateTagsFunction.zodSchema.parse(args) as {
-      recordId: number;
-      tags: string[];
-    };
-    return peepApi().DaLiuRenUpdateTags(params);
-  },
+  zodSchema: _daliurenUpdateTagsSchema,
+  handler: createMetadataUpdateHandler(
+    _daliurenUpdateTagsSchema,
+    (params: { recordId: number; tags: string[] }) => peepApi().DaLiuRenUpdateTags(params),
+  ),
   returns: { zodSchema: daliurenRecordSchema.describe("更新后的起课记录") },
 };
+
+/** UpdateNote 参数 schema（独立定义，避免循环引用） */
+const _daliurenUpdateNoteSchema = z.object({
+  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
+  ),
+  note: z.string().optional().describe("新的备注（可选）"),
+  background: z.string().optional().describe("新的背景信息（可选）"),
+});
 
 /** 更新大六壬起课记录的备注和背景 */
 export const daliurenUpdateNoteFunction = {
@@ -420,20 +425,11 @@ export const daliurenUpdateNoteFunction = {
     "使用场景：用户要求为起课记录添加/修改备注或背景信息时使用。" +
     "\n\n" +
     "示例：DaLiuRenUpdateNote({ recordId: 123, note: '后续反馈：准确' }) — 更新备注。",
-  zodSchema: z.object({
-    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
-    ),
-    note: z.string().optional().describe("新的备注（可选）"),
-    background: z.string().optional().describe("新的背景信息（可选）"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const params = daliurenUpdateNoteFunction.zodSchema.parse(args) as {
-      recordId: number;
-      note?: string;
-      background?: string;
-    };
-    return peepApi().DaLiuRenUpdateNote(params);
-  },
+  zodSchema: _daliurenUpdateNoteSchema,
+  handler: createMetadataUpdateHandler(
+    _daliurenUpdateNoteSchema,
+    (params: { recordId: number; note?: string; background?: string }) =>
+      peepApi().DaLiuRenUpdateNote(params),
+  ),
   returns: { zodSchema: daliurenRecordSchema.describe("更新后的起课记录") },
 };

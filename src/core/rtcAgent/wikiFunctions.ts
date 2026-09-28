@@ -4,7 +4,15 @@
  * 命理知识库管理，存储学习笔记、格局解析、案例分析等 Markdown 文档。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, peepApi, needsConfirm, extractConfirmed } from "./shared";
+import {
+  CONFIRM_FIELD,
+  PERSON_ID_OPTIONAL,
+  peepApi,
+  needsConfirm,
+  extractConfirmed,
+  createBatchViewHandler,
+  createMetadataUpdateHandler,
+} from "./shared";
 
 /* ---- 共享文档 Schema ---- */
 
@@ -47,9 +55,7 @@ export const wikiListFunction = {
     "\n\n" +
     "Wiki 用于存储命理知识、学习笔记、案例分析等 Markdown 文档。如需查看某篇文档的完整内容，请调用 WikiView。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     searchText: withMeta(z.string(), { example: "紫微" })
       .optional()
       .describe("搜索关键字——匹配标题或正文"),
@@ -88,9 +94,7 @@ export const wikiCreateFunction = {
     "\n\n" +
     "示例：WikiCreate({ title: '紫府同宫格', content: '# 紫府同宫格\\n\\n紫府同宫是...', tags: ['格局', '紫微'] })。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     title: withMeta(z.string(), { example: "紫微斗数入门" }).describe("文档标题"),
     content: withMeta(z.string(), { example: "# 紫微斗数\n\n紫微斗数是..." }).describe(
       "Markdown 正文——支持标准 Markdown 语法",
@@ -134,9 +138,7 @@ export const wikiUpdateFunction = {
     "\n\n" +
     "示例：WikiUpdate({ docId: 123, title: '新标题', tags: ['格局'] })。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     docId: withMeta(z.number().int().positive(), { example: 123 }).describe("要更新的文档 ID"),
     title: withMeta(z.string(), { example: "新标题" }).optional().describe("新标题（可选）"),
     content: withMeta(z.string(), { example: "# 更新后的内容\n\n..." })
@@ -182,9 +184,7 @@ export const wikiViewFunction = {
     "\n\n" +
     "示例：WikiView({ docId: 456 }) — 查看 ID 为 456 的文档详情。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
+    personId: PERSON_ID_OPTIONAL,
     docId: withMeta(z.number().int().positive(), { example: 456 }).describe(
       "文档 ID——从 WikiList 返回的 docs 中获取",
     ),
@@ -195,6 +195,16 @@ export const wikiViewFunction = {
   },
   returns: { zodSchema: _docWithLinksSchema },
 };
+
+/** BatchView 参数 schema（独立定义，避免循环引用） */
+const _wikiBatchViewSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  docIds: z
+    .array(z.number().int().positive())
+    .min(1)
+    .max(20)
+    .describe("文档 ID 数组——要查看的文档 ID 列表，最多 20 个"),
+});
 
 export const wikiBatchViewFunction = {
   name: "WikiBatchView",
@@ -210,28 +220,14 @@ export const wikiBatchViewFunction = {
     "后续文档复用已加载的页面状态，因此查看多个文档时比多次调用 WikiView 快得多。" +
     "\n\n" +
     "示例：WikiBatchView({ docIds: [1, 2, 3, 4] }) — 批量查看 ID 为 1,2,3,4 的文档。",
-  zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 })
-      .optional()
-      .describe("命主 ID（可选）；省略则使用默认人物"),
-    docIds: z
-      .array(z.number().int().positive())
-      .min(1)
-      .max(20)
-      .describe("文档 ID 数组——要查看的文档 ID 列表，最多 20 个"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const parsedArgs = wikiBatchViewFunction.zodSchema.parse(args);
-    const results = [];
-    for (const docId of parsedArgs.docIds) {
-      const doc = await peepApi().WikiView({
-        personId: parsedArgs.personId,
-        docId,
-      });
-      results.push(doc);
-    }
-    return { docs: results, count: results.length };
-  },
+  zodSchema: _wikiBatchViewSchema,
+  handler: createBatchViewHandler(
+    _wikiBatchViewSchema,
+    "docIds",
+    "docId",
+    (params: { personId?: number; docId: number }) => peepApi().WikiView(params),
+    "docs",
+  ),
   returns: {
     zodSchema: z.object({
       docs: z.array(_docWithLinksSchema).describe("文档详情数组，每项同 WikiView 返回结构"),
@@ -239,6 +235,20 @@ export const wikiBatchViewFunction = {
     }),
   },
 };
+
+/** ReplaceContent 参数 schema（独立定义，避免循环引用） */
+const _wikiReplaceContentSchema = z.object({
+  docId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "文档 ID——从 WikiList 返回的 docs 中获取",
+  ),
+  searchText: z.string().describe("要搜索的文本"),
+  replaceText: z.string().describe("替换后的文本"),
+  isGlobal: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe("是否全局替换（默认 true，即 Replace All）"),
+});
 
 /** Wiki 内容替换 */
 export const wikiReplaceContentFunction = {
@@ -249,31 +259,29 @@ export const wikiReplaceContentFunction = {
     "使用场景：用户要求批量修改文档中的某个关键词或短语时使用。" +
     "\n\n" +
     "示例：WikiReplaceContent({ docId: 123, searchText: '旧文本', replaceText: '新文本', isGlobal: true }) — 全局替换。",
-  zodSchema: z.object({
-    docId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "文档 ID——从 WikiList 返回的 docs 中获取",
-    ),
-    searchText: z.string().describe("要搜索的文本"),
-    replaceText: z.string().describe("替换后的文本"),
-    isGlobal: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe("是否全局替换（默认 true，即 Replace All）"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const params = wikiReplaceContentFunction.zodSchema.parse(args) as {
-      docId: number;
-      searchText: string;
-      replaceText: string;
-      isGlobal?: boolean;
-    };
-    return peepApi().WikiReplaceContent(params);
-  },
+  zodSchema: _wikiReplaceContentSchema,
+  handler: createMetadataUpdateHandler(
+    _wikiReplaceContentSchema,
+    (params: { docId: number; searchText: string; replaceText: string; isGlobal?: boolean }) =>
+      peepApi().WikiReplaceContent(params),
+  ),
   returns: {
     zodSchema: _wikiContentReturnSchema,
   },
 };
+
+/** InsertContent 参数 schema（独立定义，避免循环引用） */
+const _wikiInsertContentSchema = z.object({
+  docId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "文档 ID——从 WikiList 返回的 docs 中获取",
+  ),
+  content: z.string().describe("要插入的内容（支持 Markdown）"),
+  position: z
+    .union([z.number().int().positive(), z.enum(["start", "end"])])
+    .optional()
+    .default("end")
+    .describe("插入位置：正整数=在该行之前插入（1-based），'start'=开头，'end'=结尾（默认）"),
+});
 
 /** Wiki 内容插入 */
 export const wikiInsertContentFunction = {
@@ -285,25 +293,12 @@ export const wikiInsertContentFunction = {
     "\n\n" +
     "示例：WikiInsertContent({ docId: 123, content: '## 新章节', position: 5 }) — 在第 5 行之前插入。" +
     "\n示例：WikiInsertContent({ docId: 123, content: '附录内容', position: 'end' }) — 在文档末尾追加。",
-  zodSchema: z.object({
-    docId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "文档 ID——从 WikiList 返回的 docs 中获取",
-    ),
-    content: z.string().describe("要插入的内容（支持 Markdown）"),
-    position: z
-      .union([z.number().int().positive(), z.enum(["start", "end"])])
-      .optional()
-      .default("end")
-      .describe("插入位置：正整数=在该行之前插入（1-based），'start'=开头，'end'=结尾（默认）"),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const params = wikiInsertContentFunction.zodSchema.parse(args) as {
-      docId: number;
-      content: string;
-      position?: number | "start" | "end";
-    };
-    return peepApi().WikiInsertContent(params);
-  },
+  zodSchema: _wikiInsertContentSchema,
+  handler: createMetadataUpdateHandler(
+    _wikiInsertContentSchema,
+    (params: { docId: number; content: string; position?: number | "start" | "end" }) =>
+      peepApi().WikiInsertContent(params),
+  ),
   returns: {
     zodSchema: _wikiContentReturnSchema,
   },
