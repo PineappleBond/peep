@@ -15,8 +15,8 @@ import {
   invalidateLiurenTagCache,
 } from "../daliurenDb";
 import { getPerson } from "../personDb";
-import { log, timer } from "./logger";
-import { DaLiuRenError, wrapError, ApiErrorCode } from "./errors";
+import { log } from "./logger";
+import { DaLiuRenError, ApiErrorCode } from "./errors";
 import {
   getSelectPerson,
   getGetDaLiuRenList,
@@ -130,8 +130,7 @@ export async function DaLiuRenCreate(
   params: DaLiuRenCreateParams,
   options?: DaLiuRenOptions,
 ): Promise<LiurenRecord> {
-  const stop = timer("DaLiuRenCreate");
-  try {
+  return withErrorHandling("DaLiuRenCreate", DaLiuRenError, async () => {
     // 参数验证
     validateNonEmptyString(params.question, "question", "DaLiuRenCreate", DaLiuRenError);
     validateTags(params.tags, "DaLiuRenCreate", DaLiuRenError);
@@ -178,7 +177,6 @@ export async function DaLiuRenCreate(
       invalidateLiurenTagCache();
 
       log("info", "DaLiuRenCreate", "skipUI 模式创建成功", { recordId: id });
-      stop();
       return { ...record, id };
     }
 
@@ -232,21 +230,8 @@ export async function DaLiuRenCreate(
     await waitForRecordSaved(record.id, 2000);
 
     log("info", "DaLiuRenCreate", "创建成功", { recordId: record.id });
-    stop();
     return record;
-  } catch (err) {
-    if (err instanceof DaLiuRenError) {
-      log("error", "DaLiuRenCreate", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "DaLiuRenCreate", "执行失败", err);
-    stop();
-    throw wrapError("DaLiuRenCreate", err, DaLiuRenError);
-  }
+  });
 }
 
 /**
@@ -277,8 +262,7 @@ export async function DaLiuRenList(
   params: DaLiuRenListParams,
   options?: DaLiuRenOptions,
 ): Promise<{ records: LiurenRecord[]; total: number }> {
-  const stop = timer("DaLiuRenList");
-  try {
+  return withErrorHandling("DaLiuRenList", DaLiuRenError, async () => {
     // 参数验证
     validateTags(params.tags, "DaLiuRenList", DaLiuRenError);
     validatePagination(params, "DaLiuRenList", DaLiuRenError);
@@ -305,7 +289,6 @@ export async function DaLiuRenList(
         total: result.total,
         returned: result.records.length,
       });
-      stop();
       return { records: result.records, total: result.total };
     }
 
@@ -351,17 +334,8 @@ export async function DaLiuRenList(
       total: result.total,
       returned: result.records.length,
     });
-    stop();
     return { records: result.records, total: result.total };
-  } catch (err) {
-    if (err instanceof DaLiuRenError) {
-      stop();
-      throw err;
-    }
-    log("error", "DaLiuRenList", "执行失败", err);
-    stop();
-    throw wrapError("DaLiuRenList", err, DaLiuRenError);
-  }
+  });
 }
 
 /**
@@ -387,8 +361,7 @@ export async function DaLiuRenView(
   params: DaLiuRenViewParams,
   options?: DaLiuRenOptions,
 ): Promise<DaLiuRenViewResult> {
-  const stop = timer("DaLiuRenView");
-  try {
+  return withErrorHandling("DaLiuRenView", DaLiuRenError, async () => {
     // 参数验证
     validateRecordId(params.recordId, "DaLiuRenView");
 
@@ -417,7 +390,6 @@ export async function DaLiuRenView(
         person: (await getPerson(record.personId)) ?? null,
       };
       log("info", "DaLiuRenView", "skipUI 模式查看成功", { recordId: record.id });
-      stop();
       return { ...record, computed };
     }
 
@@ -489,17 +461,8 @@ export async function DaLiuRenView(
       recordId: selectedRecord.id,
       skippedUI: isSameRecord,
     });
-    stop();
     return { ...selectedRecord, computed };
-  } catch (err) {
-    if (err instanceof DaLiuRenError) {
-      stop();
-      throw err;
-    }
-    log("error", "DaLiuRenView", "执行失败", err);
-    stop();
-    throw wrapError("DaLiuRenView", err, DaLiuRenError);
-  }
+  });
 }
 
 /**
@@ -521,8 +484,7 @@ export async function DaLiuRenDelete(
   params: { recordId: number },
   options?: { skipUI?: boolean },
 ): Promise<void> {
-  const stop = timer("DaLiuRenDelete");
-  try {
+  return withErrorHandling("DaLiuRenDelete", DaLiuRenError, async () => {
     validateRecordId(params.recordId, "DaLiuRenDelete");
 
     if (!options?.skipUI) {
@@ -549,20 +511,7 @@ export async function DaLiuRenDelete(
     await deleteLiurenRecord(params.recordId);
 
     log("info", "DaLiuRenDelete", "删除成功", { recordId: params.recordId });
-    stop();
-  } catch (err) {
-    if (err instanceof DaLiuRenError) {
-      log("error", "DaLiuRenDelete", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "DaLiuRenDelete", "执行失败", err);
-    stop();
-    throw wrapError("DaLiuRenDelete", err, DaLiuRenError);
-  }
+  });
 }
 
 /**
