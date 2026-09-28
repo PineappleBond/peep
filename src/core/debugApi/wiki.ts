@@ -831,3 +831,186 @@ export async function WikiDelete(params: { docId: number }, options?: WikiOption
     throw wrapError("WikiDelete", err, WikiError);
   }
 }
+
+/**
+ * Wiki 内容替换调试接口——替换文档内容中的字符串。
+ *
+ * 支持单次替换或全局替换（Replace All）。
+ *
+ * @param params 替换参数
+ * @param params.docId 文档 ID
+ * @param params.searchText 要搜索的文本
+ * @param params.replaceText 替换后的文本
+ * @param params.isGlobal 是否全局替换（默认 true）
+ * @returns 更新后的文档对象
+ * @throws WikiError docId 无效时（errorCode: INVALID_INPUT）
+ * @throws WikiError 文档不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * // 全局替换
+ * const doc = await window.peep.WikiReplaceContent({
+ *   docId: 123,
+ *   searchText: '旧文本',
+ *   replaceText: '新文本',
+ *   isGlobal: true
+ * });
+ * ```
+ */
+export async function WikiReplaceContent(params: {
+  docId: number;
+  searchText: string;
+  replaceText: string;
+  isGlobal?: boolean;
+}): Promise<WikiDocument> {
+  const stop = timer("WikiReplaceContent");
+  try {
+    validateDocId(params.docId, "WikiReplaceContent");
+    validateNonEmptyString(params.searchText, "searchText", "WikiReplaceContent", WikiError);
+
+    log("info", "WikiReplaceContent", "替换内容", {
+      docId: params.docId,
+      searchText: params.searchText,
+      isGlobal: params.isGlobal !== false,
+    });
+
+    // 获取文档
+    const doc = await getWikiDoc(params.docId);
+    if (!doc) {
+      throw new WikiError(`文档 ${params.docId} 不存在`, "WikiReplaceContent", {
+        context: { docId: params.docId },
+        suggestion: "请检查文档 ID 是否正确。可调用 WikiList() 查看可用文档",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 执行替换
+    const newContent =
+      params.isGlobal === false
+        ? doc.content.replace(params.searchText, params.replaceText)
+        : doc.content.split(params.searchText).join(params.replaceText);
+
+    // 保存更新
+    const updatedDoc: WikiDocument = {
+      ...doc,
+      content: newContent,
+      updatedAt: Date.now(),
+    };
+    await saveWikiDocToDb(updatedDoc);
+
+    log("info", "WikiReplaceContent", "替换成功", { docId: params.docId });
+    stop();
+    return updatedDoc;
+  } catch (err) {
+    if (err instanceof WikiError) {
+      stop();
+      throw err;
+    }
+    log("error", "WikiReplaceContent", "执行失败", err);
+    stop();
+    throw wrapError("WikiReplaceContent", err, WikiError);
+  }
+}
+
+/**
+ * Wiki 内容插入调试接口——在文档指定位置插入内容。
+ *
+ * 支持按行号插入或在文档开头/结尾插入。
+ *
+ * @param params 插入参数
+ * @param params.docId 文档 ID
+ * @param params.content 要插入的内容
+ * @param params.position 插入位置：
+ *   - 正整数：在该行之前插入（1-based）
+ *   - "start"：在文档开头插入
+ *   - "end"：在文档结尾插入（默认）
+ * @returns 更新后的文档对象
+ * @throws WikiError docId 无效时（errorCode: INVALID_INPUT）
+ * @throws WikiError 文档不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * // 在第 5 行之前插入
+ * const doc = await window.peep.WikiInsertContent({
+ *   docId: 123,
+ *   content: '## 新章节\n\n这是新内容',
+ *   position: 5
+ * });
+ *
+ * // 在文档末尾追加
+ * const doc = await window.peep.WikiInsertContent({
+ *   docId: 123,
+ *   content: '\n\n---\n追加内容',
+ *   position: 'end'
+ * });
+ * ```
+ */
+export async function WikiInsertContent(params: {
+  docId: number;
+  content: string;
+  position?: number | "start" | "end";
+}): Promise<WikiDocument> {
+  const stop = timer("WikiInsertContent");
+  try {
+    validateDocId(params.docId, "WikiInsertContent");
+    validateNonEmptyString(params.content, "content", "WikiInsertContent", WikiError);
+
+    log("info", "WikiInsertContent", "插入内容", {
+      docId: params.docId,
+      position: params.position ?? "end",
+    });
+
+    // 获取文档
+    const doc = await getWikiDoc(params.docId);
+    if (!doc) {
+      throw new WikiError(`文档 ${params.docId} 不存在`, "WikiInsertContent", {
+        context: { docId: params.docId },
+        suggestion: "请检查文档 ID 是否正确。可调用 WikiList() 查看可用文档",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 按行分割内容并插入
+    const lines = doc.content.split("\n");
+    const insertLines = params.content.split("\n");
+    let newLines: string[];
+
+    if (params.position === "start") {
+      // 在文档开头插入
+      newLines = [...insertLines, ...lines];
+    } else if (params.position === "end" || params.position === undefined) {
+      // 在文档结尾插入
+      newLines = [...lines, ...insertLines];
+    } else if (typeof params.position === "number") {
+      // 在指定行之前插入（1-based）
+      const insertIndex = Math.max(0, Math.min(params.position - 1, lines.length));
+      newLines = [...lines.slice(0, insertIndex), ...insertLines, ...lines.slice(insertIndex)];
+    } else {
+      throw new WikiError(`position 无效：${params.position}`, "WikiInsertContent", {
+        context: { position: params.position },
+        suggestion: "position 应为正整数（行号）、'start' 或 'end'",
+        errorCode: ApiErrorCode.INVALID_INPUT,
+      });
+    }
+
+    // 保存更新
+    const updatedDoc: WikiDocument = {
+      ...doc,
+      content: newLines.join("\n"),
+      updatedAt: Date.now(),
+    };
+    await saveWikiDocToDb(updatedDoc);
+
+    log("info", "WikiInsertContent", "插入成功", { docId: params.docId });
+    stop();
+    return updatedDoc;
+  } catch (err) {
+    if (err instanceof WikiError) {
+      stop();
+      throw err;
+    }
+    log("error", "WikiInsertContent", "执行失败", err);
+    stop();
+    throw wrapError("WikiInsertContent", err, WikiError);
+  }
+}

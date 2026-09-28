@@ -584,3 +584,124 @@ export async function DaLiuRenDelete(
     throw wrapError("DaLiuRenDelete", err, DaLiuRenError);
   }
 }
+
+/**
+ * 大六壬记录更新标签调试接口——仅更新元数据标签。
+ *
+ * 起课记录一旦创建不可修改卦象数据，但支持更新标签。
+ *
+ * @param params 更新参数：recordId, tags
+ * @throws DaLiuRenError recordId 无效时（errorCode: INVALID_INPUT）
+ * @throws DaLiuRenError 记录不存在时（errorCode: NOT_FOUND）
+ * @returns 更新后的记录
+ *
+ * @example
+ * ```typescript
+ * const updated = await window.peep.DaLiuRenUpdateTags({ recordId: 123, tags: ['财运', '合作'] });
+ * ```
+ */
+export async function DaLiuRenUpdateTags(params: {
+  recordId: number;
+  tags: string[];
+}): Promise<LiurenRecord> {
+  const stop = timer("DaLiuRenUpdateTags");
+  try {
+    validateRecordId(params.recordId, "DaLiuRenUpdateTags");
+    validateTags(params.tags, "DaLiuRenUpdateTags", DaLiuRenError);
+
+    log("info", "DaLiuRenUpdateTags", "更新标签", { recordId: params.recordId, tags: params.tags });
+
+    // 获取记录
+    const record = await getLiurenRecord(params.recordId);
+    if (!record) {
+      throw new DaLiuRenError(`记录 ${params.recordId} 不存在`, "DaLiuRenUpdateTags", {
+        context: { recordId: params.recordId },
+        suggestion: "请检查记录 ID 是否正确。可调用 DaLiuRenList() 查看可用记录",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 更新标签并保存
+    const updated: LiurenRecord = { ...record, tags: params.tags };
+    await saveLiurenRecord(updated);
+    invalidateLiurenTagCache();
+
+    log("info", "DaLiuRenUpdateTags", "更新成功", { recordId: params.recordId });
+    stop();
+    return updated;
+  } catch (err) {
+    if (err instanceof DaLiuRenError) {
+      stop();
+      throw err;
+    }
+    log("error", "DaLiuRenUpdateTags", "执行失败", err);
+    stop();
+    throw wrapError("DaLiuRenUpdateTags", err, DaLiuRenError);
+  }
+}
+
+/**
+ * 大六壬记录更新备注调试接口——仅更新元数据 note 和 background。
+ *
+ * 起课记录一旦创建不可修改卦象数据，但支持更新备注和背景信息。
+ *
+ * @param params 更新参数：recordId, note?, background?
+ * @throws DaLiuRenError recordId 无效时（errorCode: INVALID_INPUT）
+ * @throws DaLiuRenError 记录不存在时（errorCode: NOT_FOUND）
+ * @returns 更新后的记录
+ *
+ * @example
+ * ```typescript
+ * const updated = await window.peep.DaLiuRenUpdateNote({
+ *   recordId: 123,
+ *   note: '后续反馈：准确',
+ *   background: '补充背景信息'
+ * });
+ * ```
+ */
+export async function DaLiuRenUpdateNote(params: {
+  recordId: number;
+  note?: string;
+  background?: string;
+}): Promise<LiurenRecord> {
+  const stop = timer("DaLiuRenUpdateNote");
+  try {
+    validateRecordId(params.recordId, "DaLiuRenUpdateNote");
+
+    log("info", "DaLiuRenUpdateNote", "更新备注", {
+      recordId: params.recordId,
+      hasNote: params.note !== undefined,
+      hasBackground: params.background !== undefined,
+    });
+
+    // 获取记录
+    const record = await getLiurenRecord(params.recordId);
+    if (!record) {
+      throw new DaLiuRenError(`记录 ${params.recordId} 不存在`, "DaLiuRenUpdateNote", {
+        context: { recordId: params.recordId },
+        suggestion: "请检查记录 ID 是否正确。可调用 DaLiuRenList() 查看可用记录",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 更新备注/背景并保存
+    const updated: LiurenRecord = {
+      ...record,
+      note: params.note ?? record.note,
+      background: params.background ?? record.background,
+    };
+    await saveLiurenRecord(updated);
+
+    log("info", "DaLiuRenUpdateNote", "更新成功", { recordId: params.recordId });
+    stop();
+    return updated;
+  } catch (err) {
+    if (err instanceof DaLiuRenError) {
+      stop();
+      throw err;
+    }
+    log("error", "DaLiuRenUpdateNote", "执行失败", err);
+    stop();
+    throw wrapError("DaLiuRenUpdateNote", err, DaLiuRenError);
+  }
+}

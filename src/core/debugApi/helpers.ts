@@ -63,6 +63,18 @@ export function getUiState(): {
   return { ...uiState };
 }
 
+/**
+ * 重置 UI 状态追踪（供测试使用）
+ * 将所有 UI 状态追踪字段恢复为初始值。
+ */
+export function resetUiState(): void {
+  uiState.currentPage = null;
+  uiState.currentPersonId = null;
+  uiState.currentWikiDocId = null;
+  uiState.currentDaLiuRenRecordId = null;
+  uiState.currentLiuyaoRecordId = null;
+}
+
 /** 等待下一帧（确保 useEffect commit 阶段执行完成）
  *  兼容非浏览器环境（SSR/Node.js）：requestAnimationFrame 不可用时降级为 setTimeout(16ms)
  */

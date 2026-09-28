@@ -752,3 +752,124 @@ export async function LiuYaoDelete(
     throw wrapError("LiuYaoDelete", err, LiuyaoError);
   }
 }
+
+/**
+ * 六爻记录更新标签调试接口——仅更新元数据标签。
+ *
+ * 起卦记录一旦创建不可修改卦象数据，但支持更新标签。
+ *
+ * @param params 更新参数：recordId, tags
+ * @throws LiuyaoError recordId 无效时（errorCode: INVALID_INPUT）
+ * @throws LiuyaoError 记录不存在时（errorCode: NOT_FOUND）
+ * @returns 更新后的记录
+ *
+ * @example
+ * ```typescript
+ * const updated = await window.peep.LiuYaoUpdateTags({ recordId: 123, tags: ['财运', '合作'] });
+ * ```
+ */
+export async function LiuYaoUpdateTags(params: {
+  recordId: number;
+  tags: string[];
+}): Promise<LiuyaoRecord> {
+  const stop = timer("LiuYaoUpdateTags");
+  try {
+    validateRecordId(params.recordId, "LiuYaoUpdateTags");
+    validateTags(params.tags, "LiuYaoUpdateTags", LiuyaoError);
+
+    log("info", "LiuYaoUpdateTags", "更新标签", { recordId: params.recordId, tags: params.tags });
+
+    // 获取记录
+    const record = await getLiuyaoRecord(params.recordId);
+    if (!record) {
+      throw new LiuyaoError(`记录 ${params.recordId} 不存在`, "LiuYaoUpdateTags", {
+        context: { recordId: params.recordId },
+        suggestion: "请检查记录 ID 是否正确。可调用 LiuYaoList() 查看可用记录",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 更新标签并保存
+    const updated: LiuyaoRecord = { ...record, tags: params.tags };
+    await saveLiuyaoRecord(updated);
+    invalidateLiuyaoTagCache();
+
+    log("info", "LiuYaoUpdateTags", "更新成功", { recordId: params.recordId });
+    stop();
+    return updated;
+  } catch (err) {
+    if (err instanceof LiuyaoError) {
+      stop();
+      throw err;
+    }
+    log("error", "LiuYaoUpdateTags", "执行失败", err);
+    stop();
+    throw wrapError("LiuYaoUpdateTags", err, LiuyaoError);
+  }
+}
+
+/**
+ * 六爻记录更新备注调试接口——仅更新元数据 note 和 background。
+ *
+ * 起卦记录一旦创建不可修改卦象数据，但支持更新备注和背景信息。
+ *
+ * @param params 更新参数：recordId, note?, background?
+ * @throws LiuyaoError recordId 无效时（errorCode: INVALID_INPUT）
+ * @throws LiuyaoError 记录不存在时（errorCode: NOT_FOUND）
+ * @returns 更新后的记录
+ *
+ * @example
+ * ```typescript
+ * const updated = await window.peep.LiuYaoUpdateNote({
+ *   recordId: 123,
+ *   note: '后续反馈：准确',
+ *   background: '补充背景信息'
+ * });
+ * ```
+ */
+export async function LiuYaoUpdateNote(params: {
+  recordId: number;
+  note?: string;
+  background?: string;
+}): Promise<LiuyaoRecord> {
+  const stop = timer("LiuYaoUpdateNote");
+  try {
+    validateRecordId(params.recordId, "LiuYaoUpdateNote");
+
+    log("info", "LiuYaoUpdateNote", "更新备注", {
+      recordId: params.recordId,
+      hasNote: params.note !== undefined,
+      hasBackground: params.background !== undefined,
+    });
+
+    // 获取记录
+    const record = await getLiuyaoRecord(params.recordId);
+    if (!record) {
+      throw new LiuyaoError(`记录 ${params.recordId} 不存在`, "LiuYaoUpdateNote", {
+        context: { recordId: params.recordId },
+        suggestion: "请检查记录 ID 是否正确。可调用 LiuYaoList() 查看可用记录",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 更新备注/背景并保存
+    const updated: LiuyaoRecord = {
+      ...record,
+      note: params.note ?? record.note,
+      background: params.background ?? record.background,
+    };
+    await saveLiuyaoRecord(updated);
+
+    log("info", "LiuYaoUpdateNote", "更新成功", { recordId: params.recordId });
+    stop();
+    return updated;
+  } catch (err) {
+    if (err instanceof LiuyaoError) {
+      stop();
+      throw err;
+    }
+    log("error", "LiuYaoUpdateNote", "执行失败", err);
+    stop();
+    throw wrapError("LiuYaoUpdateNote", err, LiuyaoError);
+  }
+}

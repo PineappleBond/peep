@@ -14,6 +14,8 @@ vi.mock("@rtc-agent/component", () => {
     positive: () => createMockSchema(),
     min: () => createMockSchema(),
     max: () => createMockSchema(),
+    extend: () => createMockSchema(),
+    nullable: () => createMockSchema(),
     parse: (input: unknown) => input,
   });
 
@@ -28,6 +30,9 @@ vi.mock("@rtc-agent/component", () => {
       enum: () => createMockSchema(),
       boolean: () => createMockSchema(),
       array: () => createMockSchema(),
+      void: () => createMockSchema(),
+      record: () => createMockSchema(),
+      any: () => createMockSchema(),
     },
   };
 });

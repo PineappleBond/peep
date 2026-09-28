@@ -224,5 +224,56 @@ export async function PersonDelete(personId: number): Promise<void> {
   }
 }
 
+/**
+ * 设置默认人物：将指定人物设为默认，同时取消其他人物默认标记。
+ * 系统中只能有一个默认人物。
+ *
+ * @param personId 人物 ID（正整数）
+ * @returns 更新后的人物对象
+ * @throws ZiWeiError personId 无效时（errorCode: INVALID_INPUT）
+ * @throws ZiWeiError 人物不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * await window.peep.PersonSetDefault(2); // 将 ID 为 2 的人物设为默认
+ * ```
+ */
+export async function PersonSetDefault(personId: number): Promise<Person> {
+  const stop = timer("PersonSetDefault");
+  try {
+    validatePersonId(personId, "PersonSetDefault");
+    log("info", "PersonSetDefault", "设置默认人物", { id: personId });
+
+    // 获取人物信息（验证存在性并获取 BirthInput）
+    const person = await getPerson(personId);
+    if (!person) {
+      throw new ZiWeiError(`人物 ${personId} 不存在`, "PersonSetDefault", {
+        context: { personId },
+        suggestion: "请检查人物 ID 是否正确。可调用 PersonList() 查看可用的人物列表",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 提取 BirthInput 字段并设为默认
+    const { id, savedAt, isDefault: _wasDefault, ...birthInput } = person;
+    const updated = await savePerson(personId, birthInput as BirthInput, true);
+
+    // UI 同步：通知所有页面默认人物已变化
+    globalEvents.emit("person.changed", updated);
+
+    log("info", "PersonSetDefault", "设置成功", { id: updated.id, name: updated.name });
+    stop();
+    return updated;
+  } catch (err) {
+    if (err instanceof ZiWeiError) {
+      stop();
+      throw err;
+    }
+    log("error", "PersonSetDefault", "设置失败", err);
+    stop();
+    throw wrapError("PersonSetDefault", err, ZiWeiError);
+  }
+}
+
 // 重新导出 wrapError 供其他模块使用
 export { wrapError } from "./errors";

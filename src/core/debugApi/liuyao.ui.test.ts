@@ -26,6 +26,7 @@ import {
 } from "./callbacks";
 import { LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
 import { LiuyaoError } from "./errors";
+import { resetUiState } from "./helpers";
 import type { LiuyaoRecord } from "../personDb";
 import type { LiuyaoListResult } from "../liuyaoDb";
 import type { SixLines, YongTarget } from "../liuyao/core/types";
@@ -151,9 +152,11 @@ function registerAllMocks(
 /* ── 测试前后清理 ── */
 beforeEach(() => {
   resetCallbacks();
+  resetUiState();
 });
 afterEach(() => {
   resetCallbacks();
+  resetUiState();
 });
 
 /* ============================================================
@@ -427,11 +430,11 @@ describe("LiuYaoView UI 模式", () => {
     expect(selectRecord).toHaveBeenCalledWith(TEST_RECORD_ID);
     // computed 字段必须存在
     expect(result.computed).toBeDefined();
-    expect(result.computed.divinationTime).toBe("2026-09-27T12:00:00");
-    expect(result.computed.chart).toBeDefined();
-    expect(result.computed.yong).toBeDefined();
-    expect(result.computed.hbarData).toBeDefined();
-    expect(result.computed.vigorColumns).toBeDefined();
+    expect(result.computed!.divinationTime).toBe("2026-09-27T12:00:00");
+    expect(result.computed!.chart).toBeDefined();
+    expect(result.computed!.yong).toBeDefined();
+    expect(result.computed!.hbarData).toBeDefined();
+    expect(result.computed!.vigorColumns).toBeDefined();
   });
 
   it("selectRecord 返回 null 时回退到 getSelectedRecord", async () => {
@@ -476,24 +479,24 @@ describe("LiuYaoView UI 模式", () => {
       { skipUI: false },
     );
 
-    expect(result.computed.divinationTime).toBe("2024-06-15T08:30:00");
-    expect(result.computed.chart).toBe(mockRecord.chart);
-    expect(result.computed.yong).toBe(mockRecord.yong);
+    expect(result.computed!.divinationTime).toBe("2024-06-15T08:30:00");
+    expect(result.computed!.chart).toBe(mockRecord.chart);
+    expect(result.computed!.yong).toBe(mockRecord.yong);
     // hbarData 结构包含四柱
-    expect(result.computed.hbarData).toBeDefined();
-    if (result.computed.hbarData) {
-      expect(result.computed.hbarData.years).toBeDefined();
-      expect(result.computed.hbarData.months).toBeDefined();
-      expect(result.computed.hbarData.days).toBeDefined();
-      expect(result.computed.hbarData.hours).toBeDefined();
+    expect(result.computed!.hbarData).toBeDefined();
+    if (result.computed!.hbarData) {
+      expect(result.computed!.hbarData.years).toBeDefined();
+      expect(result.computed!.hbarData.months).toBeDefined();
+      expect(result.computed!.hbarData.days).toBeDefined();
+      expect(result.computed!.hbarData.hours).toBeDefined();
     }
     // vigorColumns 包含列数据
-    expect(result.computed.vigorColumns).toBeDefined();
-    if (result.computed.vigorColumns) {
-      expect(result.computed.vigorColumns.columns).toBeDefined();
+    expect(result.computed!.vigorColumns).toBeDefined();
+    if (result.computed!.vigorColumns) {
+      expect(result.computed!.vigorColumns.columns).toBeDefined();
     }
     // person 字段：来自 getPerson 回调
-    expect(result.computed.person).toBeDefined();
+    expect(result.computed!.person).toBeDefined();
   });
 
   it("回调未注册时抛出 LiuyaoError（NOT_INITIALIZED）", async () => {

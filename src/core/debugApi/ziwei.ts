@@ -341,6 +341,94 @@ export async function setHoroscopeTimeWithRetry(
   );
 }
 
+/**
+ * 设置运限时间（公开 API）：
+ * 根据人物 ID 和时间参数设置运限拨盘时间。
+ * 纯计算操作，不操控 UI。
+ *
+ * @param params 时间参数
+ * @param params.personId 人物 ID（可选，不传则使用默认人物）
+ * @param params.year 年份
+ * @param params.month 月份（1-12）
+ * @param params.day 日期（1-31）
+ * @param params.hour 小时（0-23，可选，默认 0）
+ * @returns 设置后的运限状态（pick 值）
+ * @throws ZiWeiError  Zwds 状态不可用时（errorCode: NOT_INITIALIZED）
+ *
+ * @example
+ * ```typescript
+ * const result = await window.peep.SetHoroscopeTime({
+ *   year: 2024,
+ *   month: 6,
+ *   day: 15,
+ *   hour: 14
+ * });
+ * ```
+ */
+export async function SetHoroscopeTime(params: {
+  personId?: number;
+  year: number;
+  month: number;
+  day: number;
+  hour?: number;
+}): Promise<{ year: number; month: number; day: number; hour: number }> {
+  const stop = timer("SetHoroscopeTime");
+  try {
+    log("info", "SetHoroscopeTime", "设置运限时间", params);
+
+    // 获取 Zwds 状态
+    const getZwds = getGetZwds();
+    if (!getZwds) {
+      throw new ZiWeiError("Zwds 状态不可用", "SetHoroscopeTime", {
+        context: { getZwdsReady: false },
+        suggestion: "请确认 ZiweiPage 组件已挂载并初始化完成",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
+      });
+    }
+
+    const z = getZwds();
+    if (!z) {
+      throw new ZiWeiError("Zwds 状态为空", "SetHoroscopeTime", {
+        context: { zwdsState: null },
+        suggestion: "请先排盘（调用 ZiWei）或等待盘面加载完成",
+        errorCode: ApiErrorCode.NOT_INITIALIZED,
+      });
+    }
+
+    // 构造 Date 对象
+    const date = new Date(params.year, params.month - 1, params.day, params.hour ?? 0);
+    if (isNaN(date.getTime())) {
+      throw new ZiWeiError(
+        `日期无效：${params.year}-${params.month}-${params.day}`,
+        "SetHoroscopeTime",
+        {
+          context: params,
+          suggestion: "请检查年月日时是否为有效数字",
+          errorCode: ApiErrorCode.INVALID_INPUT,
+        },
+      );
+    }
+
+    // 调用带重试的设置函数
+    await setHoroscopeTimeWithRetry(z, date);
+
+    // 返回设置后的 pick 值
+    const result = _setHoroscopeTime(z, date);
+
+    log("info", "SetHoroscopeTime", "设置成功", result);
+    stop();
+    return result;
+  } catch (err) {
+    if (err instanceof ZiWeiError) {
+      stop();
+      throw err;
+    }
+    log("error", "SetHoroscopeTime", "设置失败", err);
+    stop();
+    throw wrapError("SetHoroscopeTime", err, ZiWeiError);
+  }
+}
+
 /* ─────────────── 核心计算函数 ─────────────── */
 
 /**

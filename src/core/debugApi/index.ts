@@ -145,6 +145,7 @@ export {
   PersonCreate,
   PersonUpdate,
   PersonDelete,
+  PersonSetDefault,
 } from "./person";
 
 // 紫微斗数导出
@@ -154,6 +155,7 @@ export {
   parseDate,
   _setHoroscopeTime,
   setHoroscopeTimeWithRetry,
+  SetHoroscopeTime,
   computeZiWeiData,
   ZiWei,
   computeScopeData,
@@ -169,6 +171,8 @@ export {
   DaLiuRenList,
   DaLiuRenView,
   DaLiuRenDelete,
+  DaLiuRenUpdateTags,
+  DaLiuRenUpdateNote,
 } from "./daliuren";
 
 // 六爻导出
@@ -179,10 +183,21 @@ export {
   LiuYaoList,
   LiuYaoView,
   LiuYaoDelete,
+  LiuYaoUpdateTags,
+  LiuYaoUpdateNote,
 } from "./liuyao";
 
 // Wiki 导出
-export { WikiList, WikiCreate, WikiUpdate, WikiView, WikiLink, WikiDelete } from "./wiki";
+export {
+  WikiList,
+  WikiCreate,
+  WikiUpdate,
+  WikiView,
+  WikiLink,
+  WikiDelete,
+  WikiReplaceContent,
+  WikiInsertContent,
+} from "./wiki";
 
 // Lunar 时间/日历导出
 export {
@@ -218,6 +233,7 @@ export {
   // UI 状态追踪（性能优化：像人类一样智能判断是否需要操作）
   getUiState,
   updateUiState,
+  resetUiState,
 } from "./helpers";
 
 // 系统 API 导出
