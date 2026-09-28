@@ -271,9 +271,9 @@ function sanitizeBackupData(data: unknown): BackupData {
 
   return {
     meta: d.meta && typeof d.meta === "object" ? (d.meta as BackupData["meta"]) : undefined,
-    persons: persons.length ? persons : undefined,
-    liuren: liuren.length ? liuren : undefined,
-    wiki: wiki.length ? wiki : undefined,
+    persons: persons?.length ? persons : undefined,
+    liuren: liuren?.length ? liuren : undefined,
+    wiki: wiki?.length ? wiki : undefined,
     wikiLinks: wikiLinks.length ? wikiLinks : undefined,
   };
 }

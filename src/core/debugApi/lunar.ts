@@ -209,14 +209,25 @@ export function GetSolarTerms(params: { year: number }): Array<{
   try {
     log("info", "GetSolarTerms", "获取节气", { year: params.year });
 
-    const lunarYear = LunarYear.fromYear(params.year);
-    const jieQiQi = lunarYear.getJieQiQi();
+    // 从该年第一天获取节气表
+    const solar = Solar.fromYmd(params.year, 1, 1);
+    const lunar = solar.getLunar();
+    const jieQiTable = lunar.getJieQiTable();
+    const jieQiList = lunar.getJieQiList();
 
-    const result = jieQiQi.map(jq => ({
-      name: jq.getName(),
-      date: `${jq.getSolar().getYear()}-${String(jq.getSolar().getMonth()).padStart(2, "0")}-${String(jq.getSolar().getDay()).padStart(2, "0")}`,
-      description: jq.getDescription(),
-    }));
+    // 只返回中文节气名称（过滤掉英文键如 DA_XUE）
+    const result = jieQiList
+      .filter(name => !/^[A-Z_]+$/.test(name)) // 过滤纯英文键
+      .map(name => {
+        const jieSolar = jieQiTable[name];
+        return {
+          name,
+          date: jieSolar
+            ? `${jieSolar.getYear()}-${String(jieSolar.getMonth()).padStart(2, "0")}-${String(jieSolar.getDay()).padStart(2, "0")}`
+            : "",
+          description: "", // lunar-typescript 没有直接提供节气描述
+        };
+      });
 
     log("info", "GetSolarTerms", "获取成功", { count: result.length });
     stop();
@@ -239,10 +250,10 @@ export function GetSolarTerms(params: { year: number }): Array<{
  * @returns 节气信息 { currentJie, currentQi, nextJie, nextQi }
  */
 export function GetCurrentSolarTerm(params: { date?: string }): {
-  currentJie: { name: string; date: string } | null;
-  currentQi: { name: string; date: string } | null;
-  nextJie: { name: string; date: string } | null;
-  nextQi: { name: string; date: string } | null;
+  currentJie: { name: string; date: string | null } | null;
+  currentQi: { name: string; date: string | null } | null;
+  nextJie: { name: string; date: string | null } | null;
+  nextQi: { name: string; date: string | null } | null;
 } {
   const stop = timer("GetCurrentSolarTerm");
   try {
@@ -260,36 +271,27 @@ export function GetCurrentSolarTerm(params: { date?: string }): {
     }
 
     const lunar = solar.getLunar();
-    const currentJie = lunar.getJie();
-    const currentQi = lunar.getQi();
+    const jieQiTable = lunar.getJieQiTable();
+    const currentJieName = lunar.getJie();
+    const currentQiName = lunar.getQi();
     const nextJie = lunar.getNextJie();
     const nextQi = lunar.getNextQi();
 
+    // 从节气表中查找日期
+    const getJieQiDate = (name: string | null): string | null => {
+      if (!name) return null;
+      const jieSolar = jieQiTable[name];
+      if (!jieSolar) return null;
+      return `${jieSolar.getYear()}-${String(jieSolar.getMonth()).padStart(2, "0")}-${String(jieSolar.getDay()).padStart(2, "0")}`;
+    };
+
     const result = {
-      currentJie: currentJie
-        ? {
-            name: currentJie.getName(),
-            date: `${currentJie.getSolar().getYear()}-${String(currentJie.getSolar().getMonth()).padStart(2, "0")}-${String(currentJie.getSolar().getDay()).padStart(2, "0")}`,
-          }
+      currentJie: currentJieName
+        ? { name: currentJieName, date: getJieQiDate(currentJieName) }
         : null,
-      currentQi: currentQi
-        ? {
-            name: currentQi.getName(),
-            date: `${currentQi.getSolar().getYear()}-${String(currentQi.getSolar().getMonth()).padStart(2, "0")}-${String(currentQi.getSolar().getDay()).padStart(2, "0")}`,
-          }
-        : null,
-      nextJie: nextJie
-        ? {
-            name: nextJie.getName(),
-            date: `${nextJie.getSolar().getYear()}-${String(nextJie.getSolar().getMonth()).padStart(2, "0")}-${String(nextJie.getSolar().getDay()).padStart(2, "0")}`,
-          }
-        : null,
-      nextQi: nextQi
-        ? {
-            name: nextQi.getName(),
-            date: `${nextQi.getSolar().getYear()}-${String(nextQi.getSolar().getMonth()).padStart(2, "0")}-${String(nextQi.getSolar().getDay()).padStart(2, "0")}`,
-          }
-        : null,
+      currentQi: currentQiName ? { name: currentQiName, date: getJieQiDate(currentQiName) } : null,
+      nextJie: nextJie ? { name: nextJie.getName(), date: getJieQiDate(nextJie.getName()) } : null,
+      nextQi: nextQi ? { name: nextQi.getName(), date: getJieQiDate(nextQi.getName()) } : null,
     };
 
     log("info", "GetCurrentSolarTerm", "获取成功", result);
@@ -346,11 +348,11 @@ export function GetChineseCalendar(params: { date?: string }): {
       ji: lunar.getDayJi(),
       chong: lunar.getDayChong(),
       sha: lunar.getDaySha(),
-      pengZu: lunar.getDayPengZu(),
+      pengZu: `${lunar.getPengZuGan()} ${lunar.getPengZuZhi()}`,
       taiShen: lunar.getDayPositionTai(),
       wuXing: lunar.getDayNaYin(),
       xingXiu: lunar.getXiu(),
-      xingXiuAnimal: lunar.getXiuAnimal(),
+      xingXiuAnimal: lunar.getAnimal(),
       xingXiuLuck: lunar.getXiuLuck(),
     };
 
@@ -412,7 +414,7 @@ export function GetDailyInfo(params: { date?: string }): {
       zodiac: lunar.getYearShengXiao(),
       constellation: solar.getXingZuo(),
       festival: lunar.getFestivals(),
-      isWeekend: solar.isWeekend(),
+      isWeekend: solar.getWeek() === 0 || solar.getWeek() === 6,
       weekDay: solar.getWeek(),
     };
 
@@ -499,8 +501,8 @@ export function GetConstellation(params: { date?: string }): {
 
     const result = {
       constellation: solar.getXingZuo(),
-      element: solar.getXingZuoElement(),
-      luck: solar.getXingZuoLuck(),
+      element: "", // lunar-typescript 不提供星座元素信息
+      luck: "", // lunar-typescript 不提供星座运势信息
     };
 
     log("info", "GetConstellation", "获取成功", result);

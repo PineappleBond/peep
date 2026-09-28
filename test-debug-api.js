@@ -304,9 +304,79 @@
     console.log(`WikiList 10次总计: ${Date.now() - wikiLoopStart}ms`);
 
     // ═══════════════════════════════════════════════════════════
-    // 7. 混合循环测试（模拟真实 Agent 场景）
+    // 7. Lunar 时间/日历 API 测试
     // ═══════════════════════════════════════════════════════════
-    console.log('\n--- 7. 混合循环测试 ---');
+    console.log('\n--- 7. Lunar 时间/日历 API 测试 ---');
+
+    await runTest('SolarToLunar', async () => {
+      const result = await window.peep.SolarToLunar({ date: '2024-06-15 14:30' });
+      return { year: result.year, month: result.month, day: result.day };
+    });
+
+    await runTest('LunarToSolar', async () => {
+      const result = await window.peep.LunarToSolar({
+        year: 2024,
+        month: 5,
+        day: 10,
+        isLeap: false
+      });
+      return { date: result.date };
+    });
+
+    await runTest('GetEightCharacters', async () => {
+      const result = await window.peep.GetEightCharacters({ date: '2024-06-15 14:30' });
+      return { year: result.year.ganZhi, month: result.month.ganZhi };
+    });
+
+    await runTest('GetSolarTerms', async () => {
+      const result = await window.peep.GetSolarTerms({ year: 2024 });
+      return { count: result.length };
+    });
+
+    await runTest('GetCurrentSolarTerm', async () => {
+      const result = await window.peep.GetCurrentSolarTerm({ date: '2024-06-15' });
+      return {
+        currentJie: result.currentJie?.name,
+        nextJie: result.nextJie?.name
+      };
+    });
+
+    await runTest('GetChineseCalendar', async () => {
+      const result = await window.peep.GetChineseCalendar({ date: '2024-06-15' });
+      return { yi: result.yi.length, ji: result.ji.length };
+    });
+
+    await runTest('GetDailyInfo', async () => {
+      const result = await window.peep.GetDailyInfo({ date: '2024-06-15' });
+      return { solar: result.solar, lunar: result.lunar };
+    });
+
+    await runTest('GetZodiac', async () => {
+      const result = await window.peep.GetZodiac({ date: '2024-06-15' });
+      return { zodiac: result.zodiac };
+    });
+
+    await runTest('GetConstellation', async () => {
+      const result = await window.peep.GetConstellation({ date: '2024-06-15' });
+      return { constellation: result.constellation };
+    });
+
+    // 循环测试：Lunar API 连续调用 10 次
+    console.log('\n--- Lunar 循环测试 ---');
+    const lunarLoopStart = Date.now();
+    for (let i = 0; i < 10; i++) {
+      const iterStart = Date.now();
+      await window.peep.SolarToLunar({ date: '2024-06-15' });
+      await window.peep.GetEightCharacters({ date: '2024-06-15 14:30' });
+      await window.peep.GetChineseCalendar({ date: '2024-06-15' });
+      console.log(`  Lunar 循环 #${i + 1}: ${Date.now() - iterStart}ms`);
+    }
+    console.log(`Lunar 10次三合一总计: ${Date.now() - lunarLoopStart}ms`);
+
+    // ═══════════════════════════════════════════════════════════
+    // 8. 混合循环测试（模拟真实 Agent 场景）
+    // ═══════════════════════════════════════════════════════════
+    console.log('\n--- 8. 混合循环测试 ---');
     const mixedLoopStart = Date.now();
     for (let i = 0; i < 5; i++) {
       const iterStart = Date.now();
@@ -318,9 +388,9 @@
     console.log(`混合调用 5轮总计: ${Date.now() - mixedLoopStart}ms`);
 
     // ═══════════════════════════════════════════════════════════
-    // 8. 清理测试数据（Delete API 需要 skipUI: true）
+    // 9. 清理测试数据（Delete API 需要 skipUI: true）
     // ═══════════════════════════════════════════════════════════
-    console.log('\n--- 8. 清理测试数据 ---');
+    console.log('\n--- 9. 清理测试数据 ---');
 
     // 删除 Wiki 文档
     for (const docId of wikiDocIds) {
@@ -364,7 +434,7 @@
     }
 
     // ═══════════════════════════════════════════════════════════
-    // 9. 测试总结
+    // 10. 测试总结
     // ═══════════════════════════════════════════════════════════
     console.log('\n=== 测试完成 ===');
     const totalTime = Date.now() - startTime;

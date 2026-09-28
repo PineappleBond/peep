@@ -47,10 +47,29 @@ import {
   DaLiuRenCreate,
   DaLiuRenList,
   DaLiuRenView,
+  DaLiuRenDelete,
 } from "./daliuren";
-import { computeLiuyaoData, LiuYao, LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
+import {
+  computeLiuyaoData,
+  LiuYao,
+  LiuYaoCreate,
+  LiuYaoList,
+  LiuYaoView,
+  LiuYaoDelete,
+} from "./liuyao";
 import { WikiList, WikiCreate, WikiUpdate, WikiView, WikiLink, WikiDelete } from "./wiki";
 import { PersonList, PersonGet, PersonCreate, PersonUpdate, PersonDelete } from "./person";
+import {
+  SolarToLunar,
+  LunarToSolar,
+  GetEightCharacters,
+  GetSolarTerms,
+  GetCurrentSolarTerm,
+  GetChineseCalendar,
+  GetDailyInfo,
+  GetZodiac,
+  GetConstellation,
+} from "./lunar";
 import type { LogLevel } from "./logger";
 
 /**
@@ -91,6 +110,10 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
     方法: "DaLiuRenView(params, options?)",
     说明: "大六壬起课详情（options.skipUI 仅供调试）",
   },
+  DaLiuRenDelete: {
+    方法: "DaLiuRenDelete(params, options?)",
+    说明: "大六壬起课删除（仅支持 skipUI=true）",
+  },
   LiuYao: {
     方法: "LiuYao(lines?, date, yongTarget?, time?)",
     说明: "六爻纯计算排盘（向后兼容）",
@@ -110,6 +133,10 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
   LiuYaoView: {
     方法: "LiuYaoView(params, options?)",
     说明: "六爻起卦详情（options.skipUI 仅供调试）",
+  },
+  LiuYaoDelete: {
+    方法: "LiuYaoDelete(params, options?)",
+    说明: "六爻起卦删除（仅支持 skipUI=true）",
   },
   WikiCreate: {
     方法: "WikiCreate(params, options?)",
@@ -830,6 +857,7 @@ export function initDebugApi() {
     DaLiuRenCreate,
     DaLiuRenList,
     DaLiuRenView,
+    DaLiuRenDelete,
 
     // 六爻
     computeLiuyaoData,
@@ -837,6 +865,7 @@ export function initDebugApi() {
     LiuYaoCreate,
     LiuYaoList,
     LiuYaoView,
+    LiuYaoDelete,
 
     // Wiki
     WikiList,
@@ -845,6 +874,17 @@ export function initDebugApi() {
     WikiView,
     WikiLink,
     WikiDelete,
+
+    // 时间/日历（Lunar）
+    SolarToLunar,
+    LunarToSolar,
+    GetEightCharacters,
+    GetSolarTerms,
+    GetCurrentSolarTerm,
+    GetChineseCalendar,
+    GetDailyInfo,
+    GetZodiac,
+    GetConstellation,
 
     // 从 analysis.ts 导入
     getChartDataForScope,
