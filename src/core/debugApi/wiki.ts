@@ -16,8 +16,8 @@ import {
   saveWikiLinks,
 } from "../wikiDb";
 import { getPerson } from "../personDb";
-import { log, timer } from "./logger";
-import { WikiError, wrapError, ApiErrorCode } from "./errors";
+import { log } from "./logger";
+import { WikiError, ApiErrorCode } from "./errors";
 import {
   getSelectPerson,
   getGetWikiList,
@@ -83,8 +83,7 @@ export async function WikiList(
   params: WikiListParams,
   options?: WikiOptions,
 ): Promise<{ docs: WikiDocument[]; total: number }> {
-  const stop = timer("WikiList");
-  try {
+  return withErrorHandling("WikiList", WikiError, async () => {
     // 参数验证
     validateTags(params.tags, "WikiList", WikiError);
     validatePagination(params, "WikiList", WikiError);
@@ -111,7 +110,6 @@ export async function WikiList(
         total: result.total,
         returned: result.docs.length,
       });
-      stop();
       return { docs: result.docs, total: result.total };
     }
 
@@ -154,21 +152,8 @@ export async function WikiList(
     const result = await getWikiList(filters);
 
     log("info", "WikiList", "查询成功", { total: result.total, returned: result.docs.length });
-    stop();
     return { docs: result.docs, total: result.total };
-  } catch (err) {
-    if (err instanceof WikiError) {
-      log("error", "WikiList", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "WikiList", "执行失败", err);
-    stop();
-    throw wrapError("WikiList", err, WikiError);
-  }
+  });
 }
 
 /**
@@ -196,8 +181,7 @@ export async function WikiCreate(
   params: WikiCreateParams,
   options?: WikiOptions,
 ): Promise<WikiDocument> {
-  const stop = timer("WikiCreate");
-  try {
+  return withErrorHandling("WikiCreate", WikiError, async () => {
     // 参数验证
     validateNonEmptyString(params.title, "title", "WikiCreate", WikiError);
     validateNonEmptyString(params.content, "content", "WikiCreate", WikiError);
@@ -245,7 +229,6 @@ export async function WikiCreate(
       await waitForDocSaved(id, 2000);
 
       log("info", "WikiCreate", "skipUI 模式创建成功", { docId: id });
-      stop();
       return { ...doc, id };
     }
 
@@ -296,21 +279,8 @@ export async function WikiCreate(
     await waitForDocSaved(saved.id, 2000);
 
     log("info", "WikiCreate", "创建成功", { docId: saved.id });
-    stop();
     return saved;
-  } catch (err) {
-    if (err instanceof WikiError) {
-      log("error", "WikiCreate", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "WikiCreate", "执行失败", err);
-    stop();
-    throw wrapError("WikiCreate", err, WikiError);
-  }
+  });
 }
 
 /**
@@ -345,8 +315,7 @@ export async function WikiUpdate(
   params: WikiUpdateParams,
   options?: WikiOptions,
 ): Promise<WikiDocument> {
-  const stop = timer("WikiUpdate");
-  try {
+  return withErrorHandling("WikiUpdate", WikiError, async () => {
     // 参数验证
     validateDocId(params.docId, "WikiUpdate");
 
@@ -406,7 +375,6 @@ export async function WikiUpdate(
       await waitForDocSaved(params.docId, 2000);
 
       log("info", "WikiUpdate", "skipUI 模式更新成功", { docId: params.docId });
-      stop();
       return updatedDoc;
     }
 
@@ -478,21 +446,8 @@ export async function WikiUpdate(
     await waitForDocSaved(params.docId, 2000);
 
     log("info", "WikiUpdate", "更新成功", { docId: saved.id });
-    stop();
     return saved;
-  } catch (err) {
-    if (err instanceof WikiError) {
-      log("error", "WikiUpdate", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "WikiUpdate", "执行失败", err);
-    stop();
-    throw wrapError("WikiUpdate", err, WikiError);
-  }
+  });
 }
 
 /**
@@ -523,8 +478,7 @@ export async function WikiView(
   params: WikiViewParams,
   options?: WikiOptions,
 ): Promise<WikiViewResult> {
-  const stop = timer("WikiView");
-  try {
+  return withErrorHandling("WikiView", WikiError, async () => {
     // 参数验证
     validateDocId(params.docId, "WikiView");
 
@@ -561,7 +515,6 @@ export async function WikiView(
         links: linkTargetIds.length,
         backlinks: backlinkSourceIds?.length ?? 0,
       });
-      stop();
       return { ...doc, linkTargetIds, backlinkSourceIds };
     }
 
@@ -636,21 +589,8 @@ export async function WikiView(
       backlinks: backlinkSourceIds?.length ?? 0,
       skippedUI: isSameDoc,
     });
-    stop();
     return { ...selectedDoc, linkTargetIds, backlinkSourceIds };
-  } catch (err) {
-    if (err instanceof WikiError) {
-      log("error", "WikiView", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "WikiView", "执行失败", err);
-    stop();
-    throw wrapError("WikiView", err, WikiError);
-  }
+  });
 }
 
 /**
@@ -689,8 +629,7 @@ export async function WikiLink(
   params: WikiLinkParams,
   options?: WikiOptions,
 ): Promise<{ sourceDocId: number; targetDocIds: number[] }> {
-  const stop = timer("WikiLink");
-  try {
+  return withErrorHandling("WikiLink", WikiError, async () => {
     // 参数验证
     validateDocId(params.sourceDocId, "WikiLink");
     validateIdArray(params.targetDocIds, "targetDocIds", "WikiLink", WikiError);
@@ -754,24 +693,11 @@ export async function WikiLink(
       count: finalTargetIds.length,
     });
 
-    stop();
     return {
       sourceDocId: params.sourceDocId,
       targetDocIds: finalTargetIds,
     };
-  } catch (err) {
-    if (err instanceof WikiError) {
-      log("error", "WikiLink", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "WikiLink", "执行失败", err);
-    stop();
-    throw wrapError("WikiLink", err, WikiError);
-  }
+  });
 }
 
 /**
@@ -790,8 +716,7 @@ export async function WikiLink(
  * ```
  */
 export async function WikiDelete(params: { docId: number }, options?: WikiOptions): Promise<void> {
-  const stop = timer("WikiDelete");
-  try {
+  return withErrorHandling("WikiDelete", WikiError, async () => {
     validateDocId(params.docId, "WikiDelete");
 
     if (!options?.skipUI) {
@@ -817,20 +742,7 @@ export async function WikiDelete(params: { docId: number }, options?: WikiOption
     await deleteWikiDoc(params.docId);
 
     log("info", "WikiDelete", "删除成功", { docId: params.docId });
-    stop();
-  } catch (err) {
-    if (err instanceof WikiError) {
-      log("error", "WikiDelete", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "WikiDelete", "执行失败", err);
-    stop();
-    throw wrapError("WikiDelete", err, WikiError);
-  }
+  });
 }
 
 /**
