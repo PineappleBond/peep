@@ -41,6 +41,7 @@ import {
   waitForRecordSaved,
   getUiState,
   updateUiState,
+  updateRecordMetadata,
 } from "./helpers";
 import { parseDate } from "./ziwei";
 import { formatDate, formatDateTime } from "../utils";
@@ -773,22 +774,16 @@ export async function LiuYaoUpdateTags(params: {
 
     log("info", "LiuYaoUpdateTags", "更新标签", { recordId: params.recordId, tags: params.tags });
 
-    // 获取记录
-    const record = await getLiuyaoRecord(params.recordId);
-    if (!record) {
-      throw new LiuyaoError(`记录 ${params.recordId} 不存在`, "LiuYaoUpdateTags", {
-        context: { recordId: params.recordId },
-        suggestion: "请检查记录 ID 是否正确。可调用 LiuYaoList() 查看可用记录",
-        errorCode: ApiErrorCode.NOT_FOUND,
-      });
-    }
+    const updated = await updateRecordMetadata<LiuyaoRecord>(
+      params.recordId,
+      getLiuyaoRecord,
+      saveLiuyaoRecord,
+      record => ({ ...record, tags: params.tags }),
+      invalidateLiuyaoTagCache,
+      LiuyaoError,
+      "LiuYaoUpdateTags",
+    );
 
-    // 更新标签并保存
-    const updated: LiuyaoRecord = { ...record, tags: params.tags };
-    await saveLiuyaoRecord(updated);
-    invalidateLiuyaoTagCache();
-
-    log("info", "LiuYaoUpdateTags", "更新成功", { recordId: params.recordId });
     stop();
     return updated;
   } catch (err) {
@@ -836,25 +831,20 @@ export async function LiuYaoUpdateNote(params: {
       hasBackground: params.background !== undefined,
     });
 
-    // 获取记录
-    const record = await getLiuyaoRecord(params.recordId);
-    if (!record) {
-      throw new LiuyaoError(`记录 ${params.recordId} 不存在`, "LiuYaoUpdateNote", {
-        context: { recordId: params.recordId },
-        suggestion: "请检查记录 ID 是否正确。可调用 LiuYaoList() 查看可用记录",
-        errorCode: ApiErrorCode.NOT_FOUND,
-      });
-    }
+    const updated = await updateRecordMetadata<LiuyaoRecord>(
+      params.recordId,
+      getLiuyaoRecord,
+      saveLiuyaoRecord,
+      record => ({
+        ...record,
+        note: params.note ?? record.note,
+        background: params.background ?? record.background,
+      }),
+      undefined, // 备注更新不需要失效缓存
+      LiuyaoError,
+      "LiuYaoUpdateNote",
+    );
 
-    // 更新备注/背景并保存
-    const updated: LiuyaoRecord = {
-      ...record,
-      note: params.note ?? record.note,
-      background: params.background ?? record.background,
-    };
-    await saveLiuyaoRecord(updated);
-
-    log("info", "LiuYaoUpdateNote", "更新成功", { recordId: params.recordId });
     stop();
     return updated;
   } catch (err) {

@@ -39,6 +39,7 @@ import {
   waitForRecordSaved,
   getUiState,
   updateUiState,
+  updateRecordMetadata,
 } from "./helpers";
 import { parseDate } from "./ziwei";
 import type {
@@ -599,22 +600,16 @@ export async function DaLiuRenUpdateTags(params: {
 
     log("info", "DaLiuRenUpdateTags", "更新标签", { recordId: params.recordId, tags: params.tags });
 
-    // 获取记录
-    const record = await getLiurenRecord(params.recordId);
-    if (!record) {
-      throw new DaLiuRenError(`记录 ${params.recordId} 不存在`, "DaLiuRenUpdateTags", {
-        context: { recordId: params.recordId },
-        suggestion: "请检查记录 ID 是否正确。可调用 DaLiuRenList() 查看可用记录",
-        errorCode: ApiErrorCode.NOT_FOUND,
-      });
-    }
+    const updated = await updateRecordMetadata<LiurenRecord>(
+      params.recordId,
+      getLiurenRecord,
+      saveLiurenRecord,
+      record => ({ ...record, tags: params.tags }),
+      invalidateLiurenTagCache,
+      DaLiuRenError,
+      "DaLiuRenUpdateTags",
+    );
 
-    // 更新标签并保存
-    const updated: LiurenRecord = { ...record, tags: params.tags };
-    await saveLiurenRecord(updated);
-    invalidateLiurenTagCache();
-
-    log("info", "DaLiuRenUpdateTags", "更新成功", { recordId: params.recordId });
     stop();
     return updated;
   } catch (err) {
@@ -662,25 +657,20 @@ export async function DaLiuRenUpdateNote(params: {
       hasBackground: params.background !== undefined,
     });
 
-    // 获取记录
-    const record = await getLiurenRecord(params.recordId);
-    if (!record) {
-      throw new DaLiuRenError(`记录 ${params.recordId} 不存在`, "DaLiuRenUpdateNote", {
-        context: { recordId: params.recordId },
-        suggestion: "请检查记录 ID 是否正确。可调用 DaLiuRenList() 查看可用记录",
-        errorCode: ApiErrorCode.NOT_FOUND,
-      });
-    }
+    const updated = await updateRecordMetadata<LiurenRecord>(
+      params.recordId,
+      getLiurenRecord,
+      saveLiurenRecord,
+      record => ({
+        ...record,
+        note: params.note ?? record.note,
+        background: params.background ?? record.background,
+      }),
+      undefined, // 备注更新不需要失效缓存
+      DaLiuRenError,
+      "DaLiuRenUpdateNote",
+    );
 
-    // 更新备注/背景并保存
-    const updated: LiurenRecord = {
-      ...record,
-      note: params.note ?? record.note,
-      background: params.background ?? record.background,
-    };
-    await saveLiurenRecord(updated);
-
-    log("info", "DaLiuRenUpdateNote", "更新成功", { recordId: params.recordId });
     stop();
     return updated;
   } catch (err) {

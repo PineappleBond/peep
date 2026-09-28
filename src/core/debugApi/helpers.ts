@@ -443,3 +443,58 @@ export function isDialogOpen(type: "daliuren" | "liuyao" | "wiki"): boolean {
   }
   return !!getOpenWikiEditor();
 }
+
+/**
+ * 通用元数据更新辅助函数——提取 UpdateTags/UpdateNote 的公共逻辑。
+ *
+ * 设计原则：
+ * - 单一职责：仅处理「获取记录 → 验证存在性 → 更新字段 → 保存 → 失效缓存」的通用流程
+ * - 泛型支持：适用于大六壬（LiurenRecord）和六爻（LiuyaoRecord）
+ * - 错误处理统一：记录不存在时抛出 NOT_FOUND 错误
+ *
+ * @param recordId 记录 ID
+ * @param getRecord 获取记录的异步函数
+ * @param saveRecord 保存记录的异步函数
+ * @param updateFn 更新字段的纯函数（接收原记录，返回更新后的记录）
+ * @param invalidateCache 可选的缓存失效函数（如标签缓存）
+ * @param ErrorClass 错误类构造函数
+ * @param source 来源标签（用于错误消息）
+ * @returns 更新后的记录
+ */
+export async function updateRecordMetadata<T extends { id: number }>(
+  recordId: number,
+  getRecord: (id: number) => Promise<T | null>,
+  saveRecord: (record: T) => Promise<void>,
+  updateFn: (record: T) => T,
+  invalidateCache?: () => void,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ErrorClass?: new (message: string, src: string, options?: any) => Error,
+  source = "updateRecordMetadata",
+): Promise<T> {
+  // 获取记录
+  const record = await getRecord(recordId);
+  if (!record) {
+    const errMsg = `记录 ${recordId} 不存在`;
+    const suggestion = "请检查记录 ID 是否正确。可调用对应的 List 接口查看可用记录";
+    if (ErrorClass) {
+      throw new ErrorClass(errMsg, source, {
+        context: { recordId },
+        suggestion,
+        errorCode: "NOT_FOUND",
+      });
+    }
+    throw new Error(errMsg);
+  }
+
+  // 更新字段并保存
+  const updated = updateFn(record);
+  await saveRecord(updated);
+
+  // 失效缓存（如果提供）
+  if (invalidateCache) {
+    invalidateCache();
+  }
+
+  log("info", source, "元数据更新成功", { recordId });
+  return updated;
+}
