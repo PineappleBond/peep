@@ -316,3 +316,17 @@ export interface WikiViewParams {
   /** 是否查询反向链接（谁链接到了本文档） */
   includeBacklinks?: boolean;
 }
+
+/**
+ * Wiki 关联管理参数——统一 WikiLink 的输入类型。
+ */
+export interface WikiLinkParams {
+  /** 命主 ID（可选，不传则使用默认人物） */
+  personId?: number;
+  /** 源文档 ID */
+  sourceDocId: number;
+  /** 目标文档 ID 列表——建立从源文档到目标文档的链接 */
+  targetDocIds: number[];
+  /** 是否追加模式（true=追加链接，false=替换链接，默认 false） */
+  append?: boolean;
+}

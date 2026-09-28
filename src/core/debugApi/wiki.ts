@@ -41,6 +41,7 @@ import type {
   WikiCreateParams,
   WikiListParams,
   WikiViewParams,
+  WikiLinkParams,
 } from "./types";
 import {
   validateDocId,
@@ -444,5 +445,126 @@ export async function WikiView(
     log("error", "WikiView", "执行失败", err);
     stop();
     throw wrapError("WikiView", err, WikiError);
+  }
+}
+
+/**
+ * Wiki 关联管理调试接口——为已存在的文档建立关联关系。
+ *
+ * 支持两种模式：
+ * - 替换模式（默认）：清除源文档的所有现有链接，重新建立指定链接
+ * - 追加模式：在现有链接基础上追加新链接
+ *
+ * skipUI=true 时：直接操作数据库，不操控 UI。
+ * skipUI=false 时（默认）：当前仅支持 skipUI 模式，UI 模式待实现。
+ *
+ * @param params 关联参数（使用 WikiLinkParams 类型）
+ * @param options 可选配置项（目前仅支持 skipUI=true）
+ * @returns 操作结果，包含源文档 ID 和最终的目标文档 ID 列表
+ * @throws WikiError sourceDocId 或 targetDocIds 无效时（errorCode: INVALID_INPUT）
+ * @throws WikiError 文档不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * // 替换模式：清除文档 1 的所有链接，建立到文档 2,3,4 的链接
+ * await window.peep.WikiLink({
+ *   sourceDocId: 1,
+ *   targetDocIds: [2, 3, 4]
+ * }, { skipUI: true });
+ *
+ * // 追加模式：在文档 1 现有链接基础上追加到文档 5 的链接
+ * await window.peep.WikiLink({
+ *   sourceDocId: 1,
+ *   targetDocIds: [5],
+ *   append: true
+ * }, { skipUI: true });
+ * ```
+ */
+export async function WikiLink(
+  params: WikiLinkParams,
+  options?: WikiOptions,
+): Promise<{ sourceDocId: number; targetDocIds: number[] }> {
+  const stop = timer("WikiLink");
+  try {
+    // 参数验证
+    validateDocId(params.sourceDocId, "WikiLink", "sourceDocId");
+    validateIdArray(params.targetDocIds, "targetDocIds", "WikiLink", WikiError);
+
+    if (!options?.skipUI) {
+      throw new WikiError("WikiLink 当前仅支持 skipUI=true 模式", "WikiLink", {
+        context: { skipUI: false },
+        suggestion: "请使用 { skipUI: true } 选项调用 WikiLink",
+        errorCode: ApiErrorCode.NOT_IMPLEMENTED,
+      });
+    }
+
+    const personId = await resolvePersonId(params.personId);
+    log("info", "WikiLink", "管理文档关联", {
+      personId,
+      sourceDocId: params.sourceDocId,
+      targetDocIds: params.targetDocIds,
+      append: !!params.append,
+    });
+
+    // 验证源文档存在
+    const sourceDoc = await getWikiDoc(params.sourceDocId);
+    if (!sourceDoc) {
+      throw new WikiError(`源文档 ${params.sourceDocId} 不存在`, "WikiLink", {
+        context: { sourceDocId: params.sourceDocId },
+        suggestion: "请检查源文档 ID 是否正确，该文档可能已被删除。可调用 WikiList() 查看可用文档",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    // 验证所有目标文档存在
+    for (const targetId of params.targetDocIds) {
+      const targetDoc = await getWikiDoc(targetId);
+      if (!targetDoc) {
+        throw new WikiError(`目标文档 ${targetId} 不存在`, "WikiLink", {
+          context: { sourceDocId: params.sourceDocId, targetDocId: targetId },
+          suggestion: `目标文档 ${targetId} 不存在，请检查 ID 是否正确`,
+          errorCode: ApiErrorCode.NOT_FOUND,
+        });
+      }
+    }
+
+    // 确定最终的链接列表
+    let finalTargetIds: number[];
+    if (params.append) {
+      // 追加模式：获取现有链接，合并新链接（去重）
+      const existingLinks = await getWikiLinks(params.sourceDocId);
+      const linkSet = new Set([...existingLinks, ...params.targetDocIds]);
+      finalTargetIds = Array.from(linkSet);
+    } else {
+      // 替换模式：直接使用新链接
+      finalTargetIds = [...params.targetDocIds];
+    }
+
+    // 保存链接关系
+    await saveWikiLinks(params.sourceDocId, finalTargetIds);
+
+    log("info", "WikiLink", "关联管理成功", {
+      sourceDocId: params.sourceDocId,
+      targetDocIds: finalTargetIds,
+      count: finalTargetIds.length,
+    });
+
+    stop();
+    return {
+      sourceDocId: params.sourceDocId,
+      targetDocIds: finalTargetIds,
+    };
+  } catch (err) {
+    if (err instanceof WikiError) {
+      log("error", "WikiLink", "执行失败（不重试）", {
+        errorType: err.name,
+        message: err.message.split("\n")[0],
+      });
+      stop();
+      throw err;
+    }
+    log("error", "WikiLink", "执行失败", err);
+    stop();
+    throw wrapError("WikiLink", err, WikiError);
   }
 }

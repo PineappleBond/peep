@@ -45,6 +45,7 @@ export type {
   WikiListParams,
   WikiCreateParams,
   WikiViewParams,
+  WikiLinkParams,
   // API 元数据类型
   ApiMetadata,
   // 六爻核心类型
@@ -171,7 +172,7 @@ export {
 export { computeLiuyaoData, LiuYao, LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
 
 // Wiki 导出
-export { WikiList, WikiCreate, WikiView } from "./wiki";
+export { WikiList, WikiCreate, WikiView, WikiLink } from "./wiki";
 
 // 辅助函数导出
 export {
