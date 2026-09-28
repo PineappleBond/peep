@@ -173,12 +173,6 @@ const personGetFunction = {
       isDefault: z.boolean().describe("是否为默认人物"),
       savedAt: z.number().describe("保存时间戳（毫秒）"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "人物详情对象：id, name, gender, date(公历出生日期), timeIndex(时辰), savedAt(时间戳), isDefault(是否默认)。" +
-        "PersonCreate 返回创建后的精简对象；PersonGet 返回完整对象（含 calendar, isLeapMonth, algorithm, mutagenTable 等高级设置）",
-    },
   },
 };
 
@@ -271,7 +265,6 @@ const personCreateFunction = {
       savedAt: z.number().describe("保存时间戳（毫秒）"),
       isDefault: z.boolean().describe("是否为默认人物"),
     }),
-    schema: { type: "object" as const, description: "创建后的人物对象，包含分配的 id" },
   },
 };
 
@@ -319,7 +312,6 @@ const personUpdateFunction = {
       savedAt: z.number().describe("保存时间戳（毫秒）"),
       isDefault: z.boolean().describe("是否为默认人物"),
     }),
-    schema: { type: "object" as const, description: "更新后的人物" },
   },
 };
 
@@ -349,10 +341,6 @@ const personDeleteFunction = {
   },
   returns: {
     zodSchema: z.void().describe("删除操作无返回数据，仅表示操作成功"),
-    schema: {
-      type: "object" as const,
-      description: "删除结果：void（无返回数据），仅表示操作成功",
-    },
   },
 };
 
@@ -628,20 +616,6 @@ const ziweiFunction = {
   },
   returns: {
     zodSchema: _ziweiReturnSchema,
-    schema: {
-      type: "object" as const,
-      description:
-        "紫微盘面数据 { person, hbar, chart }：person 是人物信息；" +
-        "hbar 运限拨盘包含 decades(大限数组，每项含 palaceIndex, range, heavenlyStem, earthlyBranch, startYear, endYear)、" +
-        "childhood(童限 { startYear, endYear, label })、years(流年数组，每项含 year, gz干支, age)、" +
-        "months(流月数组，含 month, leap, label, solarLabel, gz)、days(流日数组)、hours(流时数组)、" +
-        "pick(当前选中 { year, month, day, hour, leap })、visible(各级别可见性)；" +
-        "chart 盘面包含 scope(运限级别)、palaces(十二宫数组，每宫含 palaceIndex, palaceName, branch, heavenlyStem, " +
-        "majorStars(主星数组，含 name/brightness/mutagen)、minorStars(辅星)、adjectiveStars(杂耀)、" +
-        "scopePalaceName(运限宫名)、scopeStars(运限星曜)、natalMutagens/scopeMutagens/selfMutagens(四化)、" +
-        "decadalRange(大限区间)、ages(年龄)、changsheng12/boshi12/suiqian12/jiangqian12(十二神)、isBodyPalace/isOriginalPalace)、" +
-        "flyMatrix(飞星矩阵，每项含 fromIndex, fromName, stem, flies 数组)、selfLinks(自化链接数组)",
-    },
   },
 };
 
@@ -676,17 +650,6 @@ const getScopeDataFunction = {
   },
   returns: {
     zodSchema: _hbarSchema,
-    schema: {
-      type: "object" as const,
-      description:
-        "运限拨盘数据（同 ZiWei 的 hbar 结构）：decades(大限数组，每项含 palaceIndex, range[起岁,止岁], heavenlyStem, earthlyBranch, startYear, endYear)、" +
-        "childhood(童限 { startYear, endYear, label })、activeDecadeIdx(当前大限索引)、" +
-        "years(流年数组，每项含 year, gz干支, age)、activeYearIdx、" +
-        "months(流月数组，含 month, leap, label, solarLabel, gz)、activeMonthIdx、" +
-        "days(流日数组，含 day, label, solarLabel, gz)、activeDayIdx、" +
-        "hours(流时数组，含 hour, label, gz)、activeHourIdx、" +
-        "pick(当前选中 { year, month, day, hour, leap })、effLeap(有效闰月)、clampedDay(校正日)",
-    },
   },
 };
 
@@ -907,12 +870,6 @@ const daliurenCreateFunction = {
   },
   returns: {
     zodSchema: daliurenRecordSchema,
-    schema: {
-      type: "object" as const,
-      description:
-        "起课记录：personId, calculationTime, question, note, background, tags, savedAt, id, " +
-        "result(完整课式数据，包含四柱/四课/三传/天地盘/十二将/旺相/六亲/神煞/课经等)",
-    },
   },
 };
 
@@ -952,11 +909,6 @@ const daliurenListFunction = {
         .describe("起课记录数组（每项同 DaLiuRenCreate 返回结构）"),
       total: z.number().describe("记录总数"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "起课记录列表 { records, total }：records 是起课记录数组（每项同 DaLiuRenCreate 返回的完整结构），total 是总数",
-    },
   },
 };
 
@@ -1010,12 +962,6 @@ const daliurenViewFunction = {
           .describe("附加计算数据（含 result 副本和关联命主）"),
       })
       .describe("起课记录详情（含 computed 字段）"),
-    schema: {
-      type: "object" as const,
-      description:
-        "起课记录详情（同 DaLiuRenCreate 返回结构），另加 computed 字段：computed.result(同 result)、" +
-        "computed.person(关联命主信息)。即包含 personId, calculationTime, question, note, background, tags, result, savedAt, id, computed",
-    },
   },
 };
 
@@ -1059,10 +1005,6 @@ const daliurenDeleteFunction = {
   },
   returns: {
     zodSchema: z.void().describe("删除成功无返回数据"),
-    schema: {
-      type: "object" as const,
-      description: "删除结果：void（无返回数据），仅表示操作成功",
-    },
   },
 };
 
@@ -1129,11 +1071,6 @@ const daliurenBatchViewFunction = {
         .describe("起课记录详情数组（每项同 DaLiuRenView 返回结构）"),
       count: z.number().describe("实际返回的记录数量"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "批量查看结果 { records, count }：records 是记录详情数组（每项同对应的 View 返回结构），count 是记录数量",
-    },
   },
 };
 
@@ -1183,11 +1120,6 @@ const wikiListFunction = {
         .describe("文档列表"),
       total: z.number().describe("文档总数"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "文档列表 { docs, total }：docs 是文档数组（每项含 personId, title, content, tags, savedAt, updatedAt, id），total 是总数",
-    },
   },
 };
 
@@ -1250,11 +1182,6 @@ const wikiCreateFunction = {
       updatedAt: z.number().describe("最后更新时间戳（毫秒）"),
       id: z.number().describe("文档 ID"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "文档对象：personId, title, content(Markdown正文), tags(标签数组), savedAt, updatedAt, id",
-    },
   },
 };
 
@@ -1323,11 +1250,6 @@ const wikiUpdateFunction = {
       updatedAt: z.number().describe("最后更新时间戳（毫秒）"),
       id: z.number().describe("文档 ID"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "更新后的文档对象：personId, title, content, tags, savedAt, updatedAt(已更新), id",
-    },
   },
 };
 
@@ -1367,11 +1289,6 @@ const wikiViewFunction = {
       id: z.number().describe("文档 ID"),
       linkTargetIds: z.array(z.number()).describe("关联文档 ID 列表"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "文档详情：personId, title, content(Markdown正文), tags, savedAt, updatedAt, id, linkTargetIds(关联文档ID数组)",
-    },
   },
 };
 
@@ -1436,11 +1353,6 @@ const wikiBatchViewFunction = {
         .describe("文档详情数组，每项同 WikiView 返回结构"),
       count: z.number().describe("文档数量"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "批量查看结果 { docs, count }：docs 是文档详情数组（每项同 WikiView 返回结构），count 是文档数量",
-    },
   },
 };
 
@@ -1599,15 +1511,6 @@ const liuyaoCreateFunction = {
   },
   returns: {
     zodSchema: _liuyaoRecordSchema,
-    schema: {
-      type: "object" as const,
-      description:
-        "起卦记录：personId, divinationTime, question, background, note, tags, lines(六爻值数组), " +
-        "chart(卦象 { name(卦名), palace(宫), palaceElem(宫五行), type(卦类型), shi(世爻位), ying(应爻位), " +
-        "lines(六爻数组，每爻含 pos/yang/moving/stem/branch/elem(五行)/rel(六亲)/god(六神)/kong/kongState)、" +
-        "changed(变卦 { name, lines })、month(月建 { branch, elem })、day(日辰 { stem, branch, elem, kong })})、" +
-        "yongTarget(求测对象), yong(用神 { rel, pos, pickedBy, hidden }), savedAt, id",
-    },
   },
 };
 
@@ -1645,11 +1548,6 @@ const liuyaoListFunction = {
       records: z.array(_liuyaoRecordSchema).describe("起卦记录数组"),
       total: z.number().describe("总数"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "起卦记录列表 { records, total }：records 是起卦记录数组（每项同 LiuYaoCreate 返回结构），total 是总数",
-    },
   },
 };
 
@@ -1746,14 +1644,6 @@ const liuyaoViewFunction = {
         })
         .describe("计算数据"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "起卦记录详情（同 LiuYaoCreate 返回结构），另加 computed 字段：computed.chart(同 chart)、" +
-        "computed.yong(同 yong)、computed.person(关联命主)、" +
-        "computed.hbarData(运限拨盘 { years, months, days, hours 数组及对应 activeIdx })、" +
-        "computed.vigorColumns(旺衰列 { columns(旺衰数组), changedColumns(变爻旺衰), columnBranches(地支), columnRoles(角色如太岁/月建), visible })",
-    },
   },
 };
 
@@ -1797,10 +1687,6 @@ const liuyaoDeleteFunction = {
   },
   returns: {
     zodSchema: z.void().describe("删除结果：无返回数据"),
-    schema: {
-      type: "object" as const,
-      description: "删除结果：void（无返回数据），仅表示操作成功",
-    },
   },
 };
 
@@ -1886,11 +1772,6 @@ const liuyaoBatchViewFunction = {
         .describe("起卦记录详情数组"),
       count: z.number().describe("记录数量"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "批量查看结果 { records, count }：records 是记录详情数组（每项同对应的 View 返回结构），count 是记录数量",
-    },
   },
 };
 
@@ -1929,12 +1810,6 @@ const solarToLunarFunction = {
       dayGanZhi: z.string().describe("日干支，如'庚戌'"),
       zodiac: z.string().describe("生肖，如'龙'"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "农历日期对象：year(农历年), month(农历月), day(农历日), isLeap(是否闰月), " +
-        "yearGanZhi(年干支), monthGanZhi(月干支), dayGanZhi(日干支), zodiac(生肖)",
-    },
   },
 };
 
@@ -1967,10 +1842,6 @@ const lunarToSolarFunction = {
     zodSchema: z.object({
       date: z.string().describe("公历日期，格式 YYYY-MM-DD，如'2024-06-15'"),
     }),
-    schema: {
-      type: "object" as const,
-      description: "公历日期对象：{ date: 'YYYY-MM-DD' }",
-    },
   },
 };
 
@@ -2023,12 +1894,6 @@ const getEightCharactersFunction = {
         })
         .describe("时柱"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "八字对象：year/month/day/hour 四柱，每柱含 ganZhi(天干地支) 和 naYin(纳音五行)。" +
-        "例：{ year: { ganZhi: '甲辰', naYin: '覆灯火' }, month: {...}, day: {...}, hour: {...} }",
-    },
   },
 };
 
@@ -2060,11 +1925,6 @@ const getSolarTermsFunction = {
         description: z.string().describe("节气描述"),
       }),
     ),
-    schema: {
-      type: "array" as const,
-      description:
-        "节气数组（24项），每项含 name(节气名，如'冬至'/'小寒')、date(公历日期 YYYY-MM-DD)、description(描述)",
-    },
   },
 };
 
@@ -2121,12 +1981,6 @@ const getCurrentSolarTermFunction = {
         .nullable()
         .describe("下一个气（可能为 null）"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "节气信息：currentJie/currentQi(当前节/气，含 name 和 date，可能为 null)、" +
-        "nextJie/nextQi(下一个节/气，含 name 和 date)",
-    },
   },
 };
 
@@ -2165,12 +2019,6 @@ const getChineseCalendarFunction = {
       xingXiuAnimal: z.string().describe("星宿对应动物，如'彘'"),
       xingXiuLuck: z.string().describe("星宿吉凶，如'吉'"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "黄历信息：yi(宜事项数组)、ji(忌事项数组)、chong(冲，地支)、sha(煞，方位)、" +
-        "pengZu(彭祖百忌)、taiShen(胎神)、wuXing(五行)、xingXiu(星宿)、xingXiuAnimal(星宿动物)、xingXiuLuck(星宿吉凶)",
-    },
   },
 };
 
@@ -2213,12 +2061,6 @@ const getDailyInfoFunction = {
       isWeekend: z.boolean().describe("是否周末"),
       weekDay: z.number().describe("星期几，0-6，0=周日"),
     }),
-    schema: {
-      type: "object" as const,
-      description:
-        "每日综合信息：solar(公历日期)、lunar(农历日期)、ganZhi({ year, month, day }干支)、" +
-        "zodiac(生肖)、constellation(星座)、festival(节日数组)、isWeekend(是否周末)、weekDay(星期几，0-6)",
-    },
   },
 };
 
@@ -2248,10 +2090,6 @@ const getZodiacFunction = {
       zodiac: z.string().describe("生肖名，如'马'"),
       year: z.number().describe("农历年份，如 1990"),
     }),
-    schema: {
-      type: "object" as const,
-      description: "生肖信息：{ zodiac(生肖名，如'马'), year(农历年份) }",
-    },
   },
 };
 
@@ -2282,10 +2120,6 @@ const getConstellationFunction = {
       element: z.string().describe("五行属性，如'风'"),
       luck: z.string().describe("吉凶，如'吉'"),
     }),
-    schema: {
-      type: "object" as const,
-      description: "星座信息：{ constellation(星座名，如'双子'), element(五行属性), luck(吉凶) }",
-    },
   },
 };
 
