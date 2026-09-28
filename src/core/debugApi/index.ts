@@ -201,7 +201,7 @@ export {
   waitForWikiCallbacks,
   waitForDocSaved,
   isDialogOpen,
-  // UI 状态追踪（性能优化）
+  // UI 状态追踪（性能优化：像人类一样智能判断是否需要操作）
   getUiState,
   updateUiState,
 } from "./helpers";

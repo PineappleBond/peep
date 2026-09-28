@@ -19,7 +19,8 @@ import {
 
 /**
  * UI 状态追踪：记录当前页面和选中的人物 ID，用于跳过冗余的导航和选择操作。
- * 这是性能优化的关键——避免 Agent 多次调用 API 时重复执行完整的 UI 流程。
+ * 这是"像人类一样操作 UI"的核心——人类不会在已打开的页面上重新导航，
+ * 不会在已选择的人物上重新选择。API 应该智能判断"是否需要操作"。
  *
  * 扩展：追踪各页面当前选中的记录/文档 ID，支持批量操作优化。
  */
@@ -281,6 +282,10 @@ export async function waitForPickMatch(
  * 统一处理页面跳转和回调等待逻辑。
  *
  * 性能优化：如果已在目标页面，跳过导航和等待。
+<<<<<<< HEAD
+=======
+ * 这是"像人类一样操作 UI"的核心——人类不会在已打开的页面上重新导航。
+>>>>>>> 753b7f5 (重构：UI 状态追踪优化——像人类一样智能判断是否需要操作)
  */
 export async function navigateToPage(
   path: string,
@@ -322,6 +327,7 @@ export async function navigateToPage(
  * 统一处理人物切换和状态验证逻辑。
  *
  * 性能优化：如果已选中目标人物，跳过选择和等待。
+ * 这是"像人类一样操作 UI"的核心——人类不会在已选择的人物上重新选择。
  */
 export async function selectPersonAndWait(personId: number): Promise<void> {
   // 性能优化：如果已选中目标人物，跳过选择
