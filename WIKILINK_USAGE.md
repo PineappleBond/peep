@@ -159,24 +159,25 @@ await window.peep.WikiLink(
 
 1. **源文档不存在**
 
-   ```
+   ```text
    WikiError: 源文档 999 不存在
    ```
 
 2. **目标文档不存在**
 
-   ```
+   ```text
    WikiError: 目标文档 888 不存在
    ```
 
 3. **无效的文档 ID**
 
-   ```
+   ```text
    WikiError: sourceDocId 无效：-1，需为正整数
    ```
 
 4. **未使用 skipUI=true**
-   ```
+
+   ```text
    WikiError: WikiLink 当前仅支持 skipUI=true 模式
    ```
 
@@ -203,10 +204,34 @@ try {
 
 ## 注意事项
 
-1. **仅支持 skipUI=true**：当前版本 WikiLink 仅支持 skipUI 模式，UI 模式待实现
-2. **单向链接**：链接是单向的，A→B 不等于 B→A
-3. **无循环检测**：系统不检测循环链接（A→B→C→A），需自行避免
-4. **personId 可选**：不传则使用当前选中的人物，建议显式传入以避免歧义
+1. **必须使用 skipUI=true**：WikiLink 仅支持 skipUI 模式，UI 模式待实现
+2. **批量操作务必使用 skipUI=true**：调用 WikiView/WikiList 等 API 时，如果不需操控 UI，**必须**传入 `{ skipUI: true }`，否则会走完整 UI 流程（导航、选择人物、等待状态更新），导致：
+   - 每次调用增加 ~300ms 延迟
+   - 循环调用时累积超时（如 4 次调用 × 300ms = 1.2 秒）
+   - 30 秒脚本执行超时限制
+3. **单向链接**：链接是单向的，A→B 不等于 B→A
+4. **无循环检测**：系统不检测循环链接（A→B→C→A），需自行避免
+5. **personId 可选**：不传则使用当前选中的人物，建议显式传入以避免歧义
+
+### 正确示例 vs 错误示例
+
+#### ❌ 错误：批量操作不使用 skipUI
+
+```javascript
+// 会导致超时！
+for (const id of [1, 2, 3, 4]) {
+  const doc = await window.peep.WikiView({ docId: id }); // 每次走完整 UI 流程
+}
+```
+
+#### ✅ 正确：批量操作使用 skipUI
+
+```javascript
+// 快速、不会超时
+for (const id of [1, 2, 3, 4]) {
+  const doc = await window.peep.WikiView({ docId: id }, { skipUI: true }); // 直接查数据库
+}
+```
 
 ## 完整示例：Agent 创建 4 篇关联文档
 
