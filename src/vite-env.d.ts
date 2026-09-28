@@ -30,6 +30,15 @@ import type {
   WikiView,
   WikiLink,
   WikiDelete,
+  SolarToLunar,
+  LunarToSolar,
+  GetEightCharacters,
+  GetSolarTerms,
+  GetCurrentSolarTerm,
+  GetChineseCalendar,
+  GetDailyInfo,
+  GetZodiac,
+  GetConstellation,
   getChartDataForScope,
   resetDebugApi,
   getApiMetadata,
@@ -74,6 +83,15 @@ declare global {
       WikiView: typeof WikiView;
       WikiLink: typeof WikiLink;
       WikiDelete: typeof WikiDelete;
+      SolarToLunar: typeof SolarToLunar;
+      LunarToSolar: typeof LunarToSolar;
+      GetEightCharacters: typeof GetEightCharacters;
+      GetSolarTerms: typeof GetSolarTerms;
+      GetCurrentSolarTerm: typeof GetCurrentSolarTerm;
+      GetChineseCalendar: typeof GetChineseCalendar;
+      GetDailyInfo: typeof GetDailyInfo;
+      GetZodiac: typeof GetZodiac;
+      GetConstellation: typeof GetConstellation;
       getChartDataForScope: typeof getChartDataForScope;
       /** 打印版本、构建时间、可用 API 列表——控制台调试入口 */
       version: () => void;

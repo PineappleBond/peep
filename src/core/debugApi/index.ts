@@ -72,6 +72,7 @@ export {
   DaLiuRenError,
   LiuyaoError,
   WikiError,
+  LunarError,
   wrapError,
   // 错误代码（新增）
   ApiErrorCode,
@@ -182,6 +183,19 @@ export {
 
 // Wiki 导出
 export { WikiList, WikiCreate, WikiUpdate, WikiView, WikiLink, WikiDelete } from "./wiki";
+
+// Lunar 时间/日历导出
+export {
+  SolarToLunar,
+  LunarToSolar,
+  GetEightCharacters,
+  GetSolarTerms,
+  GetCurrentSolarTerm,
+  GetChineseCalendar,
+  GetDailyInfo,
+  GetZodiac,
+  GetConstellation,
+} from "./lunar";
 
 // 辅助函数导出
 export {

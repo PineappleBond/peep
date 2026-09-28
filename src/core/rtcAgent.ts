@@ -995,6 +995,282 @@ const liuyaoBatchViewFunction = {
   },
 };
 
+/* ── 时间/日历（Lunar） ──────────────────────────────────────────── */
+
+const solarToLunarFunction = {
+  name: "SolarToLunar",
+  description:
+    "公历转农历——将公历日期转换为农历日期，返回农历日期及干支信息。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 用户提供公历生日，需要转换为农历；" +
+    "(2) 查看某天的农历日期及年/月/日干支；" +
+    "(3) 确定某天的生肖。" +
+    "\n\n" +
+    "返回数据包含：农历年月日、是否闰月、年月日干支、生肖。" +
+    "\n\n" +
+    "示例：SolarToLunar({ date: '2024-06-15' }) — 将 2024年6月15日 转为农历。",
+  zodSchema: z.object({
+    date: withMeta(z.string(), { example: "2024-06-15" }).describe(
+      "公历日期，格式 YYYY-MM-DD 或 YYYY-MM-DD HH:mm",
+    ),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = solarToLunarFunction.zodSchema.parse(args);
+    return peepApi().SolarToLunar({ date: parsedArgs.date });
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description:
+        "农历日期对象，包含 year/month/day/isLeap（是否闰月）、yearGanZhi/monthGanZhi/dayGanZhi（年月日干支）、zodiac（生肖）",
+    },
+  },
+};
+
+const lunarToSolarFunction = {
+  name: "LunarToSolar",
+  description:
+    "农历转公历——将农历日期转换为公历日期。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 用户提供农历生日，需要转换为公历；" +
+    "(2) 确定农历某日对应的公历日期。" +
+    "\n\n" +
+    "示例：LunarToSolar({ year: 2024, month: 5, day: 10 }) — 将农历2024年五月初十转为公历。",
+  zodSchema: z.object({
+    year: withMeta(z.number().int().positive(), { example: 2024 }).describe("农历年份"),
+    month: withMeta(z.number().int().min(1).max(12), { example: 5 }).describe("农历月份 1-12"),
+    day: withMeta(z.number().int().min(1).max(30), { example: 10 }).describe("农历日期 1-30"),
+    isLeap: withMeta(z.boolean(), { example: false }).optional().describe("是否闰月（默认 false）"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = lunarToSolarFunction.zodSchema.parse(args);
+    return peepApi().LunarToSolar({
+      year: parsedArgs.year,
+      month: parsedArgs.month,
+      day: parsedArgs.day,
+      isLeap: parsedArgs.isLeap,
+    });
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "公历日期对象，包含 date 字段（格式 YYYY-MM-DD）",
+    },
+  },
+};
+
+const getEightCharactersFunction = {
+  name: "GetEightCharacters",
+  description:
+    "获取八字（四柱）——根据公历日期时间计算年月日时四柱的天干地支及纳音。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 用户的出生时间已知，需要排出八字；" +
+    "(2) 分析命理格局时需要八字作为基础数据；" +
+    "(3) 查看某时刻的四柱干支。" +
+    "\n\n" +
+    "返回数据包含：年柱/月柱/日柱/时柱，每柱包含天干地支（ganZhi）和纳音（naYin）。" +
+    "\n\n" +
+    "示例：GetEightCharacters({ date: '1990-06-15 14:30' }) — 计算该时刻的八字。",
+  zodSchema: z.object({
+    date: withMeta(z.string(), { example: "1990-06-15 14:30" }).describe(
+      "公历日期时间，格式 YYYY-MM-DD HH:mm",
+    ),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = getEightCharactersFunction.zodSchema.parse(args);
+    return peepApi().GetEightCharacters({ date: parsedArgs.date });
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description:
+        "八字对象，包含 year/month/day/hour 四柱，每柱有 ganZhi（天干地支）和 naYin（纳音五行）",
+    },
+  },
+};
+
+const getSolarTermsFunction = {
+  name: "GetSolarTerms",
+  description:
+    "获取某年的 24 节气——返回该年所有节气的名称和公历日期。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 查看某年有哪些节气及其日期；" +
+    "(2) 确定节气交接的时间点；" +
+    "(3) 分析节气与运限的关系。" +
+    "\n\n" +
+    "返回数据包含：节气列表，每项有 name（节气名称）、date（公历日期）、description（描述）。" +
+    "\n\n" +
+    "示例：GetSolarTerms({ year: 2024 }) — 获取 2024 年的 24 节气。",
+  zodSchema: z.object({
+    year: withMeta(z.number().int().positive(), { example: 2024 }).describe("年份"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = getSolarTermsFunction.zodSchema.parse(args);
+    return peepApi().GetSolarTerms({ year: parsedArgs.year });
+  },
+  returns: {
+    schema: {
+      type: "array" as const,
+      description: "节气数组，每项包含 name（名称）、date（公历日期）、description（描述）",
+    },
+  },
+};
+
+const getCurrentSolarTermFunction = {
+  name: "GetCurrentSolarTerm",
+  description:
+    "获取当前/指定日期的节气信息——返回当前所在的节气（节/气）及下一个节气。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 查看今天处于哪个节气；" +
+    "(2) 确定下一个节气是什么时候；" +
+    "(3) 分析当前时节对运势的影响。" +
+    "\n\n" +
+    "返回数据包含：currentJie/currentQi（当前节/气）、nextJie/nextQi（下一个节/气），每项有 name 和 date。" +
+    "\n\n" +
+    "示例：GetCurrentSolarTerm({ date: '2024-06-15' }) — 获取该日期的节气信息，省略 date 则用今天。",
+  zodSchema: z.object({
+    date: withMeta(z.string(), { example: "2024-06-15" })
+      .optional()
+      .describe("公历日期（可选），省略则用当前日期"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = getCurrentSolarTermFunction.zodSchema.parse(args);
+    return peepApi().GetCurrentSolarTerm({ date: parsedArgs.date });
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description:
+        "节气信息对象，包含 currentJie/currentQi（当前节/气）、nextJie/nextQi（下一个节/气），每项有 name 和 date",
+    },
+  },
+};
+
+const getChineseCalendarFunction = {
+  name: "GetChineseCalendar",
+  description:
+    "获取传统黄历信息——返回某日的宜忌、冲煞、彭祖百忌、胎神、五行、星宿等传统历法信息。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 查看某天适合做什么（宜）、不适合做什么（忌）；" +
+    "(2) 了解当日的冲煞方位；" +
+    "(3) 传统择日参考。" +
+    "\n\n" +
+    "返回数据包含：yi（宜事项列表）、ji（忌事项列表）、chong（冲）、sha（煞）、pengZu（彭祖百忌）、taiShen（胎神）、wuXing（五行）、xingXiu（星宿）等。" +
+    "\n\n" +
+    "示例：GetChineseCalendar({ date: '2024-06-15' }) — 获取该日的黄历信息。",
+  zodSchema: z.object({
+    date: withMeta(z.string(), { example: "2024-06-15" })
+      .optional()
+      .describe("公历日期（可选），省略则用当前日期"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = getChineseCalendarFunction.zodSchema.parse(args);
+    return peepApi().GetChineseCalendar({ date: parsedArgs.date });
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description:
+        "黄历信息对象，包含 yi（宜）、ji（忌）、chong（冲）、sha（煞）、pengZu（彭祖百忌）、taiShen（胎神）、wuXing（五行）、xingXiu（星宿）、xingXiuAnimal（星宿动物）、xingXiuLuck（星宿吉凶）",
+    },
+  },
+};
+
+const getDailyInfoFunction = {
+  name: "GetDailyInfo",
+  description:
+    "获取每日综合信息——返回某日的公历/农历日期、干支、生肖、星座、节日、星期等综合信息。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 快速了解某日的基本信息；" +
+    "(2) 查看当天是否为节日或周末；" +
+    "(3) 确定某日的星座和生肖。" +
+    "\n\n" +
+    "返回数据包含：solar（公历）、lunar（农历）、ganZhi（年月日干支）、zodiac（生肖）、constellation（星座）、festival（节日列表）、isWeekend（是否周末）、weekDay（星期几）。" +
+    "\n\n" +
+    "示例：GetDailyInfo({ date: '2024-06-15' }) — 获取该日的综合信息。",
+  zodSchema: z.object({
+    date: withMeta(z.string(), { example: "2024-06-15" })
+      .optional()
+      .describe("公历日期（可选），省略则用当前日期"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = getDailyInfoFunction.zodSchema.parse(args);
+    return peepApi().GetDailyInfo({ date: parsedArgs.date });
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description:
+        "每日综合信息对象，包含 solar/lunar（公历/农历）、ganZhi（干支）、zodiac（生肖）、constellation（星座）、festival（节日）、isWeekend（周末）、weekDay（星期）",
+    },
+  },
+};
+
+const getZodiacFunction = {
+  name: "GetZodiac",
+  description:
+    "获取生肖——根据日期获取对应的生肖（基于农历年）。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 确定某人的生肖；" +
+    "(2) 查看某年的生肖。" +
+    "\n\n" +
+    "返回数据包含：zodiac（生肖）、year（农历年份）。" +
+    "\n\n" +
+    "示例：GetZodiac({ date: '1990-06-15' }) — 获取该日期对应的生肖。",
+  zodSchema: z.object({
+    date: withMeta(z.string(), { example: "1990-06-15" })
+      .optional()
+      .describe("公历日期（可选），省略则用当前日期"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = getZodiacFunction.zodSchema.parse(args);
+    return peepApi().GetZodiac({ date: parsedArgs.date });
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "生肖信息对象，包含 zodiac（生肖名称）和 year（农历年份）",
+    },
+  },
+};
+
+const getConstellationFunction = {
+  name: "GetConstellation",
+  description:
+    "获取星座——根据公历日期获取对应的西方星座。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 确定某人的星座；" +
+    "(2) 查看星座的五行属性和吉凶。" +
+    "\n\n" +
+    "返回数据包含：constellation（星座名称）、element（五行属性）、luck（吉凶）。" +
+    "\n\n" +
+    "示例：GetConstellation({ date: '1990-06-15' }) — 获取该日期对应的星座。",
+  zodSchema: z.object({
+    date: withMeta(z.string(), { example: "1990-06-15" })
+      .optional()
+      .describe("公历日期（可选），省略则用当前日期"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const parsedArgs = getConstellationFunction.zodSchema.parse(args);
+    return peepApi().GetConstellation({ date: parsedArgs.date });
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "星座信息对象，包含 constellation（星座名称）、element（五行）、luck（吉凶）",
+    },
+  },
+};
+
 /**
  * Function 分组：按业务域划分，AI 据此理解能力边界。
  *
@@ -1073,6 +1349,26 @@ const FUNCTION_GROUPS = [
       wikiCreateFunction,
       wikiUpdateFunction,
       wikiBatchViewFunction,
+    ],
+  },
+  {
+    name: "lunar",
+    description:
+      "时间/日历相关计算——公历农历转换、八字、节气、黄历、生肖星座。" +
+      "典型流程：SolarToLunar 公历转农历，LunarToSolar 农历转公历，GetEightCharacters 获取八字，" +
+      "GetSolarTerms/GetCurrentSolarTerm 获取节气信息，GetChineseCalendar 获取黄历，" +
+      "GetDailyInfo 获取每日综合信息，GetZodiac 获取生肖，GetConstellation 获取星座。" +
+      "\n\n支持的操作：日期转换、八字计算、节气查询、黄历查询、生肖星座查询。",
+    functions: [
+      solarToLunarFunction,
+      lunarToSolarFunction,
+      getEightCharactersFunction,
+      getSolarTermsFunction,
+      getCurrentSolarTermFunction,
+      getChineseCalendarFunction,
+      getDailyInfoFunction,
+      getZodiacFunction,
+      getConstellationFunction,
     ],
   },
 ];
