@@ -358,6 +358,238 @@ const personDeleteFunction = {
 
 /* ── 紫微斗数 ──────────────────────────────────────────── */
 
+/* ---- 返回值 Zod Schema（紫微盘面 & 运限拨盘共用） ---- */
+
+/** 人物基础信息（PersonGet 返回结构） */
+const _personReturnSchema = z
+  .object({
+    id: z.number().describe("人物ID"),
+    name: z.string().describe("姓名"),
+    gender: z.string().describe("性别"),
+    date: z.string().describe("公历出生日期，格式 YYYY-MM-DD"),
+    timeIndex: z.number().describe("时辰索引 0-12"),
+    savedAt: z.number().describe("保存时间戳（毫秒）"),
+    isDefault: z.boolean().describe("是否为默认人物"),
+  })
+  .describe("人物基础信息");
+
+/** 大限项 */
+const _decadeItemSchema = z
+  .object({
+    palaceIndex: z.number().describe("大限所在宫位索引 0-11"),
+    range: z.array(z.number()).describe("大限年龄区间 [起岁, 止岁]，如 [6, 15]"),
+    heavenlyStem: z.string().describe("大限天干，如 '戊'"),
+    earthlyBranch: z.string().describe("大限地支，如 '子'"),
+    startYear: z.number().describe("大限起始公历年"),
+    endYear: z.number().describe("大限结束公历年"),
+  })
+  .describe("大限项");
+
+/** 童限 */
+const _childhoodSchema = z
+  .object({
+    startYear: z.number().describe("童限起始公历年"),
+    endYear: z.number().describe("童限结束公历年"),
+    label: z.string().describe("童限年龄标签，如 '1~5岁'"),
+  })
+  .describe("童限");
+
+/** 流年项 */
+const _yearItemSchema = z
+  .object({
+    year: z.number().describe("公历年份"),
+    gz: z.string().describe("流年干支，如 '庚子'"),
+    age: z.number().describe("虚岁年龄"),
+  })
+  .describe("流年项");
+
+/** 流月项 */
+const _monthItemSchema = z
+  .object({
+    month: z.number().describe("农历月份 1-12"),
+    leap: z.boolean().describe("是否闰月"),
+    label: z.string().describe("农历月标签，如 '冬月'"),
+    solarLabel: z.string().describe("公历月标签，如 '1月'"),
+    gz: z.string().describe("流月干支，如 '庚子'"),
+  })
+  .describe("流月项");
+
+/** 流日项 */
+const _dayItemSchema = z
+  .object({
+    day: z.number().describe("农历日 1-30"),
+    label: z.string().describe("农历日标签，如 '二十'"),
+    solarLabel: z.string().describe("公历日标签，如 '1号'"),
+    gz: z.string().describe("流日干支，如 '戊寅'"),
+  })
+  .describe("流日项");
+
+/** 流时项 */
+const _hourItemSchema = z
+  .object({
+    hour: z.number().describe("时辰索引 0-11"),
+    label: z.string().describe("时辰标签，如 '子时'"),
+    gz: z.string().describe("流时干支，如 '丙子'"),
+  })
+  .describe("流时项");
+
+/** 当前选中时间 */
+const _pickSchema = z
+  .object({
+    year: z.number().describe("公历年"),
+    month: z.number().describe("月"),
+    day: z.number().describe("日"),
+    hour: z.number().describe("时辰索引 0-11"),
+    leap: z.boolean().describe("是否闰月"),
+  })
+  .describe("当前选中的时间");
+
+/** 运限拨盘（hbar）—— ZiWei 与 GetScopeData 共用 */
+const _hbarSchema = z
+  .object({
+    decades: z.array(_decadeItemSchema).describe("大限数组"),
+    childhood: _childhoodSchema.describe("童限"),
+    activeDecadeIdx: z.number().describe("当前激活大限在 decades 数组中的索引"),
+    years: z.array(_yearItemSchema).describe("流年数组"),
+    activeYearIdx: z.number().describe("当前激活流年在 years 数组中的索引"),
+    months: z.array(_monthItemSchema).describe("流月数组"),
+    activeMonthIdx: z.number().describe("当前激活流月在 months 数组中的索引"),
+    days: z.array(_dayItemSchema).describe("流日数组"),
+    activeDayIdx: z.number().describe("当前激活流日在 days 数组中的索引"),
+    hours: z.array(_hourItemSchema).describe("流时数组"),
+    activeHourIdx: z.number().describe("当前激活流时在 hours 数组中的索引"),
+    pick: _pickSchema.describe("当前选中的时间"),
+    effLeap: z.boolean().describe("有效闰月标志"),
+    clampedDay: z.number().describe("校正后的农历日（处理大月/小月边界）"),
+    visible: z
+      .object({
+        decadal: z.boolean().describe("大限拨盘是否可见"),
+        yearly: z.boolean().describe("流年拨盘是否可见"),
+        monthly: z.boolean().describe("流月拨盘是否可见"),
+        daily: z.boolean().describe("流日拨盘是否可见"),
+        hourly: z.boolean().describe("流时拨盘是否可见"),
+      })
+      .describe("各级别拨盘可见性"),
+  })
+  .describe("运限拨盘");
+
+/** 星曜（主星/辅星共用结构） */
+const _starSchema = z
+  .object({
+    name: z.string().describe("星曜名称，如 '紫微'、'文昌'"),
+    brightness: z.string().describe("亮度/庙旺状态，如 '庙'、'旺'、'得地'"),
+    mutagen: z.string().describe("四化标记，如 '禄'、'权'、'科'、'忌'，无则为空串"),
+  })
+  .describe("星曜");
+
+/** 杂耀（adjectiveStars） */
+const _adjectiveStarSchema = z
+  .object({
+    name: z.string().describe("杂耀名称，如 '天官'、'天福'"),
+  })
+  .describe("杂耀");
+
+/** 运限星曜（scopeStars，仅名称） */
+const _scopeStarSchema = z
+  .object({
+    name: z.string().describe("运限星曜名称"),
+  })
+  .describe("运限星曜");
+
+/** 四化标记（natalMutagens/scopeMutagens 内的项） */
+const _mutagenItemSchema = z
+  .object({
+    star: z.string().describe("产生四化的星曜名称"),
+    char: z.string().describe("四化字符：禄/权/科/忌"),
+  })
+  .describe("四化标记");
+
+/** 宫位（palaces 数组中的每一项） */
+const _palaceSchema = z
+  .object({
+    palaceIndex: z.number().describe("宫位索引 0-11，对应地支位置"),
+    palaceName: z
+      .string()
+      .describe(
+        "宫名，如 '命宫'、'兄弟'、'夫妻'、'子女'、'财帛'、'疾厄'、'迁移'、'交友'、'官禄'、'田宅'、'福德'、'父母'",
+      ),
+    branch: z.string().describe("地支，如 '寅'、'卯'"),
+    heavenlyStem: z.string().describe("宫位天干，如 '戊'"),
+    majorStars: z.array(_starSchema).describe("主星数组（紫微系十四主星等）"),
+    minorStars: z.array(_starSchema).describe("辅星数组（左辅、右弼、文昌、文曲等）"),
+    adjectiveStars: z.array(_adjectiveStarSchema).describe("杂耀数组"),
+    scopePalaceName: z.string().describe("运限宫名——当前运限级别下此宫对应的宫名"),
+    scopeStars: z.array(_scopeStarSchema).describe("运限星曜数组"),
+    natalMutagens: z.array(_mutagenItemSchema).describe("本命四化数组"),
+    scopeMutagens: z.array(_mutagenItemSchema).describe("运限四化数组"),
+    selfMutagens: z.array(_mutagenItemSchema).describe("自化四化数组"),
+    scopeSelfMutagens: z.array(_mutagenItemSchema).describe("运限自化四化数组"),
+    decadalRange: z.array(z.number()).describe("大限年龄区间 [起岁, 止岁]，如 [26, 35]"),
+    ages: z.array(z.number()).describe("小限年龄数组，如 [6, 18]"),
+    changsheng12: z.string().describe("长生十二神，如 '长生'、'沐浴'、'冠带'"),
+    boshi12: z.string().describe("博士十二神，如 '官府'、'博士'、'力士'"),
+    suiqian12: z.string().describe("岁前十二神，如 '晦气'、'丧门'、'贯索'"),
+    jiangqian12: z.string().describe("将前十二神，如 '劫煞'、'灾煞'、'天煞'"),
+    isBodyPalace: z.boolean().describe("是否为身宫"),
+    isOriginalPalace: z.boolean().describe("是否为原命宫"),
+  })
+  .describe("宫位数据");
+
+/** 飞星项（flyMatrix 中 flies 数组的每一项） */
+const _flyItemSchema = z
+  .object({
+    mutagen: z.string().describe("四化字符：禄/权/科/忌"),
+    star: z.string().describe("产生四化的星曜名称"),
+    toIndex: z.number().describe("飞入目标宫位索引 0-11"),
+    toName: z.string().describe("飞入目标宫名"),
+    isSelf: z.boolean().describe("是否为自化（飞入本宫）"),
+    isOpposite: z.boolean().describe("是否为对宫（飞入冲宫）"),
+  })
+  .describe("飞星项");
+
+/** 飞星矩阵行 */
+const _flyMatrixItemSchema = z
+  .object({
+    fromIndex: z.number().describe("来源宫位索引 0-11"),
+    fromName: z.string().describe("来源宫名"),
+    stem: z.string().describe("宫位天干，如 '戊'"),
+    flies: z.array(_flyItemSchema).describe("此宫天干引发的四化飞星数组"),
+  })
+  .describe("飞星矩阵行");
+
+/** 自化链接 */
+const _selfLinkSchema = z
+  .object({
+    fromIndex: z.number().describe("来源宫位索引 0-11"),
+    toIndex: z.number().describe("目标宫位索引 0-11"),
+    isSelfLoop: z.boolean().describe("是否为自环（来源与目标相同）"),
+    char: z.string().describe("四化字符：禄/权/科/忌"),
+    direction: z.string().describe("方向：'outward'(离心自化) 或 'inward'(向心自化)"),
+    star: z.string().describe("产生自化的星曜名称"),
+  })
+  .describe("自化链接");
+
+/** 盘面数据（chart） */
+const _chartSchema = z
+  .object({
+    scope: z
+      .string()
+      .describe("运限级别，如 'natal'、'decadal'、'yearly'、'monthly'、'daily'、'hourly'"),
+    palaces: z.array(_palaceSchema).describe("十二宫数组"),
+    flyMatrix: z.array(_flyMatrixItemSchema).describe("飞星矩阵——每宫天干引发的四化飞星"),
+    selfLinks: z.array(_selfLinkSchema).describe("自化链接数组"),
+  })
+  .describe("盘面数据");
+
+/** ZiWei 返回值 Schema */
+const _ziweiReturnSchema = z
+  .object({
+    person: _personReturnSchema.describe("人物基础信息"),
+    hbar: _hbarSchema.describe("运限拨盘"),
+    chart: _chartSchema.describe("盘面数据"),
+  })
+  .describe("紫微盘面完整数据");
+
 const ziweiFunction = {
   name: "ZiWei",
   description:
@@ -395,6 +627,7 @@ const ziweiFunction = {
     return peepApi().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time);
   },
   returns: {
+    zodSchema: _ziweiReturnSchema,
     schema: {
       type: "object" as const,
       description:
@@ -442,6 +675,7 @@ const getScopeDataFunction = {
     return peepApi().GetScopeData(parsedArgs.solarDate, parsedArgs.personId);
   },
   returns: {
+    zodSchema: _hbarSchema,
     schema: {
       type: "object" as const,
       description:
@@ -455,6 +689,169 @@ const getScopeDataFunction = {
     },
   },
 };
+
+/* ── 大六壬：共享课式结果 Zod Schema ─────────────────── */
+
+/**
+ * 大六壬完整课式数据的 Zod Schema（用于 DaLiuRenCreate/List/View/BatchView 的 returns）。
+ * 按 api-structures.json 的真实数据结构精确描述，每个字段都加 .describe()。
+ */
+const _daliurenFourPillars = z
+  .object({
+    yearStem: z.number().describe("年干索引（0-9）"),
+    yearBranch: z.number().describe("年支索引（0-11）"),
+    monthStem: z.number().describe("月干索引"),
+    monthBranch: z.number().describe("月支索引"),
+    dayStem: z.number().describe("日干索引"),
+    dayBranch: z.number().describe("日支索引"),
+    hourStem: z.number().describe("时干索引"),
+    hourBranch: z.number().describe("时支索引"),
+    yearPillar: z.string().describe("年柱干支，如'丙午'"),
+    monthPillar: z.string().describe("月柱干支，如'丁酉'"),
+    dayPillar: z.string().describe("日柱干支，如'乙巳'"),
+    hourPillar: z.string().describe("时柱干支，如'癸未'"),
+  })
+  .describe("四柱（年月日时干支）");
+
+const _daliurenMonthGeneral = z
+  .object({
+    branch: z.number().describe("月将地支索引"),
+    name: z.string().describe("月将名称，如'天罡'"),
+  })
+  .describe("月将");
+
+const _daliurenFourLessons = z
+  .array(
+    z.object({
+      upper: z.number().describe("上神地支索引"),
+      lower: z.number().describe("下神（地支或天干索引）"),
+      lowerType: z.enum(["stem", "branch"]).describe("下神类型：stem=天干, branch=地支"),
+    }),
+  )
+  .describe("四课数组，每课含上神、下神及下神类型");
+
+const _daliurenXunKong = z
+  .object({
+    xunHead: z.number().describe("旬首地支索引"),
+    void1: z.number().describe("空亡1 地支索引"),
+    void2: z.number().describe("空亡2 地支索引"),
+  })
+  .describe("旬空（甲旬 head 与两个空亡地支）");
+
+const _daliurenThreeTransmissions = z
+  .object({
+    initial: z.number().describe("初传地支索引"),
+    middle: z.number().describe("中传地支索引"),
+    final: z.number().describe("末传地支索引"),
+    method: z.string().describe("三传取法名称，如'重审'/'比用'/'涉害'等"),
+    trace: z.array(z.string()).describe("三传推算过程描述"),
+  })
+  .describe("三传（初/中/末传及取法）");
+
+const _daliurenTwelveGenerals = z
+  .array(
+    z.object({
+      position: z.number().describe("所在地支位置索引（0-11）"),
+      general: z.number().describe("天将编号"),
+      name: z.string().describe("天将名称，如'玄武'/'太阴'"),
+    }),
+  )
+  .describe("十二天将数组，含位置、编号、名称");
+
+const _daliurenShenSha = z
+  .array(
+    z.object({
+      name: z.string().describe("神煞名称，如'岁破'/'丧门'"),
+      branch: z.number().describe("神煞所在地支索引"),
+      type: z.enum(["吉", "凶"]).describe("吉凶类型"),
+      description: z.string().describe("神煞含义描述"),
+    }),
+  )
+  .describe("神煞数组");
+
+const _daliurenRelations = z
+  .array(
+    z.object({
+      type: z.string().describe("关系类型：刑/冲/合/害/破等"),
+      branches: z.array(z.number()).describe("涉及的地支索引数组"),
+      description: z.string().describe("关系描述，如'丑戌恃势之刑'"),
+    }),
+  )
+  .describe("地支刑冲合害破关系数组");
+
+const _daliurenKeJing = z
+  .array(
+    z.object({
+      rule: z.object({
+        code: z.string().describe("课经规则代码，如'chongshen'"),
+        name: z.string().describe("课经名称，如'重审课'"),
+        group: z.string().describe("规则分组，如'三传'/'四课'"),
+        description: z.string().describe("规则详细描述"),
+      }),
+      evidence: z.array(z.string()).describe("匹配该规则的证据描述"),
+    }),
+  )
+  .describe("课经数组，含规则定义和匹配证据");
+
+const _daliurenFate = z
+  .object({
+    mingGong: z.number().describe("命宫地支索引"),
+    xingNian: z.number().describe("行年地支索引"),
+    xingNianStem: z.number().describe("行年天干索引"),
+    xingNianIndex: z.number().describe("行年索引位置"),
+    age: z.number().describe("年龄"),
+  })
+  .describe("命宫、行年等命运信息");
+
+/** 大六壬完整课式 result 的 Zod Schema */
+const daliurenResultSchema = z
+  .object({
+    calculationTime: z.string().describe("起课时间字符串"),
+    fourPillars: _daliurenFourPillars,
+    monthGeneral: _daliurenMonthGeneral,
+    earthBoard: z.array(z.number()).describe("地盘数组（地支索引）"),
+    heavenBoard: z.array(z.number()).describe("天盘数组（地支索引）"),
+    fourLessons: _daliurenFourLessons,
+    xunKong: _daliurenXunKong,
+    threeTransmissions: _daliurenThreeTransmissions,
+    twelveGenerals: _daliurenTwelveGenerals,
+    wangXiang: z
+      .record(z.string(), z.string())
+      .describe("旺相休囚死，键为地支索引(0-11)，值为状态名（旺/相/休/囚/死）"),
+    liuQin: z
+      .record(z.string(), z.string())
+      .describe("六亲，键为地支索引(0-11)，值为六亲名（父母/妻财/兄弟/子孙/官鬼）"),
+    xunDun: z.record(z.string(), z.string()).describe("旬遁，键为地支索引，值为天干名"),
+    riDun: z.array(z.string()).describe("日遁天干数组"),
+    shenSha: _daliurenShenSha,
+    relations: _daliurenRelations,
+    keJing: _daliurenKeJing,
+    biFa: z.array(z.any()).describe("毕法数组（可含多种课体判定）"),
+    jianChu: z
+      .record(z.string(), z.string())
+      .describe("建除十二神，键为地支索引，值为建除名（建/除/满/平/定/执/破/危/成/收/开/闭）"),
+    naYin: z
+      .record(z.string(), z.string())
+      .describe("纳音五行，键为地支索引，值为纳音名（如'路旁土'）"),
+    calculationTrace: z.array(z.string()).describe("推算过程步骤描述"),
+    fate: _daliurenFate,
+  })
+  .describe("大六壬完整课式数据");
+
+/** 起课记录基础 schema（不含 computed） */
+const daliurenRecordSchema = z
+  .object({
+    personId: z.number().describe("命主 ID"),
+    calculationTime: z.string().describe("起课时间，格式 'YYYY-MM-DD HH:mm:ss'"),
+    question: z.string().describe("所占问题"),
+    note: z.string().describe("备注"),
+    background: z.string().describe("背景信息"),
+    tags: z.array(z.string()).describe("标签数组"),
+    result: daliurenResultSchema,
+    savedAt: z.number().describe("保存时间戳（毫秒）"),
+    id: z.number().describe("起课记录 ID"),
+  })
+  .describe("大六壬起课记录");
 
 const daliurenCreateFunction = {
   name: "DaLiuRenCreate",
@@ -509,20 +906,12 @@ const daliurenCreateFunction = {
     return peepApi().DaLiuRenCreate(params);
   },
   returns: {
+    zodSchema: daliurenRecordSchema,
     schema: {
       type: "object" as const,
       description:
         "起课记录：personId, calculationTime, question, note, background, tags, savedAt, id, " +
-        "result(完整课式数据，包含：fourPillars(四柱 { yearStem/YearBranch/.../yearPillar/... })、" +
-        "monthGeneral(月将 { branch, name })、earthBoard/heeavenBoard(天地盘数组)、" +
-        "fourLessons(四课数组，每项含 upper, lower, lowerType)、" +
-        "xunKong(旬空 { xunHead, void1, void2 })、" +
-        "threeTransmissions(三传 { initial, middle, final, method, trace })、" +
-        "twelveGenerals(十二神数组，含 position, general, name)、" +
-        "wangXiang(旺衰，0-11对应各地支)、liuQin(六亲)、xunDun(旬遁)、riDun(日遁)、" +
-        "shenSha(神煞数组，含 name/branch/type/description)、relations(刑冲合害数组)、" +
-        "keJing(课经数组，含 rule{code,name,group,description} + evidence)、biFa(毕法)、" +
-        "jianChu(建除十二神)、naYin(纳音)、calculationTrace(推算过程)、fate(命宫/行年等))",
+        "result(完整课式数据，包含四柱/四课/三传/天地盘/十二将/旺相/六亲/神煞/课经等)",
     },
   },
 };
@@ -557,6 +946,12 @@ const daliurenListFunction = {
     return peepApi().DaLiuRenList(parsedArgs);
   },
   returns: {
+    zodSchema: z.object({
+      records: z
+        .array(daliurenRecordSchema)
+        .describe("起课记录数组（每项同 DaLiuRenCreate 返回结构）"),
+      total: z.number().describe("记录总数"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -594,6 +989,27 @@ const daliurenViewFunction = {
     return peepApi().DaLiuRenView(parsedArgs);
   },
   returns: {
+    zodSchema: daliurenRecordSchema
+      .extend({
+        computed: z
+          .object({
+            calculationTime: z.string().describe("起课时间"),
+            result: daliurenResultSchema,
+            person: z
+              .object({
+                name: z.string().describe("命主姓名"),
+                gender: z.string().describe("性别"),
+                date: z.string().describe("出生日期"),
+                timeIndex: z.number().describe("时辰索引"),
+                savedAt: z.number().describe("保存时间戳"),
+                isDefault: z.boolean().describe("是否默认人物"),
+                id: z.number().describe("命主 ID"),
+              })
+              .describe("关联命主信息"),
+          })
+          .describe("附加计算数据（含 result 副本和关联命主）"),
+      })
+      .describe("起课记录详情（含 computed 字段）"),
     schema: {
       type: "object" as const,
       description:
@@ -642,6 +1058,7 @@ const daliurenDeleteFunction = {
     return peepApi().DaLiuRenDelete(params, { skipUI: true });
   },
   returns: {
+    zodSchema: z.void().describe("删除成功无返回数据"),
     schema: {
       type: "object" as const,
       description: "删除结果：void（无返回数据），仅表示操作成功",
@@ -686,6 +1103,32 @@ const daliurenBatchViewFunction = {
     return { records: results, count: results.length };
   },
   returns: {
+    zodSchema: z.object({
+      records: z
+        .array(
+          daliurenRecordSchema.extend({
+            computed: z
+              .object({
+                calculationTime: z.string().describe("起课时间"),
+                result: daliurenResultSchema,
+                person: z
+                  .object({
+                    name: z.string().describe("命主姓名"),
+                    gender: z.string().describe("性别"),
+                    date: z.string().describe("出生日期"),
+                    timeIndex: z.number().describe("时辰索引"),
+                    savedAt: z.number().describe("保存时间戳"),
+                    isDefault: z.boolean().describe("是否默认人物"),
+                    id: z.number().describe("命主 ID"),
+                  })
+                  .describe("关联命主信息"),
+              })
+              .describe("附加计算数据"),
+          }),
+        )
+        .describe("起课记录详情数组（每项同 DaLiuRenView 返回结构）"),
+      count: z.number().describe("实际返回的记录数量"),
+    }),
     schema: {
       type: "object" as const,
       description:
