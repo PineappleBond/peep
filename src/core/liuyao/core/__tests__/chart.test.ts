@@ -270,7 +270,7 @@ describe("locateYong", () => {
     }
 
     if (targetRel) {
-      const yongTarget = relToYongTarget(targetRel, chart);
+      const yongTarget = relToYongTarget(targetRel as Relative, chart);
       const yong = locateYong(chart, yongTarget);
       expect(yong.pickedBy).toBe("动爻");
       // 应该是所有动爻候选中爻位最小的

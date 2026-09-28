@@ -16,7 +16,7 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
 import { LiuyaoError, ApiErrorCode } from "./errors";
-import { db } from "../personDb";
+import { db, type LiuyaoRecord } from "../personDb";
 import { deleteLiuyaoRecord, getLiuyaoRecord, listLiuyaoRecords } from "../liuyaoDb";
 import type { SixLines } from "../liuyao/core/types";
 
@@ -29,17 +29,27 @@ async function clearDatabase() {
 
 async function createTestPerson() {
   const id = await db.persons.add({
-    name: "测试人物",
     savedAt: Date.now(),
     isDefault: true,
-    ...{
-      name: "测试人物",
-      date: "1990-01-01",
-      timeIndex: 0,
-      gender: "男",
-      calendar: "公历",
-      leapMonth: false,
-    },
+    name: "测试人物",
+    date: "1990-01-01",
+    timeIndex: 0,
+    gender: "男" as const,
+    calendar: "solar" as const,
+    isLeapMonth: false,
+    exactTime: "",
+    useTrueSolar: false,
+    placeMode: "china" as const,
+    province: "北京",
+    city: "北京",
+    district: "市区",
+    timezone: "",
+    algorithm: "zhongzhou" as const,
+    yearDivide: "exact" as const,
+    mutagenTable: "zhongzhou" as const,
+    dayDivide: "forward" as const,
+    astroType: "heaven" as const,
+    residence: "",
   });
   return id;
 }
@@ -366,10 +376,12 @@ describe("4. 网络/IO 模拟测试", () => {
   it("模拟数据库延迟后仍能成功", async () => {
     // 模拟 saveLiuyaoRecord 延迟 100ms
     const originalPut = db.liuyaoRecords.put.bind(db.liuyaoRecords);
-    const spy = vi.spyOn(db.liuyaoRecords, "put").mockImplementation(async (...args) => {
+    const spy = vi.spyOn(db.liuyaoRecords, "put").mockImplementation((async (
+      ...args: unknown[]
+    ) => {
       await new Promise(resolve => setTimeout(resolve, 100));
-      return originalPut(...args);
-    });
+      return originalPut(...(args as [LiuyaoRecord]));
+    }) as never);
 
     const record = await LiuYaoCreate(
       { personId: testPersonId, question: "延迟测试" },
@@ -411,8 +423,16 @@ describe("4. 网络/IO 模拟测试", () => {
     vi.spyOn(db.liuyaoRecords, "where").mockImplementation((...args) => {
       const collection = originalWhere(...args);
       // 拦截 equals 返回的 collection 的 toArray
-      const originalEquals = collection.equals.bind(collection);
-      collection.equals = (...eqArgs: unknown[]) => {
+      const originalEquals = (
+        collection as unknown as {
+          equals: (...args: unknown[]) => { toArray: () => Promise<LiuyaoRecord[]> };
+        }
+      ).equals.bind(collection);
+      (
+        collection as unknown as {
+          equals: (...eqArgs: unknown[]) => { toArray: () => Promise<LiuyaoRecord[]> };
+        }
+      ).equals = (...eqArgs: unknown[]) => {
         const result = originalEquals(...eqArgs);
         result.toArray = () => Promise.reject(new Error("模拟列表查询失败"));
         return result;

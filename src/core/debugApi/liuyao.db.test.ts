@@ -28,18 +28,28 @@ async function clearDatabase() {
  */
 async function createTestPerson() {
   const id = await db.persons.add({
-    name: "测试人物",
     savedAt: Date.now(),
     isDefault: true,
     // BirthInput 默认值
-    ...{
-      name: "测试人物",
-      date: "1990-01-01",
-      timeIndex: 0,
-      gender: "男",
-      calendar: "公历",
-      leapMonth: false,
-    },
+    name: "测试人物",
+    date: "1990-01-01",
+    timeIndex: 0,
+    gender: "男" as const,
+    calendar: "solar" as const,
+    isLeapMonth: false,
+    exactTime: "",
+    useTrueSolar: false,
+    placeMode: "china" as const,
+    province: "北京",
+    city: "北京",
+    district: "市区",
+    timezone: "",
+    algorithm: "zhongzhou" as const,
+    yearDivide: "exact" as const,
+    mutagenTable: "zhongzhou" as const,
+    dayDivide: "forward" as const,
+    astroType: "heaven" as const,
+    residence: "",
   });
   return id;
 }
@@ -267,12 +277,12 @@ describe("LiuYaoView skipUI=true", () => {
     const result = await LiuYaoView({ recordId: testRecordId }, { skipUI: true });
 
     expect(result.computed).toBeDefined();
-    expect(result.computed.divinationTime).toBeDefined();
-    expect(result.computed.chart).toBeDefined();
-    expect(result.computed.yong).toBeDefined();
-    expect(result.computed.hbarData).toBeDefined();
-    expect(result.computed.vigorColumns).toBeDefined();
+    expect(result.computed!.divinationTime).toBeDefined();
+    expect(result.computed!.chart).toBeDefined();
+    expect(result.computed!.yong).toBeDefined();
+    expect(result.computed!.hbarData).toBeDefined();
+    expect(result.computed!.vigorColumns).toBeDefined();
     // person 在 skipUI 模式下为 null
-    expect(result.computed.person).toBeNull();
+    expect(result.computed!.person).toBeNull();
   });
 });

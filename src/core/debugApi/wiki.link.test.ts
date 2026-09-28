@@ -11,7 +11,7 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { WikiCreate, WikiLink, WikiView } from "./wiki";
 import { WikiError } from "./errors";
-import { db } from "../personDb";
+import { db, type Person } from "../personDb";
 
 async function clearDatabase() {
   await db.wikiLinks.clear();
@@ -21,18 +21,28 @@ async function clearDatabase() {
 
 async function createTestPerson() {
   const id = await db.persons.add({
-    name: "测试人物",
     savedAt: Date.now(),
     isDefault: true,
-    ...{
-      name: "测试人物",
-      date: "1990-01-01",
-      timeIndex: 0,
-      gender: "男",
-      calendar: "公历",
-      leapMonth: false,
-    },
-  });
+    name: "测试人物",
+    date: "1990-01-01",
+    timeIndex: 0,
+    gender: "男",
+    calendar: "solar",
+    isLeapMonth: false,
+    exactTime: "",
+    useTrueSolar: false,
+    placeMode: "china",
+    province: "",
+    city: "",
+    district: "",
+    timezone: "",
+    algorithm: "default",
+    yearDivide: "exact",
+    mutagenTable: "zhongzhou",
+    dayDivide: "forward",
+    astroType: "heaven",
+    residence: "",
+  } as Person);
   return id;
 }
 

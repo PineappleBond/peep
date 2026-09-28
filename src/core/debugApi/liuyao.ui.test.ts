@@ -10,6 +10,7 @@
  * 不依赖 IndexedDB，纯 mock 测试。
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { Person } from "../personDb";
 import {
   registerLiuyaoCallbacks,
   registerDebugApi,
@@ -95,7 +96,8 @@ function buildMockRecord(overrides: Partial<LiuyaoRecord> = {}): LiuyaoRecord {
  * 用此函数可区分"未传 (undefined)"和"显式传 null"。
  */
 function withDefault<T>(value: T | undefined | null, fallback: () => T): T {
-  return value === undefined ? fallback() : value;
+  // 仅 undefined 触发回退；null 视为显式传入的值，直接返回（cast 为 T）
+  return value === undefined ? fallback() : (value as T);
 }
 
 /** 注册完整的全套回调（UI 模式所需） */
@@ -114,12 +116,35 @@ function registerAllMocks(
     /** 自定义 selectPerson（默认 resolve 空函数） */
     selectPerson?: (personId: number) => Promise<void>;
     /** getPerson 返回的人物（用于 waitForPersonMatch 验证） */
-    personObj?: { id: number; name: string } | null;
+    personObj?: Person | null;
   } = {},
 ) {
   const submitRecord = opts.submitRecord ?? buildMockRecord();
-  const listResult = opts.listResult ?? { records: [], total: 0 };
-  const personObj = opts.personObj ?? { id: TEST_PERSON_ID, name: "测试人物" };
+  const listResult = opts.listResult ?? { records: [], total: 0, page: 1, pageSize: 20 };
+  const personObj: Person | null = opts.personObj ?? {
+    id: TEST_PERSON_ID,
+    name: "测试人物",
+    savedAt: Date.now(),
+    isDefault: false,
+    date: "1990-01-15",
+    timeIndex: 3,
+    gender: "男",
+    calendar: "solar",
+    isLeapMonth: false,
+    exactTime: "",
+    useTrueSolar: false,
+    placeMode: "china",
+    province: "北京",
+    city: "北京",
+    district: "市区",
+    timezone: "",
+    algorithm: "zhongzhou",
+    yearDivide: "exact",
+    mutagenTable: "zhongzhou",
+    dayDivide: "forward",
+    astroType: "heaven",
+    residence: "",
+  };
 
   // selectRecord / getSelectedRecord：使用 withDefault 区分"未传"和"显式 null"
   const selectRecordReturn = withDefault(opts.selectedRecord, buildMockRecord);
@@ -136,9 +161,10 @@ function registerAllMocks(
     getSelectedRecord: vi.fn().mockReturnValue(fallbackRecordReturn),
     setHbarVisibility: vi.fn(),
     pickTime: vi.fn(),
-    getHbarState: vi
-      .fn()
-      .mockReturnValue({ yearly: true, monthly: true, daily: true, hourly: true }),
+    getHbarState: vi.fn().mockReturnValue({
+      visible: { yearly: true, monthly: true, daily: true, hourly: true },
+      pick: { year: 2024, month: 1, day: 1, hour: 0 },
+    }),
   });
 
   // 全局共享回调（navigate / selectPerson / getPerson）
@@ -258,7 +284,7 @@ describe("LiuYaoCreate UI 模式", () => {
     registerDebugApi({
       navigate: vi.fn(),
       selectPerson: vi.fn().mockResolvedValue(undefined),
-      getPerson: () => ({ id: TEST_PERSON_ID, name: "测试" }),
+      getPerson: () => ({ id: TEST_PERSON_ID, name: "测试" }) as Person,
     });
 
     await expect(
@@ -287,7 +313,7 @@ describe("LiuYaoCreate UI 模式", () => {
     registerDebugApi({
       navigate: vi.fn(),
       selectPerson: vi.fn().mockResolvedValue(undefined),
-      getPerson: () => ({ id: TEST_PERSON_ID, name: "测试" }),
+      getPerson: () => ({ id: TEST_PERSON_ID, name: "测试" }) as Person,
     });
 
     await LiuYaoCreate({ personId: TEST_PERSON_ID, question: "顺序测试" });
@@ -302,7 +328,7 @@ describe("LiuYaoCreate UI 模式", () => {
 describe("LiuYaoList UI 模式", () => {
   it("完整 UI 流程：navigate → selectPerson → setListFilters → getLiuyaoList", async () => {
     const mockRecords = [buildMockRecord({ id: 1 }), buildMockRecord({ id: 2 })];
-    const listResult: LiuyaoListResult = { records: mockRecords, total: 2 };
+    const listResult: LiuyaoListResult = { records: mockRecords, total: 2, page: 1, pageSize: 20 };
     registerAllMocks({ listResult });
 
     const getLiuyaoList = getGetLiuyaoList()!;
@@ -341,7 +367,7 @@ describe("LiuYaoList UI 模式", () => {
   });
 
   it("无搜索条件时不调用 setListFilters", async () => {
-    registerAllMocks({ listResult: { records: [], total: 0 } });
+    registerAllMocks({ listResult: { records: [], total: 0, page: 1, pageSize: 20 } });
 
     const setListFilters = getSetLiuyaoListFilters()!;
 
@@ -351,7 +377,9 @@ describe("LiuYaoList UI 模式", () => {
   });
 
   it("参数正确传递：分页 + 搜索 + 标签", async () => {
-    registerAllMocks({ listResult: { records: [buildMockRecord()], total: 1 } });
+    registerAllMocks({
+      listResult: { records: [buildMockRecord()], total: 1, page: 1, pageSize: 20 },
+    });
 
     const getLiuyaoList = getGetLiuyaoList()!;
 

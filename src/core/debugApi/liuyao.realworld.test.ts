@@ -42,7 +42,21 @@ async function createTestPerson(name: string, gender: "男" | "女" = "男") {
       date: "1990-01-15",
       timeIndex: 3,
       gender,
-      calendar: "公历" as const,
+      calendar: "solar" as const,
+      isLeapMonth: false,
+      exactTime: "",
+      useTrueSolar: false,
+      placeMode: "china" as const,
+      province: "北京",
+      city: "北京",
+      district: "市区",
+      timezone: "",
+      algorithm: "zhongzhou" as const,
+      yearDivide: "exact" as const,
+      mutagenTable: "zhongzhou" as const,
+      dayDivide: "forward" as const,
+      astroType: "heaven" as const,
+      residence: "",
     },
     false,
   );
@@ -1237,7 +1251,7 @@ describe("专业占卜师场景", () => {
     }
 
     // 使用 getAllLiuyaoTags 获取所有标签
-    const allTags = await getAllLiuyaoTags(client.id);
+    const allTags = await getAllLiuyaoTags(client.id!);
     expect(allTags).toContain("财运");
     expect(allTags).toContain("事业");
     expect(allTags).toContain("感情");

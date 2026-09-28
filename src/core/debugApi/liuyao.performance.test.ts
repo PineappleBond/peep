@@ -61,7 +61,27 @@ async function cleanupDatabase() {
 
 async function createTestPerson(name = "性能测试人物") {
   return PersonCreate(
-    { name, date: "1990-01-15", timeIndex: 3, gender: "男" as const, calendar: "公历" as const },
+    {
+      name,
+      date: "1990-01-15",
+      timeIndex: 3,
+      gender: "男" as const,
+      calendar: "solar" as const,
+      isLeapMonth: false,
+      exactTime: "",
+      useTrueSolar: false,
+      placeMode: "china" as const,
+      province: "北京",
+      city: "北京",
+      district: "市区",
+      timezone: "",
+      algorithm: "zhongzhou" as const,
+      yearDivide: "exact" as const,
+      mutagenTable: "zhongzhou" as const,
+      dayDivide: "forward" as const,
+      astroType: "heaven" as const,
+      residence: "",
+    },
     false,
   );
 }
@@ -88,7 +108,7 @@ let testPersonId: number;
 beforeEach(async () => {
   await cleanupDatabase();
   const p = await createTestPerson();
-  testPersonId = p.id;
+  testPersonId = p.id!;
 });
 
 afterEach(async () => {
@@ -462,7 +482,9 @@ describe("并发负载测试", () => {
     }
     // 先等待创建完成，再做详情（避免 recordId 不存在）
     const created = await Promise.all(tasks.slice(0, 20));
-    const viewTasks = created.map(c => LiuYaoView({ recordId: c.id! }, { skipUI: true }));
+    const viewTasks = created.map(c =>
+      LiuYaoView({ recordId: (c as { id: number }).id! }, { skipUI: true }),
+    );
     const allResults = await Promise.all([...tasks.slice(20), ...viewTasks]);
 
     const dt = performance.now() - t0;

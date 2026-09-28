@@ -18,7 +18,7 @@ import "fake-indexeddb/auto";
 
 import { computeLiuyaoData, LiuYao, LiuYaoCreate } from "./liuyao";
 import { LiuyaoError } from "./errors";
-import type { SixLines } from "../liuyao/core/types";
+import type { SixLines, LineValue } from "../liuyao/core/types";
 import { validateNonEmptyString, validatePagination, validateTags } from "./validate";
 import { db } from "../personDb";
 
@@ -31,17 +31,27 @@ async function clearDatabase() {
 /** 创建测试人物（默认人物） */
 async function createTestPerson() {
   const id = await db.persons.add({
-    name: "测试人物",
     savedAt: Date.now(),
     isDefault: true,
-    ...{
-      name: "测试人物",
-      date: "1990-01-01",
-      timeIndex: 0,
-      gender: "男",
-      calendar: "公历",
-      leapMonth: false,
-    },
+    name: "测试人物",
+    date: "1990-01-01",
+    timeIndex: 0,
+    gender: "男" as const,
+    calendar: "solar" as const,
+    isLeapMonth: false,
+    exactTime: "",
+    useTrueSolar: false,
+    placeMode: "china" as const,
+    province: "北京",
+    city: "北京",
+    district: "市区",
+    timezone: "",
+    algorithm: "zhongzhou" as const,
+    yearDivide: "exact" as const,
+    mutagenTable: "zhongzhou" as const,
+    dayDivide: "forward" as const,
+    astroType: "heaven" as const,
+    residence: "",
   });
   return id;
 }
@@ -317,7 +327,7 @@ describe("7. 64 卦完整覆盖", () => {
     const lines: SixLines = [0, 0, 0, 0, 0, 0];
     for (let j = 0; j < 6; j++) {
       // 第 j 爻的阴阳由 i 的第 j 位决定：1=阳（少阳=1），0=阴（老阴=0）
-      lines[j] = (i >> j) & 1;
+      lines[j] = ((i >> j) & 1) as LineValue;
     }
     hex64Lines.push(lines);
   }

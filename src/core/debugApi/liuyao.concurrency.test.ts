@@ -16,6 +16,7 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
 import { PersonCreate, PersonDelete } from "./person";
+import type { BirthInput } from "../useZwds";
 import { registerLiuyaoCallbacks, resetCallbacks, getCallbacksReady } from "./callbacks";
 import { waitForLiuyaoCallbacks, waitForRecordSaved } from "./helpers";
 import { db } from "../personDb";
@@ -47,7 +48,21 @@ async function createTestPerson(name: string) {
       date: "1990-01-15",
       timeIndex: 3,
       gender: "男" as const,
-      calendar: "公历" as const,
+      calendar: "solar" as const,
+      isLeapMonth: false,
+      exactTime: "",
+      useTrueSolar: false,
+      placeMode: "china" as const,
+      province: "北京",
+      city: "北京",
+      district: "市区",
+      timezone: "",
+      algorithm: "zhongzhou" as const,
+      yearDivide: "exact" as const,
+      mutagenTable: "zhongzhou" as const,
+      dayDivide: "forward" as const,
+      astroType: "heaven" as const,
+      residence: "",
     },
     false,
   );
@@ -549,6 +564,8 @@ describe("回调注册竞态测试", () => {
     getLiuyaoList: async (_f: LiuyaoListFilters): Promise<LiuyaoListResult> => ({
       records: [],
       total: 0,
+      page: 1,
+      pageSize: 20,
     }),
     openCreateDialog: () => {},
     fillCreateForm: (_d: unknown) => {},
@@ -560,10 +577,12 @@ describe("回调注册竞态测试", () => {
     setHbarVisibility: (_l: unknown, _v: boolean) => {},
     pickTime: (_l: unknown, _v: number) => {},
     getHbarState: () => ({
-      yearly: true,
-      monthly: true,
-      daily: true,
-      hourly: true,
+      visible: {
+        yearly: true,
+        monthly: true,
+        daily: true,
+        hourly: true,
+      },
       pick: { year: 2024, month: 1, day: 1, hour: 0 },
     }),
   };
@@ -790,7 +809,7 @@ describe("超时和重试测试", () => {
     // 异步注册回调（延迟 50ms）
     setTimeout(() => {
       registerLiuyaoCallbacks({
-        getLiuyaoList: async () => ({ records: [], total: 0 }),
+        getLiuyaoList: async () => ({ records: [], total: 0, page: 1, pageSize: 20 }),
         openCreateDialog: () => {},
         fillCreateForm: () => {},
         submitCreateForm: async () => {
@@ -802,10 +821,12 @@ describe("超时和重试测试", () => {
         pickTime: () => {},
         getHbarState: () =>
           ({
-            yearly: true,
-            monthly: true,
-            daily: true,
-            hourly: true,
+            visible: {
+              yearly: true,
+              monthly: true,
+              daily: true,
+              hourly: true,
+            },
             pick: { year: 2024, month: 1, day: 1, hour: 0 },
           }) as never,
       });
