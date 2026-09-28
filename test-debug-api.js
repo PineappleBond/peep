@@ -148,6 +148,16 @@
       return { hasData: !!result };
     });
 
+    // 连续调用测试：同一人物连续调用 5 次（验证修复后的性能）
+    console.log('\n--- ZiWei 连续调用测试（同一人物）---');
+    const ziweiLoopStart = Date.now();
+    for (let i = 0; i < 5; i++) {
+      const iterStart = Date.now();
+      await window.peep.ZiWei(testPerson1.id, 'yearly');
+      console.log(`  ZiWei #${i + 1}: ${Date.now() - iterStart}ms`);
+    }
+    console.log(`ZiWei 5次连续调用总计: ${Date.now() - ziweiLoopStart}ms`);
+
     await runTest('GetScopeData', async () => {
       const result = await window.peep.GetScopeData('2024-06-15', testPerson1.id);
       return { hasScopes: !!result };

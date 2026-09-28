@@ -40,6 +40,7 @@ import {
   computeZiWeiData,
   computeScopeData,
   GetScopeData,
+  SetHoroscopeTime,
 } from "./ziwei";
 import {
   DaLiuRen,
@@ -48,6 +49,8 @@ import {
   DaLiuRenList,
   DaLiuRenView,
   DaLiuRenDelete,
+  DaLiuRenUpdateTags,
+  DaLiuRenUpdateNote,
 } from "./daliuren";
 import {
   computeLiuyaoData,
@@ -56,9 +59,27 @@ import {
   LiuYaoList,
   LiuYaoView,
   LiuYaoDelete,
+  LiuYaoUpdateTags,
+  LiuYaoUpdateNote,
 } from "./liuyao";
-import { WikiList, WikiCreate, WikiUpdate, WikiView, WikiLink, WikiDelete } from "./wiki";
-import { PersonList, PersonGet, PersonCreate, PersonUpdate, PersonDelete } from "./person";
+import {
+  WikiList,
+  WikiCreate,
+  WikiUpdate,
+  WikiView,
+  WikiLink,
+  WikiDelete,
+  WikiReplaceContent,
+  WikiInsertContent,
+} from "./wiki";
+import {
+  PersonList,
+  PersonGet,
+  PersonCreate,
+  PersonUpdate,
+  PersonDelete,
+  PersonSetDefault,
+} from "./person";
 import {
   SolarToLunar,
   LunarToSolar,
@@ -83,7 +104,12 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
   PersonCreate: { 方法: "PersonCreate(input)", 说明: "创建人物" },
   PersonUpdate: { 方法: "PersonUpdate(personId, input)", 说明: "更新人物" },
   PersonDelete: { 方法: "PersonDelete(personId)", 说明: "删除人物" },
+  PersonSetDefault: { 方法: "PersonSetDefault(personId)", 说明: "设置默认人物（只能有一个）" },
   ZiWei: { 方法: "ZiWei(personId?, scope?, time?)", 说明: "紫微斗数排盘+运限操控" },
+  SetHoroscopeTime: {
+    方法: "SetHoroscopeTime({ year, month, day, hour? })",
+    说明: "设置运限时间（纯计算，不操控 UI）",
+  },
   GetScopeData: { 方法: "GetScopeData(solarDate, personId?)", 说明: "获取运限数据（纯计算）" },
   computeScopeData: {
     方法: "computeScopeData(person, solarDate)",
@@ -114,6 +140,14 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
     方法: "DaLiuRenDelete(params, options?)",
     说明: "大六壬起课删除（仅支持 skipUI=true）",
   },
+  DaLiuRenUpdateTags: {
+    方法: "DaLiuRenUpdateTags({ recordId, tags })",
+    说明: "更新起课记录标签（仅元数据）",
+  },
+  DaLiuRenUpdateNote: {
+    方法: "DaLiuRenUpdateNote({ recordId, note?, background? })",
+    说明: "更新起课记录备注和背景（仅元数据）",
+  },
   LiuYao: {
     方法: "LiuYao(lines?, date, yongTarget?, time?)",
     说明: "六爻纯计算排盘（向后兼容）",
@@ -138,6 +172,14 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
     方法: "LiuYaoDelete(params, options?)",
     说明: "六爻起卦删除（仅支持 skipUI=true）",
   },
+  LiuYaoUpdateTags: {
+    方法: "LiuYaoUpdateTags({ recordId, tags })",
+    说明: "更新起卦记录标签（仅元数据）",
+  },
+  LiuYaoUpdateNote: {
+    方法: "LiuYaoUpdateNote({ recordId, note?, background? })",
+    说明: "更新起卦记录备注和背景（仅元数据）",
+  },
   WikiCreate: {
     方法: "WikiCreate(params, options?)",
     说明: "Wiki 文档创建（options.skipUI 仅供调试）",
@@ -161,6 +203,14 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
   WikiDelete: {
     方法: "WikiDelete(params, options?)",
     说明: "Wiki 文档删除（仅支持 skipUI=true）",
+  },
+  WikiReplaceContent: {
+    方法: "WikiReplaceContent({ docId, searchText, replaceText, isGlobal? })",
+    说明: "Wiki 内容替换（支持全局替换）",
+  },
+  WikiInsertContent: {
+    方法: "WikiInsertContent({ docId, content, position? })",
+    说明: "Wiki 内容插入（支持行号/开头/结尾定位）",
   },
   getChartDataForScope: {
     方法: "getChartDataForScope(opts)",
@@ -844,12 +894,14 @@ export function initDebugApi() {
     PersonCreate,
     PersonUpdate,
     PersonDelete,
+    PersonSetDefault,
 
     // 紫微斗数
     ZiWei,
     computeZiWeiData,
     computeScopeData,
     GetScopeData,
+    SetHoroscopeTime,
 
     // 大六壬
     DaLiuRen,
@@ -858,6 +910,8 @@ export function initDebugApi() {
     DaLiuRenList,
     DaLiuRenView,
     DaLiuRenDelete,
+    DaLiuRenUpdateTags,
+    DaLiuRenUpdateNote,
 
     // 六爻
     computeLiuyaoData,
@@ -866,6 +920,8 @@ export function initDebugApi() {
     LiuYaoList,
     LiuYaoView,
     LiuYaoDelete,
+    LiuYaoUpdateTags,
+    LiuYaoUpdateNote,
 
     // Wiki
     WikiList,
@@ -874,6 +930,8 @@ export function initDebugApi() {
     WikiView,
     WikiLink,
     WikiDelete,
+    WikiReplaceContent,
+    WikiInsertContent,
 
     // 时间/日历（Lunar）
     SolarToLunar,

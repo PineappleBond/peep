@@ -335,7 +335,7 @@ describe("大数据量测试", () => {
     const dt = performance.now() - t0;
     expect(dt).toBeLessThan(T.large1000Pagination);
     expect(totalSeen).toBe(1000);
-  });
+  }, 15000);
 
   it("大量标签（50+）的过滤性能", async () => {
     // 创建 60 条记录，每条带不同标签

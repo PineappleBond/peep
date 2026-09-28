@@ -164,24 +164,12 @@ export async function DaLiuRenCreate(
       }
 
       // 计算排盘结果（有自定义时间则用之，否则用当前时间）
-      let calcResult: DaLiuRenResult;
-      let calculationTime: string;
-      if (params.calculationTime) {
-        // 复用 parseDate 解析自定义时间（支持 ISO 8601、YYYY-MM-DD HH:mm:ss、时间戳等）
-        const parsed = parseDate(params.calculationTime);
-        const pad = (n: number) => String(n).padStart(2, "0");
-        const date = `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
-        const time = `${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
-        calcResult = computeDaLiuRenData(date, time);
-        calculationTime = `${date} ${time}`;
-      } else {
-        const now = new Date();
-        const pad = (n: number) => String(n).padStart(2, "0");
-        const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-        calcResult = computeDaLiuRenData(date, time);
-        calculationTime = `${date} ${time}`;
-      }
+      const parsed = params.calculationTime ? parseDate(params.calculationTime) : new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const date = `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
+      const time = `${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
+      const calcResult = computeDaLiuRenData(date, time);
+      const calculationTime = `${date} ${time}`;
 
       // 构造记录并写入数据库
       const record: LiurenRecord = {

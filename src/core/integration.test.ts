@@ -24,6 +24,7 @@ vi.mock("@rtc-agent/component", () => {
   const createMockSchema = () => ({
     describe: () => createMockSchema(),
     optional: () => createMockSchema(),
+    default: () => createMockSchema(),
     int: () => createMockSchema(),
     positive: () => createMockSchema(),
     min: () => createMockSchema(),
@@ -46,6 +47,7 @@ vi.mock("@rtc-agent/component", () => {
       void: () => createMockSchema(),
       record: () => createMockSchema(),
       any: () => createMockSchema(),
+      union: () => createMockSchema(),
     },
   };
 });

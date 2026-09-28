@@ -377,30 +377,34 @@ export async function waitForDialogReady(): Promise<void> {
   await new Promise(r => setTimeout(r, 50));
 }
 
-/** 等待大六壬回调注册完成 */
-export async function waitForDaLiuRenCallbacks(timeout = 1000): Promise<void> {
+/**
+ * 等待指定页面回调注册完成的通用实现。
+ * 统一三个页面专属等待函数的轮询逻辑，用 nextFrame 替代 setTimeout(50ms) 减少延迟。
+ */
+async function waitPageCallbacks(
+  page: "daliuren" | "liuyao" | "wiki",
+  label: string,
+  timeout: number,
+): Promise<void> {
   const start = Date.now();
   const callbacksReady = getCallbacksReady();
-  while (!callbacksReady.daliuren) {
+  while (!callbacksReady[page]) {
     if (Date.now() - start > timeout) {
-      log("warn", "wait", "大六壬回调注册等待超时", { timeout });
+      log("warn", "wait", `${label}回调注册等待超时`, { timeout });
       break;
     }
-    await new Promise(r => setTimeout(r, 50));
+    await nextFrame();
   }
 }
 
+/** 等待大六壬回调注册完成 */
+export function waitForDaLiuRenCallbacks(timeout = 1000): Promise<void> {
+  return waitPageCallbacks("daliuren", "大六壬", timeout);
+}
+
 /** 等待六爻回调注册完成 */
-export async function waitForLiuyaoCallbacks(timeout = 1000): Promise<void> {
-  const start = Date.now();
-  const callbacksReady = getCallbacksReady();
-  while (!callbacksReady.liuyao) {
-    if (Date.now() - start > timeout) {
-      log("warn", "wait", "六爻回调注册等待超时", { timeout });
-      break;
-    }
-    await new Promise(r => setTimeout(r, 50));
-  }
+export function waitForLiuyaoCallbacks(timeout = 1000): Promise<void> {
+  return waitPageCallbacks("liuyao", "六爻", timeout);
 }
 
 /** 等待记录保存完成（通过验证记录 ID 存在） */
@@ -415,16 +419,8 @@ export async function waitForRecordSaved(
 }
 
 /** 等待 Wiki 回调注册完成 */
-export async function waitForWikiCallbacks(timeout = 1000): Promise<void> {
-  const start = Date.now();
-  const callbacksReady = getCallbacksReady();
-  while (!callbacksReady.wiki) {
-    if (Date.now() - start > timeout) {
-      log("warn", "wait", "Wiki 回调注册等待超时", { timeout });
-      break;
-    }
-    await new Promise(r => setTimeout(r, 50));
-  }
+export function waitForWikiCallbacks(timeout = 1000): Promise<void> {
+  return waitPageCallbacks("wiki", "Wiki", timeout);
 }
 
 /** 等待文档保存完成 */

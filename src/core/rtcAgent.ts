@@ -344,6 +344,34 @@ const personDeleteFunction = {
   },
 };
 
+/** 设置默认人物——系统中只能有一个默认人物 */
+const personSetDefaultFunction = {
+  name: "PersonSetDefault",
+  description:
+    "将指定人物设为默认人物（系统中只能有一个默认人物）。" +
+    "设置新默认人物时，会自动取消原默认人物的标记。" +
+    "\n\n" +
+    "使用场景：用户要求切换默认人物时使用。" +
+    "\n\n" +
+    "示例：PersonSetDefault({ personId: 2 }) — 将 ID 为 2 的人物设为默认。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
+  }),
+  handler: (args: Record<string, unknown>) => {
+    const { personId } = personSetDefaultFunction.zodSchema.parse(args) as { personId: number };
+    return peepApi().PersonSetDefault(personId);
+  },
+  returns: {
+    zodSchema: z
+      .object({
+        id: z.number().describe("人物 ID"),
+        name: z.string().describe("姓名"),
+        isDefault: z.boolean().describe("是否为默认人物（应为 true）"),
+      })
+      .describe("更新后的人物信息"),
+  },
+};
+
 /* ── 紫微斗数 ──────────────────────────────────────────── */
 
 /* ---- 返回值 Zod Schema（紫微盘面 & 运限拨盘共用） ---- */
@@ -650,6 +678,49 @@ const getScopeDataFunction = {
   },
   returns: {
     zodSchema: _hbarSchema,
+  },
+};
+
+/** 设置运限时间——直接控制运限拨盘的年月日时 */
+const setHoroscopeTimeFunction = {
+  name: "SetHoroscopeTime",
+  description:
+    "设置运限时间——直接控制运限拨盘的年月日时（纯计算，不操控 UI）。" +
+    "设置后返回当前运限状态（pick 值）。" +
+    "\n\n" +
+    "使用场景：用户要求查看特定日期的运限时使用。" +
+    "\n\n" +
+    "示例：SetHoroscopeTime({ year: 2024, month: 6, day: 15, hour: 14 }) — 设置运限到 2024 年 6 月 15 日 14 时。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID（可选）；省略则使用默认人物"),
+    year: withMeta(z.number().int().min(1900).max(2100), { example: 2024 }).describe("年份"),
+    month: withMeta(z.number().int().min(1).max(12), { example: 6 }).describe("月份（1-12）"),
+    day: withMeta(z.number().int().min(1).max(31), { example: 15 }).describe("日期（1-31）"),
+    hour: withMeta(z.number().int().min(0).max(23), { example: 14 })
+      .optional()
+      .describe("小时（0-23，可选，默认 0）"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const params = setHoroscopeTimeFunction.zodSchema.parse(args) as {
+      personId?: number;
+      year: number;
+      month: number;
+      day: number;
+      hour?: number;
+    };
+    return peepApi().SetHoroscopeTime(params);
+  },
+  returns: {
+    zodSchema: z
+      .object({
+        year: z.number().describe("设置的年份"),
+        month: z.number().describe("设置的月份"),
+        day: z.number().describe("设置的日期"),
+        hour: z.number().describe("设置的小时（时辰索引 0-11）"),
+      })
+      .describe("设置后的运限时间（pick 值）"),
   },
 };
 
@@ -1074,6 +1145,62 @@ const daliurenBatchViewFunction = {
   },
 };
 
+/** 更新大六壬起课记录的标签 */
+const daliurenUpdateTagsFunction = {
+  name: "DaLiuRenUpdateTags",
+  description:
+    "更新大六壬起课记录的标签（仅修改元数据，不修改卦象数据）。" +
+    "\n\n" +
+    "使用场景：用户要求为起课记录添加/修改/删除标签时使用。" +
+    "\n\n" +
+    "示例：DaLiuRenUpdateTags({ recordId: 123, tags: ['财运', '合作'] }) — 更新记录标签。",
+  zodSchema: z.object({
+    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
+    ),
+    tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const params = daliurenUpdateTagsFunction.zodSchema.parse(args) as {
+      recordId: number;
+      tags: string[];
+    };
+    return peepApi().DaLiuRenUpdateTags(params);
+  },
+  returns: {
+    zodSchema: daliurenRecordSchema.describe("更新后的起课记录"),
+  },
+};
+
+/** 更新大六壬起课记录的备注和背景 */
+const daliurenUpdateNoteFunction = {
+  name: "DaLiuRenUpdateNote",
+  description:
+    "更新大六壬起课记录的备注和背景信息（仅修改元数据，不修改卦象数据）。" +
+    "\n\n" +
+    "使用场景：用户要求为起课记录添加/修改备注或背景信息时使用。" +
+    "\n\n" +
+    "示例：DaLiuRenUpdateNote({ recordId: 123, note: '后续反馈：准确' }) — 更新备注。",
+  zodSchema: z.object({
+    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
+    ),
+    note: z.string().optional().describe("新的备注（可选）"),
+    background: z.string().optional().describe("新的背景信息（可选）"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const params = daliurenUpdateNoteFunction.zodSchema.parse(args) as {
+      recordId: number;
+      note?: string;
+      background?: string;
+    };
+    return peepApi().DaLiuRenUpdateNote(params);
+  },
+  returns: {
+    zodSchema: daliurenRecordSchema.describe("更新后的起课记录"),
+  },
+};
+
 const wikiListFunction = {
   name: "WikiList",
   description:
@@ -1353,6 +1480,91 @@ const wikiBatchViewFunction = {
         .describe("文档详情数组，每项同 WikiView 返回结构"),
       count: z.number().describe("文档数量"),
     }),
+  },
+};
+
+/** Wiki 内容替换 */
+const wikiReplaceContentFunction = {
+  name: "WikiReplaceContent",
+  description:
+    "替换 Wiki 文档内容中的字符串——支持单次替换或全局替换（Replace All）。" +
+    "\n\n" +
+    "使用场景：用户要求批量修改文档中的某个关键词或短语时使用。" +
+    "\n\n" +
+    "示例：WikiReplaceContent({ docId: 123, searchText: '旧文本', replaceText: '新文本', isGlobal: true }) — 全局替换。",
+  zodSchema: z.object({
+    docId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      "文档 ID——从 WikiList 返回的 docs 中获取",
+    ),
+    searchText: z.string().describe("要搜索的文本"),
+    replaceText: z.string().describe("替换后的文本"),
+    isGlobal: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe("是否全局替换（默认 true，即 Replace All）"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const params = wikiReplaceContentFunction.zodSchema.parse(args) as {
+      docId: number;
+      searchText: string;
+      replaceText: string;
+      isGlobal?: boolean;
+    };
+    return peepApi().WikiReplaceContent(params);
+  },
+  returns: {
+    zodSchema: z
+      .object({
+        id: z.number().describe("文档 ID"),
+        title: z.string().describe("文档标题"),
+        content: z.string().describe("替换后的文档内容"),
+        tags: z.array(z.string()).describe("标签列表"),
+        updatedAt: z.number().describe("更新时间戳"),
+      })
+      .describe("更新后的文档"),
+  },
+};
+
+/** Wiki 内容插入 */
+const wikiInsertContentFunction = {
+  name: "WikiInsertContent",
+  description:
+    "在 Wiki 文档的指定位置插入内容——支持按行号插入、在文档开头插入或在文档结尾插入。" +
+    "\n\n" +
+    "使用场景：用户要求在文档的特定位置添加新内容时使用。" +
+    "\n\n" +
+    "示例：WikiInsertContent({ docId: 123, content: '## 新章节', position: 5 }) — 在第 5 行之前插入。" +
+    "\n示例：WikiInsertContent({ docId: 123, content: '附录内容', position: 'end' }) — 在文档末尾追加。",
+  zodSchema: z.object({
+    docId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      "文档 ID——从 WikiList 返回的 docs 中获取",
+    ),
+    content: z.string().describe("要插入的内容（支持 Markdown）"),
+    position: z
+      .union([z.number().int().positive(), z.enum(["start", "end"])])
+      .optional()
+      .default("end")
+      .describe("插入位置：正整数=在该行之前插入（1-based），'start'=开头，'end'=结尾（默认）"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const params = wikiInsertContentFunction.zodSchema.parse(args) as {
+      docId: number;
+      content: string;
+      position?: number | "start" | "end";
+    };
+    return peepApi().WikiInsertContent(params);
+  },
+  returns: {
+    zodSchema: z
+      .object({
+        id: z.number().describe("文档 ID"),
+        title: z.string().describe("文档标题"),
+        content: z.string().describe("插入后的文档内容"),
+        tags: z.array(z.string()).describe("标签列表"),
+        updatedAt: z.number().describe("更新时间戳"),
+      })
+      .describe("更新后的文档"),
   },
 };
 
@@ -1775,6 +1987,62 @@ const liuyaoBatchViewFunction = {
   },
 };
 
+/** 更新六爻起卦记录的标签 */
+const liuyaoUpdateTagsFunction = {
+  name: "LiuYaoUpdateTags",
+  description:
+    "更新六爻起卦记录的标签（仅修改元数据，不修改卦象数据）。" +
+    "\n\n" +
+    "使用场景：用户要求为起卦记录添加/修改/删除标签时使用。" +
+    "\n\n" +
+    "示例：LiuYaoUpdateTags({ recordId: 123, tags: ['财运', '合作'] }) — 更新记录标签。",
+  zodSchema: z.object({
+    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
+    ),
+    tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const params = liuyaoUpdateTagsFunction.zodSchema.parse(args) as {
+      recordId: number;
+      tags: string[];
+    };
+    return peepApi().LiuYaoUpdateTags(params);
+  },
+  returns: {
+    zodSchema: _liuyaoRecordSchema.describe("更新后的起卦记录"),
+  },
+};
+
+/** 更新六爻起卦记录的备注和背景 */
+const liuyaoUpdateNoteFunction = {
+  name: "LiuYaoUpdateNote",
+  description:
+    "更新六爻起卦记录的备注和背景信息（仅修改元数据，不修改卦象数据）。" +
+    "\n\n" +
+    "使用场景：用户要求为起卦记录添加/修改备注或背景信息时使用。" +
+    "\n\n" +
+    "示例：LiuYaoUpdateNote({ recordId: 123, note: '后续反馈：准确' }) — 更新备注。",
+  zodSchema: z.object({
+    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
+    ),
+    note: z.string().optional().describe("新的备注（可选）"),
+    background: z.string().optional().describe("新的背景信息（可选）"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const params = liuyaoUpdateNoteFunction.zodSchema.parse(args) as {
+      recordId: number;
+      note?: string;
+      background?: string;
+    };
+    return peepApi().LiuYaoUpdateNote(params);
+  },
+  returns: {
+    zodSchema: _liuyaoRecordSchema.describe("更新后的起卦记录"),
+  },
+};
+
 /* ── 时间/日历（Lunar） ──────────────────────────────────────────── */
 
 const solarToLunarFunction = {
@@ -2140,13 +2408,14 @@ const FUNCTION_GROUPS = [
       "命主档案增删改查——分析前必须先确认命主。" +
       "典型流程：先 PersonList 查看有哪些命主，再 PersonGet 获取详情，" +
       "如需新建则 PersonCreate。" +
-      "\n\n支持的操作：List（列表）、Get（详情）、Create（创建）、Update（更新）、Delete（删除）。",
+      "\n\n支持的操作：List（列表）、Get（详情）、Create（创建）、Update（更新）、Delete（删除）、SetDefault（设置默认人物）。",
     functions: [
       personListFunction,
       personGetFunction,
       personCreateFunction,
       personUpdateFunction,
       personDeleteFunction,
+      personSetDefaultFunction,
     ],
   },
   {
@@ -2154,23 +2423,26 @@ const FUNCTION_GROUPS = [
     description:
       "紫微斗数排盘与运限分析。" +
       "ZiWei 会像人类一样操控 UI（导航、切换人物、等待渲染），返回完整盘面数据；" +
-      "GetScopeData 为纯计算接口，响应快，适合仅查看运限拨盘的场景。" +
-      "\n\n支持的操作：排盘查看（只读，无增删改）。",
-    functions: [getScopeDataFunction, ziweiFunction],
+      "GetScopeData 为纯计算接口，响应快，适合仅查看运限拨盘的场景；" +
+      "SetHoroscopeTime 可直接设置运限拨盘的年月日时（纯计算，不操控 UI）。" +
+      "\n\n支持的操作：排盘查看（只读）、运限时间设置。",
+    functions: [getScopeDataFunction, ziweiFunction, setHoroscopeTimeFunction],
   },
   {
     name: "daliuren",
     description:
       "大六壬起课与占卜——适合具体事件的占断（如'这笔生意能不能做''考试能否通过'）。" +
       "典型流程：DaLiuRenCreate 起课 → DaLiuRenList 查看列表 → DaLiuRenView 查看详情。" +
-      "\n\n支持的操作：Create（起课）、List（列表）、View（详情）、Delete（删除）、BatchView（批量查看详情）。" +
-      "\n⚠️ 注意：不支持 Update（修改）——起课记录一旦创建不可更改，但可以删除。",
+      "\n\n支持的操作：Create（起课）、List（列表）、View（详情）、Delete（删除）、BatchView（批量查看详情）、UpdateTags（更新标签）、UpdateNote（更新备注）。" +
+      "\n⚠️ 注意：卦象数据不可修改——起课记录一旦创建不可更改排盘结果，但可以更新标签和备注。",
     functions: [
       daliurenCreateFunction,
       daliurenListFunction,
       daliurenViewFunction,
       daliurenDeleteFunction,
       daliurenBatchViewFunction,
+      daliurenUpdateTagsFunction,
+      daliurenUpdateNoteFunction,
     ],
   },
   {
@@ -2179,14 +2451,16 @@ const FUNCTION_GROUPS = [
       "六爻起卦与占卜——适合具体事件的占断（如'这笔生意能不能做''考试能否通过'）。" +
       "六爻以铜钱摇卦得出六爻值，通过纳甲、五行、六亲、六神等分析吉凶。" +
       "典型流程：LiuYaoCreate 起卦 → LiuYaoList 查看列表 → LiuYaoView 查看详情。" +
-      "\n\n支持的操作：Create（起卦）、List（列表）、View（详情）、Delete（删除）、BatchView（批量查看详情）。" +
-      "\n⚠️ 注意：不支持 Update（修改）——起卦记录一旦创建不可更改，但可以删除。",
+      "\n\n支持的操作：Create（起卦）、List（列表）、View（详情）、Delete（删除）、BatchView（批量查看详情）、UpdateTags（更新标签）、UpdateNote（更新备注）。" +
+      "\n⚠️ 注意：卦象数据不可修改——起卦记录一旦创建不可更改排盘结果，但可以更新标签和备注。",
     functions: [
       liuyaoCreateFunction,
       liuyaoListFunction,
       liuyaoViewFunction,
       liuyaoDeleteFunction,
       liuyaoBatchViewFunction,
+      liuyaoUpdateTagsFunction,
+      liuyaoUpdateNoteFunction,
     ],
   },
   {
@@ -2194,7 +2468,7 @@ const FUNCTION_GROUPS = [
     description:
       "命理知识库管理——存储学习笔记、格局解析、案例分析等 Markdown 文档。" +
       "典型流程：WikiList 搜索文档 → WikiView 查看详情 → WikiCreate 新建笔记 → WikiUpdate 修改文档。" +
-      "\n\n支持的操作：List（列表）、View（详情）、Create（创建）、Update（更新）、BatchView（批量查看详情）。" +
+      "\n\n支持的操作：List（列表）、View（详情）、Create（创建）、Update（更新）、BatchView（批量查看详情）、ReplaceContent（内容替换）、InsertContent（内容插入）。" +
       "\n⚠️ 注意：不支持 Delete（删除）——文档一旦创建不可删除（可更新内容）。" +
       "\n💡 性能提示：查看多个文档时请使用 BatchView，比多次调用 View 更快（减少 UI 操作次数）。",
     functions: [
@@ -2203,6 +2477,8 @@ const FUNCTION_GROUPS = [
       wikiCreateFunction,
       wikiUpdateFunction,
       wikiBatchViewFunction,
+      wikiReplaceContentFunction,
+      wikiInsertContentFunction,
     ],
   },
   {

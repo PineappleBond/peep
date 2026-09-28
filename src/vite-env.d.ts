@@ -10,28 +10,36 @@ import type {
   PersonCreate,
   PersonUpdate,
   PersonDelete,
+  PersonSetDefault,
   ZiWei,
   GetScopeData,
   computeScopeData,
   computeZiWeiData,
+  SetHoroscopeTime,
   DaLiuRen,
   computeDaLiuRenData,
   DaLiuRenCreate,
   DaLiuRenList,
   DaLiuRenView,
   DaLiuRenDelete,
+  DaLiuRenUpdateTags,
+  DaLiuRenUpdateNote,
   computeLiuyaoData,
   LiuYao,
   LiuYaoCreate,
   LiuYaoList,
   LiuYaoView,
   LiuYaoDelete,
+  LiuYaoUpdateTags,
+  LiuYaoUpdateNote,
   WikiCreate,
   WikiUpdate,
   WikiList,
   WikiView,
   WikiLink,
   WikiDelete,
+  WikiReplaceContent,
+  WikiInsertContent,
   SolarToLunar,
   LunarToSolar,
   GetEightCharacters,
@@ -61,11 +69,15 @@ declare global {
       PersonCreate: typeof PersonCreate;
       PersonUpdate: typeof PersonUpdate;
       PersonDelete: typeof PersonDelete;
+      /** 设置默认人物（系统中只能有一个默认人物） */
+      PersonSetDefault: typeof PersonSetDefault;
       ZiWei: typeof ZiWei;
       GetScopeData: typeof GetScopeData;
       computeScopeData: typeof computeScopeData;
       /** 纯计算：从 Zwds 状态提取 hbar/chart 数据（不操控 UI） */
       computeZiWeiData: typeof computeZiWeiData;
+      /** 设置运限时间（纯计算，不操控 UI） */
+      SetHoroscopeTime: typeof SetHoroscopeTime;
       DaLiuRen: typeof DaLiuRen;
       /** 纯计算：大六壬排盘（不操控 UI，推荐新代码使用） */
       computeDaLiuRenData: typeof computeDaLiuRenData;
@@ -73,6 +85,10 @@ declare global {
       DaLiuRenList: typeof DaLiuRenList;
       DaLiuRenView: typeof DaLiuRenView;
       DaLiuRenDelete: typeof DaLiuRenDelete;
+      /** 更新起课记录标签（仅元数据，不修改卦象） */
+      DaLiuRenUpdateTags: typeof DaLiuRenUpdateTags;
+      /** 更新起课记录备注和背景（仅元数据） */
+      DaLiuRenUpdateNote: typeof DaLiuRenUpdateNote;
       /** 六爻纯计算排盘（向后兼容） */
       LiuYao: typeof LiuYao;
       /** 六爻纯计算排盘（推荐） */
@@ -81,12 +97,20 @@ declare global {
       LiuYaoList: typeof LiuYaoList;
       LiuYaoView: typeof LiuYaoView;
       LiuYaoDelete: typeof LiuYaoDelete;
+      /** 更新起卦记录标签（仅元数据，不修改卦象） */
+      LiuYaoUpdateTags: typeof LiuYaoUpdateTags;
+      /** 更新起卦记录备注和背景（仅元数据） */
+      LiuYaoUpdateNote: typeof LiuYaoUpdateNote;
       WikiCreate: typeof WikiCreate;
       WikiUpdate: typeof WikiUpdate;
       WikiList: typeof WikiList;
       WikiView: typeof WikiView;
       WikiLink: typeof WikiLink;
       WikiDelete: typeof WikiDelete;
+      /** Wiki 内容替换（支持全局替换） */
+      WikiReplaceContent: typeof WikiReplaceContent;
+      /** Wiki 内容插入（支持行号/开头/结尾定位） */
+      WikiInsertContent: typeof WikiInsertContent;
       SolarToLunar: typeof SolarToLunar;
       LunarToSolar: typeof LunarToSolar;
       GetEightCharacters: typeof GetEightCharacters;

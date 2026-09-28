@@ -617,33 +617,27 @@ export async function LiuYaoView(
       });
     }
 
-    // 5. 附带纯计算数据
+    // 5. 附带纯计算数据（一次性解析 divinationTime，避免重复 new Date）
+    const divinationDate = new Date(selectedRecord.divinationTime);
+    const pick = {
+      year: divinationDate.getFullYear(),
+      month: divinationDate.getMonth() + 1,
+      day: divinationDate.getDate(),
+      hour: 0,
+    };
+    const visible: LiuyaoHbarVisible = {
+      yearly: true,
+      monthly: true,
+      daily: true,
+      hourly: true,
+    };
     const computed: LiuyaoComputedData = {
       divinationTime: selectedRecord.divinationTime,
       chart: selectedRecord.chart,
       yong: selectedRecord.yong,
       person: getPersonFn?.() ?? null,
-      hbarData: buildLiuyaoHbarData(selectedRecord.divinationTime, {
-        year: new Date(selectedRecord.divinationTime).getFullYear(),
-        month: new Date(selectedRecord.divinationTime).getMonth() + 1,
-        day: new Date(selectedRecord.divinationTime).getDate(),
-        hour: 0,
-      }),
-      vigorColumns: computeVigorColumns(
-        selectedRecord.chart,
-        {
-          yearly: true,
-          monthly: true,
-          daily: true,
-          hourly: true,
-        },
-        {
-          year: new Date(selectedRecord.divinationTime).getFullYear(),
-          month: new Date(selectedRecord.divinationTime).getMonth() + 1,
-          day: new Date(selectedRecord.divinationTime).getDate(),
-          hour: 0,
-        },
-      ),
+      hbarData: buildLiuyaoHbarData(selectedRecord.divinationTime, pick),
+      vigorColumns: computeVigorColumns(selectedRecord.chart, visible, pick),
     };
 
     log("info", "LiuYaoView", "查看成功", {
