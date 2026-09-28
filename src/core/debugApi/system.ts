@@ -49,7 +49,7 @@ import {
   DaLiuRenView,
 } from "./daliuren";
 import { computeLiuyaoData, LiuYao, LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
-import { WikiList, WikiCreate, WikiView, WikiLink } from "./wiki";
+import { WikiList, WikiCreate, WikiView, WikiLink, WikiDelete } from "./wiki";
 import { PersonList, PersonGet, PersonCreate, PersonUpdate, PersonDelete } from "./person";
 import type { LogLevel } from "./logger";
 
@@ -126,6 +126,10 @@ const API_DESCRIPTIONS: Record<string, { 方法: string; 说明: string }> = {
   WikiLink: {
     方法: "WikiLink(params, options?)",
     说明: "Wiki 关联管理——为已存在文档建立链接关系（仅支持 skipUI=true）",
+  },
+  WikiDelete: {
+    方法: "WikiDelete(params, options?)",
+    说明: "Wiki 文档删除（仅支持 skipUI=true）",
   },
   getChartDataForScope: {
     方法: "getChartDataForScope(opts)",
@@ -835,6 +839,7 @@ export function initDebugApi() {
     WikiCreate,
     WikiView,
     WikiLink,
+    WikiDelete,
 
     // 从 analysis.ts 导入
     getChartDataForScope,

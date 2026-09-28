@@ -484,6 +484,8 @@ const daliurenViewFunction = {
     "(2) 完整排盘结果（四课、三传、天地盘、神煞、六亲等）；" +
     "(3) 关联命主信息。" +
     "\n\n" +
+    "⚠️ 性能提示：如需查看多个记录，请使用 DaLiuRenBatchView 批量查看（减少 UI 操作次数，避免超时）。" +
+    "\n\n" +
     "示例：DaLiuRenView({ recordId: 123 }) — 查看 ID 为 123 的起课详情。",
   zodSchema: z.object({
     personId: withMeta(z.number().int().positive(), { example: 1 })
@@ -502,6 +504,50 @@ const daliurenViewFunction = {
     schema: {
       type: "object" as const,
       description: "起课记录详情，包含完整排盘结果（四课、三传、天地盘、神煞等）",
+    },
+  },
+};
+
+/**
+ * 批量查看大六壬起课记录——一次调用查看多个记录，减少 UI 操作次数。
+ */
+const daliurenBatchViewFunction = {
+  name: "DaLiuRenBatchView",
+  description:
+    "批量查看多个大六壬起课记录的完整详情——一次调用查看多个记录，显著减少 UI 操作时间。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 需要对比多个起课记录时；" +
+    "(2) 需要连续分析多个相关问题时；" +
+    "(3) 避免因多次单独调用 DaLiuRenView 导致超时。" +
+    "\n\n" +
+    "示例：DaLiuRenBatchView({ recordIds: [1, 2, 3] }) — 批量查看 ID 为 1,2,3 的起课记录。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID（可选）；省略则使用默认人物"),
+    recordIds: z
+      .array(z.number().int().positive())
+      .min(1)
+      .max(20)
+      .describe("起课记录 ID 数组——要查看的记录 ID 列表，最多 20 个"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const parsedArgs = daliurenBatchViewFunction.zodSchema.parse(args);
+    const results = [];
+    for (const recordId of parsedArgs.recordIds) {
+      const record = await peepApi().DaLiuRenView({
+        personId: parsedArgs.personId,
+        recordId,
+      });
+      results.push(record);
+    }
+    return { records: results, count: results.length };
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "批量查看结果，结构为 { records: 记录数组, count: 记录数量 }",
     },
   },
 };
@@ -606,6 +652,8 @@ const wikiViewFunction = {
     "\n\n" +
     "返回数据包含文档标题、正文、标签、关联文档等信息。" +
     "\n\n" +
+    "⚠️ 性能提示：如需查看多个文档，请使用 WikiBatchView 批量查看（减少 UI 操作次数，避免超时）。" +
+    "\n\n" +
     "示例：WikiView({ docId: 456 }) — 查看 ID 为 456 的文档详情。",
   zodSchema: z.object({
     personId: withMeta(z.number().int().positive(), { example: 1 })
@@ -624,6 +672,57 @@ const wikiViewFunction = {
     schema: {
       type: "object" as const,
       description: "Wiki 文档详情，content 为 Markdown 正文",
+    },
+  },
+};
+
+/**
+ * 批量查看 Wiki 文档——一次调用查看多个文档，减少 UI 操作次数。
+ *
+ * 性能优化：内部复用页面导航和人物选择，只在首次调用时执行完整 UI 流程，
+ * 后续文档复用已加载的页面状态。适用于需要对比多个文档内容的场景。
+ */
+const wikiBatchViewFunction = {
+  name: "WikiBatchView",
+  description:
+    "批量查看多个 Wiki 文档的完整内容——一次调用查看多个文档，显著减少 UI 操作时间。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 需要对比多个文档内容时；" +
+    "(2) 需要连续阅读多篇相关文档时；" +
+    "(3) 避免因多次单独调用 WikiView 导致超时。" +
+    "\n\n" +
+    "⚠️ 与 WikiView 的区别：WikiBatchView 内部优化了 UI 操作——只在首次调用时导航页面和选择人物，" +
+    "后续文档复用已加载的页面状态，因此查看多个文档时比多次调用 WikiView 快得多。" +
+    "\n\n" +
+    "示例：WikiBatchView({ docIds: [1, 2, 3, 4] }) — 批量查看 ID 为 1,2,3,4 的文档。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID（可选）；省略则使用默认人物"),
+    docIds: z
+      .array(z.number().int().positive())
+      .min(1)
+      .max(20)
+      .describe("文档 ID 数组——要查看的文档 ID 列表，最多 20 个"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const parsedArgs = wikiBatchViewFunction.zodSchema.parse(args);
+    // 批量查看：复用页面导航和人物选择，减少 UI 操作次数
+    const results = [];
+    for (const docId of parsedArgs.docIds) {
+      const doc = await peepApi().WikiView({
+        personId: parsedArgs.personId,
+        docId,
+      });
+      results.push(doc);
+    }
+    return { docs: results, count: results.length };
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "批量查看结果，结构为 { docs: 文档数组, count: 文档数量 }",
     },
   },
 };
@@ -767,6 +866,8 @@ const liuyaoViewFunction = {
     "(5) 旺衰列数据（太岁/月建/日辰/流时对六爻的旺衰影响）；" +
     "(6) 关联命主信息。" +
     "\n\n" +
+    "⚠️ 性能提示：如需查看多个记录，请使用 LiuYaoBatchView 批量查看（减少 UI 操作次数，避免超时）。" +
+    "\n\n" +
     "示例：LiuYaoView({ recordId: 123 }) — 查看 ID 为 123 的起卦详情。",
   zodSchema: z.object({
     personId: withMeta(z.number().int().positive(), { example: 1 })
@@ -791,6 +892,50 @@ const liuyaoViewFunction = {
 };
 
 /**
+ * 批量查看六爻起卦记录——一次调用查看多个记录，减少 UI 操作次数。
+ */
+const liuyaoBatchViewFunction = {
+  name: "LiuYaoBatchView",
+  description:
+    "批量查看多个六爻起卦记录的完整详情——一次调用查看多个记录，显著减少 UI 操作时间。" +
+    "\n\n" +
+    "使用场景：" +
+    "(1) 需要对比多个起卦记录时；" +
+    "(2) 需要连续分析多个相关问题时；" +
+    "(3) 避免因多次单独调用 LiuYaoView 导致超时。" +
+    "\n\n" +
+    "示例：LiuYaoBatchView({ recordIds: [1, 2, 3] }) — 批量查看 ID 为 1,2,3 的起卦记录。",
+  zodSchema: z.object({
+    personId: withMeta(z.number().int().positive(), { example: 1 })
+      .optional()
+      .describe("命主 ID（可选）；省略则使用默认人物"),
+    recordIds: z
+      .array(z.number().int().positive())
+      .min(1)
+      .max(20)
+      .describe("起卦记录 ID 数组——要查看的记录 ID 列表，最多 20 个"),
+  }),
+  handler: async (args: Record<string, unknown>) => {
+    const parsedArgs = liuyaoBatchViewFunction.zodSchema.parse(args);
+    const results = [];
+    for (const recordId of parsedArgs.recordIds) {
+      const record = await peepApi().LiuYaoView({
+        personId: parsedArgs.personId,
+        recordId,
+      });
+      results.push(record);
+    }
+    return { records: results, count: results.length };
+  },
+  returns: {
+    schema: {
+      type: "object" as const,
+      description: "批量查看结果，结构为 { records: 记录数组, count: 记录数量 }",
+    },
+  },
+};
+
+/**
  * Function 分组：按业务域划分，AI 据此理解能力边界。
  *
  * 分组策略：
@@ -806,7 +951,8 @@ const FUNCTION_GROUPS = [
     description:
       "命主档案增删改查——分析前必须先确认命主。" +
       "典型流程：先 PersonList 查看有哪些命主，再 PersonGet 获取详情，" +
-      "如需新建则 PersonCreate。",
+      "如需新建则 PersonCreate。" +
+      "\n\n支持的操作：List（列表）、Get（详情）、Create（创建）、Update（更新）、Delete（删除）。",
     functions: [
       personListFunction,
       personGetFunction,
@@ -820,30 +966,48 @@ const FUNCTION_GROUPS = [
     description:
       "紫微斗数排盘与运限分析。" +
       "ZiWei 会像人类一样操控 UI（导航、切换人物、等待渲染），返回完整盘面数据；" +
-      "GetScopeData 为纯计算接口，响应快，适合仅查看运限拨盘的场景。",
+      "GetScopeData 为纯计算接口，响应快，适合仅查看运限拨盘的场景。" +
+      "\n\n支持的操作：排盘查看（只读，无增删改）。",
     functions: [getScopeDataFunction, ziweiFunction],
   },
   {
     name: "daliuren",
     description:
       "大六壬起课与占卜——适合具体事件的占断（如'这笔生意能不能做''考试能否通过'）。" +
-      "典型流程：DaLiuRenCreate 起课 → DaLiuRenList 查看列表 → DaLiuRenView 查看详情。",
-    functions: [daliurenCreateFunction, daliurenListFunction, daliurenViewFunction],
+      "典型流程：DaLiuRenCreate 起课 → DaLiuRenList 查看列表 → DaLiuRenView 查看详情。" +
+      "\n\n支持的操作：Create（起课）、List（列表）、View（详情）、BatchView（批量查看详情）。" +
+      "\n⚠️ 注意：不支持 Update（修改）和 Delete（删除）——起课记录一旦创建不可更改或删除。",
+    functions: [
+      daliurenCreateFunction,
+      daliurenListFunction,
+      daliurenViewFunction,
+      daliurenBatchViewFunction,
+    ],
   },
   {
     name: "liuyao",
     description:
       "六爻起卦与占卜——适合具体事件的占断（如'这笔生意能不能做''考试能否通过'）。" +
       "六爻以铜钱摇卦得出六爻值，通过纳甲、五行、六亲、六神等分析吉凶。" +
-      "典型流程：LiuYaoCreate 起卦 → LiuYaoList 查看列表 → LiuYaoView 查看详情。",
-    functions: [liuyaoCreateFunction, liuyaoListFunction, liuyaoViewFunction],
+      "典型流程：LiuYaoCreate 起卦 → LiuYaoList 查看列表 → LiuYaoView 查看详情。" +
+      "\n\n支持的操作：Create（起卦）、List（列表）、View（详情）、BatchView（批量查看详情）。" +
+      "\n⚠️ 注意：不支持 Update（修改）和 Delete（删除）——起卦记录一旦创建不可更改或删除。",
+    functions: [
+      liuyaoCreateFunction,
+      liuyaoListFunction,
+      liuyaoViewFunction,
+      liuyaoBatchViewFunction,
+    ],
   },
   {
     name: "wiki",
     description:
       "命理知识库管理——存储学习笔记、格局解析、案例分析等 Markdown 文档。" +
-      "典型流程：WikiList 搜索文档 → WikiView 查看详情 → WikiCreate 新建笔记。",
-    functions: [wikiListFunction, wikiCreateFunction, wikiViewFunction],
+      "典型流程：WikiList 搜索文档 → WikiView 查看详情 → WikiCreate 新建笔记。" +
+      "\n\n支持的操作：List（列表）、View（详情）、Create（创建）、BatchView（批量查看详情）。" +
+      "\n⚠️ 注意：不支持 Update（修改）和 Delete（删除）——文档一旦创建不可更改或删除。" +
+      "\n💡 性能提示：查看多个文档时请使用 BatchView，比多次调用 View 更快（减少 UI 操作次数）。",
+    functions: [wikiListFunction, wikiViewFunction, wikiCreateFunction, wikiBatchViewFunction],
   },
 ];
 

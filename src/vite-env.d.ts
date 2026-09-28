@@ -28,6 +28,7 @@ import type {
   WikiList,
   WikiView,
   WikiLink,
+  WikiDelete,
   getChartDataForScope,
   resetDebugApi,
   getApiMetadata,
@@ -70,6 +71,7 @@ declare global {
       WikiList: typeof WikiList;
       WikiView: typeof WikiView;
       WikiLink: typeof WikiLink;
+      WikiDelete: typeof WikiDelete;
       getChartDataForScope: typeof getChartDataForScope;
       /** 打印版本、构建时间、可用 API 列表——控制台调试入口 */
       version: () => void;

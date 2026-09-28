@@ -166,13 +166,21 @@ export {
   DaLiuRenCreate,
   DaLiuRenList,
   DaLiuRenView,
+  DaLiuRenDelete,
 } from "./daliuren";
 
 // 六爻导出
-export { computeLiuyaoData, LiuYao, LiuYaoCreate, LiuYaoList, LiuYaoView } from "./liuyao";
+export {
+  computeLiuyaoData,
+  LiuYao,
+  LiuYaoCreate,
+  LiuYaoList,
+  LiuYaoView,
+  LiuYaoDelete,
+} from "./liuyao";
 
 // Wiki 导出
-export { WikiList, WikiCreate, WikiView, WikiLink } from "./wiki";
+export { WikiList, WikiCreate, WikiView, WikiLink, WikiDelete } from "./wiki";
 
 // 辅助函数导出
 export {
@@ -192,6 +200,9 @@ export {
   waitForWikiCallbacks,
   waitForDocSaved,
   isDialogOpen,
+  // UI 状态追踪（性能优化）
+  getUiState,
+  updateUiState,
 } from "./helpers";
 
 // 系统 API 导出

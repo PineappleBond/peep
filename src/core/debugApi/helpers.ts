@@ -17,6 +17,51 @@ import {
   getOpenWikiEditor,
 } from "./callbacks";
 
+/**
+ * UI 状态追踪：记录当前页面和选中的人物 ID，用于跳过冗余的导航和选择操作。
+ * 这是性能优化的关键——避免 Agent 多次调用 API 时重复执行完整的 UI 流程。
+ *
+ * 扩展：追踪各页面当前选中的记录/文档 ID，支持批量操作优化。
+ */
+const uiState = {
+  currentPage: null as string | null,
+  currentPersonId: null as number | null,
+  // 各页面当前选中的记录/文档 ID
+  currentWikiDocId: null as number | null,
+  currentDaLiuRenRecordId: null as number | null,
+  currentLiuyaoRecordId: null as number | null,
+};
+
+/**
+ * 更新 UI 状态追踪（供外部调用）
+ */
+export function updateUiState(opts: {
+  page?: string;
+  personId?: number;
+  wikiDocId?: number;
+  daliurenRecordId?: number;
+  liuyaoRecordId?: number;
+}): void {
+  if (opts.page !== undefined) uiState.currentPage = opts.page;
+  if (opts.personId !== undefined) uiState.currentPersonId = opts.personId;
+  if (opts.wikiDocId !== undefined) uiState.currentWikiDocId = opts.wikiDocId;
+  if (opts.daliurenRecordId !== undefined) uiState.currentDaLiuRenRecordId = opts.daliurenRecordId;
+  if (opts.liuyaoRecordId !== undefined) uiState.currentLiuyaoRecordId = opts.liuyaoRecordId;
+}
+
+/**
+ * 获取当前 UI 状态（供调试用）
+ */
+export function getUiState(): {
+  currentPage: string | null;
+  currentPersonId: number | null;
+  currentWikiDocId: number | null;
+  currentDaLiuRenRecordId: number | null;
+  currentLiuyaoRecordId: number | null;
+} {
+  return { ...uiState };
+}
+
 /** 等待下一帧（确保 useEffect commit 阶段执行完成）
  *  兼容非浏览器环境（SSR/Node.js）：requestAnimationFrame 不可用时降级为 setTimeout(16ms)
  */
@@ -234,11 +279,19 @@ export async function waitForPickMatch(
 /**
  * 导航到指定页面并等待回调注册。
  * 统一处理页面跳转和回调等待逻辑。
+ *
+ * 性能优化：如果已在目标页面，跳过导航和等待。
  */
 export async function navigateToPage(
   path: string,
   page: "ziwei" | "daliuren" | "liuyao" | "wiki",
 ): Promise<void> {
+  // 性能优化：如果已在目标页面，跳过导航
+  if (uiState.currentPage === path) {
+    log("debug", "navigateToPage", "已在目标页面，跳过导航", { path });
+    return;
+  }
+
   const navigate = getNavigate();
   if (navigate) {
     navigate(path);
@@ -254,13 +307,29 @@ export async function navigateToPage(
     }
     await new Promise(r => setTimeout(r, 50));
   }
+
+  // 更新 UI 状态追踪
+  uiState.currentPage = path;
+  // 页面切换后，人物和记录选择状态失效
+  uiState.currentPersonId = null;
+  uiState.currentWikiDocId = null;
+  uiState.currentDaLiuRenRecordId = null;
+  uiState.currentLiuyaoRecordId = null;
 }
 
 /**
  * 选择人物并等待状态更新完成。
  * 统一处理人物切换和状态验证逻辑。
+ *
+ * 性能优化：如果已选中目标人物，跳过选择和等待。
  */
 export async function selectPersonAndWait(personId: number): Promise<void> {
+  // 性能优化：如果已选中目标人物，跳过选择
+  if (uiState.currentPersonId === personId) {
+    log("debug", "selectPersonAndWait", "已选中目标人物，跳过选择", { personId });
+    return;
+  }
+
   const selectPerson = getSelectPerson();
   if (!selectPerson) {
     throw new Error("selectPerson 回调未注册");
@@ -275,6 +344,9 @@ export async function selectPersonAndWait(personId: number): Promise<void> {
     }
   }
   await nextFrame();
+
+  // 更新 UI 状态追踪
+  uiState.currentPersonId = personId;
 }
 
 /** 等待 Dialog 准备就绪（DOM 渲染完成） */

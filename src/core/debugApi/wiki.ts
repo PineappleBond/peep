@@ -1,7 +1,7 @@
 /**
  * 调试 API - Wiki 相关接口
  *
- * 包含：WikiList, WikiCreate, WikiView
+ * 包含：WikiList, WikiCreate, WikiView, WikiLink, WikiDelete
  */
 
 import type { WikiDocument } from "./types";
@@ -10,6 +10,7 @@ import {
   listWikiDocs,
   getWikiDoc,
   saveWikiDoc as saveWikiDocToDb,
+  deleteWikiDoc,
   getWikiLinks,
   getWikiBacklinks,
   saveWikiLinks,
@@ -34,6 +35,8 @@ import {
   waitForDialogReady,
   waitForWikiCallbacks,
   waitForDocSaved,
+  getUiState,
+  updateUiState,
 } from "./helpers";
 import type {
   WikiOptions,
@@ -403,11 +406,28 @@ export async function WikiView(
     // 1. 选择人物（带状态验证）
     await selectPersonAndWait(personId);
 
-    // 2. 打开指定文档（selectWikiDoc 直接返回文档数据）
-    const doc = await selectWikiDoc(params.docId);
-    await waitForStateUpdate();
+    // 2. 检查是否已选中目标文档（性能优化：避免重复选择）
+    const currentUiState = getUiState();
+    const isSameDoc = currentUiState.currentWikiDocId === params.docId;
 
-    // 3. 获取详情（优先使用 selectWikiDoc 返回值，回退到 getSelectedWikiDoc）
+    let doc: WikiDocument | null | undefined;
+    if (!isSameDoc) {
+      // 打开指定文档（selectWikiDoc 直接返回文档数据）
+      doc = await selectWikiDoc(params.docId);
+      // 更新 UI 状态追踪
+      updateUiState({ wikiDocId: params.docId });
+    } else {
+      // 已选中目标文档，使用当前选中的文档
+      log("debug", "WikiView", "已选中目标文档，跳过选择", { docId: params.docId });
+      doc = getSelectedWikiDoc();
+    }
+
+    // 3. 等待 UI 更新（仅在切换文档时等待）
+    if (!isSameDoc) {
+      await waitForStateUpdate();
+    }
+
+    // 4. 获取详情（优先使用 selectWikiDoc 返回值，回退到 getSelectedWikiDoc）
     const selectedDoc = doc ?? getSelectedWikiDoc();
     if (!selectedDoc) {
       throw new WikiError(`文档 ${params.docId} 未找到或加载失败`, "WikiView", {
@@ -417,10 +437,10 @@ export async function WikiView(
       });
     }
 
-    // 4. 查询正向链接目标 ID，附加到返回结果
+    // 5. 查询正向链接目标 ID，附加到返回结果
     const linkTargetIds = selectedDoc.id ? await getWikiLinks(selectedDoc.id) : [];
 
-    // 5. 可选：查询反向链接源 ID
+    // 6. 可选：查询反向链接源 ID
     let backlinkSourceIds: number[] | undefined;
     if (params.includeBacklinks && selectedDoc.id) {
       backlinkSourceIds = await getWikiBacklinks(selectedDoc.id);
@@ -430,6 +450,7 @@ export async function WikiView(
       docId: selectedDoc.id,
       links: linkTargetIds.length,
       backlinks: backlinkSourceIds?.length ?? 0,
+      skippedUI: isSameDoc,
     });
     stop();
     return { ...selectedDoc, linkTargetIds, backlinkSourceIds };
@@ -487,7 +508,7 @@ export async function WikiLink(
   const stop = timer("WikiLink");
   try {
     // 参数验证
-    validateDocId(params.sourceDocId, "WikiLink", "sourceDocId");
+    validateDocId(params.sourceDocId, "WikiLink");
     validateIdArray(params.targetDocIds, "targetDocIds", "WikiLink", WikiError);
 
     if (!options?.skipUI) {
@@ -566,5 +587,64 @@ export async function WikiLink(
     log("error", "WikiLink", "执行失败", err);
     stop();
     throw wrapError("WikiLink", err, WikiError);
+  }
+}
+
+/**
+ * Wiki 文档删除调试接口——删除指定文档。
+ *
+ * 仅支持 skipUI=true 模式（删除操作无需 UI 交互）。
+ *
+ * @param params 删除参数
+ * @param options 可选配置项（仅支持 skipUI=true）
+ * @throws WikiError docId 无效时（errorCode: INVALID_INPUT）
+ * @throws WikiError 文档不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * await window.peep.WikiDelete({ docId: 123 }, { skipUI: true });
+ * ```
+ */
+export async function WikiDelete(params: { docId: number }, options?: WikiOptions): Promise<void> {
+  const stop = timer("WikiDelete");
+  try {
+    validateDocId(params.docId, "WikiDelete");
+
+    if (!options?.skipUI) {
+      throw new WikiError("WikiDelete 当前仅支持 skipUI=true 模式", "WikiDelete", {
+        context: { skipUI: false },
+        suggestion: "请使用 { skipUI: true } 选项调用 WikiDelete",
+        errorCode: ApiErrorCode.NOT_IMPLEMENTED,
+      });
+    }
+
+    log("info", "WikiDelete", "删除文档", { docId: params.docId });
+
+    // 验证文档存在
+    const doc = await getWikiDoc(params.docId);
+    if (!doc) {
+      throw new WikiError(`文档 ${params.docId} 不存在`, "WikiDelete", {
+        context: { docId: params.docId },
+        suggestion: "请检查文档 ID 是否正确，该文档可能已被删除。可调用 WikiList() 查看可用文档",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    await deleteWikiDoc(params.docId);
+
+    log("info", "WikiDelete", "删除成功", { docId: params.docId });
+    stop();
+  } catch (err) {
+    if (err instanceof WikiError) {
+      log("error", "WikiDelete", "执行失败（不重试）", {
+        errorType: err.name,
+        message: err.message.split("\n")[0],
+      });
+      stop();
+      throw err;
+    }
+    log("error", "WikiDelete", "执行失败", err);
+    stop();
+    throw wrapError("WikiDelete", err, WikiError);
   }
 }

@@ -13,6 +13,7 @@ import {
   listLiuyaoRecords,
   getLiuyaoRecord,
   saveLiuyaoRecord,
+  deleteLiuyaoRecord,
   invalidateLiuyaoTagCache,
 } from "../liuyaoDb";
 import { getPerson } from "../personDb";
@@ -38,6 +39,8 @@ import {
   waitForDialogReady,
   waitForLiuyaoCallbacks,
   waitForRecordSaved,
+  getUiState,
+  updateUiState,
 } from "./helpers";
 import { parseDate } from "./ziwei";
 import { formatDate, formatDateTime } from "../utils";
@@ -583,11 +586,28 @@ export async function LiuYaoView(
     // 1. 选择人物（带状态验证）
     await selectPersonAndWait(personId);
 
-    // 2. 选择记录（带重试验证）
-    const record = await selectRecord(params.recordId);
-    await waitForStateUpdate();
+    // 2. 检查是否已选中目标记录（性能优化：避免重复选择）
+    const currentUiState = getUiState();
+    const isSameRecord = currentUiState.currentLiuyaoRecordId === params.recordId;
 
-    // 3. 获取详情（优先使用 selectRecord 返回值，回退到 getSelectedRecord）
+    let record: LiuyaoRecord | null | undefined;
+    if (!isSameRecord) {
+      // 选择记录（带重试验证）
+      record = await selectRecord(params.recordId);
+      // 更新 UI 状态追踪
+      updateUiState({ liuyaoRecordId: params.recordId });
+    } else {
+      // 已选中目标记录，使用当前选中的记录
+      log("debug", "LiuYaoView", "已选中目标记录，跳过选择", { recordId: params.recordId });
+      record = getSelectedRecord();
+    }
+
+    // 3. 等待 UI 更新（仅在切换记录时等待）
+    if (!isSameRecord) {
+      await waitForStateUpdate();
+    }
+
+    // 4. 获取详情（优先使用 selectRecord 返回值，回退到 getSelectedRecord）
     const selectedRecord = record ?? getSelectedRecord();
     if (!selectedRecord) {
       throw new LiuyaoError(`记录 ${params.recordId} 未找到或加载失败`, "LiuYaoView", {
@@ -597,7 +617,7 @@ export async function LiuYaoView(
       });
     }
 
-    // 4. 附带纯计算数据
+    // 5. 附带纯计算数据
     const computed: LiuyaoComputedData = {
       divinationTime: selectedRecord.divinationTime,
       chart: selectedRecord.chart,
@@ -626,7 +646,10 @@ export async function LiuYaoView(
       ),
     };
 
-    log("info", "LiuYaoView", "查看成功", { recordId: selectedRecord.id });
+    log("info", "LiuYaoView", "查看成功", {
+      recordId: selectedRecord.id,
+      skippedUI: isSameRecord,
+    });
     stop();
     return { ...selectedRecord, computed };
   } catch (err) {
@@ -666,4 +689,66 @@ function buildLiuyaoComputedData(record: LiuyaoRecord): LiuyaoComputedData {
     hbarData: buildLiuyaoHbarData(record.divinationTime, pick),
     vigorColumns: computeVigorColumns(record.chart, visible, pick),
   };
+}
+
+/**
+ * 六爻记录删除调试接口——删除指定记录。
+ *
+ * 仅支持 skipUI=true 模式（删除操作无需 UI 交互）。
+ *
+ * @param params 删除参数
+ * @param options 可选配置项（仅支持 skipUI=true）
+ * @throws LiuyaoError recordId 无效时（errorCode: INVALID_INPUT）
+ * @throws LiuyaoError 记录不存在时（errorCode: NOT_FOUND）
+ *
+ * @example
+ * ```typescript
+ * await window.peep.LiuYaoDelete({ recordId: 123 }, { skipUI: true });
+ * ```
+ */
+export async function LiuYaoDelete(
+  params: { recordId: number },
+  options?: { skipUI?: boolean },
+): Promise<void> {
+  const stop = timer("LiuYaoDelete");
+  try {
+    validateRecordId(params.recordId, "LiuYaoDelete");
+
+    if (!options?.skipUI) {
+      throw new LiuyaoError("LiuYaoDelete 当前仅支持 skipUI=true 模式", "LiuYaoDelete", {
+        context: { skipUI: false },
+        suggestion: "请使用 { skipUI: true } 选项调用 LiuYaoDelete",
+        errorCode: ApiErrorCode.NOT_IMPLEMENTED,
+      });
+    }
+
+    log("info", "LiuYaoDelete", "删除记录", { recordId: params.recordId });
+
+    // 验证记录存在
+    const record = await getLiuyaoRecord(params.recordId);
+    if (!record) {
+      throw new LiuyaoError(`记录 ${params.recordId} 不存在`, "LiuYaoDelete", {
+        context: { recordId: params.recordId },
+        suggestion: "请检查记录 ID 是否正确，该记录可能已被删除。可调用 LiuYaoList() 查看可用记录",
+        errorCode: ApiErrorCode.NOT_FOUND,
+      });
+    }
+
+    await deleteLiuyaoRecord(params.recordId);
+
+    log("info", "LiuYaoDelete", "删除成功", { recordId: params.recordId });
+    stop();
+  } catch (err) {
+    if (err instanceof LiuyaoError) {
+      log("error", "LiuYaoDelete", "执行失败（不重试）", {
+        errorType: err.name,
+        message: err.message.split("\n")[0],
+      });
+      stop();
+      throw err;
+    }
+    log("error", "LiuYaoDelete", "执行失败", err);
+    stop();
+    throw wrapError("LiuYaoDelete", err, LiuyaoError);
+  }
 }

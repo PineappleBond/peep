@@ -43,6 +43,8 @@ export const ApiErrorCode = {
   NEEDS_CONFIRMATION: "NEEDS_CONFIRMATION",
   /** 数据损坏（如卦象字段不完整） */
   DATA_CORRUPTED: "DATA_CORRUPTED",
+  /** 功能未实现（如某些操作仅支持 skipUI 模式） */
+  NOT_IMPLEMENTED: "NOT_IMPLEMENTED",
 } as const;
 
 /** 错误代码类型 */
