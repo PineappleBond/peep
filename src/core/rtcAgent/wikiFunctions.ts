@@ -4,7 +4,7 @@
  * 命理知识库管理，存储学习笔记、格局解析、案例分析等 Markdown 文档。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, peepApi } from "./shared";
+import { CONFIRM_FIELD, peepApi, needsConfirm, extractConfirmed } from "./shared";
 
 /* ---- 共享文档 Schema ---- */
 
@@ -95,15 +95,12 @@ export const wikiCreateFunction = {
     type CreateInput = z.infer<typeof wikiCreateFunction.zodSchema>;
     const parsedArgs = wikiCreateFunction.zodSchema.parse(args) as CreateInput;
     if (!parsedArgs.confirmed) {
-      return {
-        _needsConfirmation: true,
-        action: "创建 Wiki 文档",
-        summary: `即将创建文档：「${parsedArgs.title}」${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
-        message: "请向用户确认文档信息，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "创建 Wiki 文档",
+        `即将创建文档：「${parsedArgs.title}」${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
+      );
     }
-    const { confirmed: _c, ...params } = parsedArgs;
-    void _c;
+    const params = extractConfirmed(parsedArgs);
     return peepApi().WikiCreate(params);
   },
   returns: { zodSchema: _docSchema },
@@ -145,20 +142,17 @@ export const wikiUpdateFunction = {
     type UpdateInput = z.infer<typeof wikiUpdateFunction.zodSchema>;
     const parsedArgs = wikiUpdateFunction.zodSchema.parse(args) as UpdateInput;
     if (!parsedArgs.confirmed) {
-      const updates = [];
+      const updates: string[] = [];
       if (parsedArgs.title) updates.push(`标题→"${parsedArgs.title}"`);
       if (parsedArgs.content) updates.push("内容已修改");
       if (parsedArgs.tags) updates.push(`标签→[${parsedArgs.tags.join(",")}]`);
       if (parsedArgs.linkTargetIds) updates.push(`关联→[${parsedArgs.linkTargetIds.join(",")}]`);
-      return {
-        _needsConfirmation: true,
-        action: "更新 Wiki 文档",
-        summary: `即将更新文档 #${parsedArgs.docId}：${updates.join("，") || "无修改"}`,
-        message: "请向用户确认更新内容，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "更新 Wiki 文档",
+        `即将更新文档 #${parsedArgs.docId}：${updates.join("，") || "无修改"}`,
+      );
     }
-    const { confirmed: _c, ...params } = parsedArgs;
-    void _c;
+    const params = extractConfirmed(parsedArgs);
     return peepApi().WikiUpdate(params);
   },
   returns: { zodSchema: _docSchema },

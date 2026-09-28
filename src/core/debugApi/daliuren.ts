@@ -41,6 +41,7 @@ import {
   updateUiState,
   updateRecordMetadata,
   withErrorHandling,
+  withErrorHandlingSync,
 } from "./helpers";
 import { parseDate } from "./ziwei";
 import type {
@@ -75,26 +76,15 @@ export function computeDaLiuRenData(
   time: string,
   fateInput?: { birthYear: number; gender: "男" | "女" },
 ): DaLiuRenResult {
-  const stop = timer("computeDaLiuRenData");
-  try {
+  return withErrorHandlingSync("computeDaLiuRenData", DaLiuRenError, () => {
     log("info", "computeDaLiuRenData", "纯计算排盘", { date, time, fateInput });
     const result = calculateDaLiuRen(date, time, fateInput);
     log("info", "computeDaLiuRenData", "排盘成功", {
       calculationTime: result.calculationTime,
       hasFate: !!result.fate,
     });
-    stop();
     return result;
-  } catch (err) {
-    stop();
-    if (err instanceof DaLiuRenError) throw err;
-    log("error", "computeDaLiuRenData", "排盘失败", err);
-    throw new DaLiuRenError("大六壬排盘计算失败", "computeDaLiuRenData", {
-      context: { date, time, fateInput },
-      suggestion: "请检查日期格式（YYYY-MM-DD）和时间格式（HH:mm 或 HH:mm:ss）是否正确",
-      cause: err,
-    });
-  }
+  });
 }
 
 /**

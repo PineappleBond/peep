@@ -72,8 +72,8 @@ import {
 } from "./rtcAgent/lunarFunctions";
 
 // 导出 mergeBirthInput 供外部使用（测试文件 import）
-export { mergeBirthInput } from "./rtcAgent/shared";
-export type { BirthInputFields } from "./rtcAgent/shared";
+export { mergeBirthInput, needsConfirm, extractConfirmed } from "./rtcAgent/shared";
+export type { BirthInputFields, ConfirmResponse } from "./rtcAgent/shared";
 
 /* ============================================================
  * Logo：窥字 SVG（用于 RTC Agent 气泡图标，分亮/暗主题）

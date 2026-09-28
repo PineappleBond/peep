@@ -77,7 +77,7 @@ export {
   // 错误代码（新增）
   ApiErrorCode,
 } from "./errors";
-export type { ApiErrorCodeType } from "./errors";
+export type { ApiErrorCodeType, ErrorConstructor } from "./errors";
 
 // 参数验证工具导出（新增）
 export {
@@ -236,6 +236,8 @@ export {
   getUiState,
   updateUiState,
   resetUiState,
+  // 同步版错误处理包装器（用于纯计算函数）
+  withErrorHandlingSync,
 } from "./helpers";
 
 // 系统 API 导出

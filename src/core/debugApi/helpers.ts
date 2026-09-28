@@ -6,8 +6,9 @@
 
 import type { Zwds } from "../useZwds";
 import { log, timer } from "./logger";
-import type { BaseDebugError} from "./errors";
+import type { BaseDebugError } from "./errors";
 import { wrapError } from "./errors";
+import type { ErrorConstructor } from "./errors";
 import {
   getGetZwds,
   getGetPerson,
@@ -469,8 +470,7 @@ export async function updateRecordMetadata<T extends { id?: number }>(
   saveRecord: (record: T) => Promise<unknown>,
   updateFn: (record: T) => T,
   invalidateCache?: () => void,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass?: new (message: string, src: string, options?: any) => Error,
+  ErrorClass?: ErrorConstructor,
   source = "updateRecordMetadata",
 ): Promise<T> {
   // 获取记录
@@ -541,13 +541,40 @@ export async function updateRecordMetadata<T extends { id?: number }>(
  */
 export async function withErrorHandling<T, E extends BaseDebugError>(
   label: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass: new (message: string, source: string, options?: any) => E,
+  ErrorClass: ErrorConstructor<E>,
   fn: () => T | Promise<T>,
 ): Promise<T> {
   const stop = timer(label);
   try {
     const result = await fn();
+    stop();
+    return result;
+  } catch (err) {
+    stop();
+    if (err instanceof ErrorClass) throw err;
+    throw wrapError(label, err, ErrorClass);
+  }
+}
+
+/**
+ * 同步版错误处理包装器——用于纯计算等同步函数。
+ *
+ * 与 withErrorHandling 语义相同，但不引入 Promise 开销，
+ * 保持调用签名为同步（如 computeDaLiuRenData 等纯计算接口）。
+ *
+ * @param label 来源标签
+ * @param ErrorClass 错误类构造函数
+ * @param fn 同步业务逻辑
+ * @returns fn 的返回值
+ */
+export function withErrorHandlingSync<T, E extends BaseDebugError>(
+  label: string,
+  ErrorClass: ErrorConstructor<E>,
+  fn: () => T,
+): T {
+  const stop = timer(label);
+  try {
+    const result = fn();
     stop();
     return result;
   } catch (err) {

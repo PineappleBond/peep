@@ -4,7 +4,7 @@
  * 命主档案增删改查，是所有分析的前提。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, mergeBirthInput, peepApi } from "./shared";
+import { CONFIRM_FIELD, mergeBirthInput, peepApi, needsConfirm, extractConfirmed } from "./shared";
 
 export const personListFunction = {
   name: "PersonList",
@@ -119,12 +119,10 @@ export const personCreateFunction = {
     type CreateInput = z.infer<typeof personCreateFunction.zodSchema>;
     const input = personCreateFunction.zodSchema.parse(args) as CreateInput;
     if (!input.confirmed) {
-      return {
-        _needsConfirmation: true,
-        action: "创建人物",
-        summary: `即将创建人物：${input.name}，${input.date}，时辰${input.timeIndex}，${input.gender}`,
-        message: "请向用户确认以上信息是否正确，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "创建人物",
+        `即将创建人物：${input.name}，${input.date}，时辰${input.timeIndex}，${input.gender}`,
+      );
     }
     return peepApi().PersonCreate(mergeBirthInput(input), input.isDefault);
   },
@@ -168,12 +166,10 @@ export const personUpdateFunction = {
     type UpdateInput = z.infer<typeof personUpdateFunction.zodSchema>;
     const input = personUpdateFunction.zodSchema.parse(args) as UpdateInput;
     if (!input.confirmed) {
-      return {
-        _needsConfirmation: true,
-        action: "更新人物",
-        summary: `即将更新人物 #${input.personId}：${input.name}，${input.date}，时辰${input.timeIndex}，${input.gender}`,
-        message: "请向用户确认以上信息是否正确，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "更新人物",
+        `即将更新人物 #${input.personId}：${input.name}，${input.date}，时辰${input.timeIndex}，${input.gender}`,
+      );
     }
     return peepApi().PersonUpdate(input.personId, mergeBirthInput(input), input.isDefault);
   },
@@ -201,12 +197,11 @@ export const personDeleteFunction = {
     type DeleteInput = z.infer<typeof personDeleteFunction.zodSchema>;
     const input = personDeleteFunction.zodSchema.parse(args) as DeleteInput;
     if (!input.confirmed) {
-      return {
-        _needsConfirmation: true,
-        action: "删除人物",
-        summary: `即将删除人物 #${input.personId}（此操作不可撤销）`,
-        message: "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "删除人物",
+        `即将删除人物 #${input.personId}（此操作不可撤销）`,
+        "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
+      );
     }
     return peepApi().PersonDelete(input.personId);
   },

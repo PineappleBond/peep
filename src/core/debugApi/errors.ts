@@ -51,6 +51,23 @@ export const ApiErrorCode = {
 export type ApiErrorCodeType = (typeof ApiErrorCode)[keyof typeof ApiErrorCode];
 
 /**
+ * 错误类构造函数签名——所有 BaseDebugError 子类的统一构造器类型。
+ *
+ * 用于 wrapError、withErrorHandling、validate 等通用函数的参数声明，
+ * 消除各处的 `eslint-disable @typescript-eslint/no-explicit-any` 注释。
+ */
+export type ErrorConstructor<E extends BaseDebugError = BaseDebugError> = new (
+  message: string,
+  source: string,
+  options?: {
+    context?: Record<string, unknown>;
+    suggestion?: string;
+    cause?: unknown;
+    errorCode?: ApiErrorCodeType;
+  },
+) => E;
+
+/**
  * 调试 API 错误的私有基类：封装 fullMessage 拼接 + captureStackTrace 等共享逻辑。
  * ZiWeiError / DaLiuRenError / WikiError 共享此类，避免构造函数重复。
  *
@@ -312,8 +329,7 @@ export class LunarError extends BaseDebugError {
 export function wrapError<T extends BaseDebugError>(
   label: string,
   err: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass: new (message: string, source: string, options?: any) => T,
+  ErrorClass: ErrorConstructor<T>,
   defaultErrorCode: ApiErrorCodeType = ApiErrorCode.INTERNAL,
 ): Error {
   // 已经是 BaseDebugError 子类（ZiWeiError / DaLiuRenError / WikiError 等），直接返回

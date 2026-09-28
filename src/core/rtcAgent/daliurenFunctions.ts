@@ -4,7 +4,7 @@
  * 起课与占卜——适合具体事件的占断。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, peepApi } from "./shared";
+import { CONFIRM_FIELD, peepApi, needsConfirm, extractConfirmed } from "./shared";
 
 /* ---- 共享 Schema ---- */
 
@@ -224,15 +224,12 @@ export const daliurenCreateFunction = {
     type CreateInput = z.infer<typeof daliurenCreateFunction.zodSchema>;
     const parsedArgs = daliurenCreateFunction.zodSchema.parse(args) as CreateInput;
     if (!parsedArgs.confirmed) {
-      return {
-        _needsConfirmation: true,
-        action: "大六壬起课",
-        summary: `即将起课：「${parsedArgs.question}」${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
-        message: "请向用户确认起课信息，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "大六壬起课",
+        `即将起课：「${parsedArgs.question}」${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
+      );
     }
-    const { confirmed: _c, ...params } = parsedArgs;
-    void _c;
+    const params = extractConfirmed(parsedArgs);
     return peepApi().DaLiuRenCreate(params);
   },
   returns: { zodSchema: daliurenRecordSchema },
@@ -334,15 +331,13 @@ export const daliurenDeleteFunction = {
     type DeleteInput = z.infer<typeof daliurenDeleteFunction.zodSchema>;
     const parsedArgs = daliurenDeleteFunction.zodSchema.parse(args) as DeleteInput;
     if (!parsedArgs.confirmed) {
-      return {
-        _needsConfirmation: true,
-        action: "删除大六壬起课记录",
-        summary: `即将删除起课记录 #${parsedArgs.recordId}（此操作不可撤销）`,
-        message: "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "删除大六壬起课记录",
+        `即将删除起课记录 #${parsedArgs.recordId}（此操作不可撤销）`,
+        "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
+      );
     }
-    const { confirmed: _c, ...params } = parsedArgs;
-    void _c;
+    const params = extractConfirmed(parsedArgs);
     return peepApi().DaLiuRenDelete(params, { skipUI: true });
   },
   returns: { zodSchema: z.void().describe("删除成功无返回数据") },

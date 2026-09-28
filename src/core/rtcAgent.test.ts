@@ -1,5 +1,5 @@
 /**
- * rtcAgent 单元测试：mergeBirthInput 等纯函数
+ * rtcAgent 单元测试：mergeBirthInput、needsConfirm、extractConfirmed 等纯函数
  */
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_BIRTH_INPUT } from "./useZwds";
@@ -45,7 +45,7 @@ vi.mock("./theme", () => ({
 }));
 
 // 延迟导入（mock 生效后再导入）
-const { mergeBirthInput } = await import("./rtcAgent");
+const { mergeBirthInput, needsConfirm, extractConfirmed } = await import("./rtcAgent");
 
 /* ─────────────── mergeBirthInput ─────────────── */
 
@@ -305,5 +305,84 @@ describe("mergeBirthInput", () => {
       expect(result.dayDivide).toBe("midnight");
       expect(result.astroType).toBe("earth");
     });
+  });
+});
+
+/* ─────────────── needsConfirm ─────────────── */
+
+describe("needsConfirm", () => {
+  it("返回标准确认响应结构", () => {
+    const result = needsConfirm("创建人物", "即将创建人物：张三");
+    expect(result).toEqual({
+      _needsConfirmation: true,
+      action: "创建人物",
+      summary: "即将创建人物：张三",
+      message: "请向用户确认以上信息，确认后再次调用并传入 confirmed: true",
+    });
+  });
+
+  it("支持自定义 message", () => {
+    const result = needsConfirm(
+      "删除人物",
+      "即将删除人物 #1（此操作不可撤销）",
+      "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
+    );
+    expect(result._needsConfirmation).toBe(true);
+    expect(result.action).toBe("删除人物");
+    expect(result.summary).toContain("不可撤销");
+    expect(result.message).toContain("不可撤销");
+  });
+
+  it("默认 message 引导用户传入 confirmed: true", () => {
+    const result = needsConfirm("测试", "测试摘要");
+    expect(result.message).toContain("confirmed: true");
+  });
+
+  it("_needsConfirmation 始终为 true", () => {
+    const result = needsConfirm("任意操作", "任意摘要");
+    expect(result._needsConfirmation).toBe(true);
+  });
+});
+
+/* ─────────────── extractConfirmed ─────────────── */
+
+describe("extractConfirmed", () => {
+  it("去除 confirmed 字段", () => {
+    const result = extractConfirmed({ confirmed: true, name: "张三", date: "1990-01-01" });
+    expect(result).toEqual({ name: "张三", date: "1990-01-01" });
+    expect("confirmed" in result).toBe(false);
+  });
+
+  it("confirmed 为 false 时同样去除", () => {
+    const result = extractConfirmed({ confirmed: false, id: 1 });
+    expect(result).toEqual({ id: 1 });
+    expect("confirmed" in result).toBe(false);
+  });
+
+  it("confirmed 为 undefined 时同样去除", () => {
+    const result = extractConfirmed({ confirmed: undefined, id: 1 });
+    expect(result).toEqual({ id: 1 });
+    expect("confirmed" in result).toBe(false);
+  });
+
+  it("无 confirmed 字段时返回原对象", () => {
+    const result = extractConfirmed({ name: "张三", id: 1 } as Record<string, unknown>);
+    expect(result).toEqual({ name: "张三", id: 1 });
+  });
+
+  it("保留所有非 confirmed 字段（包括 falsy 值）", () => {
+    const result = extractConfirmed({
+      confirmed: true,
+      name: "",
+      count: 0,
+      flag: false,
+      data: null,
+    });
+    expect(result).toEqual({ name: "", count: 0, flag: false, data: null });
+  });
+
+  it("空对象返回空对象", () => {
+    const result = extractConfirmed({});
+    expect(result).toEqual({});
   });
 });

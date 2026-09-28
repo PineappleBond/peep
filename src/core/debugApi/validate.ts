@@ -13,6 +13,7 @@
 
 import { ApiErrorCode } from "./errors";
 import { ZiWeiError, DaLiuRenError, WikiError } from "./errors";
+import type { ErrorConstructor } from "./errors";
 import type { Scope } from "./types";
 
 /** 有效的运限级别列表 */
@@ -123,8 +124,7 @@ export function validateNonEmptyString(
   value: string,
   fieldName: string,
   source: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass: new (message: string, src: string, options?: any) => Error,
+  ErrorClass: ErrorConstructor,
 ): void {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new ErrorClass(`${fieldName} 不能为空`, source, {
@@ -146,8 +146,7 @@ export function validateNonEmptyString(
 export function validatePagination<T extends { page?: number; pageSize?: number }>(
   params: T,
   source: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass: new (message: string, src: string, options?: any) => Error,
+  ErrorClass: ErrorConstructor,
 ): T {
   const result = { ...params };
 
@@ -185,8 +184,7 @@ export function validatePagination<T extends { page?: number; pageSize?: number 
 export function validateTags(
   tags: string[] | undefined,
   source: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass: new (message: string, src: string, options?: any) => Error,
+  ErrorClass: ErrorConstructor,
   maxTags = 20,
 ): void {
   if (tags !== undefined) {
@@ -230,8 +228,7 @@ export function validateStringLength(
   fieldName: string,
   maxLength: number,
   source: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass: new (message: string, src: string, options?: any) => Error,
+  ErrorClass: ErrorConstructor,
 ): void {
   if (value.length > maxLength) {
     throw new ErrorClass(`${fieldName} 长度 ${value.length} 超过上限 ${maxLength}`, source, {
@@ -254,8 +251,7 @@ export function validateNotFutureDate(
   dateStr: string,
   fieldName: string,
   source: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass: new (message: string, src: string, options?: any) => Error,
+  ErrorClass: ErrorConstructor,
 ): void {
   const parsed = new Date(dateStr);
   if (isNaN(parsed.getTime())) return; // 非有效日期，交给其他验证处理
@@ -282,8 +278,7 @@ export function validateIdArray(
   ids: number[] | undefined,
   fieldName: string,
   source: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ErrorClass: new (message: string, src: string, options?: any) => Error,
+  ErrorClass: ErrorConstructor,
 ): void {
   if (ids !== undefined) {
     if (!Array.isArray(ids)) {

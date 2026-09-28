@@ -4,7 +4,7 @@
  * 起卦与占卜——适合具体事件的占断。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, peepApi } from "./shared";
+import { CONFIRM_FIELD, peepApi, needsConfirm, extractConfirmed } from "./shared";
 import type { SixLines } from "../liuyao/core/types";
 
 /* ---- 共享 Schema ---- */
@@ -196,15 +196,12 @@ export const liuyaoCreateFunction = {
     const parsedArgs = liuyaoCreateFunction.zodSchema.parse(args) as CreateInput;
     if (!parsedArgs.confirmed) {
       const linesInfo = parsedArgs.lines ? `手动六爻：[${parsedArgs.lines.join(",")}]` : "自动摇卦";
-      return {
-        _needsConfirmation: true,
-        action: "六爻起卦",
-        summary: `即将起卦：「${parsedArgs.question}」（${linesInfo}，求测对象：${parsedArgs.yongTarget ?? "自占"}）${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
-        message: "请向用户确认起卦信息，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "六爻起卦",
+        `即将起卦：「${parsedArgs.question}」（${linesInfo}，求测对象：${parsedArgs.yongTarget ?? "自占"}）${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
+      );
     }
-    const { confirmed: _c, ...params } = parsedArgs;
-    void _c;
+    const params = extractConfirmed(parsedArgs);
     const createParams = {
       ...params,
       lines: params.lines as SixLines | undefined,
@@ -309,15 +306,13 @@ export const liuyaoDeleteFunction = {
     type DeleteInput = z.infer<typeof liuyaoDeleteFunction.zodSchema>;
     const parsedArgs = liuyaoDeleteFunction.zodSchema.parse(args) as DeleteInput;
     if (!parsedArgs.confirmed) {
-      return {
-        _needsConfirmation: true,
-        action: "删除六爻起卦记录",
-        summary: `即将删除起卦记录 #${parsedArgs.recordId}（此操作不可撤销）`,
-        message: "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
-      };
+      return needsConfirm(
+        "删除六爻起卦记录",
+        `即将删除起卦记录 #${parsedArgs.recordId}（此操作不可撤销）`,
+        "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
+      );
     }
-    const { confirmed: _c, ...params } = parsedArgs;
-    void _c;
+    const params = extractConfirmed(parsedArgs);
     return peepApi().LiuYaoDelete(params, { skipUI: true });
   },
   returns: { zodSchema: z.void().describe("删除结果：无返回数据") },

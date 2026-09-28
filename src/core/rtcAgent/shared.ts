@@ -54,3 +54,62 @@ export const CONFIRM_FIELD = withMeta(z.boolean(), { example: true })
       "用户确认后，AI 再次调用并传入 confirmed: true 才会真正执行。" +
       "这是为了防止 AI 误操作造成不可逆的数据变更。",
   );
+
+/**
+ * 确认响应结构——所有写操作首次调用时返回的统一格式。
+ * AI 收到此响应后，应将 summary 展示给用户，获得确认后再调用并传入 confirmed: true。
+ */
+export interface ConfirmResponse {
+  _needsConfirmation: true;
+  action: string;
+  summary: string;
+  message: string;
+}
+
+/**
+ * 构建确认响应——消除各 handler 中重复的 `{ _needsConfirmation: true, ... }` 对象字面量。
+ *
+ * 使用前后对比：
+ * ```ts
+ * // 使用前（每个 handler 都重复此结构）
+ * if (!parsedArgs.confirmed) {
+ *   return {
+ *     _needsConfirmation: true,
+ *     action: "创建人物",
+ *     summary: `即将创建人物：${parsedArgs.name}`,
+ *     message: "请向用户确认以上信息是否正确，确认后再次调用并传入 confirmed: true",
+ *   };
+ * }
+ *
+ * // 使用后
+ * if (!parsedArgs.confirmed) {
+ *   return needsConfirm("创建人物", `即将创建人物：${parsedArgs.name}`);
+ * }
+ * ```
+ *
+ * @param action 操作名称（如 "创建人物"、"大六壬起课"）
+ * @param summary 操作摘要（展示给用户确认的具体内容）
+ * @param message 可选的自定义确认提示（默认引导用户传入 confirmed: true）
+ */
+export function needsConfirm(action: string, summary: string, message?: string): ConfirmResponse {
+  return {
+    _needsConfirmation: true,
+    action,
+    summary,
+    message: message ?? "请向用户确认以上信息，确认后再次调用并传入 confirmed: true",
+  };
+}
+
+/**
+ * 从已确认的参数中提取业务参数——去除 confirmed 字段。
+ *
+ * 与 needsConfirm 配合使用，消除 `{ confirmed: _c, ...params } = parsedArgs; void _c;` 样板。
+ *
+ * @param args 已解析的参数对象（包含 confirmed 字段）
+ * @returns 去除 confirmed 后的纯业务参数
+ */
+export function extractConfirmed<T extends Record<string, unknown>>(args: T): Omit<T, "confirmed"> {
+  const { confirmed: _c, ...params } = args;
+  void _c;
+  return params;
+}
