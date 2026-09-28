@@ -124,7 +124,7 @@ const _fate = z
   .describe("命宫、行年等命运信息");
 
 /** 大六壬完整课式 result 的 Zod Schema */
-export const daliurenResultSchema = z
+const daliurenResultSchema = z
   .object({
     calculationTime: z.string().describe("起课时间字符串"),
     fourPillars: _fourPillars,
@@ -146,7 +146,18 @@ export const daliurenResultSchema = z
     shenSha: _shenSha,
     relations: _relations,
     keJing: _keJing,
-    biFa: z.array(z.any()).describe("毕法数组（可含多种课体判定）"),
+    biFa: z
+      .array(
+        z.object({
+          rule: z.object({
+            code: z.string().describe("规则代码，如 'bifa.01'"),
+            name: z.string().describe("规则名称，如'前后引从升迁吉'"),
+            description: z.string().describe("规则描述"),
+          }),
+          evidence: z.array(z.string()).describe("命中证据（人可读的字符串列表）"),
+        }),
+      )
+      .describe("毕法数组（课体判定结果）"),
     jianChu: z
       .record(z.string(), z.string())
       .describe("建除十二神，键为地支索引，值为建除名（建/除/满/平/定/执/破/危/成/收/开/闭）"),
@@ -159,7 +170,7 @@ export const daliurenResultSchema = z
   .describe("大六壬完整课式数据");
 
 /** 起课记录基础 schema（不含 computed） */
-export const daliurenRecordSchema = z
+const daliurenRecordSchema = z
   .object({
     personId: z.number().describe("命主 ID"),
     calculationTime: z.string().describe("起课时间，格式 'YYYY-MM-DD HH:mm:ss'"),

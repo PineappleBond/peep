@@ -4,7 +4,14 @@
  * 命主档案增删改查，是所有分析的前提。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { CONFIRM_FIELD, mergeBirthInput, peepApi, needsConfirm } from "./shared";
+import {
+  CONFIRM_FIELD,
+  PERSON_ID_OPTIONAL,
+  mergeBirthInput,
+  peepApi,
+  needsConfirm,
+  extractConfirmed,
+} from "./shared";
 
 /* ---- 共享 Schema ---- */
 
@@ -55,9 +62,7 @@ export const personGetFunction = {
     "省略 personId 时返回默认人物。" +
     "示例调用：PersonGet({ personId: 1 }) 获取 ID 为 1 的人物详情。",
   zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 }).describe(
-      "命主 ID（可选），省略则返回默认人物",
-    ),
+    personId: PERSON_ID_OPTIONAL,
   }),
   handler: (args: Record<string, unknown>) => {
     const input = personGetFunction.zodSchema.parse(args);
@@ -151,7 +156,8 @@ export const personUpdateFunction = {
         `即将更新人物 #${input.personId}：${input.name}，${input.date}，时辰${input.timeIndex}，${input.gender}`,
       );
     }
-    return peepApi().PersonUpdate(input.personId, mergeBirthInput(input), input.isDefault);
+    const params = extractConfirmed(input);
+    return peepApi().PersonUpdate(params.personId, mergeBirthInput(params), params.isDefault);
   },
   returns: {
     zodSchema: z.object({

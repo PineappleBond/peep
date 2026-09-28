@@ -2,9 +2,56 @@
  * 时间/日历（Lunar）Function 定义
  *
  * 公历农历转换、八字、节气、黄历、生肖星座等。
+ *
+ * 设计：所有 Lunar 函数都是纯计算接口，handler 均为 parse→call 模式，
+ * 统一使用 createPassthroughHandler 工厂消除 9 处重复样板。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { peepApi } from "./shared";
+import { peepApi, createPassthroughHandler } from "./shared";
+
+/* ---- 共享返回 Schema ---- */
+
+/** 干支对（年/月/日柱共用） */
+const _ganZhiPair = (label: string) =>
+  z
+    .object({
+      ganZhi: z.string().describe(`${label}天干地支，如'甲辰'`),
+      naYin: z.string().describe(`${label}纳音五行，如'覆灯火'`),
+    })
+    .describe(label);
+
+/** 节气条目 */
+const _solarTermItem = z
+  .object({
+    name: z.string().describe("节气名称，如'冬至'、'小寒'"),
+    date: z.string().describe("节气公历日期，格式 YYYY-MM-DD"),
+    description: z.string().describe("节气描述"),
+  })
+  .describe("节气");
+
+/** 节气信息（当前/下一个 节/气） */
+const _solarTermNullable = z
+  .object({
+    name: z.string().describe("节气名称"),
+    date: z.string().describe("节气公历日期，格式 YYYY-MM-DD"),
+  })
+  .nullable();
+
+/** 日期参数 schema——多个 Lunar 函数共用相同的 date 字段 */
+const _dateRequired = z.object({
+  date: withMeta(z.string(), { example: "2024-06-15" }).describe(
+    "公历日期，格式 YYYY-MM-DD 或 YYYY-MM-DD HH:mm",
+  ),
+});
+
+/** 可选日期参数 schema——省略则用当前日期 */
+const _dateOptional = z.object({
+  date: withMeta(z.string(), { example: "2024-06-15" })
+    .optional()
+    .describe("公历日期（可选），省略则用当前日期"),
+});
+
+/* ---- Function 定义 ---- */
 
 export const solarToLunarFunction = {
   name: "SolarToLunar",
@@ -19,15 +66,10 @@ export const solarToLunarFunction = {
     "返回数据包含：农历年月日、是否闰月、年月日干支、生肖。" +
     "\n\n" +
     "示例：SolarToLunar({ date: '2024-06-15' }) — 将 2024年6月15日 转为农历。",
-  zodSchema: z.object({
-    date: withMeta(z.string(), { example: "2024-06-15" }).describe(
-      "公历日期，格式 YYYY-MM-DD 或 YYYY-MM-DD HH:mm",
-    ),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = solarToLunarFunction.zodSchema.parse(args);
-    return peepApi().SolarToLunar({ date: parsedArgs.date });
-  },
+  zodSchema: _dateRequired,
+  handler: createPassthroughHandler(_dateRequired, (p: { date: string }) =>
+    peepApi().SolarToLunar(p),
+  ),
   returns: {
     zodSchema: z.object({
       year: z.number().describe("农历年份"),
@@ -58,15 +100,16 @@ export const lunarToSolarFunction = {
     day: withMeta(z.number().int().min(1).max(30), { example: 10 }).describe("农历日期 1-30"),
     isLeap: withMeta(z.boolean(), { example: false }).optional().describe("是否闰月（默认 false）"),
   }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = lunarToSolarFunction.zodSchema.parse(args);
-    return peepApi().LunarToSolar({
-      year: parsedArgs.year,
-      month: parsedArgs.month,
-      day: parsedArgs.day,
-      isLeap: parsedArgs.isLeap,
-    });
-  },
+  handler: createPassthroughHandler(
+    z.object({
+      year: z.number(),
+      month: z.number(),
+      day: z.number(),
+      isLeap: z.boolean().optional(),
+    }),
+    (p: { year: number; month: number; day: number; isLeap?: boolean }) =>
+      peepApi().LunarToSolar(p),
+  ),
   returns: {
     zodSchema: z.object({
       date: z.string().describe("公历日期，格式 YYYY-MM-DD，如'2024-06-15'"),
@@ -92,36 +135,15 @@ export const getEightCharactersFunction = {
       "公历日期时间，格式 YYYY-MM-DD HH:mm",
     ),
   }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = getEightCharactersFunction.zodSchema.parse(args);
-    return peepApi().GetEightCharacters({ date: parsedArgs.date });
-  },
+  handler: createPassthroughHandler(_dateRequired, (p: { date: string }) =>
+    peepApi().GetEightCharacters(p),
+  ),
   returns: {
     zodSchema: z.object({
-      year: z
-        .object({
-          ganZhi: z.string().describe("年柱天干地支，如'甲辰'"),
-          naYin: z.string().describe("年柱纳音五行，如'覆灯火'"),
-        })
-        .describe("年柱"),
-      month: z
-        .object({
-          ganZhi: z.string().describe("月柱天干地支，如'庚午'"),
-          naYin: z.string().describe("月柱纳音五行，如'路旁土'"),
-        })
-        .describe("月柱"),
-      day: z
-        .object({
-          ganZhi: z.string().describe("日柱天干地支，如'庚戌'"),
-          naYin: z.string().describe("日柱纳音五行，如'钗钏金'"),
-        })
-        .describe("日柱"),
-      hour: z
-        .object({
-          ganZhi: z.string().describe("时柱天干地支，如'癸未'"),
-          naYin: z.string().describe("时柱纳音五行，如'杨柳木'"),
-        })
-        .describe("时柱"),
+      year: _ganZhiPair("年柱"),
+      month: _ganZhiPair("月柱"),
+      day: _ganZhiPair("日柱"),
+      hour: _ganZhiPair("时柱"),
     }),
   },
 };
@@ -142,18 +164,11 @@ export const getSolarTermsFunction = {
   zodSchema: z.object({
     year: withMeta(z.number().int().positive(), { example: 2024 }).describe("年份"),
   }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = getSolarTermsFunction.zodSchema.parse(args);
-    return peepApi().GetSolarTerms({ year: parsedArgs.year });
-  },
+  handler: createPassthroughHandler(z.object({ year: z.number() }), (p: { year: number }) =>
+    peepApi().GetSolarTerms(p),
+  ),
   returns: {
-    zodSchema: z.array(
-      z.object({
-        name: z.string().describe("节气名称，如'冬至'、'小寒'"),
-        date: z.string().describe("节气公历日期，格式 YYYY-MM-DD"),
-        description: z.string().describe("节气描述"),
-      }),
-    ),
+    zodSchema: z.array(_solarTermItem),
   },
 };
 
@@ -170,45 +185,16 @@ export const getCurrentSolarTermFunction = {
     "返回数据包含：currentJie/currentQi（当前节/气）、nextJie/nextQi（下一个节/气），每项有 name 和 date。" +
     "\n\n" +
     "示例：GetCurrentSolarTerm({ date: '2024-06-15' }) — 获取该日期的节气信息，省略 date 则用今天。",
-  zodSchema: z.object({
-    date: withMeta(z.string(), { example: "2024-06-15" })
-      .optional()
-      .describe("公历日期（可选），省略则用当前日期"),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = getCurrentSolarTermFunction.zodSchema.parse(args);
-    return peepApi().GetCurrentSolarTerm({ date: parsedArgs.date });
-  },
+  zodSchema: _dateOptional,
+  handler: createPassthroughHandler(_dateOptional, (p: { date?: string }) =>
+    peepApi().GetCurrentSolarTerm(p),
+  ),
   returns: {
     zodSchema: z.object({
-      currentJie: z
-        .object({
-          name: z.string().describe("节气名称"),
-          date: z.string().describe("节气公历日期，格式 YYYY-MM-DD"),
-        })
-        .nullable()
-        .describe("当前所在节（可能为 null）"),
-      currentQi: z
-        .object({
-          name: z.string().describe("节气名称"),
-          date: z.string().describe("节气公历日期，格式 YYYY-MM-DD"),
-        })
-        .nullable()
-        .describe("当前所在气（可能为 null）"),
-      nextJie: z
-        .object({
-          name: z.string().describe("下一个节名称"),
-          date: z.string().describe("下一个节公历日期，格式 YYYY-MM-DD"),
-        })
-        .nullable()
-        .describe("下一个节（可能为 null）"),
-      nextQi: z
-        .object({
-          name: z.string().describe("下一个气名称"),
-          date: z.string().describe("下一个气公历日期，格式 YYYY-MM-DD"),
-        })
-        .nullable()
-        .describe("下一个气（可能为 null）"),
+      currentJie: _solarTermNullable.describe("当前所在节（可能为 null）"),
+      currentQi: _solarTermNullable.describe("当前所在气（可能为 null）"),
+      nextJie: _solarTermNullable.describe("下一个节（可能为 null）"),
+      nextQi: _solarTermNullable.describe("下一个气（可能为 null）"),
     }),
   },
 };
@@ -226,15 +212,10 @@ export const getChineseCalendarFunction = {
     "返回数据包含：yi（宜事项列表）、ji（忌事项列表）、chong（冲）、sha（煞）、pengZu（彭祖百忌）、taiShen（胎神）、wuXing（五行）、xingXiu（星宿）等。" +
     "\n\n" +
     "示例：GetChineseCalendar({ date: '2024-06-15' }) — 获取该日的黄历信息。",
-  zodSchema: z.object({
-    date: withMeta(z.string(), { example: "2024-06-15" })
-      .optional()
-      .describe("公历日期（可选），省略则用当前日期"),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = getChineseCalendarFunction.zodSchema.parse(args);
-    return peepApi().GetChineseCalendar({ date: parsedArgs.date });
-  },
+  zodSchema: _dateOptional,
+  handler: createPassthroughHandler(_dateOptional, (p: { date?: string }) =>
+    peepApi().GetChineseCalendar(p),
+  ),
   returns: {
     zodSchema: z.object({
       yi: z.array(z.string()).describe("宜事项列表，如['嫁娶','祭祀']"),
@@ -264,15 +245,10 @@ export const getDailyInfoFunction = {
     "返回数据包含：solar（公历）、lunar（农历）、ganZhi（年月日干支）、zodiac（生肖）、constellation（星座）、festival（节日列表）、isWeekend（是否周末）、weekDay（星期几）。" +
     "\n\n" +
     "示例：GetDailyInfo({ date: '2024-06-15' }) — 获取该日的综合信息。",
-  zodSchema: z.object({
-    date: withMeta(z.string(), { example: "2024-06-15" })
-      .optional()
-      .describe("公历日期（可选），省略则用当前日期"),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = getDailyInfoFunction.zodSchema.parse(args);
-    return peepApi().GetDailyInfo({ date: parsedArgs.date });
-  },
+  zodSchema: _dateOptional,
+  handler: createPassthroughHandler(_dateOptional, (p: { date?: string }) =>
+    peepApi().GetDailyInfo(p),
+  ),
   returns: {
     zodSchema: z.object({
       solar: z.string().describe("公历日期，格式 YYYY-MM-DD，如'2024-06-15'"),
@@ -305,15 +281,10 @@ export const getZodiacFunction = {
     "返回数据包含：zodiac（生肖）、year（农历年份）。" +
     "\n\n" +
     "示例：GetZodiac({ date: '1990-06-15' }) — 获取该日期对应的生肖。",
-  zodSchema: z.object({
-    date: withMeta(z.string(), { example: "1990-06-15" })
-      .optional()
-      .describe("公历日期（可选），省略则用当前日期"),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = getZodiacFunction.zodSchema.parse(args);
-    return peepApi().GetZodiac({ date: parsedArgs.date });
-  },
+  zodSchema: _dateOptional,
+  handler: createPassthroughHandler(_dateOptional, (p: { date?: string }) =>
+    peepApi().GetZodiac(p),
+  ),
   returns: {
     zodSchema: z.object({
       zodiac: z.string().describe("生肖名，如'马'"),
@@ -334,15 +305,10 @@ export const getConstellationFunction = {
     "返回数据包含：constellation（星座名称）、element（五行属性）、luck（吉凶）。" +
     "\n\n" +
     "示例：GetConstellation({ date: '1990-06-15' }) — 获取该日期对应的星座。",
-  zodSchema: z.object({
-    date: withMeta(z.string(), { example: "1990-06-15" })
-      .optional()
-      .describe("公历日期（可选），省略则用当前日期"),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = getConstellationFunction.zodSchema.parse(args);
-    return peepApi().GetConstellation({ date: parsedArgs.date });
-  },
+  zodSchema: _dateOptional,
+  handler: createPassthroughHandler(_dateOptional, (p: { date?: string }) =>
+    peepApi().GetConstellation(p),
+  ),
   returns: {
     zodSchema: z.object({
       constellation: z.string().describe("星座名，如'双子'"),

@@ -61,13 +61,6 @@ export const PERSON_ID_OPTIONAL = withMeta(z.number().int().positive(), { exampl
   .optional()
   .describe("命主 ID（可选）；省略则使用默认人物");
 
-/**
- * 必选命主 ID 字段——用于必须指定命主的场景。
- */
-export const PERSON_ID_REQUIRED = withMeta(z.number().int().positive(), { example: 1 }).describe(
-  "命主 ID",
-);
-
 /* ─────────────── 确认机制 ─────────────── */
 
 /**
@@ -185,14 +178,11 @@ export function createBatchViewHandler<TItem>(
 /**
  * 创建元数据更新 handler——用于 UpdateTags / UpdateNote 类函数。
  *
- * 消除大六壬和六爻中 UpdateTags/UpdateNote 的 handler 重复。
+ * 注：语义上与 createPassthroughHandler 完全相同（parse → call），
+ * 保留此别名仅为保持调用点语义清晰（「透传」vs「更新元数据」）。
+ * 实现委托给 createPassthroughHandler，不重复代码。
  *
  * @param schema Zod schema 用于解析参数
  * @param callApi 接收解析后的参数，执行实际更新
  */
-export function createMetadataUpdateHandler<TIn, TOut>(
-  schema: { parse: (input: unknown) => TIn },
-  callApi: (parsed: TIn) => TOut,
-): (args: Record<string, unknown>) => TOut {
-  return (args: Record<string, unknown>) => callApi(schema.parse(args));
-}
+export const createMetadataUpdateHandler = createPassthroughHandler;

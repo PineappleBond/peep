@@ -39,7 +39,7 @@ const _changedLineSchema = z.object({
   rel: z.string().describe("六亲"),
 });
 
-export const liuyaoChartSchema = z.object({
+const liuyaoChartSchema = z.object({
   name: z.string().describe("卦名（如水天需）"),
   palace: z.string().describe("所属宫位"),
   palaceElem: z.string().describe("宫位五行"),
@@ -69,14 +69,14 @@ export const liuyaoChartSchema = z.object({
     .describe("日辰"),
 });
 
-export const liuyaoYongSchema = z.object({
+const liuyaoYongSchema = z.object({
   rel: z.string().describe("用神六亲"),
   pos: z.number().describe("用神爻位"),
   pickedBy: z.string().nullable().describe("选取方式"),
   hidden: z.string().nullable().describe("伏神信息"),
 });
 
-export const liuyaoRecordSchema = z.object({
+const liuyaoRecordSchema = z.object({
   personId: z.number().describe("命主 ID"),
   divinationTime: z.string().describe("起卦时间"),
   question: z.string().describe("所占问题"),

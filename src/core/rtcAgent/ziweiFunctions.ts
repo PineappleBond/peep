@@ -85,7 +85,7 @@ const _pickSchema = z
   .describe("当前选中的时间");
 
 /** 运限拨盘（hbar）—— ZiWei 与 GetScopeData 共用 */
-export const hbarSchema = z
+const hbarSchema = z
   .object({
     decades: z.array(_decadeItemSchema).describe("大限数组"),
     childhood: _childhoodSchema.describe("童限"),
@@ -326,7 +326,7 @@ export const setHoroscopeTimeFunction = {
         year: z.number().describe("设置的年份"),
         month: z.number().describe("设置的月份"),
         day: z.number().describe("设置的日期"),
-        hour: z.number().describe("设置的小时（时辰索引 0-11）"),
+        hour: z.number().describe("设置的小时（0-23）"),
       })
       .describe("设置后的运限时间（pick 值）"),
   },

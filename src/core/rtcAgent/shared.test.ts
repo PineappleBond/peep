@@ -298,3 +298,31 @@ describe("mergeBirthInput", () => {
     expect(result.isLeapMonth).toBe(true);
   });
 });
+
+/* ─────────────── createMetadataUpdateHandler 别名验证 ─────────────── */
+
+describe("createMetadataUpdateHandler 是 createPassthroughHandler 的别名", () => {
+  it("两者引用同一函数", () => {
+    expect(createMetadataUpdateHandler).toBe(createPassthroughHandler);
+  });
+
+  it("通过别名调用也能正常工作", () => {
+    const schema = { parse: (input: unknown) => input as { id: number } };
+    const api = vi.fn((p: { id: number }) => ({ updated: true, ...p }));
+
+    const handler = createMetadataUpdateHandler(schema, api);
+    const result = handler({ id: 42 });
+
+    expect(api).toHaveBeenCalledWith({ id: 42 });
+    expect(result).toEqual({ updated: true, id: 42 });
+  });
+});
+
+/* ─────────────── PERSON_ID_OPTIONAL 共享 schema ─────────────── */
+
+describe("PERSON_ID_OPTIONAL", () => {
+  it("定义存在且可被导入", async () => {
+    const { PERSON_ID_OPTIONAL } = await import("./shared");
+    expect(PERSON_ID_OPTIONAL).toBeDefined();
+  });
+});
