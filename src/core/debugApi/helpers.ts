@@ -76,11 +76,12 @@ export function nextFrame(): Promise<void> {
 
 /**
  * 辅助函数：等待页面加载。
- * 改进：轮询验证回调就绪状态（而非盲等 200ms），但保留最小延时确保 DOM 初次渲染完成。
+ * 使用 requestAnimationFrame 与 React 渲染周期对齐，避免 setTimeout 的额外延迟。
  */
 export async function waitForPageLoad(): Promise<void> {
-  // 最小延时：确保 React 完成初次渲染（DOM 挂载、useEffect 执行）
-  await new Promise(r => setTimeout(r, 50));
+  // 等待两帧：确保 React 完成初次渲染（DOM 挂载、useEffect 执行）
+  await nextFrame();
+  await nextFrame();
 
   // 轮询验证：等待回调注册完成（最多 500ms）
   const start = Date.now();
@@ -97,7 +98,7 @@ export async function waitForPageLoad(): Promise<void> {
       log("debug", "wait", "页面加载完成", { elapsed: Date.now() - start });
       return;
     }
-    await new Promise(r => setTimeout(r, 20));
+    await nextFrame();
   }
   // 超时但不抛错——某些页面可能不注册回调（如纯展示页）
   log("warn", "wait", "页面加载等待超时，继续执行", { maxWait });
@@ -282,10 +283,7 @@ export async function waitForPickMatch(
  * 统一处理页面跳转和回调等待逻辑。
  *
  * 性能优化：如果已在目标页面，跳过导航和等待。
-<<<<<<< HEAD
-=======
  * 这是"像人类一样操作 UI"的核心——人类不会在已打开的页面上重新导航。
->>>>>>> 753b7f5 (重构：UI 状态追踪优化——像人类一样智能判断是否需要操作)
  */
 export async function navigateToPage(
   path: string,
@@ -301,16 +299,23 @@ export async function navigateToPage(
   if (navigate) {
     navigate(path);
   }
+
+  // 等待页面加载（最小延时 + 回调就绪检查）
   await waitForPageLoad();
+
   // 等待对应页面的回调注册完成
+  // 使用 requestAnimationFrame 与 React 渲染周期对齐，避免 setTimeout 的额外延迟
   const callbacksReady = getCallbacksReady();
   const start = Date.now();
+  const maxWait = 1000;
+
   while (!callbacksReady[page]) {
-    if (Date.now() - start > 1000) {
+    if (Date.now() - start > maxWait) {
       log("warn", "wait", `${page} 页面回调注册等待超时`, { path });
       break;
     }
-    await new Promise(r => setTimeout(r, 50));
+    // 使用 nextFrame 与浏览器渲染周期对齐
+    await nextFrame();
   }
 
   // 更新 UI 状态追踪
@@ -326,8 +331,8 @@ export async function navigateToPage(
  * 选择人物并等待状态更新完成。
  * 统一处理人物切换和状态验证逻辑。
  *
- * 性能优化：如果已选中目标人物，跳过选择和等待。
- * 这是"像人类一样操作 UI"的核心——人类不会在已选择的人物上重新选择。
+ * selectPerson 回调使用 flushSync 强制同步渲染，
+ * 因此 await selectPerson() 返回时，React 状态已更新完成，无需轮询。
  */
 export async function selectPersonAndWait(personId: number): Promise<void> {
   // 性能优化：如果已选中目标人物，跳过选择
@@ -340,15 +345,11 @@ export async function selectPersonAndWait(personId: number): Promise<void> {
   if (!selectPerson) {
     throw new Error("selectPerson 回调未注册");
   }
+
+  // selectPerson 使用 flushSync，返回时 React 状态已同步更新
   await selectPerson(personId);
-  await waitForPersonMatch(personId, 2000);
-  const getZwds = getGetZwds();
-  if (getZwds) {
-    const z = getZwds();
-    if (z) {
-      await waitForAstrolabeStable(z, 2000);
-    }
-  }
+
+  // 等待一帧确保所有 useEffect 和事件监听器已执行
   await nextFrame();
 
   // 更新 UI 状态追踪

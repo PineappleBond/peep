@@ -12,6 +12,7 @@ import {
   useMemo,
   useReducer,
 } from "react";
+import { flushSync } from "react-dom";
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "./Header";
@@ -275,7 +276,10 @@ export function Layout({ children }: LayoutProps) {
         const persons = await listPersons();
         const person = persons.find(p => p.id === personId);
         if (person) {
-          handleSelectPerson(person);
+          // 使用 flushSync 强制同步渲染，确保状态更新在函数返回前已完成
+          flushSync(() => {
+            handleSelectPerson(person);
+          });
         }
       },
       getPerson: () => currentPersonRef.current,
