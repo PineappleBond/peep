@@ -105,6 +105,7 @@ export function LiuyaoPage() {
 
   // 注册六爻调试 API 回调
   useEffect(() => {
+    if (!person?.id) return;
     registerLiuyaoCallbacks({
       getLiuyaoList: async (filters: LiuyaoListFilters) => {
         if (!person?.id) {

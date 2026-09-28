@@ -86,6 +86,7 @@ export function DaLiuRenPage() {
 
   // 注册大六壬调试 API 回调
   useEffect(() => {
+    if (!person?.id) return;
     registerDaLiuRenCallbacks({
       getDaLiuRenList: async (filters: LiurenListFilters) => {
         if (!person?.id) {
