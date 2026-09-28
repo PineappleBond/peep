@@ -24,7 +24,6 @@ import {
   nextFrame,
   waitForPersonMatch,
   waitForAstrolabeStable,
-  waitForPickReset,
   waitForPickMatch,
   waitForStateUpdate,
   navigateToPage,
@@ -504,15 +503,16 @@ export async function ZiWei(
         });
       }
 
-      // 等待 astrolabe 更新 + useEffect 重置 pick 完成（轮询验证替代盲等）
+      // 等待 astrolabe 更新完成
       await waitForPersonMatch(resolvedId, 2000);
       await waitForAstrolabeStable(z, 2000);
-      // useEffect 的 commit 阶段需要一帧才能执行重置，确保 pick 已到达"今天"
-      await nextFrame();
 
-      // 验证 pick 已被 useEffect 重置（轮询检测，非盲等；内部从 getZwds 获取最新状态）
-      await waitForPickReset(z, 1000);
-      // 重新获取最新 z（waitForPickReset 期间 React 可能已多次重渲染）
+      // 手动重置 pick 到"今天"（不依赖 useEffect，解决同一人物再次调用时 useEffect 不触发的问题）
+      z.actions.resetToday();
+      // 等待 React 渲染完成
+      await waitForStateUpdate();
+
+      // 重新获取最新 z（React 渲染后状态已更新）
       const freshZ = getZwds() ?? z;
       log("debug", "ZiWei", "pick 已重置", { pick: freshZ.pick });
 
