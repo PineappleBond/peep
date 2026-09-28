@@ -1167,6 +1167,22 @@ const wikiListFunction = {
     return peepApi().WikiList(parsedArgs);
   },
   returns: {
+    zodSchema: z.object({
+      docs: z
+        .array(
+          z.object({
+            personId: z.number().describe("命主 ID"),
+            title: z.string().describe("文档标题"),
+            content: z.string().describe("Markdown 正文内容"),
+            tags: z.array(z.string()).describe("标签列表"),
+            savedAt: z.number().describe("首次保存时间戳（毫秒）"),
+            updatedAt: z.number().describe("最后更新时间戳（毫秒）"),
+            id: z.number().describe("文档 ID"),
+          }),
+        )
+        .describe("文档列表"),
+      total: z.number().describe("文档总数"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1225,6 +1241,15 @@ const wikiCreateFunction = {
     return peepApi().WikiCreate(params);
   },
   returns: {
+    zodSchema: z.object({
+      personId: z.number().describe("命主 ID"),
+      title: z.string().describe("文档标题"),
+      content: z.string().describe("Markdown 正文内容"),
+      tags: z.array(z.string()).describe("标签列表"),
+      savedAt: z.number().describe("首次保存时间戳（毫秒）"),
+      updatedAt: z.number().describe("最后更新时间戳（毫秒）"),
+      id: z.number().describe("文档 ID"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1289,6 +1314,15 @@ const wikiUpdateFunction = {
     return peepApi().WikiUpdate(params);
   },
   returns: {
+    zodSchema: z.object({
+      personId: z.number().describe("命主 ID"),
+      title: z.string().describe("文档标题"),
+      content: z.string().describe("Markdown 正文内容"),
+      tags: z.array(z.string()).describe("标签列表"),
+      savedAt: z.number().describe("首次保存时间戳（毫秒）"),
+      updatedAt: z.number().describe("最后更新时间戳（毫秒）"),
+      id: z.number().describe("文档 ID"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1323,6 +1357,16 @@ const wikiViewFunction = {
     return peepApi().WikiView(parsedArgs);
   },
   returns: {
+    zodSchema: z.object({
+      personId: z.number().describe("命主 ID"),
+      title: z.string().describe("文档标题"),
+      content: z.string().describe("Markdown 正文内容"),
+      tags: z.array(z.string()).describe("标签列表"),
+      savedAt: z.number().describe("首次保存时间戳（毫秒）"),
+      updatedAt: z.number().describe("最后更新时间戳（毫秒）"),
+      id: z.number().describe("文档 ID"),
+      linkTargetIds: z.array(z.number()).describe("关联文档 ID 列表"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1375,6 +1419,23 @@ const wikiBatchViewFunction = {
     return { docs: results, count: results.length };
   },
   returns: {
+    zodSchema: z.object({
+      docs: z
+        .array(
+          z.object({
+            personId: z.number().describe("命主 ID"),
+            title: z.string().describe("文档标题"),
+            content: z.string().describe("Markdown 正文内容"),
+            tags: z.array(z.string()).describe("标签列表"),
+            savedAt: z.number().describe("首次保存时间戳（毫秒）"),
+            updatedAt: z.number().describe("最后更新时间戳（毫秒）"),
+            id: z.number().describe("文档 ID"),
+            linkTargetIds: z.array(z.number()).describe("关联文档 ID 列表"),
+          }),
+        )
+        .describe("文档详情数组，每项同 WikiView 返回结构"),
+      count: z.number().describe("文档数量"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1384,6 +1445,81 @@ const wikiBatchViewFunction = {
 };
 
 /* ── 六爻 ──────────────────────────────────────────── */
+
+/** 六爻卦象共享 Schema */
+const _liuyaoLineSchema = z.object({
+  pos: z.number().describe("爻位 1-6"),
+  yang: z.boolean().describe("是否阳爻"),
+  moving: z.boolean().describe("是否动爻"),
+  stem: z.string().describe("天干"),
+  branch: z.string().describe("地支"),
+  elem: z.string().describe("五行"),
+  rel: z.string().describe("六亲（如妻财/官鬼/子孙等）"),
+  god: z.string().describe("六神（青龙/朱雀/勾陈/螣蛇/白虎/玄武）"),
+  kong: z.boolean().describe("是否旬空"),
+  kongState: z.string().nullable().describe("空亡状态描述"),
+});
+
+const _liuyaoChangedLineSchema = z.object({
+  pos: z.number().describe("爻位 1-6"),
+  yang: z.boolean().describe("是否阳爻"),
+  stem: z.string().describe("天干"),
+  branch: z.string().describe("地支"),
+  elem: z.string().describe("五行"),
+  rel: z.string().describe("六亲"),
+});
+
+const _liuyaoChartSchema = z.object({
+  name: z.string().describe("卦名（如水天需）"),
+  palace: z.string().describe("所属宫位"),
+  palaceElem: z.string().describe("宫位五行"),
+  type: z.string().describe("卦类型（如游魂/归魂等）"),
+  shi: z.number().describe("世爻位"),
+  ying: z.number().describe("应爻位"),
+  lines: z.array(_liuyaoLineSchema).describe("六爻数组"),
+  changed: z
+    .object({
+      name: z.string().describe("变卦名"),
+      lines: z.array(_liuyaoChangedLineSchema).describe("变卦六爻"),
+    })
+    .describe("变卦"),
+  month: z
+    .object({
+      branch: z.string().describe("月建地支"),
+      elem: z.string().describe("月建五行"),
+    })
+    .describe("月建"),
+  day: z
+    .object({
+      stem: z.string().describe("日辰天干"),
+      branch: z.string().describe("日辰地支"),
+      elem: z.string().describe("日辰五行"),
+      kong: z.array(z.string()).describe("日空地支数组"),
+    })
+    .describe("日辰"),
+});
+
+const _liuyaoYongSchema = z.object({
+  rel: z.string().describe("用神六亲"),
+  pos: z.number().describe("用神爻位"),
+  pickedBy: z.string().nullable().describe("选取方式"),
+  hidden: z.string().nullable().describe("伏神信息"),
+});
+
+const _liuyaoRecordSchema = z.object({
+  personId: z.number().describe("命主 ID"),
+  divinationTime: z.string().describe("起卦时间"),
+  question: z.string().describe("所占问题"),
+  background: z.string().describe("背景信息"),
+  note: z.string().describe("备注"),
+  tags: z.array(z.string()).describe("标签数组"),
+  lines: z.array(z.number()).describe("六爻值数组（0-3）"),
+  chart: _liuyaoChartSchema.describe("卦象"),
+  yongTarget: z.string().describe("求测对象"),
+  yong: _liuyaoYongSchema.describe("用神"),
+  savedAt: z.number().describe("保存时间戳"),
+  id: z.number().describe("记录 ID"),
+});
 
 const liuyaoCreateFunction = {
   name: "LiuYaoCreate",
@@ -1462,6 +1598,7 @@ const liuyaoCreateFunction = {
     return peepApi().LiuYaoCreate(createParams);
   },
   returns: {
+    zodSchema: _liuyaoRecordSchema,
     schema: {
       type: "object" as const,
       description:
@@ -1504,6 +1641,10 @@ const liuyaoListFunction = {
     return peepApi().LiuYaoList(parsedArgs);
   },
   returns: {
+    zodSchema: z.object({
+      records: z.array(_liuyaoRecordSchema).describe("起卦记录数组"),
+      total: z.number().describe("总数"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1544,6 +1685,67 @@ const liuyaoViewFunction = {
     return peepApi().LiuYaoView(parsedArgs);
   },
   returns: {
+    zodSchema: _liuyaoRecordSchema.extend({
+      computed: z
+        .object({
+          divinationTime: z.string().describe("起卦时间"),
+          chart: _liuyaoChartSchema.describe("卦象"),
+          yong: _liuyaoYongSchema.describe("用神"),
+          person: z
+            .object({
+              id: z.number(),
+              name: z.string(),
+              gender: z.string(),
+              date: z.string(),
+              timeIndex: z.number(),
+              savedAt: z.number(),
+              isDefault: z.boolean(),
+            })
+            .describe("关联命主"),
+          hbarData: z
+            .object({
+              years: z.array(z.object({ year: z.number(), gz: z.string(), age: z.number() })),
+              activeYearIdx: z.number(),
+              months: z.array(
+                z.object({
+                  month: z.number(),
+                  leap: z.boolean(),
+                  label: z.string(),
+                  solarLabel: z.string(),
+                  gz: z.string(),
+                }),
+              ),
+              activeMonthIdx: z.number(),
+              days: z.array(
+                z.object({
+                  day: z.number(),
+                  label: z.string(),
+                  solarLabel: z.string(),
+                  gz: z.string(),
+                }),
+              ),
+              activeDayIdx: z.number(),
+              hours: z.array(z.object({ hour: z.number(), label: z.string(), gz: z.string() })),
+              activeHourIdx: z.number(),
+            })
+            .describe("运限拨盘数据"),
+          vigorColumns: z
+            .object({
+              columns: z.array(z.array(z.string())).describe("旺衰数组"),
+              changedColumns: z.array(z.array(z.string())).describe("变爻旺衰"),
+              columnBranches: z.array(z.string()).describe("地支"),
+              columnRoles: z.array(z.string()).describe("角色（太岁/月建等）"),
+              visible: z.object({
+                yearly: z.boolean(),
+                monthly: z.boolean(),
+                daily: z.boolean(),
+                hourly: z.boolean(),
+              }),
+            })
+            .describe("旺衰列"),
+        })
+        .describe("计算数据"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1594,6 +1796,7 @@ const liuyaoDeleteFunction = {
     return peepApi().LiuYaoDelete(params, { skipUI: true });
   },
   returns: {
+    zodSchema: z.void().describe("删除结果：无返回数据"),
     schema: {
       type: "object" as const,
       description: "删除结果：void（无返回数据），仅表示操作成功",
@@ -1638,6 +1841,51 @@ const liuyaoBatchViewFunction = {
     return { records: results, count: results.length };
   },
   returns: {
+    zodSchema: z.object({
+      records: z
+        .array(
+          _liuyaoRecordSchema.extend({
+            computed: z.object({
+              divinationTime: z.string(),
+              chart: _liuyaoChartSchema,
+              yong: _liuyaoYongSchema,
+              person: z.object({
+                id: z.number(),
+                name: z.string(),
+                gender: z.string(),
+                date: z.string(),
+                timeIndex: z.number(),
+                savedAt: z.number(),
+                isDefault: z.boolean(),
+              }),
+              hbarData: z.object({
+                years: z.array(z.any()),
+                activeYearIdx: z.number(),
+                months: z.array(z.any()),
+                activeMonthIdx: z.number(),
+                days: z.array(z.any()),
+                activeDayIdx: z.number(),
+                hours: z.array(z.any()),
+                activeHourIdx: z.number(),
+              }),
+              vigorColumns: z.object({
+                columns: z.array(z.array(z.string())),
+                changedColumns: z.array(z.array(z.string())),
+                columnBranches: z.array(z.string()),
+                columnRoles: z.array(z.string()),
+                visible: z.object({
+                  yearly: z.boolean(),
+                  monthly: z.boolean(),
+                  daily: z.boolean(),
+                  hourly: z.boolean(),
+                }),
+              }),
+            }),
+          }),
+        )
+        .describe("起卦记录详情数组"),
+      count: z.number().describe("记录数量"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1671,6 +1919,16 @@ const solarToLunarFunction = {
     return peepApi().SolarToLunar({ date: parsedArgs.date });
   },
   returns: {
+    zodSchema: z.object({
+      year: z.number().describe("农历年份"),
+      month: z.number().describe("农历月份"),
+      day: z.number().describe("农历日期"),
+      isLeap: z.boolean().describe("是否闰月"),
+      yearGanZhi: z.string().describe("年干支，如'甲辰'"),
+      monthGanZhi: z.string().describe("月干支，如'庚午'"),
+      dayGanZhi: z.string().describe("日干支，如'庚戌'"),
+      zodiac: z.string().describe("生肖，如'龙'"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1706,6 +1964,9 @@ const lunarToSolarFunction = {
     });
   },
   returns: {
+    zodSchema: z.object({
+      date: z.string().describe("公历日期，格式 YYYY-MM-DD，如'2024-06-15'"),
+    }),
     schema: {
       type: "object" as const,
       description: "公历日期对象：{ date: 'YYYY-MM-DD' }",
@@ -1736,6 +1997,32 @@ const getEightCharactersFunction = {
     return peepApi().GetEightCharacters({ date: parsedArgs.date });
   },
   returns: {
+    zodSchema: z.object({
+      year: z
+        .object({
+          ganZhi: z.string().describe("年柱天干地支，如'甲辰'"),
+          naYin: z.string().describe("年柱纳音五行，如'覆灯火'"),
+        })
+        .describe("年柱"),
+      month: z
+        .object({
+          ganZhi: z.string().describe("月柱天干地支，如'庚午'"),
+          naYin: z.string().describe("月柱纳音五行，如'路旁土'"),
+        })
+        .describe("月柱"),
+      day: z
+        .object({
+          ganZhi: z.string().describe("日柱天干地支，如'庚戌'"),
+          naYin: z.string().describe("日柱纳音五行，如'钗钏金'"),
+        })
+        .describe("日柱"),
+      hour: z
+        .object({
+          ganZhi: z.string().describe("时柱天干地支，如'癸未'"),
+          naYin: z.string().describe("时柱纳音五行，如'杨柳木'"),
+        })
+        .describe("时柱"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1766,6 +2053,13 @@ const getSolarTermsFunction = {
     return peepApi().GetSolarTerms({ year: parsedArgs.year });
   },
   returns: {
+    zodSchema: z.array(
+      z.object({
+        name: z.string().describe("节气名称，如'冬至'、'小寒'"),
+        date: z.string().describe("节气公历日期，格式 YYYY-MM-DD"),
+        description: z.string().describe("节气描述"),
+      }),
+    ),
     schema: {
       type: "array" as const,
       description:
@@ -1797,6 +2091,36 @@ const getCurrentSolarTermFunction = {
     return peepApi().GetCurrentSolarTerm({ date: parsedArgs.date });
   },
   returns: {
+    zodSchema: z.object({
+      currentJie: z
+        .object({
+          name: z.string().describe("节气名称"),
+          date: z.string().describe("节气公历日期，格式 YYYY-MM-DD"),
+        })
+        .nullable()
+        .describe("当前所在节（可能为 null）"),
+      currentQi: z
+        .object({
+          name: z.string().describe("节气名称"),
+          date: z.string().describe("节气公历日期，格式 YYYY-MM-DD"),
+        })
+        .nullable()
+        .describe("当前所在气（可能为 null）"),
+      nextJie: z
+        .object({
+          name: z.string().describe("下一个节名称"),
+          date: z.string().describe("下一个节公历日期，格式 YYYY-MM-DD"),
+        })
+        .nullable()
+        .describe("下一个节（可能为 null）"),
+      nextQi: z
+        .object({
+          name: z.string().describe("下一个气名称"),
+          date: z.string().describe("下一个气公历日期，格式 YYYY-MM-DD"),
+        })
+        .nullable()
+        .describe("下一个气（可能为 null）"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1829,6 +2153,18 @@ const getChineseCalendarFunction = {
     return peepApi().GetChineseCalendar({ date: parsedArgs.date });
   },
   returns: {
+    zodSchema: z.object({
+      yi: z.array(z.string()).describe("宜事项列表，如['嫁娶','祭祀']"),
+      ji: z.array(z.string()).describe("忌事项列表，如['无']"),
+      chong: z.string().describe("冲（地支），如'辰'"),
+      sha: z.string().describe("煞（方位），如'北'"),
+      pengZu: z.string().describe("彭祖百忌，如'庚不经络织机虚张 戌不吃犬作怪上床'"),
+      taiShen: z.string().describe("胎神方位，如'碓磨栖 外东北'"),
+      wuXing: z.string().describe("五行纳音，如'钗钏金'"),
+      xingXiu: z.string().describe("星宿名，如'胃'"),
+      xingXiuAnimal: z.string().describe("星宿对应动物，如'彘'"),
+      xingXiuLuck: z.string().describe("星宿吉凶，如'吉'"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1861,6 +2197,22 @@ const getDailyInfoFunction = {
     return peepApi().GetDailyInfo({ date: parsedArgs.date });
   },
   returns: {
+    zodSchema: z.object({
+      solar: z.string().describe("公历日期，格式 YYYY-MM-DD，如'2024-06-15'"),
+      lunar: z.string().describe("农历日期，格式 YYYY-MM-DD，如'2024-05-10'"),
+      ganZhi: z
+        .object({
+          year: z.string().describe("年干支，如'甲辰'"),
+          month: z.string().describe("月干支，如'庚午'"),
+          day: z.string().describe("日干支，如'庚戌'"),
+        })
+        .describe("年月日干支"),
+      zodiac: z.string().describe("生肖，如'龙'"),
+      constellation: z.string().describe("星座，如'双子'"),
+      festival: z.array(z.string()).describe("节日列表（可能为空数组）"),
+      isWeekend: z.boolean().describe("是否周末"),
+      weekDay: z.number().describe("星期几，0-6，0=周日"),
+    }),
     schema: {
       type: "object" as const,
       description:
@@ -1892,6 +2244,10 @@ const getZodiacFunction = {
     return peepApi().GetZodiac({ date: parsedArgs.date });
   },
   returns: {
+    zodSchema: z.object({
+      zodiac: z.string().describe("生肖名，如'马'"),
+      year: z.number().describe("农历年份，如 1990"),
+    }),
     schema: {
       type: "object" as const,
       description: "生肖信息：{ zodiac(生肖名，如'马'), year(农历年份) }",
@@ -1921,6 +2277,11 @@ const getConstellationFunction = {
     return peepApi().GetConstellation({ date: parsedArgs.date });
   },
   returns: {
+    zodSchema: z.object({
+      constellation: z.string().describe("星座名，如'双子'"),
+      element: z.string().describe("五行属性，如'风'"),
+      luck: z.string().describe("吉凶，如'吉'"),
+    }),
     schema: {
       type: "object" as const,
       description: "星座信息：{ constellation(星座名，如'双子'), element(五行属性), luck(吉凶) }",
