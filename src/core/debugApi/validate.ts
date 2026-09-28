@@ -26,6 +26,26 @@ export const VALID_SCOPES: readonly Scope[] = [
 ] as const;
 
 /**
+ * 内部辅助：验证值为正整数，失败时抛出指定错误。
+ * 消除 validatePersonId / validateRecordId / validateDocId 的重复逻辑。
+ */
+function assertPositiveInteger(
+  value: number,
+  fieldName: string,
+  ErrorClass: ErrorConstructor,
+  source: string,
+  suggestion: string,
+): void {
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value <= 0) {
+    throw new ErrorClass(`${fieldName} 无效：${value}，需为正整数`, source, {
+      context: { [fieldName]: value, type: typeof value },
+      suggestion,
+      errorCode: ApiErrorCode.INVALID_INPUT,
+    });
+  }
+}
+
+/**
  * 验证人物 ID——必须为正整数（或 undefined 表示使用默认人物）。
  *
  * @param personId 待验证的人物 ID
@@ -42,14 +62,13 @@ export const VALID_SCOPES: readonly Scope[] = [
  */
 export function validatePersonId(personId: number | undefined, source: string): void {
   if (personId !== undefined) {
-    if (!Number.isFinite(personId) || !Number.isInteger(personId) || personId <= 0) {
-      throw new ZiWeiError(`personId 无效：${personId}，需为正整数（如 1, 2, 3）`, source, {
-        context: { personId, type: typeof personId },
-        suggestion:
-          "请传入有效的人物 ID（正整数）。可先调用 PersonList() 获取可用的人物 ID 列表，或不传以使用默认人物",
-        errorCode: ApiErrorCode.INVALID_INPUT,
-      });
-    }
+    assertPositiveInteger(
+      personId,
+      "personId",
+      ZiWeiError,
+      source,
+      "请传入有效的人物 ID（正整数）。可先调用 PersonList() 获取可用的人物 ID 列表，或不传以使用默认人物",
+    );
   }
 }
 
@@ -85,13 +104,13 @@ export function validateScope(scope: Scope | undefined, source: string): void {
  * @throws DaLiuRenError recordId 不是正整数时
  */
 export function validateRecordId(recordId: number, source: string): void {
-  if (!Number.isFinite(recordId) || !Number.isInteger(recordId) || recordId <= 0) {
-    throw new DaLiuRenError(`recordId 无效：${recordId}，需为正整数`, source, {
-      context: { recordId, type: typeof recordId },
-      suggestion: "请传入有效的记录 ID（正整数）。可先调用 DaLiuRenList() 获取可用的记录 ID 列表",
-      errorCode: ApiErrorCode.INVALID_INPUT,
-    });
-  }
+  assertPositiveInteger(
+    recordId,
+    "recordId",
+    DaLiuRenError,
+    source,
+    "请传入有效的记录 ID（正整数）。可先调用 DaLiuRenList() 获取可用的记录 ID 列表",
+  );
 }
 
 /**
@@ -102,13 +121,13 @@ export function validateRecordId(recordId: number, source: string): void {
  * @throws WikiError docId 不是正整数时
  */
 export function validateDocId(docId: number, source: string): void {
-  if (!Number.isFinite(docId) || !Number.isInteger(docId) || docId <= 0) {
-    throw new WikiError(`docId 无效：${docId}，需为正整数`, source, {
-      context: { docId, type: typeof docId },
-      suggestion: "请传入有效的文档 ID（正整数）。可先调用 WikiList() 获取可用的文档 ID 列表",
-      errorCode: ApiErrorCode.INVALID_INPUT,
-    });
-  }
+  assertPositiveInteger(
+    docId,
+    "docId",
+    WikiError,
+    source,
+    "请传入有效的文档 ID（正整数）。可先调用 WikiList() 获取可用的文档 ID 列表",
+  );
 }
 
 /**

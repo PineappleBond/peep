@@ -5,6 +5,7 @@
  * 验证文档 CRUD、搜索筛选、双向链接、路由跳转、人物关联等功能。
  */
 import { test, expect } from "@playwright/test";
+import { captureConsoleLogs, assertNoConsoleErrors } from "./console-helper";
 
 /** 生成唯一标题，避免跨测试数据冲突（IndexedDB 共享） */
 function uid(prefix: string) {
@@ -12,6 +13,22 @@ function uid(prefix: string) {
 }
 
 test.describe("Wiki 知识库 debugApi", () => {
+  // ─── Console 日志拦截 ─────────────────────────────────────
+  let consoleLogs: ReturnType<typeof captureConsoleLogs>;
+
+  test.beforeEach(async ({ page }) => {
+    consoleLogs = captureConsoleLogs(page);
+  });
+
+  test.afterEach(() => {
+    assertNoConsoleErrors(consoleLogs, [
+      // 忽略 Wiki 内部预期的错误日志（错误处理测试会主动触发错误）
+      /执行失败/,
+      // 忽略 Wiki 页面回调注册超时（已知的预存问题，非本轮引入）
+      /Wiki回调注册等待超时/,
+    ]);
+  });
+
   // ─── 1. 基础 CRUD ────────────────────────────────────────
 
   test("WikiCreate：创建文档，返回包含 title/content/tags/personId", async ({ page }) => {

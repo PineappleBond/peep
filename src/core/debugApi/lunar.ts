@@ -6,9 +6,10 @@
  */
 
 import { Solar, Lunar, EightChar, LunarYear } from "lunar-typescript";
-import { log, timer } from "./logger";
+import { log } from "./logger";
 import { LunarError, ApiErrorCode } from "./errors";
 import { validateNonEmptyString } from "./validate";
+import { withErrorHandlingSync } from "./helpers";
 
 /**
  * 公历转农历
@@ -26,13 +27,11 @@ export function SolarToLunar(params: { date: string }): {
   dayGanZhi: string;
   zodiac: string;
 } {
-  const stop = timer("SolarToLunar");
-  try {
+  return withErrorHandlingSync("SolarToLunar", LunarError, () => {
     validateNonEmptyString(params.date, "date", "SolarToLunar", LunarError);
 
     log("info", "SolarToLunar", "公历转农历", { date: params.date });
 
-    // 解析日期
     const dateStr = params.date.trim();
     const [datePart, timePart = "00:00"] = dateStr.split(/\s+/);
     const [year, month, day] = datePart.split("-").map(Number);
@@ -61,22 +60,8 @@ export function SolarToLunar(params: { date: string }): {
     };
 
     log("info", "SolarToLunar", "转换成功", result);
-    stop();
     return result;
-  } catch (err) {
-    if (err instanceof LunarError) {
-      log("error", "SolarToLunar", "执行失败", err);
-      stop();
-      throw err;
-    }
-    log("error", "SolarToLunar", "执行失败", err);
-    stop();
-    throw new LunarError(`公历转农历失败: ${String(err)}`, "SolarToLunar", {
-      context: { date: params.date },
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }
 
 /**
@@ -91,8 +76,7 @@ export function LunarToSolar(params: {
   day: number;
   isLeap?: boolean;
 }): { date: string } {
-  const stop = timer("LunarToSolar");
-  try {
+  return withErrorHandlingSync("LunarToSolar", LunarError, () => {
     log("info", "LunarToSolar", "农历转公历", params);
 
     const lunar = Lunar.fromYmd(
@@ -107,17 +91,8 @@ export function LunarToSolar(params: {
     };
 
     log("info", "LunarToSolar", "转换成功", result);
-    stop();
     return result;
-  } catch (err) {
-    log("error", "LunarToSolar", "执行失败", err);
-    stop();
-    throw new LunarError(`农历转公历失败: ${String(err)}`, "LunarToSolar", {
-      context: params,
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }
 
 /**
@@ -132,13 +107,11 @@ export function GetEightCharacters(params: { date: string }): {
   day: { ganZhi: string; naYin: string };
   hour: { ganZhi: string; naYin: string };
 } {
-  const stop = timer("GetEightCharacters");
-  try {
+  return withErrorHandlingSync("GetEightCharacters", LunarError, () => {
     validateNonEmptyString(params.date, "date", "GetEightCharacters", LunarError);
 
     log("info", "GetEightCharacters", "计算八字", { date: params.date });
 
-    // 解析日期
     const dateStr = params.date.trim();
     const [datePart, timePart = "00:00"] = dateStr.split(/\s+/);
     const [year, month, day] = datePart.split("-").map(Number);
@@ -157,41 +130,15 @@ export function GetEightCharacters(params: { date: string }): {
     const eightChar = lunar.getEightChar();
 
     const result = {
-      year: {
-        ganZhi: eightChar.getYear(),
-        naYin: eightChar.getYearNaYin(),
-      },
-      month: {
-        ganZhi: eightChar.getMonth(),
-        naYin: eightChar.getMonthNaYin(),
-      },
-      day: {
-        ganZhi: eightChar.getDay(),
-        naYin: eightChar.getDayNaYin(),
-      },
-      hour: {
-        ganZhi: eightChar.getTime(),
-        naYin: eightChar.getTimeNaYin(),
-      },
+      year: { ganZhi: eightChar.getYear(), naYin: eightChar.getYearNaYin() },
+      month: { ganZhi: eightChar.getMonth(), naYin: eightChar.getMonthNaYin() },
+      day: { ganZhi: eightChar.getDay(), naYin: eightChar.getDayNaYin() },
+      hour: { ganZhi: eightChar.getTime(), naYin: eightChar.getTimeNaYin() },
     };
 
     log("info", "GetEightCharacters", "计算成功", result);
-    stop();
     return result;
-  } catch (err) {
-    if (err instanceof LunarError) {
-      log("error", "GetEightCharacters", "执行失败", err);
-      stop();
-      throw err;
-    }
-    log("error", "GetEightCharacters", "执行失败", err);
-    stop();
-    throw new LunarError(`计算八字失败: ${String(err)}`, "GetEightCharacters", {
-      context: { date: params.date },
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }
 
 /**
@@ -205,8 +152,7 @@ export function GetSolarTerms(params: { year: number }): Array<{
   date: string;
   description: string;
 }> {
-  const stop = timer("GetSolarTerms");
-  try {
+  return withErrorHandlingSync("GetSolarTerms", LunarError, () => {
     log("info", "GetSolarTerms", "获取节气", { year: params.year });
 
     // 从该年第一天获取节气表
@@ -230,17 +176,8 @@ export function GetSolarTerms(params: { year: number }): Array<{
       });
 
     log("info", "GetSolarTerms", "获取成功", { count: result.length });
-    stop();
     return result;
-  } catch (err) {
-    log("error", "GetSolarTerms", "执行失败", err);
-    stop();
-    throw new LunarError(`获取节气失败: ${String(err)}`, "GetSolarTerms", {
-      context: { year: params.year },
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }
 
 /**
@@ -255,8 +192,7 @@ export function GetCurrentSolarTerm(params: { date?: string }): {
   nextJie: { name: string; date: string | null } | null;
   nextQi: { name: string; date: string | null } | null;
 } {
-  const stop = timer("GetCurrentSolarTerm");
-  try {
+  return withErrorHandlingSync("GetCurrentSolarTerm", LunarError, () => {
     log("info", "GetCurrentSolarTerm", "获取当前节气", { date: params.date });
 
     let solar: Solar;
@@ -295,17 +231,8 @@ export function GetCurrentSolarTerm(params: { date?: string }): {
     };
 
     log("info", "GetCurrentSolarTerm", "获取成功", result);
-    stop();
     return result;
-  } catch (err) {
-    log("error", "GetCurrentSolarTerm", "执行失败", err);
-    stop();
-    throw new LunarError(`获取当前节气失败: ${String(err)}`, "GetCurrentSolarTerm", {
-      context: { date: params.date },
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }
 
 /**
@@ -326,8 +253,7 @@ export function GetChineseCalendar(params: { date?: string }): {
   xingXiuAnimal: string;
   xingXiuLuck: string;
 } {
-  const stop = timer("GetChineseCalendar");
-  try {
+  return withErrorHandlingSync("GetChineseCalendar", LunarError, () => {
     log("info", "GetChineseCalendar", "获取黄历", { date: params.date });
 
     let solar: Solar;
@@ -357,17 +283,8 @@ export function GetChineseCalendar(params: { date?: string }): {
     };
 
     log("info", "GetChineseCalendar", "获取成功", result);
-    stop();
     return result;
-  } catch (err) {
-    log("error", "GetChineseCalendar", "执行失败", err);
-    stop();
-    throw new LunarError(`获取黄历失败: ${String(err)}`, "GetChineseCalendar", {
-      context: { date: params.date },
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }
 
 /**
@@ -386,8 +303,7 @@ export function GetDailyInfo(params: { date?: string }): {
   isWeekend: boolean;
   weekDay: number;
 } {
-  const stop = timer("GetDailyInfo");
-  try {
+  return withErrorHandlingSync("GetDailyInfo", LunarError, () => {
     log("info", "GetDailyInfo", "获取每日信息", { date: params.date });
 
     let solar: Solar;
@@ -419,17 +335,8 @@ export function GetDailyInfo(params: { date?: string }): {
     };
 
     log("info", "GetDailyInfo", "获取成功", result);
-    stop();
     return result;
-  } catch (err) {
-    log("error", "GetDailyInfo", "执行失败", err);
-    stop();
-    throw new LunarError(`获取每日信息失败: ${String(err)}`, "GetDailyInfo", {
-      context: { date: params.date },
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }
 
 /**
@@ -439,8 +346,7 @@ export function GetDailyInfo(params: { date?: string }): {
  * @returns 生肖信息 { zodiac, year }
  */
 export function GetZodiac(params: { date?: string }): { zodiac: string; year: number } {
-  const stop = timer("GetZodiac");
-  try {
+  return withErrorHandlingSync("GetZodiac", LunarError, () => {
     log("info", "GetZodiac", "获取生肖", { date: params.date });
 
     let solar: Solar;
@@ -461,17 +367,8 @@ export function GetZodiac(params: { date?: string }): { zodiac: string; year: nu
     };
 
     log("info", "GetZodiac", "获取成功", result);
-    stop();
     return result;
-  } catch (err) {
-    log("error", "GetZodiac", "执行失败", err);
-    stop();
-    throw new LunarError(`获取生肖失败: ${String(err)}`, "GetZodiac", {
-      context: { date: params.date },
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }
 
 /**
@@ -485,8 +382,7 @@ export function GetConstellation(params: { date?: string }): {
   element: string;
   luck: string;
 } {
-  const stop = timer("GetConstellation");
-  try {
+  return withErrorHandlingSync("GetConstellation", LunarError, () => {
     log("info", "GetConstellation", "获取星座", { date: params.date });
 
     let solar: Solar;
@@ -506,15 +402,6 @@ export function GetConstellation(params: { date?: string }): {
     };
 
     log("info", "GetConstellation", "获取成功", result);
-    stop();
     return result;
-  } catch (err) {
-    log("error", "GetConstellation", "执行失败", err);
-    stop();
-    throw new LunarError(`获取星座失败: ${String(err)}`, "GetConstellation", {
-      context: { date: params.date },
-      cause: err,
-      errorCode: ApiErrorCode.INTERNAL,
-    });
-  }
+  });
 }

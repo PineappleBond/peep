@@ -22,6 +22,17 @@ const _docWithLinksSchema = _docSchema.extend({
   linkTargetIds: z.array(z.number()).describe("关联文档 ID 列表"),
 });
 
+/** WikiReplaceContent / WikiInsertContent 共用的返回 schema */
+const _wikiContentReturnSchema = z
+  .object({
+    id: z.number().describe("文档 ID"),
+    title: z.string().describe("文档标题"),
+    content: z.string().describe("更新后的文档内容"),
+    tags: z.array(z.string()).describe("标签列表"),
+    updatedAt: z.number().describe("更新时间戳"),
+  })
+  .describe("更新后的文档");
+
 /* ---- Function 定义 ---- */
 
 export const wikiListFunction = {
@@ -260,15 +271,7 @@ export const wikiReplaceContentFunction = {
     return peepApi().WikiReplaceContent(params);
   },
   returns: {
-    zodSchema: z
-      .object({
-        id: z.number().describe("文档 ID"),
-        title: z.string().describe("文档标题"),
-        content: z.string().describe("替换后的文档内容"),
-        tags: z.array(z.string()).describe("标签列表"),
-        updatedAt: z.number().describe("更新时间戳"),
-      })
-      .describe("更新后的文档"),
+    zodSchema: _wikiContentReturnSchema,
   },
 };
 
@@ -302,14 +305,6 @@ export const wikiInsertContentFunction = {
     return peepApi().WikiInsertContent(params);
   },
   returns: {
-    zodSchema: z
-      .object({
-        id: z.number().describe("文档 ID"),
-        title: z.string().describe("文档标题"),
-        content: z.string().describe("插入后的文档内容"),
-        tags: z.array(z.string()).describe("标签列表"),
-        updatedAt: z.number().describe("更新时间戳"),
-      })
-      .describe("更新后的文档"),
+    zodSchema: _wikiContentReturnSchema,
   },
 };

@@ -6,6 +6,34 @@
 import { withMeta, z } from "@rtc-agent/component";
 import { CONFIRM_FIELD, mergeBirthInput, peepApi, needsConfirm, extractConfirmed } from "./shared";
 
+/* ---- 共享 Schema ---- */
+
+/** Person 基础信息 schema——PersonList 和 PersonGet 共用 */
+const _personReturnSchema = z.object({
+  id: z.number().describe("人物ID"),
+  name: z.string().describe("姓名"),
+  gender: z.string().describe("性别"),
+  calendar: z.string().describe("历法类型：solar(公历) 或 lunar(农历)"),
+  date: z.string().describe("出生日期，格式 YYYY-MM-DD"),
+  timeIndex: z.number().describe("时辰索引 0-12，0=早子时(23-1点)，12=晚子时(23-24点)"),
+  isLeapMonth: z.boolean().describe("是否农历闰月"),
+  exactTime: z.string().describe("精确时间（时分）"),
+  useTrueSolar: z.boolean().describe("是否使用真太阳时"),
+  placeMode: z.string().describe("地点模式"),
+  province: z.string().describe("省份"),
+  city: z.string().describe("城市"),
+  district: z.string().describe("区县"),
+  timezone: z.string().describe("时区"),
+  algorithm: z.string().describe("排盘算法"),
+  yearDivide: z.string().describe("年分割方式"),
+  mutagenTable: z.string().describe("四化表"),
+  dayDivide: z.string().describe("日分割方式"),
+  astroType: z.string().describe("星系类型"),
+  residence: z.string().describe("居住地"),
+  isDefault: z.boolean().describe("是否为默认人物"),
+  savedAt: z.number().describe("保存时间戳（毫秒）"),
+});
+
 export const personListFunction = {
   name: "PersonList",
   description:
@@ -15,32 +43,7 @@ export const personListFunction = {
   zodSchema: z.object({}),
   handler: () => peepApi().PersonList(),
   returns: {
-    zodSchema: z.array(
-      z.object({
-        id: z.number().describe("人物ID"),
-        name: z.string().describe("姓名"),
-        gender: z.string().describe("性别"),
-        calendar: z.string().describe("历法类型：solar(公历) 或 lunar(农历)"),
-        date: z.string().describe("出生日期，格式 YYYY-MM-DD"),
-        timeIndex: z.number().describe("时辰索引 0-12，0=早子时(23-1点)，12=晚子时(23-24点)"),
-        isLeapMonth: z.boolean().describe("是否农历闰月"),
-        exactTime: z.string().describe("精确时间（时分）"),
-        useTrueSolar: z.boolean().describe("是否使用真太阳时"),
-        placeMode: z.string().describe("地点模式"),
-        province: z.string().describe("省份"),
-        city: z.string().describe("城市"),
-        district: z.string().describe("区县"),
-        timezone: z.string().describe("时区"),
-        algorithm: z.string().describe("排盘算法"),
-        yearDivide: z.string().describe("年分割方式"),
-        mutagenTable: z.string().describe("四化表"),
-        dayDivide: z.string().describe("日分割方式"),
-        astroType: z.string().describe("星系类型"),
-        residence: z.string().describe("居住地"),
-        isDefault: z.boolean().describe("是否为默认人物"),
-        savedAt: z.number().describe("保存时间戳（毫秒）"),
-      }),
-    ),
+    zodSchema: z.array(_personReturnSchema),
   },
 };
 
@@ -61,30 +64,7 @@ export const personGetFunction = {
     return peepApi().PersonGet(input.personId);
   },
   returns: {
-    zodSchema: z.object({
-      id: z.number().describe("人物ID"),
-      name: z.string().describe("姓名"),
-      gender: z.string().describe("性别"),
-      calendar: z.string().describe("历法类型：solar(公历) 或 lunar(农历)"),
-      date: z.string().describe("出生日期，格式 YYYY-MM-DD"),
-      timeIndex: z.number().describe("时辰索引 0-12，0=早子时(23-1点)，12=晚子时(23-24点)"),
-      isLeapMonth: z.boolean().describe("是否农历闰月"),
-      exactTime: z.string().describe("精确时间（时分）"),
-      useTrueSolar: z.boolean().describe("是否使用真太阳时"),
-      placeMode: z.string().describe("地点模式"),
-      province: z.string().describe("省份"),
-      city: z.string().describe("城市"),
-      district: z.string().describe("区县"),
-      timezone: z.string().describe("时区"),
-      algorithm: z.string().describe("排盘算法"),
-      yearDivide: z.string().describe("年分割方式"),
-      mutagenTable: z.string().describe("四化表"),
-      dayDivide: z.string().describe("日分割方式"),
-      astroType: z.string().describe("星系类型"),
-      residence: z.string().describe("居住地"),
-      isDefault: z.boolean().describe("是否为默认人物"),
-      savedAt: z.number().describe("保存时间戳（毫秒）"),
-    }),
+    zodSchema: _personReturnSchema,
   },
 };
 

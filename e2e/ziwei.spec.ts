@@ -5,8 +5,22 @@
  * 数据完整性等功能。
  */
 import { test, expect } from "@playwright/test";
+import { captureConsoleLogs, assertNoConsoleErrors } from "./console-helper";
 
 test.describe("紫微斗数排盘 debugApi.ZiWei", () => {
+  // ─── Console 日志拦截 ─────────────────────────────────────
+  let consoleLogs: ReturnType<typeof captureConsoleLogs>;
+
+  test.beforeEach(async ({ page }) => {
+    consoleLogs = captureConsoleLogs(page);
+  });
+
+  test.afterEach(() => {
+    assertNoConsoleErrors(consoleLogs, [
+      // 忽略 ZiWei 内部预期的错误日志（错误处理测试会主动触发错误）
+      /执行失败/,
+    ]);
+  });
   test("基本排盘：切换人物后返回完整的盘面数据", async ({ page }) => {
     await page.goto("/peep/");
     await page.waitForLoadState("networkidle");

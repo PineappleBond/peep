@@ -5,8 +5,23 @@
  * 结束条件：所有测试通过，证明算法搬运完成
  */
 import { test, expect } from "@playwright/test";
+import { captureConsoleLogs, assertNoConsoleErrors } from "./console-helper";
 
 test.describe("大六壬排盘 debugApi.DaLiuRen", () => {
+  // ─── Console 日志拦截 ─────────────────────────────────────
+  let consoleLogs: ReturnType<typeof captureConsoleLogs>;
+
+  test.beforeEach(async ({ page }) => {
+    consoleLogs = captureConsoleLogs(page);
+  });
+
+  test.afterEach(() => {
+    assertNoConsoleErrors(consoleLogs, [
+      // 忽略 DaLiuRen 内部预期的错误日志（错误处理测试会主动触发错误）
+      /执行失败/,
+    ]);
+  });
+
   test("基本排盘：输入日期时间，返回完整的天地盘、四课、三传、天将", async ({ page }) => {
     await page.goto("/peep/");
 

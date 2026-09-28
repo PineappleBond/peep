@@ -17,8 +17,8 @@ import {
   invalidateLiuyaoTagCache,
 } from "../liuyaoDb";
 import { getPerson } from "../personDb";
-import { log, timer } from "./logger";
-import { LiuyaoError, wrapError, ApiErrorCode } from "./errors";
+import { log } from "./logger";
+import { LiuyaoError, ApiErrorCode } from "./errors";
 import {
   getSelectPerson,
   getGetLiuyaoList,
@@ -43,6 +43,7 @@ import {
   updateUiState,
   updateRecordMetadata,
   withErrorHandling,
+  withErrorHandlingSync,
 } from "./helpers";
 import { parseDate } from "./ziwei";
 import { formatDate, formatDateTime } from "../utils";
@@ -125,8 +126,7 @@ export function computeLiuyaoData(
   yongTarget: YongTarget = "自占",
   time?: string,
 ): { chart: ChartJSON; yong: YongShen; lines: SixLines } {
-  const stop = timer("computeLiuyaoData");
-  try {
+  return withErrorHandlingSync("computeLiuyaoData", LiuyaoError, () => {
     // 如果 lines 未提供，自动摇卦
     const finalLines: SixLines = lines ?? tossHexagram();
     log("info", "computeLiuyaoData", "纯计算排盘", {
@@ -145,18 +145,8 @@ export function computeLiuyaoData(
       yongRel: yong.rel,
       yongPos: yong.pos,
     });
-    stop();
     return { chart, yong, lines: finalLines };
-  } catch (err) {
-    stop();
-    if (err instanceof LiuyaoError) throw err;
-    log("error", "computeLiuyaoData", "排盘失败", err);
-    throw new LiuyaoError("六爻排盘计算失败", "computeLiuyaoData", {
-      context: { date, time, yongTarget, lines },
-      suggestion: "请检查日期格式（YYYY-MM-DD）是否正确，以及六爻值是否为有效的 0-3 整数数组",
-      cause: err,
-    });
-  }
+  });
 }
 
 /**
@@ -229,8 +219,7 @@ export async function LiuYaoCreate(
   params: LiuyaoCreateParams,
   options?: LiuyaoOptions,
 ): Promise<LiuyaoRecord> {
-  const stop = timer("LiuYaoCreate");
-  try {
+  return withErrorHandling("LiuYaoCreate", LiuyaoError, async () => {
     // 参数验证
     validateNonEmptyString(params.question, "question", "LiuYaoCreate", LiuyaoError);
     validateStringLength(params.question, "question", 200, "LiuYaoCreate", LiuyaoError);
@@ -311,7 +300,6 @@ export async function LiuYaoCreate(
       invalidateLiuyaoTagCache();
 
       log("info", "LiuYaoCreate", "skipUI 模式创建成功", { recordId: id });
-      stop();
       return { ...record, id };
     }
 
@@ -365,21 +353,8 @@ export async function LiuYaoCreate(
     await waitForRecordSaved(record.id, 2000);
 
     log("info", "LiuYaoCreate", "创建成功", { recordId: record.id });
-    stop();
     return record;
-  } catch (err) {
-    if (err instanceof LiuyaoError) {
-      log("error", "LiuYaoCreate", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "LiuYaoCreate", "执行失败", err);
-    stop();
-    throw wrapError("LiuYaoCreate", err, LiuyaoError);
-  }
+  });
 }
 
 /**
@@ -410,8 +385,7 @@ export async function LiuYaoList(
   params: LiuyaoListParams,
   options?: LiuyaoOptions,
 ): Promise<{ records: LiuyaoRecord[]; total: number }> {
-  const stop = timer("LiuYaoList");
-  try {
+  return withErrorHandling("LiuYaoList", LiuyaoError, async () => {
     // 参数验证
     validateTags(params.tags, "LiuYaoList", LiuyaoError);
     validatePagination(params, "LiuYaoList", LiuyaoError);
@@ -438,7 +412,6 @@ export async function LiuYaoList(
         total: result.total,
         returned: result.records.length,
       });
-      stop();
       return { records: result.records, total: result.total };
     }
 
@@ -484,17 +457,8 @@ export async function LiuYaoList(
       total: result.total,
       returned: result.records.length,
     });
-    stop();
     return { records: result.records, total: result.total };
-  } catch (err) {
-    if (err instanceof LiuyaoError) {
-      stop();
-      throw err;
-    }
-    log("error", "LiuYaoList", "执行失败", err);
-    stop();
-    throw wrapError("LiuYaoList", err, LiuyaoError);
-  }
+  });
 }
 
 /**
@@ -521,8 +485,7 @@ export async function LiuYaoView(
   params: LiuyaoViewParams,
   options?: LiuyaoOptions,
 ): Promise<LiuyaoViewResult> {
-  const stop = timer("LiuYaoView");
-  try {
+  return withErrorHandling("LiuYaoView", LiuyaoError, async () => {
     // 参数验证
     validateRecordId(params.recordId, "LiuYaoView");
 
@@ -558,7 +521,6 @@ export async function LiuYaoView(
       // 附带纯计算数据（hbar + 旺衰列）
       const computed = buildLiuyaoComputedData(record);
       log("info", "LiuYaoView", "skipUI 模式查看成功", { recordId: record.id });
-      stop();
       return { ...record, computed };
     }
 
@@ -646,17 +608,8 @@ export async function LiuYaoView(
       recordId: selectedRecord.id,
       skippedUI: isSameRecord,
     });
-    stop();
     return { ...selectedRecord, computed };
-  } catch (err) {
-    if (err instanceof LiuyaoError) {
-      stop();
-      throw err;
-    }
-    log("error", "LiuYaoView", "执行失败", err);
-    stop();
-    throw wrapError("LiuYaoView", err, LiuyaoError);
-  }
+  });
 }
 
 /**
@@ -706,8 +659,7 @@ export async function LiuYaoDelete(
   params: { recordId: number },
   options?: { skipUI?: boolean },
 ): Promise<void> {
-  const stop = timer("LiuYaoDelete");
-  try {
+  return withErrorHandling("LiuYaoDelete", LiuyaoError, async () => {
     validateRecordId(params.recordId, "LiuYaoDelete");
 
     if (!options?.skipUI) {
@@ -733,20 +685,7 @@ export async function LiuYaoDelete(
     await deleteLiuyaoRecord(params.recordId);
 
     log("info", "LiuYaoDelete", "删除成功", { recordId: params.recordId });
-    stop();
-  } catch (err) {
-    if (err instanceof LiuyaoError) {
-      log("error", "LiuYaoDelete", "执行失败（不重试）", {
-        errorType: err.name,
-        message: err.message.split("\n")[0],
-      });
-      stop();
-      throw err;
-    }
-    log("error", "LiuYaoDelete", "执行失败", err);
-    stop();
-    throw wrapError("LiuYaoDelete", err, LiuyaoError);
-  }
+  });
 }
 
 /**

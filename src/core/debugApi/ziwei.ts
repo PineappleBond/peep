@@ -15,8 +15,8 @@ import { buildHbarData, clearHbarCaches } from "../hbar";
 import { getChartDataForScope, type ScopeChartData } from "../analysis";
 import { buildChartIndex } from "../chartIndex";
 import { LRUCache, registerCache, clearAllCaches } from "../cache";
-import { log, timer } from "./logger";
-import { ZiWeiError, ParseDateError, ComputeScopeError, wrapError, ApiErrorCode } from "./errors";
+import { log } from "./logger";
+import { ZiWeiError, ParseDateError, ComputeScopeError, ApiErrorCode } from "./errors";
 import { getGetZwds, getGetPerson, getSelectPerson } from "./callbacks";
 import { resolvePersonId } from "./person";
 import { validateScope } from "./validate";
@@ -27,6 +27,8 @@ import {
   waitForPickMatch,
   waitForStateUpdate,
   navigateToPage,
+  withErrorHandling,
+  withErrorHandlingSync,
 } from "./helpers";
 import type { ZiWeiComputedData, ZiWeiResult, ZiWeiOptions } from "./types";
 
@@ -372,8 +374,7 @@ export async function SetHoroscopeTime(params: {
   day: number;
   hour?: number;
 }): Promise<{ year: number; month: number; day: number; hour: number }> {
-  const stop = timer("SetHoroscopeTime");
-  try {
+  return withErrorHandling("SetHoroscopeTime", ZiWeiError, async () => {
     log("info", "SetHoroscopeTime", "设置运限时间", params);
 
     // 获取 Zwds 状态
@@ -416,17 +417,8 @@ export async function SetHoroscopeTime(params: {
     const result = _setHoroscopeTime(z, date);
 
     log("info", "SetHoroscopeTime", "设置成功", result);
-    stop();
     return result;
-  } catch (err) {
-    if (err instanceof ZiWeiError) {
-      stop();
-      throw err;
-    }
-    log("error", "SetHoroscopeTime", "设置失败", err);
-    stop();
-    throw wrapError("SetHoroscopeTime", err, ZiWeiError);
-  }
+  });
 }
 
 /* ─────────────── 核心计算函数 ─────────────── */
@@ -458,27 +450,26 @@ export async function SetHoroscopeTime(params: {
  * ```
  */
 export function computeZiWeiData(z: Zwds, scope?: Scope): ZiWeiComputedData {
-  const stop = timer("computeZiWeiData");
+  return withErrorHandlingSync("computeZiWeiData", ZiWeiError, () => {
+    // 构建 hbar：运限拨盘数据（大运/流年/流月/流日/流时列表）
+    const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
+    const hbar = hbarBase ? { ...hbarBase, visible: { ...z.visible } } : null;
 
-  // 构建 hbar：运限拨盘数据（大运/流年/流月/流日/流时列表）
-  const hbarBase = buildHbarData(z.astrolabe, z.birthLunarYear, z.pick);
-  const hbar = hbarBase ? { ...hbarBase, visible: { ...z.visible } } : null;
+    // 构建 chart：指定 scope 的运限盘面数据
+    // 共享 chartIndex：buildChartIndex 内部按 astrolabe 弱引用缓存，多次调用零开销
+    let chart: ScopeChartData | null = null;
+    if (scope && z.astrolabe && z.horoscope) {
+      const ix = buildChartIndex(z.astrolabe);
+      chart = getChartDataForScope({
+        astrolabe: z.astrolabe,
+        horoscope: z.horoscope,
+        scope,
+        chartIndex: ix,
+      });
+    }
 
-  // 构建 chart：指定 scope 的运限盘面数据
-  // 共享 chartIndex：buildChartIndex 内部按 astrolabe 弱引用缓存，多次调用零开销
-  let chart: ScopeChartData | null = null;
-  if (scope && z.astrolabe && z.horoscope) {
-    const ix = buildChartIndex(z.astrolabe);
-    chart = getChartDataForScope({
-      astrolabe: z.astrolabe,
-      horoscope: z.horoscope,
-      scope,
-      chartIndex: ix,
-    });
-  }
-
-  stop();
-  return { hbar, chart };
+    return { hbar, chart };
+  });
 }
 
 /**
@@ -503,168 +494,164 @@ export async function ZiWei(
   time?: Date | number | string,
   options?: ZiWeiOptions,
 ): Promise<ZiWeiResult> {
-  const stop = timer("ZiWei");
-  const maxRetries = 2;
-  let lastError: unknown = null;
+  return withErrorHandling("ZiWei", ZiWeiError, async () => {
+    const maxRetries = 2;
+    let lastError: unknown = null;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      // 解析人物 ID（不传则用默认）
-      const resolvedId = await resolvePersonId(personId);
-      // 输入校验——使用统一的验证工具
-      if (!Number.isFinite(resolvedId) || resolvedId <= 0) {
-        throw new ZiWeiError(`personId 无效：${resolvedId}，需为正整数`, "ZiWei", {
-          context: { personId, resolvedId },
-          suggestion: "请传入有效的人物 ID（正整数），或不传以使用默认人物",
-          errorCode: ApiErrorCode.INVALID_INPUT,
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // 解析人物 ID（不传则用默认）
+        const resolvedId = await resolvePersonId(personId);
+        // 输入校验——使用统一的验证工具
+        if (!Number.isFinite(resolvedId) || resolvedId <= 0) {
+          throw new ZiWeiError(`personId 无效：${resolvedId}，需为正整数`, "ZiWei", {
+            context: { personId, resolvedId },
+            suggestion: "请传入有效的人物 ID（正整数），或不传以使用默认人物",
+            errorCode: ApiErrorCode.INVALID_INPUT,
+          });
+        }
+        // 使用统一的 scope 验证
+        validateScope(scope, "ZiWei");
+
+        log("info", "ZiWei", "开始执行", {
+          personId,
+          scope,
+          time,
+          attempt: attempt + 1,
+          skipUI: !!options?.skipUI,
         });
-      }
-      // 使用统一的 scope 验证
-      validateScope(scope, "ZiWei");
 
-      log("info", "ZiWei", "开始执行", {
-        personId,
-        scope,
-        time,
-        attempt: attempt + 1,
-        skipUI: !!options?.skipUI,
-      });
+        // skipUI 模式：跳过所有 UI 操控，直接读取当前 Zwds 状态并计算数据
+        if (options?.skipUI) {
+          const getZwds = getGetZwds();
+          const getPerson = getGetPerson();
+          if (!getZwds || !getPerson) {
+            throw new ZiWeiError("调试 API 未初始化，请确认 App 已加载", "ZiWei", {
+              context: { getZwdsReady: !!getZwds, getPersonReady: !!getPerson },
+              suggestion: "请确认 App.tsx 已完成挂载，或等待页面加载完成后重试",
+              errorCode: ApiErrorCode.NOT_INITIALIZED,
+            });
+          }
+          const z = getZwds();
+          if (!z) {
+            throw new ZiWeiError("排盘数据未就绪", "ZiWei", {
+              suggestion: "排盘引擎尚未初始化，请确认人物已选择后再调用",
+              errorCode: ApiErrorCode.NOT_INITIALIZED,
+            });
+          }
+          const { hbar, chart } = computeZiWeiData(z, scope);
+          const person = getPerson();
+          log("info", "ZiWei", "skipUI 模式执行成功", {
+            personId: person?.id,
+            scope,
+            hasChart: !!chart,
+          });
+          return { person, hbar, chart };
+        }
 
-      // skipUI 模式：跳过所有 UI 操控，直接读取当前 Zwds 状态并计算数据
-      if (options?.skipUI) {
+        // 正常模式：执行 UI 操控（导航、切换人物、设置时间、设置运限级别）
+        await navigateToPage("/", "ziwei");
+
+        // 导航完成后再获取回调
+        const selectPerson = getSelectPerson();
         const getZwds = getGetZwds();
         const getPerson = getGetPerson();
-        if (!getZwds || !getPerson) {
+
+        if (!selectPerson || !getZwds || !getPerson) {
           throw new ZiWeiError("调试 API 未初始化，请确认 App 已加载", "ZiWei", {
-            context: { getZwdsReady: !!getZwds, getPersonReady: !!getPerson },
+            context: {
+              selectPersonReady: !!selectPerson,
+              getZwdsReady: !!getZwds,
+              getPersonReady: !!getPerson,
+            },
             suggestion: "请确认 App.tsx 已完成挂载，或等待页面加载完成后重试",
             errorCode: ApiErrorCode.NOT_INITIALIZED,
           });
         }
+
+        // 1. 切换人物（操控 UI）
+        await selectPerson(resolvedId);
+
         const z = getZwds();
         if (!z) {
           throw new ZiWeiError("排盘数据未就绪", "ZiWei", {
-            suggestion: "排盘引擎尚未初始化，请确认人物已选择后再调用",
+            context: { personId: resolvedId },
+            suggestion: "排盘引擎尚未初始化，请稍后重试。如持续出现请检查人物出生数据是否完整",
             errorCode: ApiErrorCode.NOT_INITIALIZED,
           });
         }
-        const { hbar, chart } = computeZiWeiData(z, scope);
+
+        // 等待 astrolabe 更新完成
+        await waitForPersonMatch(resolvedId, 2000);
+        await waitForAstrolabeStable(z, 2000);
+
+        // 手动重置 pick 到"今天"（不依赖 useEffect，解决同一人物再次调用时 useEffect 不触发的问题）
+        z.actions.resetToday();
+        // 等待 React 渲染完成
+        await waitForStateUpdate();
+
+        // 重新获取最新 z（React 渲染后状态已更新）
+        const freshZ = getZwds() ?? z;
+        log("debug", "ZiWei", "pick 已重置", { pick: freshZ.pick });
+
+        // 2. 设置时间（在 useEffect 重置完成之后，带验证和重试）
+        if (time) {
+          const date = parseDate(time);
+          await setHoroscopeTimeWithRetry(freshZ, date);
+        }
+
+        // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
+        // dispatch 是稳定引用，通过 actions 调用不受快照过期影响
+        if (scope) {
+          freshZ.actions.showScope(scope);
+        }
+
+        // 4. 等待所有状态更新完成（轮询 + rAF 确保 React 状态和渲染完成）
+        await waitForStateUpdate();
+
+        // 5. 获取数据（重新获取最新 z，确保 pick/astrolabe/horoscope 均为最新值）
+        const latestZ = getZwds() ?? freshZ;
         const person = getPerson();
-        log("info", "ZiWei", "skipUI 模式执行成功", {
-          personId: person?.id,
-          scope,
-          hasChart: !!chart,
-        });
-        stop();
+        const { hbar, chart } = computeZiWeiData(latestZ, scope);
+
+        log("info", "ZiWei", "执行成功", { personId: person?.id, scope, hasChart: !!chart });
         return { person, hbar, chart };
+      } catch (err) {
+        lastError = err;
+
+        // 自定义错误（ParseDateError / ZiWeiError）：不重试，直接抛出
+        if (err instanceof ZiWeiError) {
+          log("error", "ZiWei", "执行失败（不重试）", {
+            errorType: err.name,
+            message: err.message.split("\n")[0],
+            attempt: attempt + 1,
+          });
+          throw err;
+        }
+
+        // 超时/临时性错误：记录并重试
+        const isTimeout = err instanceof Error && /超时|timeout/i.test(err.message);
+        if (isTimeout && attempt < maxRetries) {
+          log("warn", "ZiWei", `检测到超时错误，第 ${attempt + 1} 次重试`, {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          await new Promise(r => setTimeout(r, 100 * (attempt + 1)));
+          continue;
+        }
+
+        // 其他错误：不重试
+        log("error", "ZiWei", "执行失败", err);
+        throw err;
       }
-
-      // 正常模式：执行 UI 操控（导航、切换人物、设置时间、设置运限级别）
-      await navigateToPage("/", "ziwei");
-
-      // 导航完成后再获取回调
-      const selectPerson = getSelectPerson();
-      const getZwds = getGetZwds();
-      const getPerson = getGetPerson();
-
-      if (!selectPerson || !getZwds || !getPerson) {
-        throw new ZiWeiError("调试 API 未初始化，请确认 App 已加载", "ZiWei", {
-          context: {
-            selectPersonReady: !!selectPerson,
-            getZwdsReady: !!getZwds,
-            getPersonReady: !!getPerson,
-          },
-          suggestion: "请确认 App.tsx 已完成挂载，或等待页面加载完成后重试",
-          errorCode: ApiErrorCode.NOT_INITIALIZED,
-        });
-      }
-
-      // 1. 切换人物（操控 UI）
-      await selectPerson(resolvedId);
-
-      const z = getZwds();
-      if (!z) {
-        throw new ZiWeiError("排盘数据未就绪", "ZiWei", {
-          context: { personId: resolvedId },
-          suggestion: "排盘引擎尚未初始化，请稍后重试。如持续出现请检查人物出生数据是否完整",
-          errorCode: ApiErrorCode.NOT_INITIALIZED,
-        });
-      }
-
-      // 等待 astrolabe 更新完成
-      await waitForPersonMatch(resolvedId, 2000);
-      await waitForAstrolabeStable(z, 2000);
-
-      // 手动重置 pick 到"今天"（不依赖 useEffect，解决同一人物再次调用时 useEffect 不触发的问题）
-      z.actions.resetToday();
-      // 等待 React 渲染完成
-      await waitForStateUpdate();
-
-      // 重新获取最新 z（React 渲染后状态已更新）
-      const freshZ = getZwds() ?? z;
-      log("debug", "ZiWei", "pick 已重置", { pick: freshZ.pick });
-
-      // 2. 设置时间（在 useEffect 重置完成之后，带验证和重试）
-      if (time) {
-        const date = parseDate(time);
-        await setHoroscopeTimeWithRetry(freshZ, date);
-      }
-
-      // 3. 设置运限级别（只显示目标 scope，其他全部关闭）
-      // dispatch 是稳定引用，通过 actions 调用不受快照过期影响
-      if (scope) {
-        freshZ.actions.showScope(scope);
-      }
-
-      // 4. 等待所有状态更新完成（轮询 + rAF 确保 React 状态和渲染完成）
-      await waitForStateUpdate();
-
-      // 5. 获取数据（重新获取最新 z，确保 pick/astrolabe/horoscope 均为最新值）
-      const latestZ = getZwds() ?? freshZ;
-      const person = getPerson();
-      const { hbar, chart } = computeZiWeiData(latestZ, scope);
-
-      log("info", "ZiWei", "执行成功", { personId: person?.id, scope, hasChart: !!chart });
-      stop();
-      return { person, hbar, chart };
-    } catch (err) {
-      lastError = err;
-
-      // 自定义错误（ParseDateError / ZiWeiError）：不重试，直接抛出
-      if (err instanceof ZiWeiError) {
-        log("error", "ZiWei", "执行失败（不重试）", {
-          errorType: err.name,
-          message: err.message.split("\n")[0],
-          attempt: attempt + 1,
-        });
-        stop();
-        throw wrapError("ZiWei", err, ZiWeiError);
-      }
-
-      // 超时/临时性错误：记录并重试
-      const isTimeout = err instanceof Error && /超时|timeout/i.test(err.message);
-      if (isTimeout && attempt < maxRetries) {
-        log("warn", "ZiWei", `检测到超时错误，第 ${attempt + 1} 次重试`, {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        await new Promise(r => setTimeout(r, 100 * (attempt + 1)));
-        continue;
-      }
-
-      // 其他错误：不重试
-      log("error", "ZiWei", "执行失败", err);
-      stop();
-      throw wrapError("ZiWei", err, ZiWeiError);
     }
-  }
 
-  // 所有重试均失败（仅超时错误会到达这里）
-  stop();
-  throw new ZiWeiError(`ZiWei 重试 ${maxRetries} 次后仍失败`, "ZiWei", {
-    context: { personId, scope, time, attempts: maxRetries + 1 },
-    suggestion: "连续多次超时，请检查设备性能或刷新页面后重试",
-    cause: lastError,
-    errorCode: ApiErrorCode.TIMEOUT,
+    // 所有重试均失败（仅超时错误会到达这里）
+    throw new ZiWeiError(`ZiWei 重试 ${2} 次后仍失败`, "ZiWei", {
+      context: { personId, scope, time, attempts: maxRetries + 1 },
+      suggestion: "连续多次超时，请检查设备性能或刷新页面后重试",
+      cause: lastError,
+      errorCode: ApiErrorCode.TIMEOUT,
+    });
   });
 }
 
@@ -681,8 +668,7 @@ export async function ZiWei(
  * @throws ComputeScopeError 本命盘计算或日期解析失败时抛出
  */
 export function computeScopeData(person: Person, solarDate: Date | string): HbarData | null {
-  const stop = timer("computeScopeData");
-  try {
+  return withErrorHandlingSync("computeScopeData", ZiWeiError, () => {
     // 本命盘计算（computeAstrolabe 失败时抛 ComputeScopeError）
     const astrolabe = computeAstrolabe(person);
 
@@ -715,24 +701,8 @@ export function computeScopeData(person: Person, solarDate: Date | string): Hbar
       pick,
       hasResult: !!result,
     });
-    stop();
     return result;
-  } catch (err) {
-    // 自定义错误（ComputeScopeError / ParseDateError）直接抛出
-    if (err instanceof ZiWeiError) {
-      stop();
-      throw err;
-    }
-    // 意外错误：包装为 ComputeScopeError
-    stop();
-    throw new ComputeScopeError("运限计算失败", {
-      personId: person.id,
-      personName: person.name,
-      solarDate: String(solarDate),
-      suggestion: "请检查人物数据完整性和日期格式。如问题持续，请排查 iztro 引擎版本",
-      cause: err,
-    });
-  }
+  });
 }
 
 /**
@@ -748,8 +718,7 @@ export async function GetScopeData(
   solarDate: Date | string,
   personId?: number,
 ): Promise<HbarData | null> {
-  const stop = timer("GetScopeData");
-  try {
+  return withErrorHandling("GetScopeData", ZiWeiError, async () => {
     const resolvedId = await resolvePersonId(personId);
     log("info", "GetScopeData", "开始计算", { solarDate, personId: resolvedId });
 
@@ -764,12 +733,8 @@ export async function GetScopeData(
 
     const result = computeScopeData(person, solarDate);
     log("info", "GetScopeData", "计算完成", { personId: resolvedId, hasResult: !!result });
-    stop();
     return result;
-  } catch (err) {
-    log("error", "GetScopeData", "计算失败", err);
-    throw wrapError("GetScopeData", err, ZiWeiError);
-  }
+  });
 }
 
 /**
