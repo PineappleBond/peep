@@ -40,6 +40,7 @@ import {
   getUiState,
   updateUiState,
   updateRecordMetadata,
+  withErrorHandling,
 } from "./helpers";
 import { parseDate } from "./ziwei";
 import type {
@@ -593,14 +594,13 @@ export async function DaLiuRenUpdateTags(params: {
   recordId: number;
   tags: string[];
 }): Promise<LiurenRecord> {
-  const stop = timer("DaLiuRenUpdateTags");
-  try {
+  return withErrorHandling("DaLiuRenUpdateTags", DaLiuRenError, async () => {
     validateRecordId(params.recordId, "DaLiuRenUpdateTags");
     validateTags(params.tags, "DaLiuRenUpdateTags", DaLiuRenError);
 
     log("info", "DaLiuRenUpdateTags", "更新标签", { recordId: params.recordId, tags: params.tags });
 
-    const updated = await updateRecordMetadata<LiurenRecord>(
+    return updateRecordMetadata<LiurenRecord>(
       params.recordId,
       getLiurenRecord,
       saveLiurenRecord,
@@ -609,18 +609,7 @@ export async function DaLiuRenUpdateTags(params: {
       DaLiuRenError,
       "DaLiuRenUpdateTags",
     );
-
-    stop();
-    return updated;
-  } catch (err) {
-    if (err instanceof DaLiuRenError) {
-      stop();
-      throw err;
-    }
-    log("error", "DaLiuRenUpdateTags", "执行失败", err);
-    stop();
-    throw wrapError("DaLiuRenUpdateTags", err, DaLiuRenError);
-  }
+  });
 }
 
 /**
@@ -647,8 +636,7 @@ export async function DaLiuRenUpdateNote(params: {
   note?: string;
   background?: string;
 }): Promise<LiurenRecord> {
-  const stop = timer("DaLiuRenUpdateNote");
-  try {
+  return withErrorHandling("DaLiuRenUpdateNote", DaLiuRenError, async () => {
     validateRecordId(params.recordId, "DaLiuRenUpdateNote");
 
     log("info", "DaLiuRenUpdateNote", "更新备注", {
@@ -657,7 +645,7 @@ export async function DaLiuRenUpdateNote(params: {
       hasBackground: params.background !== undefined,
     });
 
-    const updated = await updateRecordMetadata<LiurenRecord>(
+    return updateRecordMetadata<LiurenRecord>(
       params.recordId,
       getLiurenRecord,
       saveLiurenRecord,
@@ -670,16 +658,5 @@ export async function DaLiuRenUpdateNote(params: {
       DaLiuRenError,
       "DaLiuRenUpdateNote",
     );
-
-    stop();
-    return updated;
-  } catch (err) {
-    if (err instanceof DaLiuRenError) {
-      stop();
-      throw err;
-    }
-    log("error", "DaLiuRenUpdateNote", "执行失败", err);
-    stop();
-    throw wrapError("DaLiuRenUpdateNote", err, DaLiuRenError);
-  }
+  });
 }

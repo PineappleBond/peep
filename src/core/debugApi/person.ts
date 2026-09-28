@@ -7,9 +7,10 @@
 import type { Person, BirthInput } from "./types";
 import { listPersons, getPerson, savePerson, deletePerson, getDefaultPerson } from "../personDb";
 import { globalEvents } from "../events";
-import { log, timer } from "./logger";
-import { ZiWeiError, wrapError, ApiErrorCode } from "./errors";
+import { log } from "./logger";
+import { ZiWeiError, ApiErrorCode } from "./errors";
 import { validatePersonId } from "./validate";
+import { withErrorHandling } from "./helpers";
 
 /** localStorage 中存储当前选中人物 ID 的 key（与 Layout.tsx 保持一致） */
 const CURRENT_PERSON_STORAGE_KEY = "zwds-current-person-id";
@@ -72,17 +73,12 @@ export async function resolvePersonId(personId?: number): Promise<number> {
  * ```
  */
 export async function PersonList(): Promise<Person[]> {
-  const stop = timer("PersonList");
-  try {
+  return withErrorHandling("PersonList", ZiWeiError, async () => {
     log("info", "PersonList", "查询人物列表");
     const persons = await listPersons();
     log("info", "PersonList", "查询成功", { count: persons.length });
-    stop();
     return persons;
-  } catch (err) {
-    log("error", "PersonList", "查询失败", err);
-    throw wrapError("PersonList", err, ZiWeiError);
-  }
+  });
 }
 
 /**
@@ -107,8 +103,7 @@ export async function PersonList(): Promise<Person[]> {
  * ```
  */
 export async function PersonGet(personId?: number): Promise<Person> {
-  const stop = timer("PersonGet");
-  try {
+  return withErrorHandling("PersonGet", ZiWeiError, async () => {
     const id = await resolvePersonId(personId);
     log("info", "PersonGet", "查询人物", { id });
     const person = await getPerson(id);
@@ -120,12 +115,8 @@ export async function PersonGet(personId?: number): Promise<Person> {
       });
     }
     log("info", "PersonGet", "查询成功", { id, name: person.name });
-    stop();
     return person;
-  } catch (err) {
-    log("error", "PersonGet", "查询失败", err);
-    throw wrapError("PersonGet", err, ZiWeiError);
-  }
+  });
 }
 
 /**
@@ -140,19 +131,13 @@ export async function PersonGet(personId?: number): Promise<Person> {
  * @param isDefault 是否设为默认人物（可选，默认 false）
  */
 export async function PersonCreate(input: BirthInput, isDefault?: boolean): Promise<Person> {
-  const stop = timer("PersonCreate");
-  try {
+  return withErrorHandling("PersonCreate", ZiWeiError, async () => {
     log("info", "PersonCreate", "创建人物", { name: input.name, isDefault });
     const person = await savePerson(undefined, input, isDefault ?? false);
-    // UI 同步：通知所有页面切换到新人物
     globalEvents.emit("person.changed", person);
     log("info", "PersonCreate", "创建成功", { id: person.id });
-    stop();
     return person;
-  } catch (err) {
-    log("error", "PersonCreate", "创建失败", err);
-    throw wrapError("PersonCreate", err, ZiWeiError);
-  }
+  });
 }
 
 /**
@@ -174,23 +159,15 @@ export async function PersonUpdate(
   input: BirthInput,
   isDefault?: boolean,
 ): Promise<Person> {
-  const stop = timer("PersonUpdate");
-  try {
-    // 使用统一的参数验证
+  return withErrorHandling("PersonUpdate", ZiWeiError, async () => {
     validatePersonId(personId, "PersonUpdate");
     log("info", "PersonUpdate", "更新人物", { id: personId, name: input.name, isDefault });
-    // 如果未指定 isDefault，保持原值
     const defaultFlag = isDefault ?? (await getPerson(personId))?.isDefault ?? false;
     const person = await savePerson(personId, input, defaultFlag);
-    // UI 同步：通知所有页面人物数据已变化
     globalEvents.emit("person.changed", person);
     log("info", "PersonUpdate", "更新成功", { id: person.id });
-    stop();
     return person;
-  } catch (err) {
-    log("error", "PersonUpdate", "更新失败", err);
-    throw wrapError("PersonUpdate", err, ZiWeiError);
-  }
+  });
 }
 
 /**
@@ -207,21 +184,14 @@ export async function PersonUpdate(
  * ```
  */
 export async function PersonDelete(personId: number): Promise<void> {
-  const stop = timer("PersonDelete");
-  try {
-    // 使用统一的参数验证
+  return withErrorHandling("PersonDelete", ZiWeiError, async () => {
     validatePersonId(personId, "PersonDelete");
     log("info", "PersonDelete", "删除人物", { id: personId });
     await deletePerson(personId);
-    // UI 同步：删除后切换到默认人物
     const defaultPerson = await getDefaultPerson();
     globalEvents.emit("person.changed", defaultPerson);
     log("info", "PersonDelete", "删除成功", { id: personId });
-    stop();
-  } catch (err) {
-    log("error", "PersonDelete", "删除失败", err);
-    throw wrapError("PersonDelete", err, ZiWeiError);
-  }
+  });
 }
 
 /**
@@ -239,12 +209,10 @@ export async function PersonDelete(personId: number): Promise<void> {
  * ```
  */
 export async function PersonSetDefault(personId: number): Promise<Person> {
-  const stop = timer("PersonSetDefault");
-  try {
+  return withErrorHandling("PersonSetDefault", ZiWeiError, async () => {
     validatePersonId(personId, "PersonSetDefault");
     log("info", "PersonSetDefault", "设置默认人物", { id: personId });
 
-    // 获取人物信息（验证存在性并获取 BirthInput）
     const person = await getPerson(personId);
     if (!person) {
       throw new ZiWeiError(`人物 ${personId} 不存在`, "PersonSetDefault", {
@@ -254,25 +222,15 @@ export async function PersonSetDefault(personId: number): Promise<Person> {
       });
     }
 
-    // 提取 BirthInput 字段并设为默认
     const { id, savedAt, isDefault: _wasDefault, ...birthInput } = person;
+    void id;
+    void savedAt;
     const updated = await savePerson(personId, birthInput as BirthInput, true);
-
-    // UI 同步：通知所有页面默认人物已变化
     globalEvents.emit("person.changed", updated);
 
     log("info", "PersonSetDefault", "设置成功", { id: updated.id, name: updated.name });
-    stop();
     return updated;
-  } catch (err) {
-    if (err instanceof ZiWeiError) {
-      stop();
-      throw err;
-    }
-    log("error", "PersonSetDefault", "设置失败", err);
-    stop();
-    throw wrapError("PersonSetDefault", err, ZiWeiError);
-  }
+  });
 }
 
 // 重新导出 wrapError 供其他模块使用

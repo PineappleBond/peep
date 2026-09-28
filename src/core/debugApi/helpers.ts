@@ -5,7 +5,9 @@
  */
 
 import type { Zwds } from "../useZwds";
-import { log } from "./logger";
+import { log, timer } from "./logger";
+import type { BaseDebugError} from "./errors";
+import { wrapError } from "./errors";
 import {
   getGetZwds,
   getGetPerson,
@@ -461,10 +463,10 @@ export function isDialogOpen(type: "daliuren" | "liuyao" | "wiki"): boolean {
  * @param source 来源标签（用于错误消息）
  * @returns 更新后的记录
  */
-export async function updateRecordMetadata<T extends { id: number }>(
+export async function updateRecordMetadata<T extends { id?: number }>(
   recordId: number,
-  getRecord: (id: number) => Promise<T | null>,
-  saveRecord: (record: T) => Promise<void>,
+  getRecord: (id: number) => Promise<T | null | undefined>,
+  saveRecord: (record: T) => Promise<unknown>,
   updateFn: (record: T) => T,
   invalidateCache?: () => void,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -497,4 +499,60 @@ export async function updateRecordMetadata<T extends { id: number }>(
 
   log("info", source, "元数据更新成功", { recordId });
   return updated;
+}
+
+/**
+ * 统一错误处理包装器——消除 debugApi 函数中重复的 try/catch/stop/wrapError 样板代码。
+ *
+ * 使用前后对比：
+ * ```ts
+ * // 使用前（每个函数都重复此模式）
+ * export async function Foo(params) {
+ *   const stop = timer("Foo");
+ *   try {
+ *     // ... 业务逻辑
+ *     stop();
+ *     return result;
+ *   } catch (err) {
+ *     if (err instanceof FooError) { stop(); throw err; }
+ *     stop();
+ *     throw wrapError("Foo", err, FooError);
+ *   }
+ * }
+ *
+ * // 使用后
+ * export function Foo(params) {
+ *   return withErrorHandling("Foo", FooError, () => {
+ *     // ... 业务逻辑
+ *     return result;
+ *   });
+ * }
+ * ```
+ *
+ * 职责：
+ * - 自动启动/停止计时器
+ * - 已是指定错误类子类时直接抛出（保留原始上下文）
+ * - 其他错误统一用 wrapError 包装
+ *
+ * @param label 来源标签（用于计时和错误消息）
+ * @param ErrorClass 错误类构造函数
+ * @param fn 业务逻辑（同步或异步）
+ * @returns fn 的返回值
+ */
+export async function withErrorHandling<T, E extends BaseDebugError>(
+  label: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ErrorClass: new (message: string, source: string, options?: any) => E,
+  fn: () => T | Promise<T>,
+): Promise<T> {
+  const stop = timer(label);
+  try {
+    const result = await fn();
+    stop();
+    return result;
+  } catch (err) {
+    stop();
+    if (err instanceof ErrorClass) throw err;
+    throw wrapError(label, err, ErrorClass);
+  }
 }

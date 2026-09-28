@@ -42,6 +42,7 @@ import {
   getUiState,
   updateUiState,
   updateRecordMetadata,
+  withErrorHandling,
 } from "./helpers";
 import { parseDate } from "./ziwei";
 import { formatDate, formatDateTime } from "../utils";
@@ -767,14 +768,13 @@ export async function LiuYaoUpdateTags(params: {
   recordId: number;
   tags: string[];
 }): Promise<LiuyaoRecord> {
-  const stop = timer("LiuYaoUpdateTags");
-  try {
+  return withErrorHandling("LiuYaoUpdateTags", LiuyaoError, async () => {
     validateRecordId(params.recordId, "LiuYaoUpdateTags");
     validateTags(params.tags, "LiuYaoUpdateTags", LiuyaoError);
 
     log("info", "LiuYaoUpdateTags", "更新标签", { recordId: params.recordId, tags: params.tags });
 
-    const updated = await updateRecordMetadata<LiuyaoRecord>(
+    return updateRecordMetadata<LiuyaoRecord>(
       params.recordId,
       getLiuyaoRecord,
       saveLiuyaoRecord,
@@ -783,18 +783,7 @@ export async function LiuYaoUpdateTags(params: {
       LiuyaoError,
       "LiuYaoUpdateTags",
     );
-
-    stop();
-    return updated;
-  } catch (err) {
-    if (err instanceof LiuyaoError) {
-      stop();
-      throw err;
-    }
-    log("error", "LiuYaoUpdateTags", "执行失败", err);
-    stop();
-    throw wrapError("LiuYaoUpdateTags", err, LiuyaoError);
-  }
+  });
 }
 
 /**
@@ -821,8 +810,7 @@ export async function LiuYaoUpdateNote(params: {
   note?: string;
   background?: string;
 }): Promise<LiuyaoRecord> {
-  const stop = timer("LiuYaoUpdateNote");
-  try {
+  return withErrorHandling("LiuYaoUpdateNote", LiuyaoError, async () => {
     validateRecordId(params.recordId, "LiuYaoUpdateNote");
 
     log("info", "LiuYaoUpdateNote", "更新备注", {
@@ -831,7 +819,7 @@ export async function LiuYaoUpdateNote(params: {
       hasBackground: params.background !== undefined,
     });
 
-    const updated = await updateRecordMetadata<LiuyaoRecord>(
+    return updateRecordMetadata<LiuyaoRecord>(
       params.recordId,
       getLiuyaoRecord,
       saveLiuyaoRecord,
@@ -844,16 +832,5 @@ export async function LiuYaoUpdateNote(params: {
       LiuyaoError,
       "LiuYaoUpdateNote",
     );
-
-    stop();
-    return updated;
-  } catch (err) {
-    if (err instanceof LiuyaoError) {
-      stop();
-      throw err;
-    }
-    log("error", "LiuYaoUpdateNote", "执行失败", err);
-    stop();
-    throw wrapError("LiuYaoUpdateNote", err, LiuyaoError);
-  }
+  });
 }

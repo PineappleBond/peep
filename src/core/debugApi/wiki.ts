@@ -37,6 +37,7 @@ import {
   waitForDocSaved,
   getUiState,
   updateUiState,
+  withErrorHandling,
 } from "./helpers";
 import type {
   WikiOptions,
@@ -863,8 +864,7 @@ export async function WikiReplaceContent(params: {
   replaceText: string;
   isGlobal?: boolean;
 }): Promise<WikiDocument> {
-  const stop = timer("WikiReplaceContent");
-  try {
+  return withErrorHandling("WikiReplaceContent", WikiError, async () => {
     validateDocId(params.docId, "WikiReplaceContent");
     validateNonEmptyString(params.searchText, "searchText", "WikiReplaceContent", WikiError);
 
@@ -874,7 +874,6 @@ export async function WikiReplaceContent(params: {
       isGlobal: params.isGlobal !== false,
     });
 
-    // 获取文档
     const doc = await getWikiDoc(params.docId);
     if (!doc) {
       throw new WikiError(`文档 ${params.docId} 不存在`, "WikiReplaceContent", {
@@ -884,13 +883,11 @@ export async function WikiReplaceContent(params: {
       });
     }
 
-    // 执行替换
     const newContent =
       params.isGlobal === false
         ? doc.content.replace(params.searchText, params.replaceText)
         : doc.content.split(params.searchText).join(params.replaceText);
 
-    // 保存更新
     const updatedDoc: WikiDocument = {
       ...doc,
       content: newContent,
@@ -899,17 +896,8 @@ export async function WikiReplaceContent(params: {
     await saveWikiDocToDb(updatedDoc);
 
     log("info", "WikiReplaceContent", "替换成功", { docId: params.docId });
-    stop();
     return updatedDoc;
-  } catch (err) {
-    if (err instanceof WikiError) {
-      stop();
-      throw err;
-    }
-    log("error", "WikiReplaceContent", "执行失败", err);
-    stop();
-    throw wrapError("WikiReplaceContent", err, WikiError);
-  }
+  });
 }
 
 /**
@@ -950,8 +938,7 @@ export async function WikiInsertContent(params: {
   content: string;
   position?: number | "start" | "end";
 }): Promise<WikiDocument> {
-  const stop = timer("WikiInsertContent");
-  try {
+  return withErrorHandling("WikiInsertContent", WikiError, async () => {
     validateDocId(params.docId, "WikiInsertContent");
     validateNonEmptyString(params.content, "content", "WikiInsertContent", WikiError);
 
@@ -960,7 +947,6 @@ export async function WikiInsertContent(params: {
       position: params.position ?? "end",
     });
 
-    // 获取文档
     const doc = await getWikiDoc(params.docId);
     if (!doc) {
       throw new WikiError(`文档 ${params.docId} 不存在`, "WikiInsertContent", {
@@ -970,19 +956,15 @@ export async function WikiInsertContent(params: {
       });
     }
 
-    // 按行分割内容并插入
     const lines = doc.content.split("\n");
     const insertLines = params.content.split("\n");
     let newLines: string[];
 
     if (params.position === "start") {
-      // 在文档开头插入
       newLines = [...insertLines, ...lines];
     } else if (params.position === "end" || params.position === undefined) {
-      // 在文档结尾插入
       newLines = [...lines, ...insertLines];
     } else if (typeof params.position === "number") {
-      // 在指定行之前插入（1-based）
       const insertIndex = Math.max(0, Math.min(params.position - 1, lines.length));
       newLines = [...lines.slice(0, insertIndex), ...insertLines, ...lines.slice(insertIndex)];
     } else {
@@ -993,7 +975,6 @@ export async function WikiInsertContent(params: {
       });
     }
 
-    // 保存更新
     const updatedDoc: WikiDocument = {
       ...doc,
       content: newLines.join("\n"),
@@ -1002,15 +983,6 @@ export async function WikiInsertContent(params: {
     await saveWikiDocToDb(updatedDoc);
 
     log("info", "WikiInsertContent", "插入成功", { docId: params.docId });
-    stop();
     return updatedDoc;
-  } catch (err) {
-    if (err instanceof WikiError) {
-      stop();
-      throw err;
-    }
-    log("error", "WikiInsertContent", "执行失败", err);
-    stop();
-    throw wrapError("WikiInsertContent", err, WikiError);
-  }
+  });
 }

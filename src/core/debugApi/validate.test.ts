@@ -11,6 +11,8 @@ import {
   validatePagination,
   validateTags,
   validateIdArray,
+  validateStringLength,
+  validateNotFutureDate,
   VALID_SCOPES,
 } from "./validate";
 import { ZiWeiError, DaLiuRenError, WikiError, ApiErrorCode } from "./errors";
@@ -314,5 +316,63 @@ describe("BaseDebugError.toJSON", () => {
     const err = new ZiWeiError("测试错误", "test", {});
     const json = err.toJSON();
     expect(json.errorCode).toBeUndefined();
+  });
+});
+
+/* ─────────────── validateStringLength ─────────────── */
+
+describe("validateStringLength", () => {
+  it("长度内的字符串通过验证", () => {
+    expect(() => validateStringLength("abc", "field", 10, "test", ZiWeiError)).not.toThrow();
+  });
+
+  it("恰好等于 maxLength 的字符串通过验证", () => {
+    expect(() => validateStringLength("abcde", "field", 5, "test", ZiWeiError)).not.toThrow();
+  });
+
+  it("超过 maxLength 抛出 INVALID_INPUT 错误", () => {
+    try {
+      validateStringLength("abcdef", "field", 5, "test", ZiWeiError);
+      expect.fail("应该抛出错误");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ZiWeiError);
+      expect((err as ZiWeiError).errorCode).toBe(ApiErrorCode.INVALID_INPUT);
+      expect((err as ZiWeiError).message).toContain("6");
+      expect((err as ZiWeiError).message).toContain("5");
+    }
+  });
+
+  it("空字符串通过验证（长度为 0）", () => {
+    expect(() => validateStringLength("", "field", 5, "test", ZiWeiError)).not.toThrow();
+  });
+});
+
+/* ─────────────── validateNotFutureDate ─────────────── */
+
+describe("validateNotFutureDate", () => {
+  it("过去的日期通过验证", () => {
+    expect(() =>
+      validateNotFutureDate("2020-01-01T00:00:00", "date", "test", ZiWeiError),
+    ).not.toThrow();
+  });
+
+  it("当前时间附近的日期通过验证（1 分钟容差）", () => {
+    const now = new Date().toISOString();
+    expect(() => validateNotFutureDate(now, "date", "test", ZiWeiError)).not.toThrow();
+  });
+
+  it("明确的未来日期抛出 INVALID_INPUT 错误", () => {
+    const futureDate = new Date(Date.now() + 86400000).toISOString(); // 明天
+    try {
+      validateNotFutureDate(futureDate, "date", "test", ZiWeiError);
+      expect.fail("应该抛出错误");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ZiWeiError);
+      expect((err as ZiWeiError).errorCode).toBe(ApiErrorCode.INVALID_INPUT);
+    }
+  });
+
+  it("无效日期字符串静默通过（交给其他验证处理）", () => {
+    expect(() => validateNotFutureDate("not-a-date", "date", "test", ZiWeiError)).not.toThrow();
   });
 });
