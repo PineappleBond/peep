@@ -99,19 +99,17 @@ function App() {
 /**
  * AppContent - 登录状态路由
  * 未登录时显示 LoginPage，已登录时渲染 AuthenticatedApp
- *
- * 临时禁用：直接渲染 AuthenticatedApp，跳过登录检查（调试用）
  */
 function AppContent() {
-  // const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  // if (isLoading) {
-  //   return <LoginPage loading />;
-  // }
+  if (isLoading) {
+    return <LoginPage loading />;
+  }
 
-  // if (!isAuthenticated) {
-  //   return <LoginPage />;
-  // }
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
 
   return <AuthenticatedApp />;
 }
