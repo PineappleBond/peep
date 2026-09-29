@@ -101,6 +101,8 @@ export default defineConfig({
         // 注意：此处须与 precache manifest 中的相对路径一致（无前导斜杠），
         // 否则 Workbox createHandlerBoundToURL 精确匹配失败，报 non-precached-url
         navigateFallback: "index.html",
+        // 排除认证回调路径——callback.html 是独立页面，不应被 navigateFallback 拦截
+        navigateFallbackDenylist: [/^\/peep\/auth\//],
         // 离线 Google Analytics（如果应用接入 GA，可自动缓存分析请求并在恢复网络后重发）
         // 当前未接入 GA，保留默认配置
         offlineGoogleAnalytics: false,
