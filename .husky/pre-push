@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/h"
+
+# pre-push 钩子——推送前确保测试和构建通过，避免推送损坏的代码。
+# 完整 CI 流程：test → build，任一失败则阻止 push。
+echo "🔍 运行测试..."
+npm test || exit 1
+
+echo "🔨 构建项目..."
+npm run build || exit 1
+
+echo "✅ 检查通过，允许推送"
