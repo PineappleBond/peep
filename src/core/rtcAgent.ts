@@ -7,7 +7,7 @@
  * 设计：
  * - 所有 Function handler 桥接 window.peep（与调试 API 同一套语义）
  * - 主题 / 语言与 peep-v2 自身状态同步（见 syncTheme / syncLocale）
- * - 服务端走官方 https://rtc-agent.cherish.chat，认证由 RTC 组件内部处理
+ * - 认证使用 AuthProvider 模式（模式 3），完全委托给 peep-v2 的 AuthContext
  *
  * 文件组织：
  * - Function 定义按业务域拆分到 rtcAgent/ 子目录下的独立文件
@@ -17,6 +17,8 @@ import { createRtcAgent, switchLocale } from "@rtc-agent/component";
 import type { RtcAgentWithLifecycle } from "@rtc-agent/component";
 import { getTheme } from "./theme";
 import type { Locale } from "./i18n";
+import { getTokens, clearTokens, isTokenExpired } from "./auth/authStorage";
+import { refreshAccessToken } from "./auth/authApi";
 
 // 各业务域 Function
 import {
@@ -270,6 +272,39 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
       url: "https://rtc-agent.cherish.chat",
       redirectUri: `${import.meta.env.BASE_URL}auth/callback.html`,
     },
+    // AuthProvider 模式（模式 3）：完全委托给 peep-v2 的认证系统
+    auth: {
+      getToken: async () => {
+        const tokens = getTokens();
+        if (!tokens) {
+          throw new Error("Not authenticated");
+        }
+        return tokens.access_token;
+      },
+      refreshToken: async () => {
+        const tokens = getTokens();
+        if (!tokens) {
+          throw new Error("Not authenticated");
+        }
+        const newTokens = await refreshAccessToken(tokens.refresh_token);
+        return {
+          accessToken: newTokens.access_token,
+          refreshToken: newTokens.refresh_token,
+          expiresIn: Math.floor((newTokens.expires_at - Date.now()) / 1000),
+        };
+      },
+      isLoggedIn: () => {
+        const tokens = getTokens();
+        if (!tokens) return false;
+        // 检查 token 是否过期（提前 5 分钟）
+        return !isTokenExpired(tokens, 5 * 60 * 1000);
+      },
+      logout: async () => {
+        clearTokens();
+        // 注意：这里不能直接调用 AuthContext 的 logout，因为 rtcAgent.ts 不是 React 组件
+        // 登出后，App.tsx 中的 AuthContext 会检测到 token 被清除，自动跳转到登录页
+      },
+    },
     scenariosUrl: `${import.meta.env.BASE_URL}scenarios/`,
     workerUrl: `${import.meta.env.BASE_URL}rtc-agent/shared-worker.js`,
     agentName: "PeepAstro",
@@ -293,7 +328,7 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
           console.log(
-            "%c[rtc]%c Agent 已就绪（embedded 模式）",
+            "%c[rtc]%c Agent 已就绪（embedded 模式，AuthProvider 认证）",
             "color:#2196f3;font-weight:bold",
             "",
           );

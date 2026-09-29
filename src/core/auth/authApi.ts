@@ -94,7 +94,7 @@ async function exchangeToken(code: string, state: string): Promise<TokenStorage>
   };
 }
 
-async function refreshAccessToken(refreshToken: string): Promise<TokenStorage> {
+export async function refreshAccessToken(refreshToken: string): Promise<TokenStorage> {
   const response = await fetch(`${API_BASE}/oauth2/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
