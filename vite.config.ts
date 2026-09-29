@@ -118,9 +118,10 @@ export default defineConfig({
   ].filter(Boolean),
   resolve: {
     // 强制去重：@rtc-agent/persistence 依赖 dexie ^4.4.5，应用依赖 ^4.4.6，
-    // npm 虽然 dedup 但 Vite 打包时可能仍解析出两份。此处强制统一使用同一份。
-    dedupe: ["dexie"],
+    // npm 虽然 dedup 但 Vite 打包时仍解析出两份（rtc chunk 4.4.5，db chunk 4.4.6）。
+    // 用 alias 强制所有 import 都指向根目录的 4.4.6 版本。
     alias: {
+      dexie: fileURLToPath(new URL("./node_modules/dexie/dist/dexie.mjs", import.meta.url)),
       // lunar-typescript 是双格式包（require→index.cjs / import→index.mjs）：
       // 应用的 import 与 iztro/lunar-lite 的 require 会被 rolldown 按条件各解析一份，
       // 同一份数据表被打包两次（engine +289KiB）。统一指到 ESM 单份；
