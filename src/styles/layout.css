@@ -146,6 +146,21 @@
   line-height: 1;
 }
 
+/* 图标按钮（退出登录等）——方形、居中图标 */
+.top-actions .header-icon-button {
+  padding: 7px 10px;
+  min-width: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.top-actions .header-icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ── 顶部导航图标 ── */
 .top-nav {
   display: flex;

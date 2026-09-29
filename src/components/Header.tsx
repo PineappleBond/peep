@@ -17,6 +17,7 @@ import { registerShortcut } from "../core/shortcuts";
 import type { PluginExtensionsView } from "../core/pluginTypes";
 import { routePreloaders } from "../App";
 import { useAppContextOptional } from "../core/appContext";
+import { LogoutButton } from "./LogoutButton";
 
 type HeaderProps = {
   /** 当前选中人物 ID（可选，未传时从 AppContext 读取） */
@@ -212,6 +213,7 @@ export const Header = memo(function Header({
             {!networkOnline && <span className="sync-offline-dot" aria-hidden="true" />}
           </button>
         )}
+        <LogoutButton />
         <PersonSelector currentId={currentPersonId} onSelect={onSelectPerson} />
       </div>
     </header>
