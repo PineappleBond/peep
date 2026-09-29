@@ -7,8 +7,11 @@ export async function startGithubLogin(): Promise<void> {
   const state = crypto.randomUUID();
   sessionStorage.setItem("oauth_state", state);
 
+  // 动态获取当前域名作为回调地址
+  const redirectUri = `${window.location.origin}/peep/auth/callback.html`;
+
   const { redirect_url } = await fetch(
-    `${API_BASE}/oauth2/authorize?provider=github&state=${state}`,
+    `${API_BASE}/oauth2/authorize?provider=github&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`,
   ).then(r => r.json());
 
   const popup = window.open(redirect_url, "github-oauth", "width=600,height=700");
