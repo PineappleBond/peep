@@ -27,10 +27,11 @@
     "quality:coverage": "npm run test:coverage",
     "quality:report": "node scripts/quality-report.js",
     "quality:full": "npm run typecheck && npm run lint:report && npm run test:coverage && npm run quality:report",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "rtc-agent-setup"
   },
   "dependencies": {
-    "@rtc-agent/component": "file:///Users/leichujun/Workspaces/rtc-agent/web-components/packages/component",
+    "@rtc-agent/component": "0.2.8-rc.0",
     "dexie": "^4.4.5",
     "iztro": "^2.5.8",
     "lunar-lite": "^0.2.7",
