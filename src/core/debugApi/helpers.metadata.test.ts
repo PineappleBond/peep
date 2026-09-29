@@ -52,15 +52,14 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(originalRecord);
       mockSaveRecord.mockResolvedValue(undefined);
 
-      const result = await updateRecordMetadata<TestRecord>(
-        recordId,
-        mockGetRecord,
-        mockSaveRecord,
-        record => ({ ...record, tags: newTags }),
-        mockInvalidateCache,
-        ZiWeiError,
-        "testUpdate",
-      );
+      const result = await updateRecordMetadata<TestRecord>(recordId, {
+        getRecord: mockGetRecord,
+        saveRecord: mockSaveRecord,
+        updateFn: record => ({ ...record, tags: newTags }),
+        invalidateCache: mockInvalidateCache,
+        ErrorClass: ZiWeiError,
+        source: "testUpdate",
+      });
 
       expect(mockGetRecord).toHaveBeenCalledWith(recordId);
       expect(mockSaveRecord).toHaveBeenCalledWith({ ...originalRecord, tags: newTags });
@@ -76,15 +75,13 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(originalRecord);
       mockSaveRecord.mockResolvedValue(undefined);
 
-      const result = await updateRecordMetadata<TestRecord>(
-        recordId,
-        mockGetRecord,
-        mockSaveRecord,
-        record => ({ ...record, name: newNote }),
-        undefined, // 不失效缓存
-        ZiWeiError,
-        "testUpdateNote",
-      );
+      const result = await updateRecordMetadata<TestRecord>(recordId, {
+        getRecord: mockGetRecord,
+        saveRecord: mockSaveRecord,
+        updateFn: record => ({ ...record, name: newNote }),
+        ErrorClass: ZiWeiError,
+        source: "testUpdateNote",
+      });
 
       expect(mockGetRecord).toHaveBeenCalledWith(recordId);
       expect(mockSaveRecord).toHaveBeenCalled();
@@ -99,19 +96,18 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(originalRecord);
       mockSaveRecord.mockResolvedValue(undefined);
 
-      const result = await updateRecordMetadata<TestRecord>(
-        recordId,
-        mockGetRecord,
-        mockSaveRecord,
-        record => ({
+      const result = await updateRecordMetadata<TestRecord>(recordId, {
+        getRecord: mockGetRecord,
+        saveRecord: mockSaveRecord,
+        updateFn: record => ({
           ...record,
           name: "新名称",
           tags: ["标签A", "标签B", "标签C"],
         }),
-        mockInvalidateCache,
-        ZiWeiError,
-        "testComplexUpdate",
-      );
+        invalidateCache: mockInvalidateCache,
+        ErrorClass: ZiWeiError,
+        source: "testComplexUpdate",
+      });
 
       expect(result.name).toBe("新名称");
       expect(result.tags).toEqual(["标签A", "标签B", "标签C"]);
@@ -124,15 +120,13 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(null);
 
       await expect(
-        updateRecordMetadata<TestRecord>(
-          recordId,
-          mockGetRecord,
-          mockSaveRecord,
-          record => record,
-          undefined,
-          ZiWeiError,
-          "testNotFound",
-        ),
+        updateRecordMetadata<TestRecord>(recordId, {
+          getRecord: mockGetRecord,
+          saveRecord: mockSaveRecord,
+          updateFn: record => record,
+          ErrorClass: ZiWeiError,
+          source: "testNotFound",
+        }),
       ).rejects.toThrow(/记录 999 不存在/);
 
       expect(mockSaveRecord).not.toHaveBeenCalled();
@@ -144,15 +138,12 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(null);
 
       await expect(
-        updateRecordMetadata<TestRecord>(
-          recordId,
-          mockGetRecord,
-          mockSaveRecord,
-          record => record,
-          undefined,
-          undefined, // 不提供 ErrorClass
-          "testPlainError",
-        ),
+        updateRecordMetadata<TestRecord>(recordId, {
+          getRecord: mockGetRecord,
+          saveRecord: mockSaveRecord,
+          updateFn: record => record,
+          source: "testPlainError",
+        }),
       ).rejects.toThrow(/记录 888 不存在/);
 
       expect(mockSaveRecord).not.toHaveBeenCalled();
@@ -165,15 +156,14 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(createMockRecord(recordId));
       mockSaveRecord.mockResolvedValue(undefined);
 
-      await updateRecordMetadata<TestRecord>(
-        recordId,
-        mockGetRecord,
-        mockSaveRecord,
-        record => record,
-        mockInvalidateCache,
-        ZiWeiError,
-        "testCacheInvalidation",
-      );
+      await updateRecordMetadata<TestRecord>(recordId, {
+        getRecord: mockGetRecord,
+        saveRecord: mockSaveRecord,
+        updateFn: record => record,
+        invalidateCache: mockInvalidateCache,
+        ErrorClass: ZiWeiError,
+        source: "testCacheInvalidation",
+      });
 
       expect(mockInvalidateCache).toHaveBeenCalledTimes(1);
     });
@@ -183,15 +173,13 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(createMockRecord(recordId));
       mockSaveRecord.mockResolvedValue(undefined);
 
-      await updateRecordMetadata<TestRecord>(
-        recordId,
-        mockGetRecord,
-        mockSaveRecord,
-        record => record,
-        undefined,
-        ZiWeiError,
-        "testNoCacheInvalidaton",
-      );
+      await updateRecordMetadata<TestRecord>(recordId, {
+        getRecord: mockGetRecord,
+        saveRecord: mockSaveRecord,
+        updateFn: record => record,
+        ErrorClass: ZiWeiError,
+        source: "testNoCacheInvalidaton",
+      });
 
       expect(mockInvalidateCache).not.toHaveBeenCalled();
     });
@@ -204,15 +192,13 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockRejectedValue(dbError);
 
       await expect(
-        updateRecordMetadata<TestRecord>(
-          recordId,
-          mockGetRecord,
-          mockSaveRecord,
-          record => record,
-          undefined,
-          ZiWeiError,
-          "testGetError",
-        ),
+        updateRecordMetadata<TestRecord>(recordId, {
+          getRecord: mockGetRecord,
+          saveRecord: mockSaveRecord,
+          updateFn: record => record,
+          ErrorClass: ZiWeiError,
+          source: "testGetError",
+        }),
       ).rejects.toThrow("数据库连接失败");
 
       expect(mockSaveRecord).not.toHaveBeenCalled();
@@ -225,15 +211,14 @@ describe("updateRecordMetadata", () => {
       mockSaveRecord.mockRejectedValue(saveError);
 
       await expect(
-        updateRecordMetadata<TestRecord>(
-          recordId,
-          mockGetRecord,
-          mockSaveRecord,
-          record => record,
-          mockInvalidateCache,
-          ZiWeiError,
-          "testSaveError",
-        ),
+        updateRecordMetadata<TestRecord>(recordId, {
+          getRecord: mockGetRecord,
+          saveRecord: mockSaveRecord,
+          updateFn: record => record,
+          invalidateCache: mockInvalidateCache,
+          ErrorClass: ZiWeiError,
+          source: "testSaveError",
+        }),
       ).rejects.toThrow("保存失败");
 
       // 保存失败时不应调用缓存失效
@@ -250,15 +235,13 @@ describe("updateRecordMetadata", () => {
       };
 
       await expect(
-        updateRecordMetadata<TestRecord>(
-          recordId,
-          mockGetRecord,
-          mockSaveRecord,
-          failingUpdateFn,
-          undefined,
-          ZiWeiError,
-          "testUpdateFnError",
-        ),
+        updateRecordMetadata<TestRecord>(recordId, {
+          getRecord: mockGetRecord,
+          saveRecord: mockSaveRecord,
+          updateFn: failingUpdateFn,
+          ErrorClass: ZiWeiError,
+          source: "testUpdateFnError",
+        }),
       ).rejects.toThrow("更新逻辑错误");
 
       expect(mockSaveRecord).not.toHaveBeenCalled();
@@ -272,15 +255,13 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(record);
       mockSaveRecord.mockResolvedValue(undefined);
 
-      const result = await updateRecordMetadata<TestRecord>(
-        recordId,
-        mockGetRecord,
-        mockSaveRecord,
-        r => ({ ...r, name: "更新后" }),
-        undefined,
-        ZiWeiError,
-        "testZeroId",
-      );
+      const result = await updateRecordMetadata<TestRecord>(recordId, {
+        getRecord: mockGetRecord,
+        saveRecord: mockSaveRecord,
+        updateFn: r => ({ ...r, name: "更新后" }),
+        ErrorClass: ZiWeiError,
+        source: "testZeroId",
+      });
 
       expect(result.name).toBe("更新后");
     });
@@ -291,15 +272,14 @@ describe("updateRecordMetadata", () => {
       mockGetRecord.mockResolvedValue(originalRecord);
       mockSaveRecord.mockResolvedValue(undefined);
 
-      const result = await updateRecordMetadata<TestRecord>(
-        recordId,
-        mockGetRecord,
-        mockSaveRecord,
-        record => record, // 不修改，直接返回原对象
-        mockInvalidateCache,
-        ZiWeiError,
-        "testNoChange",
-      );
+      const result = await updateRecordMetadata<TestRecord>(recordId, {
+        getRecord: mockGetRecord,
+        saveRecord: mockSaveRecord,
+        updateFn: record => record,
+        invalidateCache: mockInvalidateCache,
+        ErrorClass: ZiWeiError,
+        source: "testNoChange",
+      });
 
       expect(mockSaveRecord).toHaveBeenCalledWith(originalRecord);
       expect(result).toBe(originalRecord);

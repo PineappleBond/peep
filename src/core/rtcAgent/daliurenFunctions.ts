@@ -14,6 +14,8 @@ import {
   createMetadataUpdateHandler,
   createPassthroughHandler,
   createListFiltersSchema,
+  createUpdateTagsSchema,
+  createUpdateNoteSchema,
 } from "./shared";
 
 /* ---- 共享 Schema ---- */
@@ -371,13 +373,8 @@ export const daliurenBatchViewFunction = {
   },
 };
 
-/** UpdateTags 参数 schema（独立定义，避免循环引用） */
-const _daliurenUpdateTagsSchema = z.object({
-  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-    "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
-  ),
-  tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
-});
+/** UpdateTags 参数 schema（共享工厂，避免 DaLiuRen / LiuYao 重复定义） */
+const _daliurenUpdateTagsSchema = createUpdateTagsSchema("recordId", "起课记录 ID");
 
 /** 更新大六壬起课记录的标签 */
 export const daliurenUpdateTagsFunction = {
@@ -390,20 +387,16 @@ export const daliurenUpdateTagsFunction = {
     "示例：DaLiuRenUpdateTags({ recordId: 123, tags: ['财运', '合作'] }) — 更新记录标签。",
   zodSchema: _daliurenUpdateTagsSchema,
   handler: createMetadataUpdateHandler(
-    _daliurenUpdateTagsSchema,
+    _daliurenUpdateTagsSchema as unknown as {
+      parse: (input: unknown) => { recordId: number; tags: string[] };
+    },
     (params: { recordId: number; tags: string[] }) => peepApi().DaLiuRenUpdateTags(params),
   ),
   returns: { zodSchema: daliurenRecordSchema.describe("更新后的起课记录") },
 };
 
-/** UpdateNote 参数 schema（独立定义，避免循环引用） */
-const _daliurenUpdateNoteSchema = z.object({
-  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-    "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
-  ),
-  note: z.string().optional().describe("新的备注（可选）"),
-  background: z.string().optional().describe("新的背景信息（可选）"),
-});
+/** UpdateNote 参数 schema（共享工厂，避免 DaLiuRen / LiuYao 重复定义） */
+const _daliurenUpdateNoteSchema = createUpdateNoteSchema("recordId", "起课记录 ID");
 
 /** 更新大六壬起课记录的备注和背景 */
 export const daliurenUpdateNoteFunction = {
@@ -416,7 +409,13 @@ export const daliurenUpdateNoteFunction = {
     "示例：DaLiuRenUpdateNote({ recordId: 123, note: '后续反馈：准确' }) — 更新备注。",
   zodSchema: _daliurenUpdateNoteSchema,
   handler: createMetadataUpdateHandler(
-    _daliurenUpdateNoteSchema,
+    _daliurenUpdateNoteSchema as unknown as {
+      parse: (input: unknown) => {
+        recordId: number;
+        note?: string;
+        background?: string;
+      };
+    },
     (params: { recordId: number; note?: string; background?: string }) =>
       peepApi().DaLiuRenUpdateNote(params),
   ),

@@ -222,9 +222,10 @@ export async function PersonSetDefault(personId: number): Promise<Person> {
       });
     }
 
-    const { id, savedAt, isDefault: _wasDefault, ...birthInput } = person;
-    void id;
-    void savedAt;
+    const { id: _id, savedAt: _savedAt, isDefault: _wasDefault, ...birthInput } = person;
+    void _id;
+    void _savedAt;
+    void _wasDefault;
     const updated = await savePerson(personId, birthInput as BirthInput, true);
     globalEvents.emit("person.changed", updated);
 

@@ -14,6 +14,8 @@ import {
   createMetadataUpdateHandler,
   createPassthroughHandler,
   createListFiltersSchema,
+  createUpdateTagsSchema,
+  createUpdateNoteSchema,
 } from "./shared";
 import type { SixLines } from "../liuyao/core/types";
 
@@ -340,13 +342,8 @@ export const liuyaoBatchViewFunction = {
   },
 };
 
-/** UpdateTags 参数 schema（独立定义，避免 TypeScript 推断循环引用） */
-const _liuyaoUpdateTagsSchema = z.object({
-  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-    "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
-  ),
-  tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
-});
+/** UpdateTags 参数 schema（共享工厂，避免 DaLiuRen / LiuYao 重复定义） */
+const _liuyaoUpdateTagsSchema = createUpdateTagsSchema("recordId", "起卦记录 ID");
 
 /** 更新六爻起卦记录的标签 */
 export const liuyaoUpdateTagsFunction = {
@@ -359,20 +356,16 @@ export const liuyaoUpdateTagsFunction = {
     "示例：LiuYaoUpdateTags({ recordId: 123, tags: ['财运', '合作'] }) — 更新记录标签。",
   zodSchema: _liuyaoUpdateTagsSchema,
   handler: createMetadataUpdateHandler(
-    _liuyaoUpdateTagsSchema,
+    _liuyaoUpdateTagsSchema as unknown as {
+      parse: (input: unknown) => { recordId: number; tags: string[] };
+    },
     (params: { recordId: number; tags: string[] }) => peepApi().LiuYaoUpdateTags(params),
   ),
   returns: { zodSchema: liuyaoRecordSchema.describe("更新后的起卦记录") },
 };
 
-/** UpdateNote 参数 schema（独立定义，避免 TypeScript 推断循环引用） */
-const _liuyaoUpdateNoteSchema = z.object({
-  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-    "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
-  ),
-  note: z.string().optional().describe("新的备注（可选）"),
-  background: z.string().optional().describe("新的背景信息（可选）"),
-});
+/** UpdateNote 参数 schema（共享工厂，避免 DaLiuRen / LiuYao 重复定义） */
+const _liuyaoUpdateNoteSchema = createUpdateNoteSchema("recordId", "起卦记录 ID");
 
 /** 更新六爻起卦记录的备注和背景 */
 export const liuyaoUpdateNoteFunction = {
@@ -385,7 +378,13 @@ export const liuyaoUpdateNoteFunction = {
     "示例：LiuYaoUpdateNote({ recordId: 123, note: '后续反馈：准确' }) — 更新备注。",
   zodSchema: _liuyaoUpdateNoteSchema,
   handler: createMetadataUpdateHandler(
-    _liuyaoUpdateNoteSchema,
+    _liuyaoUpdateNoteSchema as unknown as {
+      parse: (input: unknown) => {
+        recordId: number;
+        note?: string;
+        background?: string;
+      };
+    },
     (params: { recordId: number; note?: string; background?: string }) =>
       peepApi().LiuYaoUpdateNote(params),
   ),

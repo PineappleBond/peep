@@ -12,8 +12,9 @@ import type { LiuyaoListFilters, LiuyaoListResult } from "../liuyaoDb";
 import type { WikiListFilters, WikiListResult } from "../wikiDb";
 import type { SixLines, YongTarget } from "../liuyao/core/types";
 import type { LiuyaoHbarVisible, LiuyaoHbarPick, LiuyaoHbarState } from "../liuyao/hbar";
-import { log } from "./logger";
+import { log, nextFrame } from "./logger";
 import { ZiWeiError, DaLiuRenError, LiuyaoError, WikiError, ApiErrorCode } from "./errors";
+import type { ErrorConstructor } from "./errors";
 
 /* ============================================================
  * React 回调注册——从 App.tsx / 各页面注入
@@ -246,6 +247,17 @@ export function resetCallbacks(): void {
   log("info", "init", "回调状态已重置");
 }
 
+/**
+ * 页面→错误类查找表——消除 waitForCallbacks 中的 if/else 链。
+ * 新增页面类型只需扩展此映射，无需改动函数体。
+ */
+const _pageErrorClass: Record<"ziwei" | "daliuren" | "liuyao" | "wiki", ErrorConstructor> = {
+  ziwei: ZiWeiError,
+  daliuren: DaLiuRenError,
+  liuyao: LiuyaoError,
+  wiki: WikiError,
+};
+
 /** 等待页面回调注册完成 */
 export async function waitForCallbacks(
   page: "ziwei" | "daliuren" | "liuyao" | "wiki",
@@ -253,18 +265,11 @@ export async function waitForCallbacks(
 ): Promise<void> {
   const start = Date.now();
   // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
-  const maxIterations = Math.ceil(timeout / 20) + 10;
+  const maxIterations = Math.ceil(timeout / 50) + 10;
   let iterations = 0;
   while (!_callbacksReady[page]) {
     if (++iterations > maxIterations || Date.now() - start > timeout) {
-      const ErrorClass =
-        page === "ziwei"
-          ? ZiWeiError
-          : page === "daliuren"
-            ? DaLiuRenError
-            : page === "liuyao"
-              ? LiuyaoError
-              : WikiError;
+      const ErrorClass = _pageErrorClass[page];
       const err = new ErrorClass(
         `${page} 页面的调试 API 回调注册超时（${timeout}ms）——页面可能未访问过或已卸载`,
         "waitForCallbacks",
@@ -277,7 +282,7 @@ export async function waitForCallbacks(
       log("error", page, "回调注册超时", { timeout, callbacksReady: _callbacksReady });
       throw err;
     }
-    await new Promise(r => setTimeout(r, 50));
+    await nextFrame();
   }
 }
 

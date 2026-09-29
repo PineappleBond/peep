@@ -5,7 +5,7 @@
  */
 
 import type { Zwds } from "../useZwds";
-import { log, timer } from "./logger";
+import { log, timer, nextFrame } from "./logger";
 import type { BaseDebugError } from "./errors";
 import { wrapError } from "./errors";
 import type { ErrorConstructor } from "./errors";
@@ -19,6 +19,9 @@ import {
   getOpenLiuyaoCreateDialog,
   getOpenWikiEditor,
 } from "./callbacks";
+
+// 重新导出 nextFrame，保持向后兼容（外部模块仍可从 helpers 导入）
+export { nextFrame };
 
 /**
  * UI 状态追踪：记录当前页面和选中的人物 ID，用于跳过冗余的导航和选择操作。
@@ -76,17 +79,6 @@ export function resetUiState(): void {
   uiState.currentWikiDocId = null;
   uiState.currentDaLiuRenRecordId = null;
   uiState.currentLiuyaoRecordId = null;
-}
-
-/** 等待下一帧（确保 useEffect commit 阶段执行完成）
- *  兼容非浏览器环境（SSR/Node.js）：requestAnimationFrame 不可用时降级为 setTimeout(16ms)
- */
-export function nextFrame(): Promise<void> {
-  if (typeof requestAnimationFrame !== "undefined") {
-    return new Promise(r => requestAnimationFrame(_ts => r()));
-  }
-  // 降级：约 60fps（1000ms / 60 ≈ 16ms）
-  return new Promise(r => setTimeout(r, 16));
 }
 
 /**
@@ -149,49 +141,71 @@ export async function waitForPageLoad(): Promise<void> {
 }
 
 /**
+ * 通用「值稳定」轮询工具——消除 waitForStateUpdate / waitForAstrolabeStable
+ * 中重复的「连续 N 次采样相同才认为稳定」模式。
+ *
+ * 设计要点：
+ * - 采样函数每次返回当前快照值（字符串比较）
+ * - 连续 requiredStable 次采样相同才认为稳定
+ * - 安全保护：最大迭代次数防止无限循环
+ *
+ * @param getValue 每轮调用的采样函数，返回当前值的字符串表示（null 表示尚未就绪）
+ * @param timeout 超时毫秒数
+ * @param requiredStable 连续稳定次数阈值（默认 3）
+ * @param label 日志标签
+ * @returns 是否成功稳定
+ */
+async function waitForStableValue(
+  getValue: () => string | null,
+  timeout: number,
+  requiredStable = 3,
+  label = "值稳定",
+): Promise<boolean> {
+  const start = Date.now();
+  let lastValue = getValue();
+  let stableCount = 0;
+  const maxIterations = Math.ceil(timeout / 20) + 10;
+  let iterations = 0;
+  while (++iterations <= maxIterations && Date.now() - start < timeout) {
+    await new Promise(r => setTimeout(r, 20));
+    const currentValue = getValue();
+    if (currentValue !== null && currentValue === lastValue) {
+      stableCount++;
+      if (stableCount >= requiredStable) return true;
+    } else {
+      lastValue = currentValue;
+      stableCount = 0;
+    }
+  }
+  log("warn", "wait", `${label}等待超时`, { timeout });
+  return false;
+}
+
+/**
  * 辅助函数：等待状态更新。
- * 改进：双 rAF 确保 React 渲染完成，再轮询验证 pick 稳定（最多 300ms）。
+ * 双 rAF 确保 React 渲染完成，再轮询验证 pick 稳定（最多 300ms）。
  * 要求 pick 连续 3 次采样相同才认为已稳定，避免振荡场景误判。
  *
  * 每次迭代重新调用 getZwds() 获取最新状态，避免使用过期快照。
  */
 export async function waitForStateUpdate(): Promise<void> {
-  // 双 rAF 确保 React commit 阶段完成（使用 nextFrame 兼容非浏览器环境）
   await nextFrame();
   await nextFrame();
 
-  // 轮询验证 pick 稳定（如果在 ZiWei 上下文中）
   const getZwds = getGetZwds();
   if (!getZwds) return;
   const initialZ = getZwds();
   if (!initialZ) return;
 
-  const start = Date.now();
-  let lastPick = JSON.stringify(initialZ.pick);
-  let stableCount = 0;
-  const requiredStable = 3; // 连续 3 次采样相同才认为已稳定（防止振荡误判）
-  const maxWait = 300;
-  // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
-  const maxIterations = Math.ceil(maxWait / 20) + 10;
-  let iterations = 0;
-  while (++iterations <= maxIterations && Date.now() - start < maxWait) {
-    await new Promise(r => setTimeout(r, 20));
-    // 每次迭代重新获取最新 Zwds 状态，避免快照过期
-    const freshZ = getZwds();
-    if (!freshZ) continue;
-    const currentPick = JSON.stringify(freshZ.pick);
-    if (currentPick === lastPick) {
-      stableCount++;
-      if (stableCount >= requiredStable) {
-        // pick 连续 N 次采样相同，认为已稳定
-        return;
-      }
-    } else {
-      lastPick = currentPick;
-      stableCount = 0; // 重置计数
-    }
-  }
-  log("warn", "wait", "状态更新等待超时", { maxWait });
+  await waitForStableValue(
+    () => {
+      const freshZ = getZwds();
+      return freshZ ? JSON.stringify(freshZ.pick) : null;
+    },
+    300,
+    3,
+    "状态更新",
+  );
 }
 
 /**
@@ -228,30 +242,18 @@ export async function waitForPersonMatch(expectedId: number, timeout = 2000): Pr
 export async function waitForAstrolabeStable(_z: Zwds, timeout = 2000): Promise<void> {
   const getZwds = getGetZwds();
   const start = Date.now();
-  // 首次获取 astrolabe（优先使用最新快照，回退到 getZwds）
-  let lastAstrolabe = _z.astrolabe ? JSON.stringify(_z.astrolabe.rawDates) : null;
-  let stableCount = 0;
-  const requiredStable = 3;
-  // 安全保护：最大迭代次数
-  const maxIterations = Math.ceil(timeout / 20) + 10;
-  let iterations = 0;
-  while (++iterations <= maxIterations && Date.now() - start < timeout) {
-    await new Promise(r => setTimeout(r, 20));
-    // 每次迭代重新获取最新 Zwds 状态，避免快照过期
-    const freshZ = getZwds?.() ?? _z;
-    const currentAstrolabe = freshZ.astrolabe ? JSON.stringify(freshZ.astrolabe.rawDates) : null;
-    if (currentAstrolabe === lastAstrolabe && currentAstrolabe !== null) {
-      stableCount++;
-      if (stableCount >= requiredStable) {
-        log("debug", "wait", "本命盘稳定", { elapsed: Date.now() - start });
-        return;
-      }
-    } else {
-      lastAstrolabe = currentAstrolabe;
-      stableCount = 0;
-    }
+  const stable = await waitForStableValue(
+    () => {
+      const freshZ = getZwds?.() ?? _z;
+      return freshZ.astrolabe ? JSON.stringify(freshZ.astrolabe.rawDates) : null;
+    },
+    timeout,
+    3,
+    "本命盘稳定",
+  );
+  if (stable) {
+    log("debug", "wait", "本命盘稳定", { elapsed: Date.now() - start });
   }
-  log("warn", "wait", "本命盘稳定等待超时", { timeout });
 }
 
 /**
@@ -433,25 +435,27 @@ export function waitForLiuyaoCallbacks(timeout = 1000): Promise<void> {
  * 等待持久化操作完成——通用延时等待 DB 写入。
  *
  * 提取 waitForRecordSaved / waitForDocSaved 的公共逻辑：
- * 两者仅差一个日志标签，合并后消除重复代码。
+ * 两者仅差一个日志标签和 ID 字段名，合并后消除重复代码。
  *
  * @param id 记录/文档 ID（null/undefined 时跳过等待）
  * @param label 日志标签（如 "记录" / "文档"）
+ * @param idKey 日志中 ID 字段的键名（如 "recordId" / "docId"）
  * @param timeout 超时上限（实际等待取 min(timeout, 100ms)）
  */
 async function waitForPersist(
   id: number | undefined,
   label: string,
+  idKey: string,
   timeout = 2000,
 ): Promise<void> {
   if (id == null) return;
   await new Promise(r => setTimeout(r, Math.min(timeout, 100)));
-  log("debug", "wait", `${label}保存等待完成`, { [label === "记录" ? "recordId" : "docId"]: id });
+  log("debug", "wait", `${label}保存等待完成`, { [idKey]: id });
 }
 
 /** 等待记录保存完成（大六壬/六爻起课记录） */
 export function waitForRecordSaved(recordId: number | undefined, timeout = 2000): Promise<void> {
-  return waitForPersist(recordId, "记录", timeout);
+  return waitForPersist(recordId, "记录", "recordId", timeout);
 }
 
 /** 等待 Wiki 回调注册完成 */
@@ -461,7 +465,7 @@ export function waitForWikiCallbacks(timeout = 1000): Promise<void> {
 
 /** 等待文档保存完成（Wiki 文档） */
 export function waitForDocSaved(docId: number | undefined, timeout = 2000): Promise<void> {
-  return waitForPersist(docId, "文档", timeout);
+  return waitForPersist(docId, "文档", "docId", timeout);
 }
 
 /**
@@ -486,25 +490,27 @@ export function isDialogOpen(type: "daliuren" | "liuyao" | "wiki"): boolean {
  * - 单一职责：仅处理「获取记录 → 验证存在性 → 更新字段 → 保存 → 失效缓存」的通用流程
  * - 泛型支持：适用于大六壬（LiurenRecord）和六爻（LiuyaoRecord）
  * - 错误处理统一：记录不存在时抛出 NOT_FOUND 错误
- *
- * @param recordId 记录 ID
- * @param getRecord 获取记录的异步函数
- * @param saveRecord 保存记录的异步函数
- * @param updateFn 更新字段的纯函数（接收原记录，返回更新后的记录）
- * @param invalidateCache 可选的缓存失效函数（如标签缓存）
- * @param ErrorClass 错误类构造函数
- * @param source 来源标签（用于错误消息）
- * @returns 更新后的记录
+ * - 参数收敛：7 个位置参数合并为 recordId + options 对象，消除 max-params 警告
  */
 export async function updateRecordMetadata<T extends { id?: number }>(
   recordId: number,
-  getRecord: (id: number) => Promise<T | null | undefined>,
-  saveRecord: (record: T) => Promise<unknown>,
-  updateFn: (record: T) => T,
-  invalidateCache?: () => void,
-  ErrorClass?: ErrorConstructor,
-  source = "updateRecordMetadata",
+  options: {
+    getRecord: (id: number) => Promise<T | null | undefined>;
+    saveRecord: (record: T) => Promise<unknown>;
+    updateFn: (record: T) => T;
+    invalidateCache?: () => void;
+    ErrorClass?: ErrorConstructor;
+    source?: string;
+  },
 ): Promise<T> {
+  const {
+    getRecord,
+    saveRecord,
+    updateFn,
+    invalidateCache,
+    ErrorClass,
+    source = "updateRecordMetadata",
+  } = options;
   // 获取记录
   const record = await getRecord(recordId);
   if (!record) {

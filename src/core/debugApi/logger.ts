@@ -97,3 +97,18 @@ export function timer(category: string): () => void {
     recordDomainMetric(category, duration);
   };
 }
+
+/**
+ * 等待下一帧（确保 useEffect commit 阶段执行完成）。
+ * 兼容非浏览器环境（SSR/Node.js）：requestAnimationFrame 不可用时降级为 setTimeout(16ms)。
+ *
+ * 放在 logger.ts 中——logger 是 debugApi 的叶子依赖，
+ * helpers / callbacks 等模块均可安全导入而不产生循环依赖。
+ */
+export function nextFrame(): Promise<void> {
+  if (typeof requestAnimationFrame !== "undefined") {
+    return new Promise(r => requestAnimationFrame(() => r()));
+  }
+  // 降级：约 60fps（1000ms / 60 ≈ 16ms）
+  return new Promise(r => setTimeout(r, 16));
+}

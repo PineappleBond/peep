@@ -84,6 +84,14 @@ export const solarToLunarFunction = {
   },
 };
 
+/** LunarToSolar 参数 schema（独立定义，与其他 Lunar 函数不同——需要年月日而非单个日期） */
+const _lunarToSolarSchema = z.object({
+  year: withMeta(z.number().int().positive(), { example: 2024 }).describe("农历年份"),
+  month: withMeta(z.number().int().min(1).max(12), { example: 5 }).describe("农历月份 1-12"),
+  day: withMeta(z.number().int().min(1).max(30), { example: 10 }).describe("农历日期 1-30"),
+  isLeap: withMeta(z.boolean(), { example: false }).optional().describe("是否闰月（默认 false）"),
+});
+
 export const lunarToSolarFunction = {
   name: "LunarToSolar",
   description:
@@ -94,19 +102,9 @@ export const lunarToSolarFunction = {
     "(2) 确定农历某日对应的公历日期。" +
     "\n\n" +
     "示例：LunarToSolar({ year: 2024, month: 5, day: 10 }) — 将农历2024年五月初十转为公历。",
-  zodSchema: z.object({
-    year: withMeta(z.number().int().positive(), { example: 2024 }).describe("农历年份"),
-    month: withMeta(z.number().int().min(1).max(12), { example: 5 }).describe("农历月份 1-12"),
-    day: withMeta(z.number().int().min(1).max(30), { example: 10 }).describe("农历日期 1-30"),
-    isLeap: withMeta(z.boolean(), { example: false }).optional().describe("是否闰月（默认 false）"),
-  }),
+  zodSchema: _lunarToSolarSchema,
   handler: createPassthroughHandler(
-    z.object({
-      year: z.number(),
-      month: z.number(),
-      day: z.number(),
-      isLeap: z.boolean().optional(),
-    }),
+    _lunarToSolarSchema,
     (p: { year: number; month: number; day: number; isLeap?: boolean }) =>
       peepApi().LunarToSolar(p),
   ),

@@ -175,20 +175,6 @@ export interface LiuyaoCreateParams {
   divinationTime?: string;
 }
 
-/** Liuyao 列表查询参数 */
-export interface LiuyaoListParams {
-  /** 命主 ID（可选，不传则使用默认人物） */
-  personId?: number;
-  /** 搜索关键字——匹配问题、备注、背景 */
-  searchText?: string;
-  /** 按标签过滤 */
-  tags?: string[];
-  /** 页码（从 1 开始，默认 1） */
-  page?: number;
-  /** 每页条数（1-100，默认 20） */
-  pageSize?: number;
-}
-
 /** Liuyao 查看详情参数 */
 export interface LiuyaoViewParams {
   /** 命主 ID（可选，不传则使用默认人物） */
@@ -228,13 +214,15 @@ export type {
 /* ── 统一列表查询参数类型 ── */
 
 /**
- * 大六壬列表查询参数——统一 DaLiuRenList 的输入类型。
+ * 统一列表查询参数——大六壬 / 六爻 / Wiki 列表查询共用此结构。
  * 所有字段可选，不传则使用默认值。
+ *
+ * 各业务模块的 ListParams 类型均继承此接口，确保字段语义一致。
  */
-export interface DaLiuRenListParams {
+export interface ListQueryParams {
   /** 命主 ID（可选，不传则使用默认人物） */
   personId?: number;
-  /** 搜索关键字——匹配问题、备注、背景 */
+  /** 搜索关键字——匹配问题、备注、背景（或标题） */
   searchText?: string;
   /** 按标签过滤 */
   tags?: string[];
@@ -245,21 +233,19 @@ export interface DaLiuRenListParams {
 }
 
 /**
- * Wiki 列表查询参数——统一 WikiList 的输入类型。
- * 所有字段可选，不传则使用默认值。
+ * 大六壬列表查询参数——统一 DaLiuRenList 的输入类型。
  */
-export interface WikiListParams {
-  /** 命主 ID（可选，不传则使用默认人物） */
-  personId?: number;
-  /** 搜索关键字——匹配标题或正文 */
-  searchText?: string;
-  /** 按标签过滤 */
-  tags?: string[];
-  /** 页码（从 1 开始，默认 1） */
-  page?: number;
-  /** 每页条数（1-100，默认 20） */
-  pageSize?: number;
-}
+export type DaLiuRenListParams = ListQueryParams;
+
+/**
+ * 六爻列表查询参数——统一 LiuYaoList 的输入类型。
+ */
+export type LiuyaoListParams = ListQueryParams;
+
+/**
+ * Wiki 列表查询参数——统一 WikiList 的输入类型。
+ */
+export type WikiListParams = ListQueryParams;
 
 /**
  * 大六壬起课参数——统一 DaLiuRenCreate 的输入类型。

@@ -217,6 +217,41 @@ export function createListFiltersSchema(contextLabel: string) {
   });
 }
 
+/* ─────────────── 共享元数据更新 Schema ─────────────── */
+
+/**
+ * 更新标签 schema——DaLiuRenUpdateTags / LiuYaoUpdateTags 共用。
+ * 记录 ID + 新标签数组，两者结构完全一致。
+ *
+ * @param recordField 记录 ID 字段名（"recordId" 或 "docId"）
+ * @param recordLabel 记录 ID 描述文案（如 "起课记录 ID" / "起卦记录 ID"）
+ */
+export function createUpdateTagsSchema(recordField: string, recordLabel: string) {
+  return z.object({
+    [recordField]: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      `${recordLabel}——从对应 List 返回的记录中获取`,
+    ),
+    tags: z.array(z.string()).describe("新的标签列表（会完全替换原有标签）"),
+  });
+}
+
+/**
+ * 更新备注 schema——DaLiuRenUpdateNote / LiuYaoUpdateNote 共用。
+ * 记录 ID + 可选 note + 可选 background，两者结构完全一致。
+ *
+ * @param recordField 记录 ID 字段名
+ * @param recordLabel 记录 ID 描述文案
+ */
+export function createUpdateNoteSchema(recordField: string, recordLabel: string) {
+  return z.object({
+    [recordField]: withMeta(z.number().int().positive(), { example: 123 }).describe(
+      `${recordLabel}——从对应 List 返回的记录中获取`,
+    ),
+    note: z.string().optional().describe("新的备注（可选）"),
+    background: z.string().optional().describe("新的背景信息（可选）"),
+  });
+}
+
 /* ─────────────── 确认操作工厂函数 ─────────────── */
 
 /**

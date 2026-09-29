@@ -46,6 +46,8 @@ const {
   createPassthroughHandler,
   createBatchViewHandler,
   createMetadataUpdateHandler,
+  createUpdateTagsSchema,
+  createUpdateNoteSchema,
   needsConfirm,
   mergeBirthInput,
 } = await import("./shared");
@@ -302,7 +304,39 @@ describe("createMetadataUpdateHandler 是 createPassthroughHandler 的别名", (
 
 describe("PERSON_ID_OPTIONAL", () => {
   it("定义存在且可被导入", async () => {
-    const { PERSON_ID_OPTIONAL } = await import("./shared");
-    expect(PERSON_ID_OPTIONAL).toBeDefined();
+    const mod = await import("./shared");
+    expect(mod.PERSON_ID_OPTIONAL).toBeDefined();
+  });
+});
+
+/* ─────────────── createUpdateTagsSchema ─────────────── */
+
+describe("createUpdateTagsSchema", () => {
+  it("生成的 schema 包含 parse 方法（是有效的 zod schema）", () => {
+    const schema = createUpdateTagsSchema("recordId", "起课记录 ID");
+    expect(schema).toBeDefined();
+    expect(typeof schema.parse).toBe("function");
+  });
+
+  it("不同 recordField 生成不同 schema 对象", () => {
+    const schema1 = createUpdateTagsSchema("recordId", "起课记录 ID");
+    const schema2 = createUpdateTagsSchema("docId", "文档 ID");
+    expect(schema1).not.toBe(schema2);
+  });
+});
+
+/* ─────────────── createUpdateNoteSchema ─────────────── */
+
+describe("createUpdateNoteSchema", () => {
+  it("生成的 schema 包含 parse 方法", () => {
+    const schema = createUpdateNoteSchema("recordId", "起卦记录 ID");
+    expect(schema).toBeDefined();
+    expect(typeof schema.parse).toBe("function");
+  });
+
+  it("与 createUpdateTagsSchema 生成不同对象", () => {
+    const tagsSchema = createUpdateTagsSchema("recordId", "测试");
+    const noteSchema = createUpdateNoteSchema("recordId", "测试");
+    expect(tagsSchema).not.toBe(noteSchema);
   });
 });

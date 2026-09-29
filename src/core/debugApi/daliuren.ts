@@ -539,15 +539,14 @@ export async function DaLiuRenUpdateTags(params: {
 
     log("info", "DaLiuRenUpdateTags", "更新标签", { recordId: params.recordId, tags: params.tags });
 
-    return updateRecordMetadata<LiurenRecord>(
-      params.recordId,
-      getLiurenRecord,
-      saveLiurenRecord,
-      record => ({ ...record, tags: params.tags }),
-      invalidateLiurenTagCache,
-      DaLiuRenError,
-      "DaLiuRenUpdateTags",
-    );
+    return updateRecordMetadata<LiurenRecord>(params.recordId, {
+      getRecord: getLiurenRecord,
+      saveRecord: saveLiurenRecord,
+      updateFn: record => ({ ...record, tags: params.tags }),
+      invalidateCache: invalidateLiurenTagCache,
+      ErrorClass: DaLiuRenError,
+      source: "DaLiuRenUpdateTags",
+    });
   });
 }
 
@@ -584,18 +583,16 @@ export async function DaLiuRenUpdateNote(params: {
       hasBackground: params.background !== undefined,
     });
 
-    return updateRecordMetadata<LiurenRecord>(
-      params.recordId,
-      getLiurenRecord,
-      saveLiurenRecord,
-      record => ({
+    return updateRecordMetadata<LiurenRecord>(params.recordId, {
+      getRecord: getLiurenRecord,
+      saveRecord: saveLiurenRecord,
+      updateFn: record => ({
         ...record,
         note: params.note ?? record.note,
         background: params.background ?? record.background,
       }),
-      undefined, // 备注更新不需要失效缓存
-      DaLiuRenError,
-      "DaLiuRenUpdateNote",
-    );
+      ErrorClass: DaLiuRenError,
+      source: "DaLiuRenUpdateNote",
+    });
   });
 }

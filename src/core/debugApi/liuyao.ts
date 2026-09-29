@@ -713,15 +713,14 @@ export async function LiuYaoUpdateTags(params: {
 
     log("info", "LiuYaoUpdateTags", "更新标签", { recordId: params.recordId, tags: params.tags });
 
-    return updateRecordMetadata<LiuyaoRecord>(
-      params.recordId,
-      getLiuyaoRecord,
-      saveLiuyaoRecord,
-      record => ({ ...record, tags: params.tags }),
-      invalidateLiuyaoTagCache,
-      LiuyaoError,
-      "LiuYaoUpdateTags",
-    );
+    return updateRecordMetadata<LiuyaoRecord>(params.recordId, {
+      getRecord: getLiuyaoRecord,
+      saveRecord: saveLiuyaoRecord,
+      updateFn: record => ({ ...record, tags: params.tags }),
+      invalidateCache: invalidateLiuyaoTagCache,
+      ErrorClass: LiuyaoError,
+      source: "LiuYaoUpdateTags",
+    });
   });
 }
 
@@ -758,18 +757,16 @@ export async function LiuYaoUpdateNote(params: {
       hasBackground: params.background !== undefined,
     });
 
-    return updateRecordMetadata<LiuyaoRecord>(
-      params.recordId,
-      getLiuyaoRecord,
-      saveLiuyaoRecord,
-      record => ({
+    return updateRecordMetadata<LiuyaoRecord>(params.recordId, {
+      getRecord: getLiuyaoRecord,
+      saveRecord: saveLiuyaoRecord,
+      updateFn: record => ({
         ...record,
         note: params.note ?? record.note,
         background: params.background ?? record.background,
       }),
-      undefined, // 备注更新不需要失效缓存
-      LiuyaoError,
-      "LiuYaoUpdateNote",
-    );
+      ErrorClass: LiuyaoError,
+      source: "LiuYaoUpdateNote",
+    });
   });
 }

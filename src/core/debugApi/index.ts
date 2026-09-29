@@ -47,6 +47,8 @@ export type {
   WikiUpdateParams,
   WikiViewParams,
   WikiLinkParams,
+  // 统一列表查询基类（新增）
+  ListQueryParams,
   // API 元数据类型
   ApiMetadata,
   // 六爻核心类型

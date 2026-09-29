@@ -18,13 +18,22 @@ vi.mock("./callbacks", () => ({
   getOpenWikiEditor: () => null,
 }));
 
-// Mock logger
+// Mock logger（nextFrame 已移至 logger.ts，需包含在 mock 中）
 vi.mock("./logger", () => ({
   log: vi.fn(),
   timer: () => () => {},
+  nextFrame: () => Promise.resolve(),
 }));
 
-const { pollUntil, nextFrame, resetUiState, getUiState, isDialogOpen } = await import("./helpers");
+const {
+  pollUntil,
+  nextFrame,
+  resetUiState,
+  getUiState,
+  isDialogOpen,
+  waitForRecordSaved,
+  waitForDocSaved,
+} = await import("./helpers");
 
 /* ─────────────── pollUntil ─────────────── */
 
@@ -148,5 +157,22 @@ describe("pollUntil 边缘场景", () => {
     // 需要推进足够时间让 setTimeout(100) resolve，然后 Date.now 才能超过 timeout
     await vi.advanceTimersByTimeAsync(200);
     expect(await promise).toBe(false);
+  });
+});
+
+/* ─────────────── waitForPersist 参数传递 ─────────────── */
+
+describe("waitForRecordSaved / waitForDocSaved 参数传递", () => {
+  it("waitForRecordSaved(id=undefined) 直接返回", async () => {
+    await expect(waitForRecordSaved(undefined)).resolves.toBeUndefined();
+  });
+
+  it("waitForDocSaved(id=undefined) 直接返回", async () => {
+    await expect(waitForDocSaved(undefined)).resolves.toBeUndefined();
+  });
+
+  it("waitForRecordSaved(id=null) 直接返回", async () => {
+     
+    await expect(waitForRecordSaved(null as any)).resolves.toBeUndefined();
   });
 });
