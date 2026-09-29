@@ -117,6 +117,9 @@ export default defineConfig({
       }),
   ].filter(Boolean),
   resolve: {
+    // 强制去重：@rtc-agent/persistence 依赖 dexie ^4.4.5，应用依赖 ^4.4.6，
+    // npm 虽然 dedup 但 Vite 打包时可能仍解析出两份。此处强制统一使用同一份。
+    dedupe: ["dexie"],
     alias: {
       // lunar-typescript 是双格式包（require→index.cjs / import→index.mjs）：
       // 应用的 import 与 iztro/lunar-lite 的 require 会被 rolldown 按条件各解析一份，
