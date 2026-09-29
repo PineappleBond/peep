@@ -74,7 +74,10 @@ describe("authApi", () => {
 
   describe("startGithubLogin", () => {
     it("生成 state 并存储到 sessionStorage", async () => {
-      globalThis.crypto.randomUUID = vi.fn(() => "test-state-uuid");
+      const mockUuid = vi
+        .fn<() => `${string}-${string}-${string}-${string}-${string}`>()
+        .mockReturnValue("test-state-uuid" as `${string}-${string}-${string}-${string}-${string}`);
+      globalThis.crypto.randomUUID = mockUuid;
       globalThis.fetch = vi.fn().mockResolvedValue({
         json: () => Promise.resolve({ redirect_url: "https://github.com/authorize" }),
       });

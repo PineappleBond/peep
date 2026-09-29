@@ -25,6 +25,8 @@ import { initPlugins } from "./core/pluginLoader";
 import { usePluginExtensions } from "./core/pluginSystem";
 import { createPeepRtcAgent, startThemeSync, syncLocale, syncTheme } from "./core/rtcAgent";
 import { preloadable } from "./utils/preloadable";
+import { AuthProvider, useAuth } from "./core/auth/AuthContext";
+import { LoginPage } from "./components/LoginPage";
 
 // ── 可预加载的懒加载路由包装：支持 hover 提前下载 chunk ─────────────
 const daLiuRenLoader = preloadable(() =>
@@ -87,6 +89,36 @@ function RouteWithErrorBoundary({ children, name }: { children: React.ReactNode;
 }
 
 function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+/**
+ * AppContent - 登录状态路由
+ * 未登录时显示 LoginPage，已登录时渲染 AuthenticatedApp
+ */
+function AppContent() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoginPage loading />;
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  return <AuthenticatedApp />;
+}
+
+/**
+ * AuthenticatedApp - 已登录用户的主应用
+ * 包含插件初始化、RTC Agent、路由等全部功能
+ */
+function AuthenticatedApp() {
   // 插件系统异步初始化：仅首次挂载触发
   const [pluginsReady, setPluginsReady] = useState(false);
   const extensions = usePluginExtensions();
