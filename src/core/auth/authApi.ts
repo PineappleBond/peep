@@ -18,9 +18,20 @@ export async function startGithubLogin(): Promise<void> {
 
   return new Promise((resolve, reject) => {
     const handleMessage = async (event: MessageEvent) => {
+      // 验证 origin 必须与当前窗口一致
+      if (event.origin !== window.location.origin) {
+        console.warn("[auth] postMessage origin mismatch:", event.origin, window.location.origin);
+        return;
+      }
+
       if (event.data.type !== "oauth-callback") return;
 
       const { code, state: receivedState } = event.data;
+
+      // 调试日志
+      if (import.meta.env.DEV) {
+        console.log("[auth] OAuth callback received:", { receivedState, expectedState: state });
+      }
 
       if (receivedState !== state) {
         cleanup();
