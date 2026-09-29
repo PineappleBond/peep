@@ -277,8 +277,8 @@ export default defineConfig({
     },
   },
   test: {
-    // 排除依赖外部环境的测试：php-comparison 需要本地 PHP 环境（/tmp/liuren），CI 中不可用
-    exclude: ["node_modules", "e2e", "**/php-comparison*.test.ts"],
+    // 排除依赖外部环境的测试：php-* 需要本地 PHP 环境（/tmp/liuren、/tmp/review-liuren-php），CI 中不可用
+    exclude: ["node_modules", "e2e", "**/php-*.test.ts"],
     // 失败时保留完整控制台输出，便于排查
     passWithNoTests: true,
     // 开发环境友好的默认配置
