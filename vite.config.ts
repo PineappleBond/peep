@@ -98,8 +98,9 @@ export default defineConfig({
           },
         ],
         // 导航回退：离线时显示 index.html（SPA 单页应用必备）
-        // vite-plugin-pwa 在 build 时会自动加上 base 前缀，无需手工写 /peep/index.html
-        navigateFallback: "/index.html",
+        // 注意：此处须与 precache manifest 中的相对路径一致（无前导斜杠），
+        // 否则 Workbox createHandlerBoundToURL 精确匹配失败，报 non-precached-url
+        navigateFallback: "index.html",
         // 离线 Google Analytics（如果应用接入 GA，可自动缓存分析请求并在恢复网络后重发）
         // 当前未接入 GA，保留默认配置
         offlineGoogleAnalytics: false,
