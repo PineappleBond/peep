@@ -240,6 +240,9 @@ export const daliurenCreateFunction = {
   returns: { zodSchema: daliurenRecordSchema },
 };
 
+/** DaLiuRenList 参数 schema（独立定义，避免重复调用工厂函数） */
+const _daliurenListFiltersSchema = createListFiltersSchema("问题、备注、背景");
+
 export const daliurenListFunction = {
   name: "DaLiuRenList",
   description:
@@ -251,10 +254,8 @@ export const daliurenListFunction = {
     "(3) 按标签过滤——如只查看'求财'类起课。" +
     "\n\n" +
     "返回分页结果，包含记录列表和总数。如需查看某条记录的完整课式详情，请调用 DaLiuRenView。",
-  zodSchema: createListFiltersSchema("问题、备注、背景"),
-  handler: createPassthroughHandler(createListFiltersSchema("问题、备注、背景"), p =>
-    peepApi().DaLiuRenList(p),
-  ),
+  zodSchema: _daliurenListFiltersSchema,
+  handler: createPassthroughHandler(_daliurenListFiltersSchema, p => peepApi().DaLiuRenList(p)),
   returns: {
     zodSchema: z.object({
       records: z
@@ -264,6 +265,14 @@ export const daliurenListFunction = {
     }),
   },
 };
+
+/** DaLiuRenView 参数 schema（独立定义，避免 handler 自引用） */
+const _daliurenViewSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
+  ),
+});
 
 export const daliurenViewFunction = {
   name: "DaLiuRenView",
@@ -280,16 +289,11 @@ export const daliurenViewFunction = {
     "⚠️ 性能提示：如需查看多个记录，请使用 DaLiuRenBatchView 批量查看（减少 UI 操作次数，避免超时）。" +
     "\n\n" +
     "示例：DaLiuRenView({ recordId: 123 }) — 查看 ID 为 123 的起课详情。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
-    ),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = daliurenViewFunction.zodSchema.parse(args);
-    return peepApi().DaLiuRenView(parsedArgs);
-  },
+  zodSchema: _daliurenViewSchema,
+  handler: createPassthroughHandler(
+    _daliurenViewSchema,
+    (p: { personId?: number; recordId: number }) => peepApi().DaLiuRenView(p),
+  ),
   returns: {
     zodSchema: daliurenRecordSchema
       .extend({ computed: _daliurenComputed })

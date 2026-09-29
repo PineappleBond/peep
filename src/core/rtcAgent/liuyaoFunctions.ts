@@ -12,6 +12,7 @@ import {
   createConfirmHandler,
   createBatchViewHandler,
   createMetadataUpdateHandler,
+  createPassthroughHandler,
   createListFiltersSchema,
 } from "./shared";
 import type { SixLines } from "../liuyao/core/types";
@@ -209,6 +210,9 @@ export const liuyaoCreateFunction = {
   returns: { zodSchema: liuyaoRecordSchema },
 };
 
+/** LiuYaoList 参数 schema（独立定义，避免重复调用工厂函数） */
+const _liuyaoListFiltersSchema = createListFiltersSchema("问题、备注、背景");
+
 export const liuyaoListFunction = {
   name: "LiuYaoList",
   description:
@@ -220,11 +224,8 @@ export const liuyaoListFunction = {
     "(3) 按标签过滤——如只查看'求财'类起卦。" +
     "\n\n" +
     "返回分页结果，包含记录列表和总数。如需查看某条记录的完整卦象详情，请调用 LiuYaoView。",
-  zodSchema: createListFiltersSchema("问题、备注、背景"),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = liuyaoListFunction.zodSchema.parse(args);
-    return peepApi().LiuYaoList(parsedArgs);
-  },
+  zodSchema: _liuyaoListFiltersSchema,
+  handler: createPassthroughHandler(_liuyaoListFiltersSchema, p => peepApi().LiuYaoList(p)),
   returns: {
     zodSchema: z.object({
       records: z.array(liuyaoRecordSchema).describe("起卦记录数组"),
@@ -232,6 +233,14 @@ export const liuyaoListFunction = {
     }),
   },
 };
+
+/** LiuYaoView 参数 schema（独立定义，避免 handler 自引用） */
+const _liuyaoViewSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
+  ),
+});
 
 export const liuyaoViewFunction = {
   name: "LiuYaoView",
@@ -251,16 +260,11 @@ export const liuyaoViewFunction = {
     "⚠️ 性能提示：如需查看多个记录，请使用 LiuYaoBatchView 批量查看（减少 UI 操作次数，避免超时）。" +
     "\n\n" +
     "示例：LiuYaoView({ recordId: 123 }) — 查看 ID 为 123 的起卦详情。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
-    ),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = liuyaoViewFunction.zodSchema.parse(args);
-    return peepApi().LiuYaoView(parsedArgs);
-  },
+  zodSchema: _liuyaoViewSchema,
+  handler: createPassthroughHandler(
+    _liuyaoViewSchema,
+    (p: { personId?: number; recordId: number }) => peepApi().LiuYaoView(p),
+  ),
   returns: {
     zodSchema: liuyaoRecordSchema.extend({ computed: _liuyaoComputed }),
   },

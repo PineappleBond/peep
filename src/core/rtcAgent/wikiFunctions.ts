@@ -11,6 +11,7 @@ import {
   createConfirmHandler,
   createBatchViewHandler,
   createMetadataUpdateHandler,
+  createPassthroughHandler,
   createListFiltersSchema,
 } from "./shared";
 
@@ -43,6 +44,9 @@ const _wikiContentReturnSchema = z
 
 /* ---- Function 定义 ---- */
 
+/** WikiList 参数 schema（独立定义，避免重复调用工厂函数） */
+const _wikiListFiltersSchema = createListFiltersSchema("标题或正文");
+
 export const wikiListFunction = {
   name: "WikiList",
   description:
@@ -54,11 +58,8 @@ export const wikiListFunction = {
     "(3) 按标签过滤——如只查看'格局'类文档。" +
     "\n\n" +
     "Wiki 用于存储命理知识、学习笔记、案例分析等 Markdown 文档。如需查看某篇文档的完整内容，请调用 WikiView。",
-  zodSchema: createListFiltersSchema("标题或正文"),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = wikiListFunction.zodSchema.parse(args);
-    return peepApi().WikiList(parsedArgs);
-  },
+  zodSchema: _wikiListFiltersSchema,
+  handler: createPassthroughHandler(_wikiListFiltersSchema, p => peepApi().WikiList(p)),
   returns: {
     zodSchema: z.object({
       docs: z.array(_docSchema).describe("文档列表"),
@@ -158,6 +159,14 @@ export const wikiUpdateFunction = {
   returns: { zodSchema: _docSchema },
 };
 
+/** WikiView 参数 schema（独立定义，避免 handler 自引用） */
+const _wikiViewSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  docId: withMeta(z.number().int().positive(), { example: 456 }).describe(
+    "文档 ID——从 WikiList 返回的 docs 中获取",
+  ),
+});
+
 export const wikiViewFunction = {
   name: "WikiView",
   description:
@@ -170,16 +179,10 @@ export const wikiViewFunction = {
     "⚠️ 性能提示：如需查看多个文档，请使用 WikiBatchView 批量查看（减少 UI 操作次数，避免超时）。" +
     "\n\n" +
     "示例：WikiView({ docId: 456 }) — 查看 ID 为 456 的文档详情。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    docId: withMeta(z.number().int().positive(), { example: 456 }).describe(
-      "文档 ID——从 WikiList 返回的 docs 中获取",
-    ),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = wikiViewFunction.zodSchema.parse(args);
-    return peepApi().WikiView(parsedArgs);
-  },
+  zodSchema: _wikiViewSchema,
+  handler: createPassthroughHandler(_wikiViewSchema, (p: { personId?: number; docId: number }) =>
+    peepApi().WikiView(p),
+  ),
   returns: { zodSchema: _docWithLinksSchema },
 };
 

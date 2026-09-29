@@ -10,6 +10,7 @@ import {
   mergeBirthInput,
   peepApi,
   createConfirmHandler,
+  createPassthroughHandler,
 } from "./shared";
 
 /* ---- 共享 Schema ---- */
@@ -53,19 +54,21 @@ export const personListFunction = {
   },
 };
 
+/** PersonGet 参数 schema（独立定义，避免 handler 自引用） */
+const _personGetSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+});
+
 export const personGetFunction = {
   name: "PersonGet",
   description:
     "获取单个人物的完整出生信息，包括姓名、公历/农历日期、时辰、性别、历法、是否闰月等。" +
     "省略 personId 时返回默认人物。" +
     "示例调用：PersonGet({ personId: 1 }) 获取 ID 为 1 的人物详情。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const input = personGetFunction.zodSchema.parse(args);
-    return peepApi().PersonGet(input.personId);
-  },
+  zodSchema: _personGetSchema,
+  handler: createPassthroughHandler(_personGetSchema, (p: { personId?: number }) =>
+    peepApi().PersonGet(p.personId),
+  ),
   returns: {
     zodSchema: _personReturnSchema,
   },
@@ -196,6 +199,11 @@ export const personDeleteFunction = {
   },
 };
 
+/** PersonSetDefault 参数 schema（独立定义，避免 handler 自引用） */
+const _personSetDefaultSchema = z.object({
+  personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
+});
+
 /** 设置默认人物——系统中只能有一个默认人物 */
 export const personSetDefaultFunction = {
   name: "PersonSetDefault",
@@ -206,13 +214,10 @@ export const personSetDefaultFunction = {
     "使用场景：用户要求切换默认人物时使用。" +
     "\n\n" +
     "示例：PersonSetDefault({ personId: 2 }) —— 将 ID 为 2 的人物设为默认。",
-  zodSchema: z.object({
-    personId: withMeta(z.number().int().positive(), { example: 1 }).describe("命主 ID"),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const { personId } = personSetDefaultFunction.zodSchema.parse(args) as { personId: number };
-    return peepApi().PersonSetDefault(personId);
-  },
+  zodSchema: _personSetDefaultSchema,
+  handler: createPassthroughHandler(_personSetDefaultSchema, (p: { personId: number }) =>
+    peepApi().PersonSetDefault(p.personId),
+  ),
   returns: {
     zodSchema: z
       .object({

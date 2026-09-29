@@ -9,6 +9,7 @@ import {
   PERSON_SUMMARY_SCHEMA,
   peepApi,
   createMetadataUpdateHandler,
+  createPassthroughHandler,
 } from "./shared";
 
 /* ---- 返回值 Zod Schema ---- */
@@ -215,6 +216,21 @@ const _ziweiReturnSchema = z
 
 /* ---- Function 定义 ---- */
 
+/** ZiWei 参数 schema（独立定义，避免 handler 自引用） */
+const _ziweiSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  scope: withMeta(z.enum(["decadal", "yearly", "monthly", "daily", "hourly"]), {
+    example: "yearly",
+  }).describe(
+    "运限级别：decadal=大限(十年运势), yearly=流年(当年运势), monthly=流月(当月运势), daily=流日(当日运势), hourly=流时(当时运势)。根据用户问题选择合适的级别",
+  ),
+  time: withMeta(z.string(), { example: "2024-06-15 12:00" })
+    .optional()
+    .describe(
+      "公历观测时间（可选），如 '2024-06-15 12:00' 或 '2024-06-15'；省略则用当前时间。用于指定分析的时间点",
+    ),
+});
+
 export const ziweiFunction = {
   name: "ZiWei",
   description:
@@ -230,27 +246,27 @@ export const ziweiFunction = {
     "使用示例：" +
     "(1) ZiWei({ scope: 'yearly' }) — 查看默认人物的流年盘面；" +
     "(2) ZiWei({ personId: 1, scope: 'monthly', time: '2024-06-15' }) — 查看指定人物 2024年6月的流月盘面。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    scope: withMeta(z.enum(["decadal", "yearly", "monthly", "daily", "hourly"]), {
-      example: "yearly",
-    }).describe(
-      "运限级别：decadal=大限(十年运势), yearly=流年(当年运势), monthly=流月(当月运势), daily=流日(当日运势), hourly=流时(当时运势)。根据用户问题选择合适的级别",
-    ),
-    time: withMeta(z.string(), { example: "2024-06-15 12:00" })
-      .optional()
-      .describe(
-        "公历观测时间（可选），如 '2024-06-15 12:00' 或 '2024-06-15'；省略则用当前时间。用于指定分析的时间点",
-      ),
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const parsedArgs = ziweiFunction.zodSchema.parse(args);
-    return peepApi().ZiWei(parsedArgs.personId, parsedArgs.scope, parsedArgs.time);
-  },
+  zodSchema: _ziweiSchema,
+  handler: createPassthroughHandler(
+    _ziweiSchema,
+    (p: {
+      personId?: number;
+      scope: "decadal" | "yearly" | "monthly" | "daily" | "hourly";
+      time?: string;
+    }) => peepApi().ZiWei(p.personId, p.scope, p.time),
+  ),
   returns: {
     zodSchema: _ziweiReturnSchema,
   },
 };
+
+/** GetScopeData 参数 schema（独立定义，避免 handler 自引用） */
+const _getScopeDataSchema = z.object({
+  solarDate: withMeta(z.string(), { example: "2024-06-15 12:00" }).describe(
+    "公历观测日期，如 '2024-06-15 12:00' 或 '2024-06-15'。用于确定分析的时间点",
+  ),
+  personId: PERSON_ID_OPTIONAL,
+});
 
 export const getScopeDataFunction = {
   name: "GetScopeData",
@@ -269,16 +285,12 @@ export const getScopeDataFunction = {
     "(2) GetScopeData({ solarDate: '2024-06-15', personId: 1 }) — 获取指定人物的运限数据。" +
     "\n\n" +
     "返回数据包含大运列表、流年列表、流月列表、流日列表、流时列表，每项包含干支、生肖、年龄等信息。",
-  zodSchema: z.object({
-    solarDate: withMeta(z.string(), { example: "2024-06-15 12:00" }).describe(
-      "公历观测日期，如 '2024-06-15 12:00' 或 '2024-06-15'。用于确定分析的时间点",
-    ),
-    personId: PERSON_ID_OPTIONAL,
-  }),
-  handler: async (args: Record<string, unknown>) => {
-    const parsedArgs = getScopeDataFunction.zodSchema.parse(args);
-    return peepApi().GetScopeData(parsedArgs.solarDate, parsedArgs.personId);
-  },
+  zodSchema: _getScopeDataSchema,
+  handler: createPassthroughHandler(
+    _getScopeDataSchema,
+    (p: { solarDate: string; personId?: number }) =>
+      peepApi().GetScopeData(p.solarDate, p.personId),
+  ),
   returns: {
     zodSchema: hbarSchema,
   },
