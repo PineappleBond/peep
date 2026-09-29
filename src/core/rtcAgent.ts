@@ -304,6 +304,13 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
         // 注意：这里不能直接调用 AuthContext 的 logout，因为 rtcAgent.ts 不是 React 组件
         // 登出后，App.tsx 中的 AuthContext 会检测到 token 被清除，自动跳转到登录页
       },
+      getUserId: () => {
+        const tokens = getTokens();
+        if (!tokens) {
+          throw new Error("Not authenticated");
+        }
+        return tokens.user_id;
+      },
     },
     scenariosUrl: `${import.meta.env.BASE_URL}scenarios/`,
     workerUrl: `${import.meta.env.BASE_URL}rtc-agent/shared-worker.js`,
