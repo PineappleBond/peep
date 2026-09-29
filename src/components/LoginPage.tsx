@@ -47,9 +47,11 @@ export function LoginPage({ loading }: LoginPageProps) {
           <p className="login-footer">{t("login.privacy")}</p>
         </div>
 
-        {/* 右侧：截图 + 应用介绍（预留） */}
+        {/* 右侧：截图 + 应用介绍 */}
         <div className="login-showcase">
-          <div className="login-screenshot">{/* 预留：应用截图 */}</div>
+          <div className="login-screenshot">
+            <img src="/peep/screenshot.png" alt="应用截图" />
+          </div>
 
           <div className="login-intro">
             <h2>{t("login.features.title")}</h2>
