@@ -4,15 +4,16 @@ import { saveTokens, getTokens, clearTokens, isTokenExpired } from "./authStorag
 const API_BASE = "https://rtc-agent.cherish.chat";
 
 export async function startGithubLogin(): Promise<void> {
-  const state = crypto.randomUUID();
-  sessionStorage.setItem("oauth_state", state);
-
   // 动态获取当前域名作为回调地址
   const redirectUri = `${window.location.origin}/peep/auth/callback.html`;
 
-  const { redirect_url } = await fetch(
-    `${API_BASE}/oauth2/authorize?provider=github&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`,
+  // 调用后端获取授权 URL 和 state
+  const { redirect_url, state } = await fetch(
+    `${API_BASE}/oauth2/authorize?provider=github&redirect_uri=${encodeURIComponent(redirectUri)}`,
   ).then(r => r.json());
+
+  // 使用后端返回的 state（而不是自己生成）
+  sessionStorage.setItem("oauth_state", state);
 
   const popup = window.open(redirect_url, "github-oauth", "width=600,height=700");
 

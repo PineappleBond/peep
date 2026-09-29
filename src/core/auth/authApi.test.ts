@@ -73,21 +73,36 @@ describe("authApi", () => {
   });
 
   describe("startGithubLogin", () => {
-    it("生成 state 并存储到 sessionStorage", async () => {
-      const mockUuid = vi
-        .fn<() => `${string}-${string}-${string}-${string}-${string}`>()
-        .mockReturnValue("test-state-uuid" as `${string}-${string}-${string}-${string}-${string}`);
-      globalThis.crypto.randomUUID = mockUuid;
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        json: () => Promise.resolve({ redirect_url: "https://github.com/authorize" }),
+    it("调用 /oauth2/authorize 并传递 redirect_uri", async () => {
+      vi.resetModules(); // 清除模块缓存
+
+      const mockState = "backend-state-12345";
+      const mockFetch = vi.fn().mockResolvedValue({
+        json: () =>
+          Promise.resolve({ redirect_url: "https://github.com/authorize", state: mockState }),
       });
+      globalThis.fetch = mockFetch;
+
       const mockOpen = vi.fn();
-      vi.stubGlobal("window", { open: mockOpen });
+      vi.stubGlobal("window", {
+        open: mockOpen,
+        location: { origin: "http://localhost:5173" },
+      });
 
       const { startGithubLogin } = await import("./authApi");
-      startGithubLogin().catch(() => {});
 
-      expect(sessionStorage.getItem("oauth_state")).toBe("test-state-uuid");
+      // 启动登录流程
+      const promise = startGithubLogin();
+      promise.catch(() => {});
+
+      // 等待 fetch 完成
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // 验证 fetch 被正确调用
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/oauth2/authorize?provider=github"),
+      );
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("redirect_uri="));
     });
   });
 });
