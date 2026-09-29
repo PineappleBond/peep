@@ -429,15 +429,29 @@ export function waitForLiuyaoCallbacks(timeout = 1000): Promise<void> {
   return waitPageCallbacks("liuyao", "六爻", timeout);
 }
 
-/** 等待记录保存完成（通过验证记录 ID 存在） */
-export async function waitForRecordSaved(
-  recordId: number | undefined,
+/**
+ * 等待持久化操作完成——通用延时等待 DB 写入。
+ *
+ * 提取 waitForRecordSaved / waitForDocSaved 的公共逻辑：
+ * 两者仅差一个日志标签，合并后消除重复代码。
+ *
+ * @param id 记录/文档 ID（null/undefined 时跳过等待）
+ * @param label 日志标签（如 "记录" / "文档"）
+ * @param timeout 超时上限（实际等待取 min(timeout, 100ms)）
+ */
+async function waitForPersist(
+  id: number | undefined,
+  label: string,
   timeout = 2000,
 ): Promise<void> {
-  if (recordId == null) return;
-  // 简单延时等待 DB 写入完成
+  if (id == null) return;
   await new Promise(r => setTimeout(r, Math.min(timeout, 100)));
-  log("debug", "wait", "记录保存等待完成", { recordId });
+  log("debug", "wait", `${label}保存等待完成`, { [label === "记录" ? "recordId" : "docId"]: id });
+}
+
+/** 等待记录保存完成（大六壬/六爻起课记录） */
+export function waitForRecordSaved(recordId: number | undefined, timeout = 2000): Promise<void> {
+  return waitForPersist(recordId, "记录", timeout);
 }
 
 /** 等待 Wiki 回调注册完成 */
@@ -445,25 +459,24 @@ export function waitForWikiCallbacks(timeout = 1000): Promise<void> {
   return waitPageCallbacks("wiki", "Wiki", timeout);
 }
 
-/** 等待文档保存完成 */
-export async function waitForDocSaved(docId: number | undefined, timeout = 2000): Promise<void> {
-  if (docId == null) return;
-  // 简单延时等待 DB 写入完成
-  await new Promise(r => setTimeout(r, Math.min(timeout, 100)));
-  log("debug", "wait", "文档保存等待完成", { docId });
+/** 等待文档保存完成（Wiki 文档） */
+export function waitForDocSaved(docId: number | undefined, timeout = 2000): Promise<void> {
+  return waitForPersist(docId, "文档", timeout);
 }
 
 /**
- * 检查 Dialog 是否已打开（通过检查 openCreateDialog/openLiuyaoCreateDialog/openWikiEditor 回调）
+ * 检查 Dialog 是否已打开（通过检查对应回调是否存在）。
+ *
+ * 使用查找表替代 if/else 链——新增页面类型只需扩展 map，无需改动函数体。
  */
+const _dialogGetters: Record<"daliuren" | "liuyao" | "wiki", () => unknown> = {
+  daliuren: () => getOpenCreateDialog(),
+  liuyao: () => getOpenLiuyaoCreateDialog(),
+  wiki: () => getOpenWikiEditor(),
+};
+
 export function isDialogOpen(type: "daliuren" | "liuyao" | "wiki"): boolean {
-  if (type === "daliuren") {
-    return !!getOpenCreateDialog();
-  }
-  if (type === "liuyao") {
-    return !!getOpenLiuyaoCreateDialog();
-  }
-  return !!getOpenWikiEditor();
+  return !!_dialogGetters[type]();
 }
 
 /**
