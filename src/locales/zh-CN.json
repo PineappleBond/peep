@@ -857,5 +857,22 @@
   "validation.questionRequired": "占事问题不能为空",
   "validation.titleRequired": "标题不能为空",
   "validation.maxLength": "最多输入 {max} 个字符",
-  "validation.fixErrors": "请修正表单中的错误后再提交"
+  "validation.fixErrors": "请修正表单中的错误后再提交",
+
+  "login.subtitle": "紫微斗数 · 大六壬 · 六爻 · 命理 AI 助手",
+  "login.github": "使用 GitHub 登录",
+  "login.logout": "退出登录",
+  "login.processing": "正在完成授权...",
+  "login.privacy": "登录即表示同意使用 GitHub 账号信息",
+  "login.error.oauth_failed": "登录失败，请重试",
+  "login.error.oauth_timeout": "登录超时，请重试",
+  "login.error.state_mismatch": "安全验证失败，请重试",
+  "login.error.token_expired": "登录已过期，请重新登录",
+  "login.error.token_revoked": "登录已被撤销，请重新登录",
+  "login.features.title": "功能特色",
+  "login.features.item1": "紫微斗数排盘与运限分析",
+  "login.features.item2": "大六壬起课占卜",
+  "login.features.item3": "六爻起卦断事",
+  "login.features.item4": "命理知识库管理",
+  "login.features.item5": "AI 助手实时对话"
 }
