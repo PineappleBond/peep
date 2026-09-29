@@ -1,0 +1,173 @@
+/* ════════════════════════════════════════════════════
+   login.css — 登录页样式（支持双主题）
+   ════════════════════════════════════════════════════ */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: var(--space-md);
+}
+
+.login-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2xl);
+  max-width: 900px;
+  width: 100%;
+  padding: var(--space-2xl);
+  background: var(--glass-bg-panel);
+  backdrop-filter: blur(var(--blur-xl));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-lg);
+}
+
+.login-logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--space-lg);
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-deep) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 600;
+  color: var(--text-on-accent);
+}
+
+.login-header h1 {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: var(--space-sm);
+}
+
+.login-subtitle {
+  font-size: var(--text-md);
+  color: var(--dim);
+  text-align: center;
+}
+
+.login-button.github {
+  width: 100%;
+  padding: var(--space-md);
+  background: #24292e;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  transition: background 0.2s;
+}
+
+.login-button.github:hover {
+  background: #2f363d;
+}
+
+.login-button.github:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-error {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--danger-soft);
+  color: var(--text-on-accent);
+  border-radius: 6px;
+  font-size: var(--text-sm);
+}
+
+.login-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  color: var(--dim);
+  font-size: var(--text-sm);
+}
+
+.login-footer {
+  font-size: var(--text-xs);
+  color: var(--faint);
+  text-align: center;
+}
+
+.login-showcase {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-lg);
+}
+
+.login-screenshot {
+  aspect-ratio: 16 / 10;
+  background: var(--glass-bg-card);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  font-size: var(--text-sm);
+}
+
+.login-intro {
+  padding: var(--space-md);
+  background: var(--glass-bg-card);
+  border-radius: 8px;
+  min-height: 120px;
+}
+
+.login-intro h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-sm);
+}
+
+.login-intro ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.login-intro li {
+  font-size: var(--text-sm);
+  color: var(--dim);
+  padding: var(--space-xs) 0;
+  padding-left: var(--space-md);
+  position: relative;
+}
+
+.login-intro li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    grid-template-columns: 1fr;
+  }
+
+  .login-showcase {
+    display: none;
+  }
+}
