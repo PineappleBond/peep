@@ -18,7 +18,7 @@ import type { RtcAgentWithLifecycle } from "@rtc-agent/component";
 import { getTheme } from "./theme";
 import type { Locale } from "./i18n";
 import { getTokens, clearTokens, isTokenExpired } from "./auth/authStorage";
-import { refreshAccessToken } from "./auth/authApi";
+import { refreshAccessToken, getOrCreateDeviceIdSync } from "./auth/authApi";
 
 // 各业务域 Function
 import {
@@ -311,6 +311,7 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
         }
         return tokens.user_id;
       },
+      deviceId: getOrCreateDeviceIdSync(),
     },
     scenariosUrl: `${import.meta.env.BASE_URL}scenarios/`,
     workerUrl: `${import.meta.env.BASE_URL}rtc-agent/shared-worker.js`,

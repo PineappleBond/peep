@@ -3,6 +3,66 @@ import { saveTokens, getTokens, clearTokens, isTokenExpired } from "./authStorag
 
 const API_BASE = "https://rtc-agent.cherish.chat";
 
+const DEVICE_ID_KEY = "peep_device_id";
+let deviceIdPromise: Promise<string> | null = null;
+
+/**
+ * 获取或创建设备 ID（单例模式，避免并发）
+ *
+ * 设备 ID 用于标识当前浏览器/设备，与后端 JWT 中的 device_id 保持一致。
+ * 使用 localStorage 持久化，确保刷新页面后仍然有效。
+ */
+export async function getOrCreateDeviceId(): Promise<string> {
+  // 如果已经有正在进行的 Promise，直接返回（避免并发）
+  if (deviceIdPromise) {
+    return deviceIdPromise;
+  }
+
+  deviceIdPromise = (async () => {
+    try {
+      // 先检查 localStorage 中是否已有 device ID
+      const existing = localStorage.getItem(DEVICE_ID_KEY);
+      if (existing) {
+        return existing;
+      }
+
+      // 生成新的 device ID
+      const newDeviceId = crypto.randomUUID();
+      localStorage.setItem(DEVICE_ID_KEY, newDeviceId);
+      return newDeviceId;
+    } finally {
+      // 无论成功失败，都要清除 Promise，允许下次重试
+      deviceIdPromise = null;
+    }
+  })();
+
+  return deviceIdPromise;
+}
+
+/**
+ * 同步获取设备 ID（如果不存在则返回 null）
+ */
+export function getDeviceIdSync(): string | null {
+  return localStorage.getItem(DEVICE_ID_KEY);
+}
+
+/**
+ * 同步获取或创建设备 ID（用于初始化阶段）
+ *
+ * 注意：此方法是同步的，适用于应用启动时确保设备 ID 存在。
+ * 对于登录流程，请使用异步的 getOrCreateDeviceId() 以避免并发问题。
+ */
+export function getOrCreateDeviceIdSync(): string {
+  const existing = localStorage.getItem(DEVICE_ID_KEY);
+  if (existing) {
+    return existing;
+  }
+
+  const newDeviceId = crypto.randomUUID();
+  localStorage.setItem(DEVICE_ID_KEY, newDeviceId);
+  return newDeviceId;
+}
+
 export async function startGithubLogin(): Promise<void> {
   // 动态获取当前域名作为回调地址
   const redirectUri = `${window.location.origin}/peep/auth/callback.html`;
@@ -69,6 +129,7 @@ export async function startGithubLogin(): Promise<void> {
 }
 
 async function exchangeToken(code: string, state: string): Promise<TokenStorage> {
+  const deviceId = await getOrCreateDeviceId();
   const response = await fetch(`${API_BASE}/oauth2/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -76,7 +137,7 @@ async function exchangeToken(code: string, state: string): Promise<TokenStorage>
       code,
       state,
       redirect_uri: `${window.location.origin}/peep/auth/callback.html`,
-      device_id: crypto.randomUUID(),
+      device_id: deviceId,
       device_name: navigator.userAgent,
     }),
   });
