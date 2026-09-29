@@ -7,11 +7,13 @@ import { withMeta, z } from "@rtc-agent/component";
 import {
   CONFIRM_FIELD,
   PERSON_ID_OPTIONAL,
+  PERSON_SUMMARY_SCHEMA,
   peepApi,
-  needsConfirm,
-  extractConfirmed,
+  createConfirmHandler,
   createBatchViewHandler,
   createMetadataUpdateHandler,
+  createPassthroughHandler,
+  createListFiltersSchema,
 } from "./shared";
 
 /* ---- 共享 Schema ---- */
@@ -189,21 +191,25 @@ const _daliurenComputed = z
   .object({
     calculationTime: z.string().describe("起课时间"),
     result: daliurenResultSchema,
-    person: z
-      .object({
-        name: z.string().describe("命主姓名"),
-        gender: z.string().describe("性别"),
-        date: z.string().describe("出生日期"),
-        timeIndex: z.number().describe("时辰索引"),
-        savedAt: z.number().describe("保存时间戳"),
-        isDefault: z.boolean().describe("是否默认人物"),
-        id: z.number().describe("命主 ID"),
-      })
-      .describe("关联命主信息"),
+    person: PERSON_SUMMARY_SCHEMA,
   })
   .describe("附加计算数据（含 result 副本和关联命主）");
 
 /* ---- Function 定义 ---- */
+
+/** DaLiuRenCreate schema（独立定义，避免 createConfirmHandler 自引用） */
+const _daliurenCreateSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  question: withMeta(z.string(), { example: "这笔生意能不能做" }).describe(
+    "所占问题——用户想要占卜的核心问题，要具体明确",
+  ),
+  note: withMeta(z.string(), { example: "客户询问合作前景" }).optional().describe("备注——补充说明"),
+  background: withMeta(z.string(), { example: "客户与对方已洽谈三月" })
+    .optional()
+    .describe("背景信息——问题的上下文，有助于更准确的分析"),
+  tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['求财', '合作']"),
+  confirmed: CONFIRM_FIELD,
+});
 
 export const daliurenCreateFunction = {
   name: "DaLiuRenCreate",
@@ -223,32 +229,14 @@ export const daliurenCreateFunction = {
     "(2) DaLiuRenCreate({ personId: 1, question: '考试能否通过？', background: '准备了三个月' }) — 指定人物起课。" +
     "\n\n" +
     "注意：起课时间默认为当前时间，系统自动记录，无需手动指定。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    question: withMeta(z.string(), { example: "这笔生意能不能做" }).describe(
-      "所占问题——用户想要占卜的核心问题，要具体明确",
-    ),
-    note: withMeta(z.string(), { example: "客户询问合作前景" })
-      .optional()
-      .describe("备注——补充说明"),
-    background: withMeta(z.string(), { example: "客户与对方已洽谈三月" })
-      .optional()
-      .describe("背景信息——问题的上下文，有助于更准确的分析"),
-    tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['求财', '合作']"),
-    confirmed: CONFIRM_FIELD,
-  }),
-  handler: (args: Record<string, unknown>) => {
-    type CreateInput = z.infer<typeof daliurenCreateFunction.zodSchema>;
-    const parsedArgs = daliurenCreateFunction.zodSchema.parse(args) as CreateInput;
-    if (!parsedArgs.confirmed) {
-      return needsConfirm(
-        "大六壬起课",
-        `即将起课：「${parsedArgs.question}」${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
-      );
-    }
-    const params = extractConfirmed(parsedArgs);
-    return peepApi().DaLiuRenCreate(params);
-  },
+  zodSchema: _daliurenCreateSchema,
+  handler: createConfirmHandler(
+    _daliurenCreateSchema,
+    "大六壬起课",
+    input =>
+      `即将起课：「${input.question}」${input.tags?.length ? `，标签：${input.tags.join("、")}` : ""}`,
+    params => peepApi().DaLiuRenCreate(params),
+  ),
   returns: { zodSchema: daliurenRecordSchema },
 };
 
@@ -263,21 +251,10 @@ export const daliurenListFunction = {
     "(3) 按标签过滤——如只查看'求财'类起课。" +
     "\n\n" +
     "返回分页结果，包含记录列表和总数。如需查看某条记录的完整课式详情，请调用 DaLiuRenView。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    searchText: withMeta(z.string(), { example: "合作" })
-      .optional()
-      .describe("搜索关键字——匹配问题、备注、背景"),
-    tags: z.array(z.string()).optional().describe("按标签过滤——只返回包含指定标签的记录"),
-    page: withMeta(z.number().int().positive(), { example: 1 }).optional().describe("页码，默认 1"),
-    pageSize: withMeta(z.number().int().positive(), { example: 20 })
-      .optional()
-      .describe("每页条数，默认 20"),
-  }),
-  handler: (args: Record<string, unknown>) => {
-    const parsedArgs = daliurenListFunction.zodSchema.parse(args);
-    return peepApi().DaLiuRenList(parsedArgs);
-  },
+  zodSchema: createListFiltersSchema("问题、备注、背景"),
+  handler: createPassthroughHandler(createListFiltersSchema("问题、备注、背景"), p =>
+    peepApi().DaLiuRenList(p),
+  ),
   returns: {
     zodSchema: z.object({
       records: z
@@ -320,6 +297,15 @@ export const daliurenViewFunction = {
   },
 };
 
+/** DaLiuRenDelete schema（独立定义，避免 createConfirmHandler 自引用） */
+const _daliurenDeleteSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
+  ),
+  confirmed: CONFIRM_FIELD,
+});
+
 export const daliurenDeleteFunction = {
   name: "DaLiuRenDelete",
   description:
@@ -331,26 +317,14 @@ export const daliurenDeleteFunction = {
     "使用场景：用户要求删除某条起课记录时使用。" +
     "\n\n" +
     "示例：DaLiuRenDelete({ recordId: 123 }) — 删除 ID 为 123 的起课记录。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "起课记录 ID——从 DaLiuRenList 返回的 records 中获取",
-    ),
-    confirmed: CONFIRM_FIELD,
-  }),
-  handler: (args: Record<string, unknown>) => {
-    type DeleteInput = z.infer<typeof daliurenDeleteFunction.zodSchema>;
-    const parsedArgs = daliurenDeleteFunction.zodSchema.parse(args) as DeleteInput;
-    if (!parsedArgs.confirmed) {
-      return needsConfirm(
-        "删除大六壬起课记录",
-        `即将删除起课记录 #${parsedArgs.recordId}（此操作不可撤销）`,
-        "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
-      );
-    }
-    const params = extractConfirmed(parsedArgs);
-    return peepApi().DaLiuRenDelete(params, { skipUI: true });
-  },
+  zodSchema: _daliurenDeleteSchema,
+  handler: createConfirmHandler(
+    _daliurenDeleteSchema,
+    "删除大六壬起课记录",
+    input => `即将删除起课记录 #${input.recordId}（此操作不可撤销）`,
+    params => peepApi().DaLiuRenDelete(params, { skipUI: true }),
+    { irreversible: true },
+  ),
   returns: { zodSchema: z.void().describe("删除成功无返回数据") },
 };
 

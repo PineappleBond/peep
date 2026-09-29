@@ -5,7 +5,8 @@
  * 生产环境通过 import.meta.env.DEV 控制是否输出敏感细节。
  *
  * 基类 BaseDebugError 封装 fullMessage 拼接、captureStackTrace 等共享逻辑；
- * ZiWeiError / DaLiuRenError / WikiError 只需指定 name，不再重复构造函数样板。
+ * createErrorSubclass 工厂函数生成具名子类（ZiWeiError / DaLiuRenError 等），
+ * 每个子类仅需一行声明，不再重复构造函数样板。
  *
  * 错误代码（ApiErrorCode）用于前端/AI 快速识别错误类型并给出对应处理：
  * - INVALID_INPUT：参数校验失败，提示用户修正输入
@@ -139,8 +140,33 @@ export class BaseDebugError extends Error {
 }
 
 /**
+ * 创建具名错误子类——消除 ZiWeiError / DaLiuRenError / LiuyaoError / WikiError / LunarError
+ * 中完全相同的构造函数样板。每个子类仅需一行声明。
+ *
+ * 生成的类继承 BaseDebugError 的全部能力（context / suggestion / errorCode / captureStackTrace），
+ * 构造函数签名与 ErrorConstructor 完全一致，仅自动设置 `this.name`。
+ */
+function createErrorSubclass(errorName: string): ErrorConstructor {
+  return class extends BaseDebugError {
+    constructor(
+      message: string,
+      source: string,
+      options?: {
+        context?: Record<string, unknown>;
+        suggestion?: string;
+        cause?: unknown;
+        errorCode?: ApiErrorCodeType;
+      },
+    ) {
+      super(message, source, options);
+      this.name = errorName;
+    }
+  };
+}
+
+/**
  * 紫微斗数基础错误类：所有 debugApi 紫微相关错误的基类。
- * 包含上下文信息（输入参数、中间状态）和恢复建议。
+ * ParseDateError / ComputeScopeError 继承此类。
  *
  * @example
  * ```typescript
@@ -150,27 +176,11 @@ export class BaseDebugError extends Error {
  *   if (err instanceof ZiWeiError) {
  *     console.error("来源:", err.source);
  *     console.error("上下文:", err.context);
- *     console.error("建议:", err.suggestion);
- *     console.error("原始错误:", err.cause);
  *   }
  * }
  * ```
  */
-export class ZiWeiError extends BaseDebugError {
-  constructor(
-    message: string,
-    source: string,
-    options?: {
-      context?: Record<string, unknown>;
-      suggestion?: string;
-      cause?: unknown;
-      errorCode?: ApiErrorCodeType;
-    },
-  ) {
-    super(message, source, options);
-    this.name = "ZiWeiError";
-  }
-}
+export class ZiWeiError extends createErrorSubclass("ZiWeiError") {}
 
 /**
  * 日期解析错误：包含原始输入、尝试的格式列表和失败原因。
@@ -237,85 +247,17 @@ export class ComputeScopeError extends ZiWeiError {
   }
 }
 
-/**
- * 大六壬错误类：DaLiuRen 系列调试接口的专用错误。
- * 包含上下文信息（输入参数、回调状态）和恢复建议。
- */
-export class DaLiuRenError extends BaseDebugError {
-  constructor(
-    message: string,
-    source: string,
-    options?: {
-      context?: Record<string, unknown>;
-      suggestion?: string;
-      cause?: unknown;
-      errorCode?: ApiErrorCodeType;
-    },
-  ) {
-    super(message, source, options);
-    this.name = "DaLiuRenError";
-  }
-}
+/** 大六壬错误类：DaLiuRen 系列调试接口的专用错误。 */
+export class DaLiuRenError extends createErrorSubclass("DaLiuRenError") {}
 
-/**
- * 六爻错误类：LiuYao 系列调试接口的专用错误。
- * 包含上下文信息（输入参数、回调状态）和恢复建议。
- */
-export class LiuyaoError extends BaseDebugError {
-  constructor(
-    message: string,
-    source: string,
-    options?: {
-      context?: Record<string, unknown>;
-      suggestion?: string;
-      cause?: unknown;
-      errorCode?: ApiErrorCodeType;
-    },
-  ) {
-    super(message, source, options);
-    this.name = "LiuyaoError";
-  }
-}
+/** 六爻错误类：LiuYao 系列调试接口的专用错误。 */
+export class LiuyaoError extends createErrorSubclass("LiuyaoError") {}
 
-/**
- * Wiki 错误类：Wiki 系列调试接口的专用错误。
- * 包含上下文信息（输入参数、数据库操作状态）和恢复建议。
- */
-export class WikiError extends BaseDebugError {
-  constructor(
-    message: string,
-    source: string,
-    options?: {
-      context?: Record<string, unknown>;
-      suggestion?: string;
-      cause?: unknown;
-      errorCode?: ApiErrorCodeType;
-    },
-  ) {
-    super(message, source, options);
-    this.name = "WikiError";
-  }
-}
+/** Wiki 错误类：Wiki 系列调试接口的专用错误。 */
+export class WikiError extends createErrorSubclass("WikiError") {}
 
-/**
- * Lunar 错误类：Lunar 系列时间/日历接口的专用错误。
- * 包含上下文信息（日期参数、转换结果）和恢复建议。
- */
-export class LunarError extends BaseDebugError {
-  constructor(
-    message: string,
-    source: string,
-    options?: {
-      context?: Record<string, unknown>;
-      suggestion?: string;
-      cause?: unknown;
-      errorCode?: ApiErrorCodeType;
-    },
-  ) {
-    super(message, source, options);
-    this.name = "LunarError";
-  }
-}
+/** Lunar 错误类：Lunar 系列时间/日历接口的专用错误。 */
+export class LunarError extends createErrorSubclass("LunarError") {}
 
 /**
  * 包装错误：确保所有错误都有统一的来源标签和格式。

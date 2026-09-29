@@ -5,7 +5,7 @@
  *
  * 设计原则：
  * 1. Schema 片段：跨模块复用的字段定义（如 personId）集中管理，避免漂移
- * 2. Handler 工厂：将 parse→call 等重复模式收敛为工厂函数，handler 只需一行声明
+ * 2. Handler 工厂：将 parse→call / 确认流程 等重复模式收敛为工厂函数
  * 3. 确认机制：写操作的安全确认流程统一封装
  */
 import { withMeta, z } from "@rtc-agent/component";
@@ -102,15 +102,6 @@ export function needsConfirm(action: string, summary: string, message?: string):
   };
 }
 
-/**
- * 从已确认的参数中提取业务参数——去除 confirmed 字段。
- */
-export function extractConfirmed<T extends Record<string, unknown>>(args: T): Omit<T, "confirmed"> {
-  const { confirmed: _c, ...params } = args;
-  void _c;
-  return params;
-}
-
 /* ─────────────── Handler 工厂函数 ─────────────── */
 
 /**
@@ -186,3 +177,93 @@ export function createBatchViewHandler<TItem>(
  * @param callApi 接收解析后的参数，执行实际更新
  */
 export const createMetadataUpdateHandler = createPassthroughHandler;
+
+/* ─────────────── 共享 Schema ─────────────── */
+
+/**
+ * 人物基础信息 schema——ziweiFunctions / daliurenFunctions / liuyaoFunctions 的
+ * computed.person 字段共用此精简版（7 个核心字段）。
+ * 完整版见 personFunctions.ts 的 _personReturnSchema（22 个字段，含高级设置）。
+ */
+export const PERSON_SUMMARY_SCHEMA = z
+  .object({
+    id: z.number().describe("人物ID"),
+    name: z.string().describe("姓名"),
+    gender: z.string().describe("性别"),
+    date: z.string().describe("出生日期"),
+    timeIndex: z.number().describe("时辰索引"),
+    savedAt: z.number().describe("保存时间戳"),
+    isDefault: z.boolean().describe("是否默认人物"),
+  })
+  .describe("人物基础信息");
+
+/**
+ * 列表查询 schema 工厂——DaLiuRenList / LiuYaoList / WikiList 共用同构参数：
+ * personId(可选) + searchText(可选) + tags(可选) + page(可选) + pageSize(可选)。
+ *
+ * @param contextLabel 搜索字段的上下文描述（如 "问题、备注、背景" / "标题或正文"）
+ */
+export function createListFiltersSchema(contextLabel: string) {
+  return z.object({
+    personId: PERSON_ID_OPTIONAL,
+    searchText: withMeta(z.string(), { example: "合作" })
+      .optional()
+      .describe(`搜索关键字——匹配${contextLabel}`),
+    tags: z.array(z.string()).optional().describe("按标签过滤——只返回包含指定标签的记录"),
+    page: withMeta(z.number().int().positive(), { example: 1 }).optional().describe("页码，默认 1"),
+    pageSize: withMeta(z.number().int().positive(), { example: 20 })
+      .optional()
+      .describe("每页条数，默认 20"),
+  });
+}
+
+/* ─────────────── 确认操作工厂函数 ─────────────── */
+
+/**
+ * 创建「确认→执行」handler——用于 Create/Update/Delete 等写操作。
+ *
+ * 消除重复模式：
+ * ```ts
+ * // 使用前（每个写 handler 都是这个结构）
+ * handler: (args) => {
+ *   const input = schema.parse(args);
+ *   if (!input.confirmed) return needsConfirm(...);
+ *   const { confirmed: _, ...params } = input;
+ *   return peepApi().SomeApi(params);
+ * }
+ *
+ * // 使用后
+ * handler: createConfirmHandler(schema, "操作名", buildSummary, params => peepApi().SomeApi(params))
+ * ```
+ *
+ * @param schema 包含 confirmed 字段的 zodSchema
+ * @param action 操作名称（如 "创建人物"、"大六壬起课"）
+ * @param buildSummary 从解析后的参数构建操作摘要
+ * @param execute 确认后执行的业务逻辑
+ * @param options 可选配置（自定义确认消息、是否不可逆）
+ */
+export function createConfirmHandler<TIn extends { confirmed?: boolean }, TOut>(
+  schema: { parse: (input: unknown) => TIn },
+  action: string,
+  buildSummary: (input: TIn) => string,
+  execute: (params: Omit<TIn, "confirmed">) => TOut,
+  options?: {
+    /** 自定义确认消息（默认引导用户传入 confirmed: true） */
+    confirmMessage?: string;
+    /** 是否为不可逆操作（影响确认消息措辞） */
+    irreversible?: boolean;
+  },
+): (args: Record<string, unknown>) => TOut | ConfirmResponse {
+  return (args: Record<string, unknown>) => {
+    const input = schema.parse(args);
+    if (!input.confirmed) {
+      const message = options?.irreversible
+        ? "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true"
+        : undefined;
+      return needsConfirm(action, buildSummary(input), message);
+    }
+    const { confirmed: _c, ...params } = input;
+    void _c;
+    return execute(params as Omit<TIn, "confirmed">);
+  };
+}

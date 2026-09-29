@@ -5,11 +5,45 @@
  * 所有方法都是纯计算，不操控 UI。
  */
 
-import { Solar, Lunar, EightChar, LunarYear } from "lunar-typescript";
+import { Solar, Lunar } from "lunar-typescript";
 import { log } from "./logger";
 import { LunarError, ApiErrorCode } from "./errors";
 import { validateNonEmptyString } from "./validate";
 import { withErrorHandlingSync } from "./helpers";
+
+/**
+ * 解析公历日期字符串为 Solar 对象——消除 lunar 模块中 6 处重复的日期解析逻辑。
+ *
+ * 支持格式：YYYY-MM-DD、YYYY-MM-DD HH:mm。
+ * 解析失败时抛出 LunarError(INVALID_INPUT)。
+ *
+ * @param dateStr 已 trim 的日期字符串
+ * @param source 来源标签（用于错误消息）
+ */
+function parseSolar(dateStr: string, source: string): Solar {
+  const [datePart, timePart = "00:00"] = dateStr.split(/\s+/);
+  const [year, month, day] = datePart.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    throw new LunarError("日期格式无效，应为 YYYY-MM-DD 或 YYYY-MM-DD HH:mm", source, {
+      context: { date: dateStr },
+      suggestion: "请使用公历日期，格式：2024-06-15 或 2024-06-15 14:30",
+      errorCode: ApiErrorCode.INVALID_INPUT,
+    });
+  }
+
+  const [hour, minute = 0] = timePart.split(":").map(Number);
+  return Solar.fromYmdHms(year, month, day, hour, minute, 0);
+}
+
+/**
+ * 解析可选日期参数：有值则解析，无值则返回当前时刻的 Solar 对象。
+ * 消除 GetCurrentSolarTerm / GetChineseCalendar / GetDailyInfo / GetZodiac / GetConstellation
+ * 中 5 处完全相同的「有日期则解析，无日期则取当前」分支逻辑。
+ */
+function parseSolarOptional(dateStr: string | undefined, source: string): Solar {
+  return dateStr ? parseSolar(dateStr.trim(), source) : Solar.fromDate(new Date());
+}
 
 /**
  * 公历转农历
@@ -32,20 +66,7 @@ export function SolarToLunar(params: { date: string }): {
 
     log("info", "SolarToLunar", "公历转农历", { date: params.date });
 
-    const dateStr = params.date.trim();
-    const [datePart, timePart = "00:00"] = dateStr.split(/\s+/);
-    const [year, month, day] = datePart.split("-").map(Number);
-
-    if (!year || !month || !day) {
-      throw new LunarError("日期格式无效，应为 YYYY-MM-DD 或 YYYY-MM-DD HH:mm", "SolarToLunar", {
-        context: { date: params.date },
-        suggestion: "请使用公历日期，格式：2024-06-15 或 2024-06-15 14:30",
-        errorCode: ApiErrorCode.INVALID_INPUT,
-      });
-    }
-
-    const [hour, minute = 0] = timePart.split(":").map(Number);
-    const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
+    const solar = parseSolar(params.date.trim(), "SolarToLunar");
     const lunar = solar.getLunar();
 
     const result = {
@@ -112,20 +133,7 @@ export function GetEightCharacters(params: { date: string }): {
 
     log("info", "GetEightCharacters", "计算八字", { date: params.date });
 
-    const dateStr = params.date.trim();
-    const [datePart, timePart = "00:00"] = dateStr.split(/\s+/);
-    const [year, month, day] = datePart.split("-").map(Number);
-
-    if (!year || !month || !day) {
-      throw new LunarError("日期格式无效", "GetEightCharacters", {
-        context: { date: params.date },
-        suggestion: "请使用公历日期，格式：2024-06-15 14:30",
-        errorCode: ApiErrorCode.INVALID_INPUT,
-      });
-    }
-
-    const [hour, minute = 0] = timePart.split(":").map(Number);
-    const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
+    const solar = parseSolar(params.date.trim(), "GetEightCharacters");
     const lunar = solar.getLunar();
     const eightChar = lunar.getEightChar();
 
@@ -195,16 +203,7 @@ export function GetCurrentSolarTerm(params: { date?: string }): {
   return withErrorHandlingSync("GetCurrentSolarTerm", LunarError, () => {
     log("info", "GetCurrentSolarTerm", "获取当前节气", { date: params.date });
 
-    let solar: Solar;
-    if (params.date) {
-      const dateStr = params.date.trim();
-      const [datePart, timePart = "00:00"] = dateStr.split(/\s+/);
-      const [year, month, day] = datePart.split("-").map(Number);
-      const [hour, minute = 0] = timePart.split(":").map(Number);
-      solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
-    } else {
-      solar = Solar.fromDate(new Date());
-    }
+    const solar = parseSolarOptional(params.date, "GetCurrentSolarTerm");
 
     const lunar = solar.getLunar();
     const jieQiTable = lunar.getJieQiTable();
@@ -256,16 +255,7 @@ export function GetChineseCalendar(params: { date?: string }): {
   return withErrorHandlingSync("GetChineseCalendar", LunarError, () => {
     log("info", "GetChineseCalendar", "获取黄历", { date: params.date });
 
-    let solar: Solar;
-    if (params.date) {
-      const dateStr = params.date.trim();
-      const [datePart, timePart = "00:00"] = dateStr.split(/\s+/);
-      const [year, month, day] = datePart.split("-").map(Number);
-      const [hour, minute = 0] = timePart.split(":").map(Number);
-      solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
-    } else {
-      solar = Solar.fromDate(new Date());
-    }
+    const solar = parseSolarOptional(params.date, "GetChineseCalendar");
 
     const lunar = solar.getLunar();
 
@@ -306,16 +296,7 @@ export function GetDailyInfo(params: { date?: string }): {
   return withErrorHandlingSync("GetDailyInfo", LunarError, () => {
     log("info", "GetDailyInfo", "获取每日信息", { date: params.date });
 
-    let solar: Solar;
-    if (params.date) {
-      const dateStr = params.date.trim();
-      const [datePart, timePart = "00:00"] = dateStr.split(/\s+/);
-      const [year, month, day] = datePart.split("-").map(Number);
-      const [hour, minute = 0] = timePart.split(":").map(Number);
-      solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
-    } else {
-      solar = Solar.fromDate(new Date());
-    }
+    const solar = parseSolarOptional(params.date, "GetDailyInfo");
 
     const lunar = solar.getLunar();
 
@@ -349,15 +330,7 @@ export function GetZodiac(params: { date?: string }): { zodiac: string; year: nu
   return withErrorHandlingSync("GetZodiac", LunarError, () => {
     log("info", "GetZodiac", "获取生肖", { date: params.date });
 
-    let solar: Solar;
-    if (params.date) {
-      const dateStr = params.date.trim();
-      const [datePart] = dateStr.split(/\s+/);
-      const [year, month, day] = datePart.split("-").map(Number);
-      solar = Solar.fromYmd(year, month, day);
-    } else {
-      solar = Solar.fromDate(new Date());
-    }
+    const solar = parseSolarOptional(params.date, "GetZodiac");
 
     const lunar = solar.getLunar();
 
@@ -385,15 +358,7 @@ export function GetConstellation(params: { date?: string }): {
   return withErrorHandlingSync("GetConstellation", LunarError, () => {
     log("info", "GetConstellation", "获取星座", { date: params.date });
 
-    let solar: Solar;
-    if (params.date) {
-      const dateStr = params.date.trim();
-      const [datePart] = dateStr.split(/\s+/);
-      const [year, month, day] = datePart.split("-").map(Number);
-      solar = Solar.fromYmd(year, month, day);
-    } else {
-      solar = Solar.fromDate(new Date());
-    }
+    const solar = parseSolarOptional(params.date, "GetConstellation");
 
     const result = {
       constellation: solar.getXingZuo(),

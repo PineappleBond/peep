@@ -8,10 +8,10 @@ import {
   CONFIRM_FIELD,
   PERSON_ID_OPTIONAL,
   peepApi,
-  needsConfirm,
-  extractConfirmed,
+  createConfirmHandler,
   createBatchViewHandler,
   createMetadataUpdateHandler,
+  createListFiltersSchema,
 } from "./shared";
 
 /* ---- 共享文档 Schema ---- */
@@ -54,17 +54,7 @@ export const wikiListFunction = {
     "(3) 按标签过滤——如只查看'格局'类文档。" +
     "\n\n" +
     "Wiki 用于存储命理知识、学习笔记、案例分析等 Markdown 文档。如需查看某篇文档的完整内容，请调用 WikiView。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    searchText: withMeta(z.string(), { example: "紫微" })
-      .optional()
-      .describe("搜索关键字——匹配标题或正文"),
-    tags: z.array(z.string()).optional().describe("按标签过滤——只返回包含指定标签的文档"),
-    page: withMeta(z.number().int().positive(), { example: 1 }).optional().describe("页码，默认 1"),
-    pageSize: withMeta(z.number().int().positive(), { example: 20 })
-      .optional()
-      .describe("每页条数，默认 20"),
-  }),
+  zodSchema: createListFiltersSchema("标题或正文"),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = wikiListFunction.zodSchema.parse(args);
     return peepApi().WikiList(parsedArgs);
@@ -76,6 +66,21 @@ export const wikiListFunction = {
     }),
   },
 };
+
+/** WikiCreate schema（独立定义，避免 createConfirmHandler 自引用） */
+const _wikiCreateSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  title: withMeta(z.string(), { example: "紫微斗数入门" }).describe("文档标题"),
+  content: withMeta(z.string(), { example: "# 紫微斗数\n\n紫微斗数是..." }).describe(
+    "Markdown 正文——支持标准 Markdown 语法",
+  ),
+  tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['格局', '紫微']"),
+  linkTargetIds: z
+    .array(z.number().int().positive())
+    .optional()
+    .describe("关联文档 ID 列表——建立文档间的链接关系，形成知识网络"),
+  confirmed: CONFIRM_FIELD,
+});
 
 export const wikiCreateFunction = {
   name: "WikiCreate",
@@ -93,33 +98,32 @@ export const wikiCreateFunction = {
     "文档支持 Markdown 格式，可设置标签便于检索，可通过 linkTargetIds 关联其他文档形成知识网络。" +
     "\n\n" +
     "示例：WikiCreate({ title: '紫府同宫格', content: '# 紫府同宫格\\n\\n紫府同宫是...', tags: ['格局', '紫微'] })。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    title: withMeta(z.string(), { example: "紫微斗数入门" }).describe("文档标题"),
-    content: withMeta(z.string(), { example: "# 紫微斗数\n\n紫微斗数是..." }).describe(
-      "Markdown 正文——支持标准 Markdown 语法",
-    ),
-    tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['格局', '紫微']"),
-    linkTargetIds: z
-      .array(z.number().int().positive())
-      .optional()
-      .describe("关联文档 ID 列表——建立文档间的链接关系，形成知识网络"),
-    confirmed: CONFIRM_FIELD,
-  }),
-  handler: (args: Record<string, unknown>) => {
-    type CreateInput = z.infer<typeof wikiCreateFunction.zodSchema>;
-    const parsedArgs = wikiCreateFunction.zodSchema.parse(args) as CreateInput;
-    if (!parsedArgs.confirmed) {
-      return needsConfirm(
-        "创建 Wiki 文档",
-        `即将创建文档：「${parsedArgs.title}」${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
-      );
-    }
-    const params = extractConfirmed(parsedArgs);
-    return peepApi().WikiCreate(params);
-  },
+  zodSchema: _wikiCreateSchema,
+  handler: createConfirmHandler(
+    _wikiCreateSchema,
+    "创建 Wiki 文档",
+    input =>
+      `即将创建文档：「${input.title}」${input.tags?.length ? `，标签：${input.tags.join("、")}` : ""}`,
+    params => peepApi().WikiCreate(params),
+  ),
   returns: { zodSchema: _docSchema },
 };
+
+/** WikiUpdate schema（独立定义，避免 createConfirmHandler 自引用） */
+const _wikiUpdateSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  docId: withMeta(z.number().int().positive(), { example: 123 }).describe("要更新的文档 ID"),
+  title: withMeta(z.string(), { example: "新标题" }).optional().describe("新标题（可选）"),
+  content: withMeta(z.string(), { example: "# 更新后的内容\n\n..." })
+    .optional()
+    .describe("新 Markdown 正文（可选）"),
+  tags: z.array(z.string()).optional().describe("新标签列表（可选，会替换原有标签）"),
+  linkTargetIds: z
+    .array(z.number().int().positive())
+    .optional()
+    .describe("新关联文档 ID 列表（可选，会替换原有关联）"),
+  confirmed: CONFIRM_FIELD,
+});
 
 export const wikiUpdateFunction = {
   name: "WikiUpdate",
@@ -137,37 +141,20 @@ export const wikiUpdateFunction = {
     "所有字段都是可选的，只更新提供的字段。" +
     "\n\n" +
     "示例：WikiUpdate({ docId: 123, title: '新标题', tags: ['格局'] })。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    docId: withMeta(z.number().int().positive(), { example: 123 }).describe("要更新的文档 ID"),
-    title: withMeta(z.string(), { example: "新标题" }).optional().describe("新标题（可选）"),
-    content: withMeta(z.string(), { example: "# 更新后的内容\n\n..." })
-      .optional()
-      .describe("新 Markdown 正文（可选）"),
-    tags: z.array(z.string()).optional().describe("新标签列表（可选，会替换原有标签）"),
-    linkTargetIds: z
-      .array(z.number().int().positive())
-      .optional()
-      .describe("新关联文档 ID 列表（可选，会替换原有关联）"),
-    confirmed: CONFIRM_FIELD,
-  }),
-  handler: (args: Record<string, unknown>) => {
-    type UpdateInput = z.infer<typeof wikiUpdateFunction.zodSchema>;
-    const parsedArgs = wikiUpdateFunction.zodSchema.parse(args) as UpdateInput;
-    if (!parsedArgs.confirmed) {
+  zodSchema: _wikiUpdateSchema,
+  handler: createConfirmHandler(
+    _wikiUpdateSchema,
+    "更新 Wiki 文档",
+    input => {
       const updates: string[] = [];
-      if (parsedArgs.title) updates.push(`标题→"${parsedArgs.title}"`);
-      if (parsedArgs.content) updates.push("内容已修改");
-      if (parsedArgs.tags) updates.push(`标签→[${parsedArgs.tags.join(",")}]`);
-      if (parsedArgs.linkTargetIds) updates.push(`关联→[${parsedArgs.linkTargetIds.join(",")}]`);
-      return needsConfirm(
-        "更新 Wiki 文档",
-        `即将更新文档 #${parsedArgs.docId}：${updates.join("，") || "无修改"}`,
-      );
-    }
-    const params = extractConfirmed(parsedArgs);
-    return peepApi().WikiUpdate(params);
-  },
+      if (input.title) updates.push(`标题→"${input.title}"`);
+      if (input.content) updates.push("内容已修改");
+      if (input.tags) updates.push(`标签→[${input.tags.join(",")}]`);
+      if (input.linkTargetIds) updates.push(`关联→[${input.linkTargetIds.join(",")}]`);
+      return `即将更新文档 #${input.docId}：${updates.join("，") || "无修改"}`;
+    },
+    params => peepApi().WikiUpdate(params),
+  ),
   returns: { zodSchema: _docSchema },
 };
 
@@ -196,7 +183,7 @@ export const wikiViewFunction = {
   returns: { zodSchema: _docWithLinksSchema },
 };
 
-/** BatchView 参数 schema（独立定义，避免循环引用） */
+/** BatchView 参数 schema（独立定义，避免 TypeScript 推断循环引用） */
 const _wikiBatchViewSchema = z.object({
   personId: PERSON_ID_OPTIONAL,
   docIds: z

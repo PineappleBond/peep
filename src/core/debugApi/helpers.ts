@@ -90,6 +90,35 @@ export function nextFrame(): Promise<void> {
 }
 
 /**
+ * 通用轮询工具——消除 waitForPersonMatch / waitForPickReset / waitForPickMatch
+ * 等函数中重复的「超时检查 + 迭代计数 + 定时休眠」模式。
+ *
+ * 设计要点：
+ * - 安全保护：最大迭代次数防止超时判断延迟导致无限循环
+ * - 参数可配：间隔、超时均可自定义，默认 20ms / 2000ms
+ * - 返回布尔值：调用方决定是否抛错或仅记录日志
+ *
+ * @param condition 每轮调用的条件函数，返回 true 表示满足
+ * @param options 超时（ms）、轮询间隔（ms）、日志标签（用于超时警告）
+ * @returns 是否在超时前满足条件
+ */
+export async function pollUntil(
+  condition: () => boolean | Promise<boolean>,
+  options: { timeout?: number; interval?: number; label?: string } = {},
+): Promise<boolean> {
+  const { timeout = 2000, interval = 20, label = "pollUntil" } = options;
+  const start = Date.now();
+  const maxIterations = Math.ceil(timeout / interval) + 10;
+  let iterations = 0;
+  while (++iterations <= maxIterations && Date.now() - start < timeout) {
+    if (await condition()) return true;
+    await new Promise(r => setTimeout(r, interval));
+  }
+  log("warn", "wait", `${label}等待超时`, { timeout });
+  return false;
+}
+
+/**
  * 辅助函数：等待页面加载。
  * 使用 requestAnimationFrame 与 React 渲染周期对齐，避免 setTimeout 的额外延迟。
  */
@@ -176,21 +205,18 @@ export async function waitForPersonMatch(expectedId: number, timeout = 2000): Pr
     return;
   }
   const start = Date.now();
-  // 安全保护：最大迭代次数，防止超时判断延迟导致无限循环
-  const maxIterations = Math.ceil(timeout / 20) + 10;
-  let iterations = 0;
-  while (++iterations <= maxIterations && Date.now() - start < timeout) {
-    const person = getPerson();
-    if (person && person.id === expectedId) {
-      log("debug", "wait", "人物匹配成功", {
-        expectedId,
-        elapsed: Date.now() - start,
-      });
-      return;
-    }
-    await new Promise(r => setTimeout(r, 20));
+  const matched = await pollUntil(
+    () => {
+      const person = getPerson();
+      return !!(person && person.id === expectedId);
+    },
+    { timeout, label: "人物匹配" },
+  );
+  if (matched) {
+    log("debug", "wait", "人物匹配成功", { expectedId, elapsed: Date.now() - start });
+  } else {
+    log("warn", "wait", "人物匹配等待超时", { expectedId, timeout });
   }
-  log("warn", "wait", "人物匹配等待超时", { expectedId, timeout });
 }
 
 /**
@@ -241,24 +267,23 @@ export async function waitForPickReset(_z: Zwds, timeout = 1000): Promise<void> 
   const todayYear = now.getFullYear();
   const todayMonth = now.getMonth() + 1;
   const todayDay = now.getDate();
-  // 安全保护：最大迭代次数
-  const maxIterations = Math.ceil(timeout / 20) + 10;
-  let iterations = 0;
-  while (++iterations <= maxIterations && Date.now() - start < timeout) {
-    // 每次迭代重新获取最新 Zwds 状态，避免快照过期
+  const matched = await pollUntil(
+    () => {
+      const freshZ = getZwds?.() ?? _z;
+      return (
+        freshZ.pick.year === todayYear &&
+        freshZ.pick.month === todayMonth &&
+        freshZ.pick.day === todayDay
+      );
+    },
+    { timeout, label: "pick 重置" },
+  );
+  if (matched) {
+    log("debug", "wait", "pick 已重置为今天", { elapsed: Date.now() - start });
+  } else {
     const freshZ = getZwds?.() ?? _z;
-    if (
-      freshZ.pick.year === todayYear &&
-      freshZ.pick.month === todayMonth &&
-      freshZ.pick.day === todayDay
-    ) {
-      log("debug", "wait", "pick 已重置为今天", { elapsed: Date.now() - start });
-      return;
-    }
-    await new Promise(r => setTimeout(r, 20));
+    log("warn", "wait", "pick 重置等待超时", { timeout, currentPick: freshZ.pick });
   }
-  const freshZ = getZwds?.() ?? _z;
-  log("warn", "wait", "pick 重置等待超时", { timeout, currentPick: freshZ.pick });
 }
 
 /**
@@ -273,24 +298,18 @@ export async function waitForPickMatch(
   timeout = 300,
 ): Promise<boolean> {
   const getZwds = getGetZwds();
-  const start = Date.now();
-  // 安全保护：最大迭代次数
-  const maxIterations = Math.ceil(timeout / 20) + 10;
-  let iterations = 0;
-  while (++iterations <= maxIterations && Date.now() - start < timeout) {
-    // 每次迭代重新获取最新 Zwds 状态，避免快照过期
-    const freshZ = getZwds?.() ?? _z;
-    if (
-      freshZ.pick.year === expected.year &&
-      freshZ.pick.month === expected.month &&
-      freshZ.pick.day === expected.day &&
-      freshZ.pick.hour === expected.hour
-    ) {
-      return true;
-    }
-    await new Promise(r => setTimeout(r, 20));
-  }
-  return false;
+  return pollUntil(
+    () => {
+      const freshZ = getZwds?.() ?? _z;
+      return (
+        freshZ.pick.year === expected.year &&
+        freshZ.pick.month === expected.month &&
+        freshZ.pick.day === expected.day &&
+        freshZ.pick.hour === expected.hour
+      );
+    },
+    { timeout, label: "pick 匹配" },
+  );
 }
 
 /**

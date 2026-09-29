@@ -72,7 +72,7 @@ import {
 } from "./rtcAgent/lunarFunctions";
 
 // 导出 mergeBirthInput 供外部使用（测试文件 import）
-export { mergeBirthInput, needsConfirm, extractConfirmed } from "./rtcAgent/shared";
+export { mergeBirthInput, needsConfirm } from "./rtcAgent/shared";
 export type { BirthInputFields, ConfirmResponse } from "./rtcAgent/shared";
 
 /* ============================================================

@@ -4,21 +4,14 @@
  * 排盘与运限分析：ZiWei（UI 操控，完整盘面）、GetScopeData（纯计算，运限拨盘）、SetHoroscopeTime（纯计算，设置时间）。
  */
 import { withMeta, z } from "@rtc-agent/component";
-import { PERSON_ID_OPTIONAL, peepApi, createMetadataUpdateHandler } from "./shared";
+import {
+  PERSON_ID_OPTIONAL,
+  PERSON_SUMMARY_SCHEMA,
+  peepApi,
+  createMetadataUpdateHandler,
+} from "./shared";
 
 /* ---- 返回值 Zod Schema ---- */
-
-const _personReturnSchema = z
-  .object({
-    id: z.number().describe("人物ID"),
-    name: z.string().describe("姓名"),
-    gender: z.string().describe("性别"),
-    date: z.string().describe("公历出生日期，格式 YYYY-MM-DD"),
-    timeIndex: z.number().describe("时辰索引 0-12"),
-    savedAt: z.number().describe("保存时间戳（毫秒）"),
-    isDefault: z.boolean().describe("是否为默认人物"),
-  })
-  .describe("人物基础信息");
 
 const _decadeItemSchema = z
   .object({
@@ -214,7 +207,7 @@ const _chartSchema = z
 
 const _ziweiReturnSchema = z
   .object({
-    person: _personReturnSchema.describe("人物基础信息"),
+    person: PERSON_SUMMARY_SCHEMA.describe("人物基础信息"),
     hbar: hbarSchema.describe("运限拨盘"),
     chart: _chartSchema.describe("盘面数据"),
   })

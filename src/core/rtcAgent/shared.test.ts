@@ -47,7 +47,6 @@ const {
   createBatchViewHandler,
   createMetadataUpdateHandler,
   needsConfirm,
-  extractConfirmed,
   mergeBirthInput,
 } = await import("./shared");
 
@@ -241,25 +240,6 @@ describe("needsConfirm", () => {
   it("自定义 message 覆盖默认", () => {
     const result = needsConfirm("操作", "摘要", "自定义提示");
     expect(result.message).toBe("自定义提示");
-  });
-});
-
-describe("extractConfirmed", () => {
-  it("去除 confirmed 字段", () => {
-    const result = extractConfirmed({ confirmed: true, name: "张三", age: 30 });
-    expect(result).toEqual({ name: "张三", age: 30 });
-    expect(result).not.toHaveProperty("confirmed");
-  });
-
-  it("无 confirmed 字段时返回原对象", () => {
-    const result = extractConfirmed({ name: "李四" });
-    expect(result).toEqual({ name: "李四" });
-  });
-
-  it("confirmed 为 undefined 也去除", () => {
-    const result = extractConfirmed({ confirmed: undefined, data: "test" });
-    expect(result).toEqual({ data: "test" });
-    expect(result).not.toHaveProperty("confirmed");
   });
 });
 

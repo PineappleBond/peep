@@ -7,11 +7,12 @@ import { withMeta, z } from "@rtc-agent/component";
 import {
   CONFIRM_FIELD,
   PERSON_ID_OPTIONAL,
+  PERSON_SUMMARY_SCHEMA,
   peepApi,
-  needsConfirm,
-  extractConfirmed,
+  createConfirmHandler,
   createBatchViewHandler,
   createMetadataUpdateHandler,
+  createListFiltersSchema,
 } from "./shared";
 import type { SixLines } from "../liuyao/core/types";
 
@@ -97,15 +98,7 @@ const _liuyaoComputed = z
     divinationTime: z.string(),
     chart: liuyaoChartSchema,
     yong: liuyaoYongSchema,
-    person: z.object({
-      id: z.number(),
-      name: z.string(),
-      gender: z.string(),
-      date: z.string(),
-      timeIndex: z.number(),
-      savedAt: z.number(),
-      isDefault: z.boolean(),
-    }),
+    person: PERSON_SUMMARY_SCHEMA,
     hbarData: z.object({
       years: z.array(z.object({ year: z.number(), gz: z.string(), age: z.number() })),
       activeYearIdx: z.number(),
@@ -148,6 +141,35 @@ const _liuyaoComputed = z
 
 /* ---- Function 定义 ---- */
 
+/** LiuYaoCreate schema（独立定义，避免 createConfirmHandler 自引用） */
+const _liuyaoCreateSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  question: withMeta(z.string(), { example: "这笔生意能不能做" }).describe(
+    "所占问题——用户想要占卜的核心问题，要具体明确",
+  ),
+  note: withMeta(z.string(), { example: "客户询问合作前景" }).optional().describe("备注——补充说明"),
+  background: withMeta(z.string(), { example: "客户与对方已洽谈三月" })
+    .optional()
+    .describe("背景信息——问题的上下文，有助于更准确的分析"),
+  tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['求财', '合作']"),
+  lines: z
+    .array(z.number().int().min(0).max(3))
+    .min(6)
+    .max(6)
+    .optional()
+    .describe(
+      "六爻值数组（6 个 0-3 的整数），省略则自动摇卦。0=老阴,1=少阳,2=少阴,3=老阳。如：[1,2,3,0,1,2]",
+    ),
+  yongTarget: withMeta(z.enum(["自占", "父母", "子女", "配偶", "兄弟", "医药"]), {
+    example: "自占",
+  })
+    .optional()
+    .describe(
+      "求测对象——决定用神选取，默认'自占'。自占=问自己的事，父母=问长辈/文书，子女=问晚辈，配偶=问伴侣，兄弟=问朋友同事，医药=问健康/疾病",
+    ),
+  confirmed: CONFIRM_FIELD,
+});
+
 export const liuyaoCreateFunction = {
   name: "LiuYaoCreate",
   description:
@@ -168,52 +190,22 @@ export const liuyaoCreateFunction = {
     "\n\n" +
     "注意：起卦时间默认为当前时间，系统自动记录，无需手动指定。" +
     "六爻值数组（lines）可省略，系统会自动摇卦生成。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    question: withMeta(z.string(), { example: "这笔生意能不能做" }).describe(
-      "所占问题——用户想要占卜的核心问题，要具体明确",
-    ),
-    note: withMeta(z.string(), { example: "客户询问合作前景" })
-      .optional()
-      .describe("备注——补充说明"),
-    background: withMeta(z.string(), { example: "客户与对方已洽谈三月" })
-      .optional()
-      .describe("背景信息——问题的上下文，有助于更准确的分析"),
-    tags: z.array(z.string()).optional().describe("标签——用于分类检索，如 ['求财', '合作']"),
-    lines: z
-      .array(z.number().int().min(0).max(3))
-      .min(6)
-      .max(6)
-      .optional()
-      .describe(
-        "六爻值数组（6 个 0-3 的整数），省略则自动摇卦。0=老阴,1=少阳,2=少阴,3=老阳。如：[1,2,3,0,1,2]",
-      ),
-    yongTarget: withMeta(z.enum(["自占", "父母", "子女", "配偶", "兄弟", "医药"]), {
-      example: "自占",
-    })
-      .optional()
-      .describe(
-        "求测对象——决定用神选取，默认'自占'。自占=问自己的事，父母=问长辈/文书，子女=问晚辈，配偶=问伴侣，兄弟=问朋友同事，医药=问健康/疾病",
-      ),
-    confirmed: CONFIRM_FIELD,
-  }),
-  handler: (args: Record<string, unknown>) => {
-    type CreateInput = z.infer<typeof liuyaoCreateFunction.zodSchema>;
-    const parsedArgs = liuyaoCreateFunction.zodSchema.parse(args) as CreateInput;
-    if (!parsedArgs.confirmed) {
-      const linesInfo = parsedArgs.lines ? `手动六爻：[${parsedArgs.lines.join(",")}]` : "自动摇卦";
-      return needsConfirm(
-        "六爻起卦",
-        `即将起卦：「${parsedArgs.question}」（${linesInfo}，求测对象：${parsedArgs.yongTarget ?? "自占"}）${parsedArgs.tags?.length ? `，标签：${parsedArgs.tags.join("、")}` : ""}`,
-      );
-    }
-    const params = extractConfirmed(parsedArgs);
-    const createParams = {
-      ...params,
-      lines: params.lines as SixLines | undefined,
-    };
-    return peepApi().LiuYaoCreate(createParams);
-  },
+  zodSchema: _liuyaoCreateSchema,
+  handler: createConfirmHandler(
+    _liuyaoCreateSchema,
+    "六爻起卦",
+    input => {
+      const linesInfo = input.lines ? `手动六爻：[${input.lines.join(",")}]` : "自动摇卦";
+      return `即将起卦：「${input.question}」（${linesInfo}，求测对象：${input.yongTarget ?? "自占"}）${input.tags?.length ? `，标签：${input.tags.join("、")}` : ""}`;
+    },
+    params => {
+      const createParams = {
+        ...params,
+        lines: params.lines as SixLines | undefined,
+      };
+      return peepApi().LiuYaoCreate(createParams);
+    },
+  ),
   returns: { zodSchema: liuyaoRecordSchema },
 };
 
@@ -228,17 +220,7 @@ export const liuyaoListFunction = {
     "(3) 按标签过滤——如只查看'求财'类起卦。" +
     "\n\n" +
     "返回分页结果，包含记录列表和总数。如需查看某条记录的完整卦象详情，请调用 LiuYaoView。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    searchText: withMeta(z.string(), { example: "合作" })
-      .optional()
-      .describe("搜索关键字——匹配问题、备注、背景"),
-    tags: z.array(z.string()).optional().describe("按标签过滤——只返回包含指定标签的记录"),
-    page: withMeta(z.number().int().positive(), { example: 1 }).optional().describe("页码，默认 1"),
-    pageSize: withMeta(z.number().int().positive(), { example: 20 })
-      .optional()
-      .describe("每页条数，默认 20"),
-  }),
+  zodSchema: createListFiltersSchema("问题、备注、背景"),
   handler: (args: Record<string, unknown>) => {
     const parsedArgs = liuyaoListFunction.zodSchema.parse(args);
     return peepApi().LiuYaoList(parsedArgs);
@@ -284,6 +266,15 @@ export const liuyaoViewFunction = {
   },
 };
 
+/** LiuYaoDelete schema（独立定义，避免 createConfirmHandler 自引用） */
+const _liuyaoDeleteSchema = z.object({
+  personId: PERSON_ID_OPTIONAL,
+  recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
+    "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
+  ),
+  confirmed: CONFIRM_FIELD,
+});
+
 export const liuyaoDeleteFunction = {
   name: "LiuYaoDelete",
   description:
@@ -295,30 +286,18 @@ export const liuyaoDeleteFunction = {
     "使用场景：用户要求删除某条起卦记录时使用。" +
     "\n\n" +
     "示例：LiuYaoDelete({ recordId: 123 }) — 删除 ID 为 123 的起卦记录。",
-  zodSchema: z.object({
-    personId: PERSON_ID_OPTIONAL,
-    recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
-      "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
-    ),
-    confirmed: CONFIRM_FIELD,
-  }),
-  handler: (args: Record<string, unknown>) => {
-    type DeleteInput = z.infer<typeof liuyaoDeleteFunction.zodSchema>;
-    const parsedArgs = liuyaoDeleteFunction.zodSchema.parse(args) as DeleteInput;
-    if (!parsedArgs.confirmed) {
-      return needsConfirm(
-        "删除六爻起卦记录",
-        `即将删除起卦记录 #${parsedArgs.recordId}（此操作不可撤销）`,
-        "请明确告知用户此操作不可撤销，确认后再次调用并传入 confirmed: true",
-      );
-    }
-    const params = extractConfirmed(parsedArgs);
-    return peepApi().LiuYaoDelete(params, { skipUI: true });
-  },
+  zodSchema: _liuyaoDeleteSchema,
+  handler: createConfirmHandler(
+    _liuyaoDeleteSchema,
+    "删除六爻起卦记录",
+    input => `即将删除起卦记录 #${input.recordId}（此操作不可撤销）`,
+    params => peepApi().LiuYaoDelete(params, { skipUI: true }),
+    { irreversible: true },
+  ),
   returns: { zodSchema: z.void().describe("删除结果：无返回数据") },
 };
 
-/** BatchView 参数 schema（独立定义，避免循环引用） */
+/** BatchView 参数 schema（独立定义，避免 TypeScript 推断循环引用） */
 const _liuyaoBatchViewSchema = z.object({
   personId: PERSON_ID_OPTIONAL,
   recordIds: z
@@ -357,7 +336,7 @@ export const liuyaoBatchViewFunction = {
   },
 };
 
-/** UpdateTags 参数 schema（独立定义，避免循环引用） */
+/** UpdateTags 参数 schema（独立定义，避免 TypeScript 推断循环引用） */
 const _liuyaoUpdateTagsSchema = z.object({
   recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
     "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
@@ -382,7 +361,7 @@ export const liuyaoUpdateTagsFunction = {
   returns: { zodSchema: liuyaoRecordSchema.describe("更新后的起卦记录") },
 };
 
-/** UpdateNote 参数 schema（独立定义，避免循环引用） */
+/** UpdateNote 参数 schema（独立定义，避免 TypeScript 推断循环引用） */
 const _liuyaoUpdateNoteSchema = z.object({
   recordId: withMeta(z.number().int().positive(), { example: 123 }).describe(
     "起卦记录 ID——从 LiuYaoList 返回的 records 中获取",
