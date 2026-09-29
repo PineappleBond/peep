@@ -17,7 +17,7 @@ import { createRtcAgent, switchLocale } from "@rtc-agent/component";
 import type { RtcAgentWithLifecycle } from "@rtc-agent/component";
 import { getTheme } from "./theme";
 import type { Locale } from "./i18n";
-import { getTokens, clearTokens, isTokenExpired } from "./auth/authStorage";
+import { getTokens, clearTokens, isTokenExpired, saveTokens } from "./auth/authStorage";
 import { refreshAccessToken, getOrCreateDeviceIdSync } from "./auth/authApi";
 
 // 各业务域 Function
@@ -287,6 +287,7 @@ export function createPeepRtcAgent(): RtcAgentWithLifecycle {
           throw new Error("Not authenticated");
         }
         const newTokens = await refreshAccessToken(tokens.refresh_token);
+        saveTokens(newTokens);
         return {
           accessToken: newTokens.access_token,
           refreshToken: newTokens.refresh_token,
