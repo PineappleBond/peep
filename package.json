@@ -31,7 +31,7 @@
     "postinstall": "rtc-agent-setup"
   },
   "dependencies": {
-    "@rtc-agent/component": "^0.2.9-rc.1",
+    "@rtc-agent/component": "^0.3.0-rc.1",
     "dexie": "^4.4.6",
     "iztro": "^2.5.8",
     "lunar-lite": "^0.2.7",
