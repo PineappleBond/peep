@@ -7,6 +7,37 @@ const DEVICE_ID_KEY = "peep_device_id";
 let deviceIdPromise: Promise<string> | null = null;
 
 /**
+ * 生成 PKCE code_verifier（RFC 7636）
+ *
+ * 生成 43-128 字符的随机字符串，使用 URL 安全的字符集：
+ * [A-Z] / [a-z] / [0-9] / "-" / "." / "_" / "~"
+ */
+function generateCodeVerifier(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  // 将随机字节转为 base64url 编码（去掉 padding，替换 + → - / → _）
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
+/**
+ * 根据 code_verifier 生成 code_challenge（S256 方法）
+ *
+ * 算法：SHA-256(verifier) → base64url 编码
+ */
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  // 将 ArrayBuffer 转为 base64url 编码
+  const bytes = new Uint8Array(hash);
+  const base64 = btoa(String.fromCharCode(...bytes));
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+/**
  * 获取或创建设备 ID（单例模式，避免并发）
  *
  * 设备 ID 用于标识当前浏览器/设备，与后端 JWT 中的 device_id 保持一致。
@@ -67,13 +98,22 @@ export async function startGithubLogin(): Promise<void> {
   // 动态获取当前域名作为回调地址
   const redirectUri = `${window.location.origin}/peep/auth/callback.html`;
 
-  // 调用后端获取授权 URL 和 state
-  const { redirect_url, state } = await fetch(
-    `${API_BASE}/oauth2/authorize?provider=github&redirect_uri=${encodeURIComponent(redirectUri)}`,
-  ).then(r => r.json());
+  // 生成 PKCE 对（RFC 7636）
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+  // 调用后端获取授权 URL 和 state（携带 PKCE code_challenge）
+  const authorizeUrl =
+    `${API_BASE}/oauth2/authorize?provider=github` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&code_challenge=${encodeURIComponent(codeChallenge)}` +
+    `&code_challenge_method=S256`;
+  const { redirect_url, state } = await fetch(authorizeUrl).then(r => r.json());
 
   // 使用后端返回的 state（而不是自己生成）
   sessionStorage.setItem("oauth_state", state);
+  // 存储 PKCE verifier，token 交换时使用
+  sessionStorage.setItem("pkce_verifier", codeVerifier);
 
   const popup = window.open(redirect_url, "github-oauth", "width=600,height=700");
 
@@ -130,6 +170,7 @@ export async function startGithubLogin(): Promise<void> {
 
 async function exchangeToken(code: string, state: string): Promise<TokenStorage> {
   const deviceId = await getOrCreateDeviceId();
+  const codeVerifier = sessionStorage.getItem("pkce_verifier") || undefined;
   const response = await fetch(`${API_BASE}/oauth2/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -139,6 +180,7 @@ async function exchangeToken(code: string, state: string): Promise<TokenStorage>
       redirect_uri: `${window.location.origin}/peep/auth/callback.html`,
       device_id: deviceId,
       device_name: navigator.userAgent,
+      ...(codeVerifier ? { code_verifier: codeVerifier } : {}),
     }),
   });
 
