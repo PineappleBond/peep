@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import { startGithubLogin } from "./authApi";
-import { getTokens, clearTokens, isTokenExpired } from "./authStorage";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { startGithubLogin, refreshAccessToken } from "./authApi";
+import { getTokens, clearTokens, isTokenExpired, saveTokens } from "./authStorage";
 import type { User, AuthState, AuthContextValue, AuthErrorCode } from "./types";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -15,10 +15,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       user: { id: tokens.user_id },
       isAuthenticated: true,
-      isLoading: false,
+      isLoading: true, // 初始为 true，等待异步验证完成
       error: null,
     };
   });
+
+  // 异步验证 token 有效性：尝试刷新以确保 access token 有效
+  useEffect(() => {
+    const validateToken = async () => {
+      const tokens = getTokens();
+      if (!tokens) {
+        setState({ user: null, isAuthenticated: false, isLoading: false, error: null });
+        return;
+      }
+
+      try {
+        // 尝试刷新 token
+        const newTokens = await refreshAccessToken(tokens.refresh_token);
+        saveTokens(newTokens);
+        setState({
+          user: { id: newTokens.user_id },
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch {
+        // 刷新失败，清除 token
+        clearTokens();
+        setState({ user: null, isAuthenticated: false, isLoading: false, error: null });
+      }
+    };
+
+    if (state.isLoading && state.isAuthenticated) {
+      validateToken();
+    }
+  }, [state.isLoading, state.isAuthenticated]);
 
   const login = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
