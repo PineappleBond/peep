@@ -198,24 +198,48 @@ async function exchangeToken(code: string, state: string): Promise<TokenStorage>
 }
 
 export async function refreshAccessToken(refreshToken: string): Promise<TokenStorage> {
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log("[auth] 调用刷新接口", {
+      refreshTokenLength: refreshToken?.length,
+      refreshTokenPreview: refreshToken?.substring(0, 20) + "...",
+    });
+  }
+
   const response = await fetch(`${API_BASE}/oauth2/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
 
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log("[auth] 刷新接口响应", {
+      status: response.status,
+      ok: response.ok,
+    });
+  }
+
   if (!response.ok) {
+    const errorText = await response.text();
+    if (import.meta.env.DEV) {
+       
+      console.error("[auth] 刷新接口失败", { status: response.status, error: errorText });
+    }
     throw new Error(`Token refresh failed: ${response.status}`);
   }
 
   const data = await response.json();
-  const tokens = getTokens();
-  if (!tokens) {
+  // 从 localStorage 获取当前 tokens 以保留 user_id 和 refresh_token
+  const currentTokens = getTokens();
+  if (!currentTokens) {
     throw new Error("No tokens found");
   }
   return {
-    ...tokens,
+    ...currentTokens,
     access_token: data.access_token,
+    // 如果后端返回了新的 refresh_token，则更新；否则保留原有的
+    refresh_token: data.refresh_token || currentTokens.refresh_token,
     expires_at: Date.now() + data.expires_in * 1000,
   };
 }
