@@ -21,11 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   // 异步验证 token 有效性：尝试刷新以确保 access token 有效
+  // 仅在组件首次挂载时执行一次
   useEffect(() => {
     const validateToken = async () => {
       const tokens = getTokens();
       if (!tokens) {
-        setState({ user: null, isAuthenticated: false, isLoading: false, error: null });
+        setState(prev => ({ ...prev, isLoading: false }));
         return;
       }
 
@@ -46,10 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    if (state.isLoading && state.isAuthenticated) {
+    // 只在初始加载状态下执行验证
+    if (state.isLoading) {
       validateToken();
     }
-  }, [state.isLoading, state.isAuthenticated]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 空依赖数组，只在挂载时执行一次
 
   const login = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
