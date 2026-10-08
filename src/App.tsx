@@ -103,8 +103,18 @@ function App() {
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // 正在验证 token 时，显示全屏 loading（避免闪烁登录页）
   if (isLoading) {
-    return <LoginPage loading />;
+    return (
+      <div className="login-page">
+        <div className="login-container" style={{ textAlign: "center", padding: "4rem 2rem" }}>
+          <div className="login-logo" style={{ margin: "0 auto 1rem" }}>
+            窥
+          </div>
+          <Spinner size="md" />
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {

@@ -20,10 +20,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTokens();
       return { user: null, isAuthenticated: false, isLoading: false, error: null };
     }
+    // 乐观更新：如果 token 存在且未过期，先显示已登录状态
+    // 后台异步验证，如果验证失败再跳转到登录页
     return {
       user: { id: tokens.user_id },
       isAuthenticated: true,
-      isLoading: true, // 初始为 true，等待异步验证完成
+      isLoading: false, // 不显示 loading，直接显示主应用
       error: null,
     };
   });
@@ -83,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         // 调试日志：查看刷新失败原因
         if (import.meta.env.DEV) {
-           
           console.error("[auth] token 刷新失败", error);
         }
 
@@ -137,7 +138,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               })
               .catch(error => {
                 if (import.meta.env.DEV) {
-                   
                   console.error("[auth] 定时刷新失败", error);
                 }
                 // 刷新失败，清除 token 并跳转登录
@@ -155,8 +155,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ); // 5 分钟
     };
 
-    // 只在初始加载状态下执行验证
-    if (state.isLoading) {
+    // 组件挂载时执行后台验证（乐观更新：先显示主应用，验证失败再跳转登录）
+    const tokens = getTokens();
+    if (tokens) {
       validateToken();
     }
 
@@ -167,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshTimerRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []); // 空依赖数组，只在挂载时执行一次
 
   const login = useCallback(async () => {
