@@ -1,6 +1,6 @@
 {
-  "version": "0.3.3-rc.0",
+  "version": "0.3.4-rc.1",
   "workerFile": "shared-worker.js",
   "stableWorkerUrl": "/rtc-agent/shared-worker.js",
-  "timestamp": "2026-10-08T15:53:10.386Z"
+  "timestamp": "2026-10-09T04:42:44.037Z"
 }
