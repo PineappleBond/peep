@@ -144,11 +144,22 @@ class PeepDatabase extends Dexie {
         liuyaoRecords: "++id, personId, savedAt, divinationTime, *tags",
       })
       .upgrade(() => runMigrations(this, 3, 4));
+    // v5：大六壬算法版本化——迁移本身只打 algorithmVersion=1 标记，
+    // 真正按新算法重算由 daliurenRepair 在 app 启动后后台执行（不阻塞 DB 打开）。
+    this.version(5)
+      .stores({
+        persons: "++id, savedAt, isDefault",
+        liurenRecords: "++id, personId, savedAt, calculationTime, *tags",
+        wikiDocs: "++id, personId, updatedAt, savedAt, *tags",
+        wikiLinks: "++id, sourceDocId, targetDocId",
+        liuyaoRecords: "++id, personId, savedAt, divinationTime, *tags",
+      })
+      .upgrade(() => runMigrations(this, 4, 5));
   }
 }
 
 /** 当前数据库版本号（新增版本时同步更新） */
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 /** Dexie 数据库实例：管理人物/大六壬记录/Wiki 文档/链接关系四张表 */
 export const db = new PeepDatabase();

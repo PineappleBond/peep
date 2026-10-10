@@ -13,6 +13,7 @@ import {
   MONTH_GENERAL_NAMES,
   XUN_HEAD,
   HOUR_TO_SHI_CHEN,
+  CURRENT_ALGORITHM_VERSION,
 } from "./constants";
 import type {
   DaLiuRenResult,
@@ -461,6 +462,7 @@ export function calculateDaLiuRen(
     jianChu: {},
     naYin: {},
     calculationTrace,
+    algorithmVersion: CURRENT_ALGORITHM_VERSION,
   };
 
   // 课经规则

@@ -198,3 +198,46 @@ export function clearMigrationHistory(): void {
     /* ignore */
   }
 }
+
+// ─── v5 迁移：大六壬算法版本化 ───────────────────────────
+//
+// 背景：算法修正（九宗门四课第一课下五行改走十干寄宫）后，
+// 历史 IndexedDB 里的 DaLiuRenResult 仍是旧算法的输出，不会自动刷新。
+// 本迁移给所有旧记录打 algorithmVersion=1 标记，并写入 localStorage 触发标记，
+// 由 daliurenRepair 在 app 启动后后台按新算法重算并升级到 algorithmVersion=2。
+
+/** 触发 daliurenRepair 后台迁移的 localStorage 键 */
+export const LIUREN_REPAIR_TRIGGER_KEY = "peepLiurenRepairNeeded";
+
+/** v5 迁移：给所有大六壬旧记录补 algorithmVersion=1 并写入触发标记 */
+export async function migrateToVersion5(db: Dexie): Promise<void> {
+  try {
+    const records = await db.table("liurenRecords").toArray();
+    if (records.length === 0) {
+      console.log("[migration v5] 无大六壬记录，跳过");
+      return;
+    }
+
+    console.log(`[migration v5] 标记 ${records.length} 条大六壬记录待重算`);
+
+    const updated = records.map((r: any) => ({
+      ...r,
+      result: { ...(r.result ?? {}), algorithmVersion: 1 },
+    }));
+
+    await db.table("liurenRecords").bulkPut(updated);
+
+    // 写入触发标记，由 daliurenRepair 在 app 启动后读取并后台重算
+    try {
+      localStorage.setItem(LIUREN_REPAIR_TRIGGER_KEY, String(Date.now()));
+    } catch (err) {
+      console.warn("[migration v5] 写入 localStorage 触发标记失败", err);
+    }
+  } catch (err) {
+    console.error("[migration v5] 标记待重算失败", err);
+    throw err;
+  }
+}
+
+// 模块加载时自动注册 v5 迁移（在 runMigrations 调用前即可）
+registerMigration(5, migrateToVersion5);

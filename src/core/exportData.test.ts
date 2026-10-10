@@ -17,6 +17,7 @@ import {
 import type { LiurenRecord, WikiDocument } from "./personDb";
 import { makeZwdsFixture } from "./testFixtures";
 import { analyzeChart } from "./analysis";
+import { CURRENT_ALGORITHM_VERSION } from "./daliuren/constants";
 
 describe("safeFilename", () => {
   it("将特殊字符替换为下划线", () => {
@@ -361,6 +362,7 @@ function createMockLiurenRecord(): LiurenRecord {
       jianChu: {},
       naYin: {},
       calculationTrace: [],
+      algorithmVersion: CURRENT_ALGORITHM_VERSION,
     },
   };
 }

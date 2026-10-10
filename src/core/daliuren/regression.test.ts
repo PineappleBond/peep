@@ -7,6 +7,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateDaLiuRen } from "./calculator";
+import { CURRENT_ALGORITHM_VERSION } from "./constants";
 
 describe("大六壬回归测试", () => {
   // ── 寄宫才见克（2026-10 修复）──────────────────────
@@ -44,6 +45,19 @@ describe("大六壬回归测试", () => {
     const trace = r.threeTransmissions.trace.join(" / ");
     expect(trace).toMatch(/克\(1\)/);
     expect(trace).toMatch(/元首/);
+  });
+
+  // ── algorithmVersion（2026-10 引入）───────────────────
+  //
+  // 每次核心算法修正都要 bump CURRENT_ALGORITHM_VERSION，
+  // 后台迁移（daliurenRepair）据此识别旧记录并按新算法重算。
+  // 两条断言钉死这个契约，避免未来改动时遗忘：
+  //   1) calculateDaLiuRen 返回的 result.algorithmVersion === CURRENT_ALGORITHM_VERSION
+  //   2) CURRENT_ALGORITHM_VERSION 至少为 2（v1 = 寄宫修复前，v2 = 修复后）
+  it("算法版本契约：calculateDaLiuRen 返回的 algorithmVersion 必须等于 CURRENT_ALGORITHM_VERSION", () => {
+    const r = calculateDaLiuRen("2026-10-10", "16:42");
+    expect(r.algorithmVersion).toBe(CURRENT_ALGORITHM_VERSION);
+    expect(CURRENT_ALGORITHM_VERSION).toBeGreaterThanOrEqual(2);
   });
 
   // 反向断言：同样日干如果第一课没有克（按古法），则不应走元首。

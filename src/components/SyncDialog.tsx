@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dialog } from "./Dialog";
 import { useI18n } from "../core/i18n";
 import { toast } from "../core/toast";
+import { repairLiurenRecords, subscribeRepair, type RepairProgress } from "../core/daliurenRepair";
 import {
   generateSyncLink,
   restoreFromLink,
@@ -98,6 +99,29 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
   const [restoreMode, setRestoreMode] = useState<RestoreMode>("overwrite");
   const [downloadError, setDownloadError] = useState("");
   const [downloadProgress, setDownloadProgress] = useState({ percent: 0, text: "" });
+
+  // ── 大六壬历史盘面后台迁移（订阅进度 + 手动触发入口）──
+  const [repairProgress, setRepairProgress] = useState<RepairProgress>({
+    running: false,
+    total: 0,
+    processed: 0,
+    succeeded: 0,
+    failed: 0,
+    skipped: 0,
+  });
+  useEffect(() => subscribeRepair(setRepairProgress), []);
+  const handleRepairLiuren = useCallback(async () => {
+    try {
+      await repairLiurenRecords({ force: true });
+      toast.success(
+        `大六壬历史盘面已重新计算：成功 ${repairProgress.succeeded}` +
+          (repairProgress.failed ? `，失败 ${repairProgress.failed}` : ""),
+      );
+    } catch (err) {
+      console.error("[SyncDialog] 手动重算大六壬失败", err);
+      toast.error("重算大六壬历史盘面失败，详见控制台");
+    }
+  }, [repairProgress.succeeded, repairProgress.failed]);
 
   // 历史
   const [history, setHistory] = useState<SyncRecord[]>(() => loadSyncHistory());
@@ -805,6 +829,25 @@ export function SyncDialog({ open, onClose, onRestored }: SyncDialogProps) {
             <div className="sync-about">
               <div className="sync-about-title">{t("sync.about")}</div>
               <p className="sync-hint">{t("sync.aboutText")}</p>
+            </div>
+
+            {/* 大六壬历史盘面重新计算（算法修正后兜底） */}
+            <div className="sync-field">
+              <span className="sync-label">重新计算大六壬历史盘面</span>
+              <p className="sync-hint" style={{ marginBottom: "0.5rem" }}>
+                {repairProgress.running
+                  ? `正在重算… ${repairProgress.processed}/${repairProgress.total}` +
+                    (repairProgress.failed ? `（失败 ${repairProgress.failed}）` : "")
+                  : "算法升级后，强制按最新算法重算全部历史盘面。一般无需手动触发。"}
+              </p>
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={handleRepairLiuren}
+                disabled={repairProgress.running}
+              >
+                {repairProgress.running ? "重算中…" : "立即重算"}
+              </button>
             </div>
 
             {/* 存储使用信息 */}

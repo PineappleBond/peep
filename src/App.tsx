@@ -27,6 +27,7 @@ import { createPeepRtcAgent, startThemeSync, syncLocale, syncTheme } from "./cor
 import { preloadable } from "./utils/preloadable";
 import { AuthProvider, useAuth } from "./core/auth/AuthContext";
 import { LoginPage } from "./components/LoginPage";
+import { repairLiurenRecords } from "./core/daliurenRepair";
 
 // ── 可预加载的懒加载路由包装：支持 hover 提前下载 chunk ─────────────
 const daLiuRenLoader = preloadable(() =>
@@ -140,6 +141,13 @@ function AuthenticatedApp() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // ── 大六壬历史盘面后台迁移 ─────────────────────────────────
+  // 算法修正后（如九宗门四课下五行改走寄宫），IndexedDB 里旧盘面不会自动刷新。
+  // daliurenRepair 在后台逐条重算并写入，幂等 + 防重入，不阻塞 UI。
+  useEffect(() => {
+    repairLiurenRecords();
   }, []);
 
   // ── RTC Agent 全局初始化 ─────────────────────────────────────

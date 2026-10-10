@@ -164,4 +164,10 @@ export interface DaLiuRenResult {
   naYin: Record<number, string>;
   /** 计算追踪记录 */
   calculationTrace: string[];
+  /**
+   * 算法版本号：用于识别历史盘面是否需要按最新算法重算。
+   * 每次算法修正（如九宗门取法变更）会提升 CURRENT_ALGORITHM_VERSION，
+   * 后台迁移会据此自动刷新旧数据。缺失或小于当前版本 → 触发重算。
+   */
+  algorithmVersion: number;
 }
