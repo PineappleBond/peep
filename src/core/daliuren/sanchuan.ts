@@ -31,10 +31,13 @@ const SELF_XING = new Set([4, 6, 9, 11]);
 /**
  * 获取四课某课的"下"五行
  *
- * 第一课的下为日干（用天干五行），其余课的下为地支（用地支五行）。
+ * 地盘纯由十二地支构成，天干必须通过"十干寄宫"才能落盘参与生克。
+ * 因此四课内的贼克判断，第一课"下"的五行取天干寄宫所在地支的五行
+ * （甲→寅木、乙→辰土、丙戊→巳火、丁己→未土、庚→申金、辛→戌土、壬→亥水、癸→丑土），
+ * 其余课"下"直接取该地支本气五行。
  */
 function lessonLowerElement(lesson: FourLesson, dayStem: number): number {
-  return lesson.lowerType === "stem" ? elemS(dayStem) : elemB(lesson.lower);
+  return lesson.lowerType === "stem" ? elemB(STEM_LODGING[dayStem]) : elemB(lesson.lower);
 }
 
 /** 上课五行（始终为地支） */
@@ -140,7 +143,9 @@ export function calculateThreeTransmissions(
   const uniqueLessons: { idx: number; lesson: FourLesson }[] = [];
   const seen = new Set<string>();
   fourLessons.forEach((lesson, i) => {
-    const lowerElem = lesson.lowerType === "stem" ? elemS(dayStem) : elemB(lesson.lower);
+    // 去重签名也用寄宫地支五行（与 lessonLowerElement 保持一致），
+    // 否则干课第一课会被错误的天干五行误分桶。
+    const lowerElem = lessonLowerElement(lesson, dayStem);
     const sig = `${lesson.upper}_${lowerElem}`;
     if (!seen.has(sig)) {
       seen.add(sig);
